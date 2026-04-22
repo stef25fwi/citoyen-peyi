@@ -1,11 +1,11 @@
 import { useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, PlusCircle, UserCheck, Settings } from 'lucide-react';
+import { LayoutDashboard, PlusCircle, UserCheck, BarChart3 } from 'lucide-react';
 
 const tabs = [
   { icon: LayoutDashboard, label: 'Sondages', path: '/admin' },
   { icon: UserCheck, label: 'Inscriptions', path: '/admin/inscriptions' },
   { icon: PlusCircle, label: 'Créer', path: '/admin/create' },
-  { icon: Settings, label: 'Paramètres', path: '/admin' },
+  { icon: BarChart3, label: 'Analytiques', path: '/admin/analytics' },
 ];
 
 const MobileNav = () => {
@@ -16,7 +16,7 @@ const MobileNav = () => {
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t border-border bg-card/95 backdrop-blur-lg md:hidden">
       <div className="flex items-center justify-around py-2">
         {tabs.map(tab => {
-          const active = pathname === tab.path && tab.label !== 'Paramètres';
+          const active = pathname === tab.path;
           return (
             <button
               key={tab.label}

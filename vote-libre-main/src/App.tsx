@@ -6,6 +6,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminAnalytics from "./pages/AdminAnalytics";
 import AdminRegistration from "./pages/AdminRegistration";
 import CreatePoll from "./pages/CreatePoll";
 import PollDetail from "./pages/PollDetail";
@@ -24,6 +25,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/controleur/login" element={<ControleurLogin />} />
           <Route path="/admin/inscriptions" element={<AdminRegistration />} />
           <Route path="/admin/create" element={<CreatePoll />} />
