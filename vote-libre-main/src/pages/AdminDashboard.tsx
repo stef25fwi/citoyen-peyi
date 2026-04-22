@@ -4,7 +4,7 @@ import { demoPolls } from '@/lib/demo-data';
 import PollCard from '@/components/PollCard';
 import MobileNav from '@/components/MobileNav';
 import ControleurCodesPanel from '@/components/ControleurCodesPanel';
-import { Plus, ArrowLeft, LayoutDashboard, BarChart3, Vote, FileEdit } from 'lucide-react';
+import { Plus, ArrowLeft, LayoutDashboard, BarChart3, Vote, FileEdit, TrendingUp } from 'lucide-react';
 
 const statIcons = [Vote, BarChart3, LayoutDashboard, FileEdit];
 const statColors = [
@@ -42,10 +42,16 @@ const AdminDashboard = () => {
               <h1 className="text-lg font-bold text-foreground">Tableau de bord</h1>
             </div>
           </div>
-          <Button onClick={() => navigate('/admin/create')} className="hidden gradient-primary border-0 text-primary-foreground md:inline-flex">
-            <Plus className="mr-2 h-4 w-4" />
-            Nouveau sondage
-          </Button>
+          <div className="hidden items-center gap-2 md:flex">
+            <Button variant="outline" onClick={() => navigate('/admin/analytics')} className="gap-2">
+              <TrendingUp className="h-4 w-4" />
+              Analytiques
+            </Button>
+            <Button onClick={() => navigate('/admin/create')} className="gradient-primary border-0 text-primary-foreground">
+              <Plus className="mr-2 h-4 w-4" />
+              Nouveau sondage
+            </Button>
+          </div>
         </div>
       </header>
 
