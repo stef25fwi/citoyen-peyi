@@ -68,11 +68,11 @@ const CreatePoll = () => {
             <div className="space-y-4">
               <div>
                 <Label htmlFor="title">Titre du projet</Label>
-                <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex : Réaménagement du centre-ville" className=\"mt-1.5 h-11\" />
+                <Input id="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Ex : Réaménagement du centre-ville" className="mt-1.5 h-11" />
               </div>
               <div>
                 <Label htmlFor="question">Question du sondage</Label>
-                <Input id="question" value={question} onChange={e => setQuestion(e.target.value)} placeholder="Ex : Quelle option préférez-vous ?" className=\"mt-1.5 h-11\" />
+                <Input id="question" value={question} onChange={e => setQuestion(e.target.value)} placeholder="Ex : Quelle option préférez-vous ?" className="mt-1.5 h-11" />
               </div>
             </div>
           </Card>
@@ -107,11 +107,11 @@ const CreatePoll = () => {
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
                 <Label htmlFor="open">Date d'ouverture</Label>
-                <Input id=\"open\" type=\"date\" value={openDate} onChange={e => setOpenDate(e.target.value)} className=\"mt-1.5 h-11\" />
+                <Input id="open" type="date" value={openDate} onChange={e => setOpenDate(e.target.value)} className="mt-1.5 h-11" />
               </div>
               <div>
                 <Label htmlFor="close">Date de fermeture</Label>
-                <Input id=\"close\" type=\"date\" value={closeDate} onChange={e => setCloseDate(e.target.value)} className=\"mt-1.5 h-11\" />
+                <Input id="close" type="date" value={closeDate} onChange={e => setCloseDate(e.target.value)} className="mt-1.5 h-11" />
               </div>
             </div>
           </Card>
@@ -120,7 +120,7 @@ const CreatePoll = () => {
             <h2 className="mb-3 text-sm font-semibold text-card-foreground sm:mb-4 sm:text-base">QR Codes</h2>
             <div>
               <Label htmlFor="qr">Nombre de QR codes à générer</Label>
-              <Input id=\"qr\" type=\"number\" min={1} max={1000} value={qrCount} onChange={e => setQrCount(Number(e.target.value))} className=\"mt-1.5 h-11 w-full sm:max-w-[200px]\" />
+              <Input id="qr" type="number" min={1} max={1000} value={qrCount} onChange={e => setQrCount(Number(e.target.value))} className="mt-1.5 h-11 w-full sm:max-w-[200px]" />
               <p className="mt-2 text-xs text-muted-foreground">
                 Chaque QR code est unique et permet à un seul participant d'accéder au vote.
               </p>
