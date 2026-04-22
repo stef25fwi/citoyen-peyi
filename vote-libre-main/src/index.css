@@ -1,0 +1,169 @@
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 20% 97%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 215 90% 50%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 220 14% 92%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 10% 46%;
+
+    --accent: 168 70% 42%;
+    --accent-foreground: 0 0% 100%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 215 90% 50%;
+
+    --radius: 0.75rem;
+
+    --success: 152 60% 42%;
+    --success-foreground: 0 0% 100%;
+    --warning: 38 92% 50%;
+    --warning-foreground: 0 0% 100%;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+
+    --poll-primary: 215 90% 50%;
+    --poll-accent: 168 70% 42%;
+    --poll-surface: 222 47% 11%;
+
+    --gradient-primary: linear-gradient(135deg, hsl(215, 90%, 50%), hsl(225, 85%, 60%));
+    --gradient-accent: linear-gradient(135deg, hsl(168, 70%, 42%), hsl(178, 65%, 48%));
+    --gradient-hero: linear-gradient(160deg, hsl(222, 47%, 11%) 0%, hsl(220, 40%, 18%) 50%, hsl(215, 50%, 25%) 100%);
+    --shadow-card: 0 1px 3px hsl(220 13% 91% / 0.5), 0 2px 8px hsl(220 13% 91% / 0.3);
+    --shadow-elevated: 0 4px 16px hsl(220 13% 91% / 0.4), 0 8px 32px hsl(220 13% 91% / 0.2);
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+    --card: 222 47% 9%;
+    --card-foreground: 210 40% 98%;
+    --popover: 222 47% 9%;
+    --popover-foreground: 210 40% 98%;
+    --primary: 215 90% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+    --accent: 168 70% 42%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 212 27% 84%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    transition: background-color 0.4s ease, color 0.3s ease;
+  }
+}
+
+@layer utilities {
+  .gradient-primary {
+    background: var(--gradient-primary);
+  }
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+  .gradient-poll {
+    background: linear-gradient(135deg, hsl(var(--poll-primary)), hsl(var(--poll-accent)));
+  }
+  .bg-poll-surface {
+    background-color: hsl(var(--poll-surface));
+  }
+  .text-poll-primary {
+    color: hsl(var(--poll-primary));
+  }
+  .border-poll-primary {
+    border-color: hsl(var(--poll-primary));
+  }
+  .bg-poll-primary {
+    background-color: hsl(var(--poll-primary));
+  }
+  .bg-poll-primary\/10 {
+    background-color: hsl(var(--poll-primary) / 0.1);
+  }
+  .bg-poll-primary\/5 {
+    background-color: hsl(var(--poll-primary) / 0.05);
+  }
+  .ring-poll-primary {
+    --tw-ring-color: hsl(var(--poll-primary));
+  }
+
+  @keyframes pulse-ring {
+    0% { transform: scale(1); opacity: 0.4; }
+    100% { transform: scale(1.6); opacity: 0; }
+  }
+  .animate-pulse-ring {
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  .animate-pulse-ring-delayed {
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite 0.5s;
+  }
+  .animate-pulse-ring-delayed-2 {
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite 1s;
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+  }
+  .animate-gradient-shift {
+    background-size: 200% 200%;
+    animation: gradient-shift 8s ease infinite;
+  }
+}

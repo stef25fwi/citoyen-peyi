@@ -1,0 +1,23 @@
+{
+  "name": "citoyen-peyi",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Application de vote anonyme — Citoyen Peyi",
+  "workspaces": [
+    "vote-libre-main",
+    "app/backend"
+  ],
+  "scripts": {
+    "install:all": "npm install --prefix vote-libre-main && npm install --prefix app/backend",
+    "dev": "npm run dev --workspace app/backend & npm run dev --workspace vote-libre-main -- --host",
+    "dev:frontend": "npm run dev --workspace vote-libre-main -- --host",
+    "dev:backend": "npm run dev --workspace app/backend",
+    "build": "npm run build --workspace vote-libre-main",
+    "build:dev": "npm run build:dev --workspace vote-libre-main",
+    "start": "npm run start --workspace app/backend",
+    "test": "npm run test --workspace vote-libre-main",
+    "lint": "npm run lint --workspace vote-libre-main",
+    "zip": "bash app/scripts/zip-app.sh",
+    "extract:vote-libre": "bash app/scripts/extract-vote-libre.sh"
+  }
+}

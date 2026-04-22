@@ -1,0 +1,23 @@
+services:
+  backend:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install && npm run dev:backend"
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - CORS_ORIGIN=http://localhost:5173
+
+  frontend:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: sh -c "npm install --prefix vote-libre-main && npm run dev:frontend"
+    ports:
+      - "8080:8080"
+    depends_on:
+      - backend
