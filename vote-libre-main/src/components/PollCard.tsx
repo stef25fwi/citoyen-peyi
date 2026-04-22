@@ -21,7 +21,7 @@ const PollCard = ({ poll }: { poll: Poll }) => {
 
   return (
     <Card
-      className="group relative cursor-pointer overflow-hidden border border-border bg-card p-5 transition-all hover:shadow-elevated hover:-translate-y-0.5"
+      className="group relative cursor-pointer overflow-hidden border border-border bg-card p-3 transition-all hover:shadow-elevated hover:-translate-y-0.5 sm:p-5"
       onClick={() => navigate(`/admin/poll/${poll.id}`)}
     >
       {/* Dynamic color band */}
@@ -39,8 +39,8 @@ const PollCard = ({ poll }: { poll: Poll }) => {
                 {config.label}
               </Badge>
             </div>
-            <h3 className="mt-3 truncate text-base font-semibold text-card-foreground">{poll.projectTitle}</h3>
-            <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{poll.question}</p>
+            <h3 className="mt-2 truncate text-sm font-semibold text-card-foreground sm:mt-3 sm:text-base">{poll.projectTitle}</h3>
+            <p className="mt-0.5 line-clamp-2 text-xs text-muted-foreground sm:mt-1 sm:text-sm">{poll.question}</p>
           </div>
         </div>
 

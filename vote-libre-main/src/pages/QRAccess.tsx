@@ -38,10 +38,10 @@ const QRAccess = () => {
 
       <StepIndicator steps={STEPS} current={0} />
 
-      <main className="flex flex-1 items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md space-y-6">
+      <main className="flex flex-1 items-center justify-center px-3 py-4 sm:px-4 sm:py-6 md:py-8">
+        <div className="w-full max-w-md space-y-4 sm:space-y-5 md:space-y-6">
           {/* Animated QR icon with pulsing rings */}
-          <div className="relative mx-auto flex h-32 w-32 items-center justify-center">
+          <div className="relative mx-auto flex h-24 w-24 items-center justify-center sm:h-32 sm:w-32">
             <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-pulse-ring" />
             <div className="absolute inset-2 rounded-full border-2 border-primary/20 animate-pulse-ring-delayed" />
             <div className="absolute inset-4 rounded-full border-2 border-primary/10 animate-pulse-ring-delayed-2" />
@@ -51,24 +51,24 @@ const QRAccess = () => {
           </div>
 
           <div className="text-center">
-            <h2 className="text-2xl font-bold text-foreground">Accédez à votre vote</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
+            <h2 className="text-base font-bold text-foreground sm:text-xl md:text-2xl">Accédez à votre vote</h2>
+            <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground sm:mt-2 sm:text-sm">
               Scannez votre QR code ou entrez le code manuellement ci-dessous.
             </p>
           </div>
 
-          <Card className="border border-border bg-card p-6 shadow-card">
+          <Card className="border border-border bg-card p-4 shadow-card sm:p-6">
             <form onSubmit={handleAccess} className="space-y-4">
               <div>
                 <Input
                   value={code}
                   onChange={e => setCode(e.target.value.toUpperCase())}
                   placeholder="Ex : VOTE-A1B2C3"
-                  className="text-center font-mono text-lg tracking-wider transition-all duration-300 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  className="h-12 text-center font-mono text-base tracking-wide transition-all duration-300 focus:border-primary focus:ring-2 focus:ring-primary/20 sm:text-lg sm:tracking-wider"
                   maxLength={20}
                 />
               </div>
-              <Button type="submit" className="gradient-primary w-full border-0 text-primary-foreground" size="lg">
+              <Button type="submit" className="gradient-primary h-12 w-full border-0 text-primary-foreground" size="lg">
                 Accéder au vote
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>

@@ -5,10 +5,11 @@ import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import MobileNav from '@/components/MobileNav';
 import CommuneAutocomplete, { CommuneSuggestion } from '@/components/CommuneAutocomplete';
 import {
-  ArrowLeft, UserCheck, Users, QrCode, Plus, Shield, CheckCircle2, Clock, Hash, MapPin
+  ArrowLeft, UserCheck, Users, QrCode, Plus, Shield, CheckCircle2, Clock, Hash, MapPin, UserRound, History
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -16,6 +17,12 @@ import {
   CommuneConfig, RegistrationCode, ID_DOCUMENT_TYPES, PROOF_OF_ADDRESS_TYPES,
   generateCode, getExpiryDate,
 } from '@/lib/registration-data';
+import {
+  getActiveControleurSession,
+  loadControleurActivities,
+  recordControleurVerification,
+  loadCodes as loadControleurCodes,
+} from '@/lib/controleur-codes';
 import { toast } from 'sonner';
 
 const AdminRegistration = () => {
@@ -31,6 +38,35 @@ const AdminRegistration = () => {
   const [checkedIdDoc, setCheckedIdDoc] = useState<string | null>(null);
   const [checkedAddressDoc, setCheckedAddressDoc] = useState<string | null>(null);
   const [validatedQR, setValidatedQR] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState('verification');
+  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
+
+  const controleurSession = getActiveControleurSession();
+  const controleurCodeMeta = controleurSession
+    ? loadControleurCodes().find(item => item.code === controleurSession.code) || null
+    : null;
+  const verificationLogs = controleurSession
+    ? loadControleurActivities(controleurSession.code)
+    : [];
+
+  const historyEntries = [
+    ...(controleurCodeMeta
+      ? [{
+          id: `assigned-${controleurCodeMeta.id}`,
+          type: 'assigned' as const,
+          at: controleurCodeMeta.createdAt,
+          label: `Code attribue: ${controleurCodeMeta.code}`,
+          detail: `Attribue a ${controleurCodeMeta.label}`,
+        }]
+      : []),
+    ...verificationLogs.map(item => ({
+      id: item.id,
+      type: 'verified' as const,
+      at: item.verifiedAt,
+      label: `Code verifie: ${item.registrationCode}`,
+      detail: `Verification effectuee par ${item.controleurLabel}`,
+    })),
+  ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   const stats = useMemo(() => ({
     total: codes.length,
@@ -79,6 +115,7 @@ const AdminRegistration = () => {
   // Validate a registration
   const handleValidate = () => {
     if (!selectedCode || !checkedIdDoc || !checkedAddressDoc) return;
+    const selectedCodeRef = selectedCode.code;
     const now = new Date().toISOString().split('T')[0];
     const documentType = `${checkedIdDoc} + ${checkedAddressDoc}`;
     setCodes(prev =>
@@ -95,6 +132,12 @@ const AdminRegistration = () => {
       commune: commune?.name,
     });
     setValidatedQR(qrData);
+
+    if (controleurSession) {
+      recordControleurVerification(controleurSession, selectedCodeRef);
+      setHistoryRefreshKey(prev => prev + 1);
+    }
+
     toast.success('Inscription validée ! QR code généré.');
   };
 
@@ -111,8 +154,8 @@ const AdminRegistration = () => {
       <div className="min-h-screen bg-background pb-20 md:pb-0">
         <header className="border-b border-border bg-card">
           <div className="container mx-auto flex items-center gap-3 px-4 py-4">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
-              <ArrowLeft className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="h-12 w-12">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <div className="flex items-center gap-2">
               <UserCheck className="h-5 w-5 text-primary" />
@@ -196,15 +239,23 @@ const AdminRegistration = () => {
       <header className="border-b border-border bg-card">
         <div className="container mx-auto flex items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
-              <ArrowLeft className="h-4 w-4" />
+            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="h-12 w-12">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
             <div>
               <div className="flex items-center gap-2">
                 <UserCheck className="h-5 w-5 text-primary" />
                 <h1 className="text-lg font-bold text-foreground">Inscriptions</h1>
               </div>
-              <p className="text-xs text-muted-foreground">{commune.name} · {commune.population} hab.</p>
+              <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                <span>{commune.name} · {commune.population} hab.</span>
+                {controleurSession && (
+                  <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-primary">
+                    <UserRound className="h-3 w-3" />
+                    Connecte: {controleurSession.label}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
           <Button
@@ -218,9 +269,9 @@ const AdminRegistration = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6 space-y-6">
+      <main className="container mx-auto space-y-4 px-3 py-4 sm:space-y-6 sm:px-4 sm:py-6">
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {[
             { label: 'Total', value: stats.total, icon: Hash, color: 'bg-primary/10 text-primary' },
             { label: 'Disponibles', value: stats.available, icon: Clock, color: 'bg-accent/10 text-accent' },
@@ -257,8 +308,15 @@ const AdminRegistration = () => {
           </div>
         </div>
 
-        {/* Validation panel */}
-        <AnimatePresence mode="wait">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
+          <TabsList className="grid w-full max-w-md grid-cols-2">
+            <TabsTrigger value="verification">Verification</TabsTrigger>
+            <TabsTrigger value="history">Historique</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="verification">
+            {/* Validation panel */}
+            <AnimatePresence mode="wait">
           {validatedQR ? (
             <motion.div
               key="qr"
@@ -377,10 +435,10 @@ const AdminRegistration = () => {
               </Card>
             </motion.div>
           ) : null}
-        </AnimatePresence>
+            </AnimatePresence>
 
-        {/* Code list */}
-        {codes.length > 0 && !selectedCode && !validatedQR && (
+            {/* Code list */}
+            {codes.length > 0 && !selectedCode && !validatedQR && (
           <section>
             <h2 className="mb-3 text-base font-semibold text-foreground">Codes d'inscription</h2>
             <div className="space-y-2">
@@ -389,9 +447,9 @@ const AdminRegistration = () => {
                   key={c.id}
                   initial={{ opacity: 0, x: -10 }}
                   animate={{ opacity: 1, x: 0 }}
-                  className="flex items-center justify-between rounded-xl border border-border bg-card p-4 shadow-card"
+                  className="flex flex-col gap-3 rounded-xl border border-border bg-card p-4 shadow-card sm:flex-row sm:items-center sm:justify-between"
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto">
                     <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
                       c.status === 'validated' ? 'bg-success/10 text-success'
                         : c.status === 'assigned' ? 'bg-warning/10 text-warning'
@@ -399,9 +457,9 @@ const AdminRegistration = () => {
                     }`}>
                       {c.status === 'validated' ? <CheckCircle2 className="h-4 w-4" /> : <Hash className="h-4 w-4" />}
                     </div>
-                    <div>
-                      <p className="font-mono text-sm font-semibold text-foreground">{c.code}</p>
-                      <p className="text-xs text-muted-foreground">
+                    <div className="min-w-0">
+                      <p className="break-all font-mono text-sm font-semibold text-foreground">{c.code}</p>
+                      <p className="text-xs text-muted-foreground break-words">
                         {c.status === 'validated'
                           ? `Validé le ${c.validatedAt} · Expire ${c.expiresAt}`
                           : `Créé le ${c.createdAt}`
@@ -409,7 +467,7 @@ const AdminRegistration = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
                     <Badge variant={c.status === 'validated' ? 'default' : 'secondary'} className="text-xs">
                       {c.status === 'validated' ? 'Validé' : c.status === 'assigned' ? 'Attribué' : 'Disponible'}
                     </Badge>
@@ -417,6 +475,7 @@ const AdminRegistration = () => {
                       <Button
                         size="sm"
                         variant="outline"
+                        className="sm:w-auto"
                         onClick={() => {
                           setCodes(prev => prev.map(x => x.id === c.id ? { ...x, status: 'assigned' as const } : x));
                           setSelectedCode({ ...c, status: 'assigned' });
@@ -430,10 +489,10 @@ const AdminRegistration = () => {
               ))}
             </div>
           </section>
-        )}
+            )}
 
-        {/* Empty state */}
-        {codes.length === 0 && (
+            {/* Empty state */}
+            {codes.length === 0 && (
           <div className="flex flex-col items-center justify-center py-16 text-center">
             <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted">
               <QrCode className="h-10 w-10 text-muted-foreground" />
@@ -447,14 +506,62 @@ const AdminRegistration = () => {
               Générer 10 codes
             </Button>
           </div>
-        )}
+            )}
+          </TabsContent>
+
+          <TabsContent value="history" key={historyRefreshKey}>
+            <Card className="border border-border shadow-card">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg">
+                  <History className="h-5 w-5 text-primary" />
+                  Historique des activites
+                </CardTitle>
+                <CardDescription>
+                  {controleurSession
+                    ? `Journal de ${controleurSession.label}: code attribue et verifications effectuees.`
+                    : 'Connectez-vous en tant que controleur pour consulter votre historique personnel.'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {!controleurSession ? (
+                  <div className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">
+                    Aucun controleur connecte.
+                  </div>
+                ) : historyEntries.length === 0 ? (
+                  <div className="rounded-lg border border-dashed border-border p-5 text-sm text-muted-foreground">
+                    Aucune activite enregistree pour le moment.
+                  </div>
+                ) : (
+                  <ul className="space-y-2">
+                    {historyEntries.map(entry => (
+                      <li key={entry.id} className="rounded-xl border border-border bg-card p-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <p className="text-sm font-semibold text-foreground">{entry.label}</p>
+                            <p className="mt-1 text-xs text-muted-foreground">{entry.detail}</p>
+                          </div>
+                          <Badge variant={entry.type === 'verified' ? 'default' : 'secondary'} className="w-fit">
+                            {entry.type === 'verified' ? 'Verifie' : 'Attribue'}
+                          </Badge>
+                        </div>
+                        <p className="mt-2 text-xs text-muted-foreground">
+                          {new Date(entry.at).toLocaleString('fr-FR')}
+                        </p>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* FAB mobile */}
       {canGenerate && !selectedCode && !validatedQR && (
         <button
           onClick={() => handleGenerate(1)}
-          className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full gradient-primary text-primary-foreground shadow-elevated md:hidden"
+          className="fixed bottom-20 right-4 z-50 flex h-16 w-16 items-center justify-center rounded-full gradient-primary text-primary-foreground shadow-elevated md:hidden"
         >
           <Plus className="h-6 w-6" />
         </button>

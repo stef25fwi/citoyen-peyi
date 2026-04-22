@@ -76,21 +76,21 @@ const VotePage = () => {
       {/* Gradient header with step indicator */}
       <div className="gradient-poll text-primary-foreground">
         <StepIndicator steps={STEPS} current={1} />
-        <div className="px-4 pb-6 pt-2">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="mb-2 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10">
-            <ArrowLeft className="h-4 w-4" />
+        <div className="px-3 pb-4 pt-1 sm:px-4 sm:pb-6 sm:pt-2 md:pb-6">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="mb-1.5 h-12 w-12 text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 sm:mb-2">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
-          <p className="text-xs font-medium uppercase tracking-wider text-primary-foreground/60">{poll.projectTitle}</p>
-          <h1 className="mt-1 text-xl font-bold">{poll.question}</h1>
+          <p className="line-clamp-1 text-xs font-medium uppercase tracking-wider text-primary-foreground/60 sm:line-clamp-2">{poll.projectTitle}</p>
+          <h1 className="mt-1 break-words text-base font-bold sm:text-lg md:text-xl">{poll.question}</h1>
         </div>
       </div>
 
       {/* Main content - bottom sheet style on mobile */}
-      <main className="-mt-3 flex-1 rounded-t-2xl bg-background px-4 pb-24 pt-6 md:pb-8">
+      <main className="-mt-3 flex-1 rounded-t-2xl bg-background px-3 pb-28 pt-4 sm:px-4 sm:pt-6 md:pb-8">
         <div className="mx-auto max-w-lg space-y-5">
           <AnonymityBadge />
 
-          <div className="space-y-3">
+          <div className="space-y-2 sm:space-y-3">
             {poll.options.map((opt, i) => (
               <motion.button
                 key={opt.id}
@@ -99,7 +99,7 @@ const VotePage = () => {
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: i * 0.06 }}
                 onClick={() => setSelected(opt.id)}
-                className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition-all duration-200 ${
+                className={`flex w-full items-center gap-2 rounded-xl border p-3 text-left transition-all duration-200 sm:gap-3 sm:p-4 ${
                   selected === opt.id
                     ? 'border-poll-primary bg-poll-primary\/5 shadow-md ring-1 ring-poll-primary'
                     : 'border-border bg-card hover:border-muted-foreground/30 hover:shadow-card'
@@ -112,12 +112,12 @@ const VotePage = () => {
                 }`}>
                   {selected === opt.id && <CheckCircle2 className="h-4 w-4 text-primary-foreground" />}
                 </div>
-                <div className={`flex-1 ${
+                <div className={`flex-1 min-w-0 ${
                   selected === opt.id
                     ? 'border-l-2 border-poll-primary pl-3'
                     : 'border-l-2 border-transparent pl-3'
                 }`}>
-                  <span className={`text-sm font-medium ${selected === opt.id ? 'text-foreground' : 'text-muted-foreground'}`}>
+                  <span className={`break-words text-sm font-medium ${selected === opt.id ? 'text-foreground' : 'text-muted-foreground'}`}>
                     {opt.label}
                   </span>
                 </div>
@@ -126,11 +126,11 @@ const VotePage = () => {
           </div>
 
           {/* Fixed bottom button on mobile */}
-          <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-card/95 p-4 backdrop-blur-lg md:relative md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
+          <div className="fixed bottom-0 left-0 right-0 border-t border-border bg-card/95 p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] backdrop-blur-lg md:relative md:border-0 md:bg-transparent md:p-0 md:backdrop-blur-none">
             <Button
               onClick={handleSubmit}
               disabled={!selected || isSubmitting}
-              className="gradient-poll w-full border-0 text-primary-foreground disabled:opacity-50"
+              className="gradient-poll h-12 w-full border-0 text-primary-foreground disabled:opacity-50"
               size="lg"
             >
               <Send className="mr-2 h-4 w-4" />

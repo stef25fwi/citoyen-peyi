@@ -6,9 +6,10 @@ interface StepIndicatorProps {
 }
 
 const StepIndicator = ({ steps, current }: StepIndicatorProps) => (
-  <div className="flex items-center justify-center gap-2 px-4 py-3">
-    {steps.map((step, i) => (
-      <div key={step} className="flex items-center gap-2">
+  <div className="w-full overflow-x-auto">
+    <div className="mx-auto flex min-w-max items-center justify-center gap-2 px-4 py-3">
+      {steps.map((step, i) => (
+        <div key={step} className="flex items-center gap-2">
         <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold transition-all duration-300 ${
           i < current
             ? 'bg-[hsl(var(--poll-primary,var(--primary)))] text-primary-foreground'
@@ -26,8 +27,9 @@ const StepIndicator = ({ steps, current }: StepIndicatorProps) => (
             i < current ? 'bg-[hsl(var(--poll-primary,var(--primary)))]' : 'bg-muted-foreground/20'
           }`} />
         )}
-      </div>
-    ))}
+        </div>
+      ))}
+    </div>
   </div>
 );
 

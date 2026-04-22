@@ -32,14 +32,14 @@ const AdminDashboard = () => {
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Header */}
       <header className="border-b border-border bg-card">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/')}>
-              <ArrowLeft className="h-4 w-4" />
+        <div className="container mx-auto flex items-start justify-between gap-3 px-4 py-4 sm:items-center">
+          <div className="flex min-w-0 items-center gap-3">
+            <Button variant="ghost" size="icon" onClick={() => navigate('/')} className="h-12 w-12">
+              <ArrowLeft className="h-5 w-5" />
             </Button>
-            <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-2">
               <LayoutDashboard className="h-5 w-5 text-primary" />
-              <h1 className="text-lg font-bold text-foreground">Tableau de bord</h1>
+              <h1 className="truncate text-base font-bold text-foreground sm:text-lg">Tableau de bord</h1>
             </div>
           </div>
           <div className="hidden items-center gap-2 md:flex">
@@ -55,19 +55,19 @@ const AdminDashboard = () => {
         </div>
       </header>
 
-      <main className="container mx-auto px-4 py-6">
+      <main className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 md:py-8">
         {/* Stats with icons */}
-        <div className="mb-8 grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <div className="mb-8 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {stats.map((s, i) => {
             const Icon = statIcons[i];
             return (
-              <div key={s.label} className="rounded-xl border border-border bg-card p-4 shadow-card">
-                <div className="flex items-center gap-3">
-                  <div className={`flex h-10 w-10 items-center justify-center rounded-lg ${statColors[i]}`}>
-                    <Icon className="h-5 w-5" />
+              <div key={s.label} className="rounded-xl border border-border bg-card p-2 shadow-card sm:p-3 md:p-4">
+                <div className="flex items-center gap-2 sm:gap-3">
+                  <div className={`flex h-8 w-8 items-center justify-center rounded-lg sm:h-10 sm:w-10 ${statColors[i]}`}>
+                    <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
                   </div>
-                  <div>
-                    <p className="text-2xl font-bold text-foreground">{s.value}</p>
+                  <div className="min-w-0">
+                    <p className="text-base font-bold text-foreground sm:text-xl md:text-2xl">{s.value}</p>
                     <p className="text-xs text-muted-foreground">{s.label}</p>
                   </div>
                 </div>
@@ -116,7 +116,7 @@ const AdminDashboard = () => {
       {/* FAB for mobile */}
       <button
         onClick={() => navigate('/admin/create')}
-        className="fixed bottom-20 right-4 z-50 flex h-14 w-14 items-center justify-center rounded-full gradient-primary text-primary-foreground shadow-elevated md:hidden"
+        className="fixed bottom-20 right-4 z-50 flex h-16 w-16 items-center justify-center rounded-full gradient-primary text-primary-foreground shadow-elevated md:hidden"
       >
         <Plus className="h-6 w-6" />
       </button>

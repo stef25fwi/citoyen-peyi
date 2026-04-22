@@ -10,8 +10,24 @@ export interface ControleurCode {
   usedAt: string | null;
 }
 
+export interface ControleurSession {
+  id: string;
+  code: string;
+  label: string;
+  connectedAt: string;
+}
+
+export interface ControleurActivity {
+  id: string;
+  controleurCode: string;
+  controleurLabel: string;
+  registrationCode: string;
+  verifiedAt: string;
+}
+
 const CODES_KEY = 'controleur_codes_v1';
 const SESSION_KEY = 'controleur_session_v1';
+const ACTIVITY_KEY = 'controleur_activity_v1';
 
 export const loadCodes = (): ControleurCode[] => {
   try {
@@ -52,8 +68,86 @@ export const validateControleurCode = (input: string): ControleurCode | null => 
     saveCodes(codes);
   }
   // open session
-  sessionStorage.setItem(SESSION_KEY, match.code);
+  const session: ControleurSession = {
+    id: match.id,
+    code: match.code,
+    label: match.label,
+    connectedAt: new Date().toISOString(),
+  };
+  sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
   return match;
+};
+
+export const getActiveControleurSession = (): ControleurSession | null => {
+  const raw = sessionStorage.getItem(SESSION_KEY);
+  if (!raw) return null;
+
+  // Backward compatibility with older storage format (string code only).
+  try {
+    const parsed = JSON.parse(raw) as Partial<ControleurSession>;
+    if (parsed && typeof parsed.code === 'string') {
+      return {
+        id: parsed.id || parsed.code,
+        code: parsed.code,
+        label: parsed.label || 'Controleur',
+        connectedAt: parsed.connectedAt || new Date().toISOString(),
+      };
+    }
+  } catch {
+    const fallbackCode = raw;
+    const matched = loadCodes().find(c => c.code === fallbackCode);
+    if (!matched) return null;
+    return {
+      id: matched.id,
+      code: matched.code,
+      label: matched.label,
+      connectedAt: new Date().toISOString(),
+    };
+  }
+
+  return null;
+};
+
+export const loadControleurActivities = (controleurCode: string): ControleurActivity[] => {
+  try {
+    const raw = localStorage.getItem(ACTIVITY_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return (parsed as ControleurActivity[])
+      .filter(item => item.controleurCode === controleurCode)
+      .sort((a, b) => new Date(b.verifiedAt).getTime() - new Date(a.verifiedAt).getTime());
+  } catch {
+    return [];
+  }
+};
+
+export const recordControleurVerification = (
+  controleur: Pick<ControleurSession, 'code' | 'label'>,
+  registrationCode: string,
+) => {
+  const entry: ControleurActivity = {
+    id: `ctrl-log-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    controleurCode: controleur.code,
+    controleurLabel: controleur.label,
+    registrationCode,
+    verifiedAt: new Date().toISOString(),
+  };
+
+  let existing: ControleurActivity[] = [];
+  try {
+    const raw = localStorage.getItem(ACTIVITY_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (Array.isArray(parsed)) {
+        existing = parsed as ControleurActivity[];
+      }
+    }
+  } catch {
+    existing = [];
+  }
+
+  localStorage.setItem(ACTIVITY_KEY, JSON.stringify([entry, ...existing]));
 };
 
 export const hasControleurSession = (): boolean => {
