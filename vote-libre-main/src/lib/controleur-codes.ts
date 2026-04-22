@@ -2,10 +2,13 @@
 // NOTE: This is a demo-only mechanism (localStorage). For production,
 // use Lovable Cloud auth + a server-validated invite/role system.
 
+import type { CommuneConfig } from '@/lib/registration-data';
+
 export interface ControleurCode {
   id: string;
   code: string;
   label: string;
+  commune: CommuneConfig | null;
   createdAt: string;
   usedAt: string | null;
 }
@@ -14,6 +17,7 @@ export interface ControleurSession {
   id: string;
   code: string;
   label: string;
+  commune: CommuneConfig | null;
   connectedAt: string;
 }
 
@@ -45,7 +49,7 @@ export const saveCodes = (codes: ControleurCode[]) => {
   localStorage.setItem(CODES_KEY, JSON.stringify(codes));
 };
 
-export const generateControleurCode = (label: string): ControleurCode => {
+export const generateControleurCode = (label: string, commune: CommuneConfig): ControleurCode => {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   let body = '';
   for (let i = 0; i < 8; i++) body += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -53,6 +57,7 @@ export const generateControleurCode = (label: string): ControleurCode => {
     id: `ctrl-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
     code: `CTRL-${body}`,
     label: label.trim() || 'Contrôleur',
+    commune,
     createdAt: new Date().toISOString(),
     usedAt: null,
   };
@@ -72,6 +77,7 @@ export const validateControleurCode = (input: string): ControleurCode | null => 
     id: match.id,
     code: match.code,
     label: match.label,
+    commune: match.commune ?? null,
     connectedAt: new Date().toISOString(),
   };
   sessionStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -90,6 +96,7 @@ export const getActiveControleurSession = (): ControleurSession | null => {
         id: parsed.id || parsed.code,
         code: parsed.code,
         label: parsed.label || 'Controleur',
+        commune: parsed.commune ?? null,
         connectedAt: parsed.connectedAt || new Date().toISOString(),
       };
     }
@@ -101,6 +108,7 @@ export const getActiveControleurSession = (): ControleurSession | null => {
       id: matched.id,
       code: matched.code,
       label: matched.label,
+      commune: matched.commune ?? null,
       connectedAt: new Date().toISOString(),
     };
   }

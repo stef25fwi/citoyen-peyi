@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { demoTokens, demoPoll } from '@/lib/demo-data';
+import { demoPoll } from '@/lib/demo-data';
 import AnonymityBadge from '@/components/AnonymityBadge';
 import StepIndicator from '@/components/StepIndicator';
 import SuccessAnimation from '@/components/SuccessAnimation';
@@ -10,6 +10,7 @@ import { ArrowLeft, Send, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
 import { usePollTheme } from '@/hooks/usePollTheme';
+import { findVoteAccessRecord, markVoteAccessVoted } from '@/lib/vote-access';
 
 const STEPS = ['Accès', 'Vote', 'Confirmation'];
 
@@ -20,7 +21,7 @@ const VotePage = () => {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const accessToken = demoTokens.find(t => t.token === token);
+  const accessToken = token ? findVoteAccessRecord(token) : null;
   const poll = demoPoll;
   const palette = usePollTheme(poll.id);
 
@@ -67,6 +68,9 @@ const VotePage = () => {
       return;
     }
     setIsSubmitting(true);
+    if (token) {
+      markVoteAccessVoted(token);
+    }
     setSubmitted(true);
     toast.success('Vote enregistré avec succès !');
   };

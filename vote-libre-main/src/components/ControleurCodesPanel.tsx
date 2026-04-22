@@ -8,9 +8,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   ControleurCode, generateControleurCode, loadCodes, saveCodes,
 } from '@/lib/controleur-codes';
+import type { CommuneConfig } from '@/lib/registration-data';
 import { toast } from 'sonner';
 
-const ControleurCodesPanel = () => {
+interface ControleurCodesPanelProps {
+  commune: CommuneConfig | null;
+  onRequestCommuneSetup: () => void;
+}
+
+const ControleurCodesPanel = ({ commune, onRequestCommuneSetup }: ControleurCodesPanelProps) => {
   const [codes, setCodes] = useState<ControleurCode[]>([]);
   const [label, setLabel] = useState('');
 
@@ -24,11 +30,17 @@ const ControleurCodesPanel = () => {
   };
 
   const handleGenerate = () => {
+    if (!commune) {
+      toast.error('Sélectionnez d\'abord la commune de rattachement du compte administrateur.');
+      onRequestCommuneSetup();
+      return;
+    }
+
     const sanitizedLabel = label.trim().slice(0, 50).replace(/<[^>]*>/g, '');
-    const next = [generateControleurCode(sanitizedLabel), ...codes];
+    const next = [generateControleurCode(sanitizedLabel, commune), ...codes];
     persist(next);
     setLabel('');
-    toast.success('Code contrôleur généré');
+    toast.success(`Code contrôleur généré pour ${commune.name}`);
   };
 
   const handleCopy = async (code: string) => {
@@ -55,7 +67,9 @@ const ControleurCodesPanel = () => {
           <div>
             <CardTitle className="text-base">Codes d'accès contrôleur</CardTitle>
             <CardDescription className="text-xs">
-              Génère et distribue des codes pour les agents qui contrôlent les pièces d'identité.
+              {commune
+                ? `Chaque code est automatiquement rattaché à ${commune.name}.`
+                : 'Sélectionnez d\'abord une commune administrateur pour rattacher les contrôleurs à une collectivité.'}
             </CardDescription>
           </div>
         </div>
@@ -105,6 +119,9 @@ const ControleurCodesPanel = () => {
                       {c.label} · créé le {new Date(c.createdAt).toLocaleDateString('fr-FR')}
                       {c.usedAt && ` · utilisé le ${new Date(c.usedAt).toLocaleDateString('fr-FR')}`}
                     </p>
+                    {c.commune && (
+                      <p className="truncate text-xs text-muted-foreground">Rattaché à {c.commune.name}</p>
+                    )}
                   </div>
                   <div className="flex items-center gap-1">
                     <Button size="icon" variant="ghost" onClick={() => handleCopy(c.code)} title="Copier">

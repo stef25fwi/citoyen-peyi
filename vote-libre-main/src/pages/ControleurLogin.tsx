@@ -16,7 +16,7 @@ const ControleurLogin = () => {
     e.preventDefault();
     const match = validateControleurCode(code);
     if (match) {
-      toast.success(`Bienvenue, ${match.label}`);
+      toast.success(match.commune ? `Bienvenue, ${match.label} · ${match.commune.name}` : `Bienvenue, ${match.label}`);
       navigate('/admin/inscriptions');
     } else {
       toast.error('Code invalide. Demandez un code à un administrateur.');
@@ -69,7 +69,7 @@ const ControleurLogin = () => {
                 </Button>
               </form>
               <p className="mt-4 text-center text-xs text-muted-foreground">
-                Vous n'avez pas de code ? Contactez l'administrateur de votre commune.
+                Votre commune de rattachement s'affichera automatiquement après connexion.
               </p>
             </CardContent>
           </Card>

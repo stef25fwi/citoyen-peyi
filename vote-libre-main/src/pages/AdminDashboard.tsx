@@ -1,10 +1,16 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
 import { demoPolls } from '@/lib/demo-data';
 import PollCard from '@/components/PollCard';
 import MobileNav from '@/components/MobileNav';
 import ControleurCodesPanel from '@/components/ControleurCodesPanel';
-import { Plus, ArrowLeft, LayoutDashboard, BarChart3, Vote, FileEdit, TrendingUp } from 'lucide-react';
+import CommuneAutocomplete, { CommuneSuggestion } from '@/components/CommuneAutocomplete';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { loadAdminCommune, saveAdminCommune, type CommuneConfig } from '@/lib/registration-data';
+import { Plus, ArrowLeft, LayoutDashboard, BarChart3, Vote, FileEdit, TrendingUp, Building2, MapPin } from 'lucide-react';
+import { toast } from 'sonner';
 
 const statIcons = [Vote, BarChart3, LayoutDashboard, FileEdit];
 const statColors = [
@@ -16,6 +22,15 @@ const statColors = [
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
+  const [commune, setCommune] = useState<CommuneConfig | null>(null);
+  const [isCommuneDialogOpen, setIsCommuneDialogOpen] = useState(false);
+  const [selectedCommune, setSelectedCommune] = useState<{ commune: CommuneSuggestion; codePostal: string } | null>(null);
+
+  useEffect(() => {
+    const storedCommune = loadAdminCommune();
+    setCommune(storedCommune);
+    setIsCommuneDialogOpen(!storedCommune);
+  }, []);
 
   const active = demoPolls.filter(p => p.status === 'active');
   const closed = demoPolls.filter(p => p.status === 'closed');
@@ -28,8 +43,62 @@ const AdminDashboard = () => {
     { label: 'Brouillons', value: drafts.length },
   ];
 
+  const handleSaveCommune = () => {
+    if (!selectedCommune) {
+      toast.error('Sélectionnez une commune dans la liste.');
+      return;
+    }
+
+    const nextCommune: CommuneConfig = {
+      name: `${selectedCommune.commune.nom} (${selectedCommune.codePostal})`,
+      code: selectedCommune.commune.code,
+      codePostal: selectedCommune.codePostal,
+      population: selectedCommune.commune.population,
+      maxCodes: selectedCommune.commune.population,
+    };
+
+    saveAdminCommune(nextCommune);
+    setCommune(nextCommune);
+    setIsCommuneDialogOpen(false);
+    toast.success(`Compte administrateur rattaché à ${nextCommune.name}.`);
+  };
+
   return (
     <div className="min-h-screen bg-background pb-20 md:pb-0">
+      <Dialog open={isCommuneDialogOpen} onOpenChange={open => commune && setIsCommuneDialogOpen(open)}>
+        <DialogContent className="sm:max-w-md" onPointerDownOutside={event => !commune && event.preventDefault()} onEscapeKeyDown={event => !commune && event.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle>Rattacher ce compte administrateur à une collectivité</DialogTitle>
+            <DialogDescription>
+              Lors de la première connexion, choisissez la commune du compte. Les contrôleurs générés depuis ce compte y seront rattachés automatiquement.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div>
+              <label className="mb-1.5 block text-sm font-medium text-foreground">
+                Commune (nom ou code postal)
+              </label>
+              <CommuneAutocomplete onSelect={(selected, codePostal) => setSelectedCommune({ commune: selected, codePostal })} />
+            </div>
+
+            {selectedCommune && (
+              <div className="rounded-lg border border-primary/30 bg-primary/5 p-3 text-sm">
+                <p className="font-semibold text-foreground">{selectedCommune.commune.nom}</p>
+                <p className="text-xs text-muted-foreground">Code postal : {selectedCommune.codePostal}</p>
+                <p className="text-xs text-muted-foreground">
+                  Population : {selectedCommune.commune.population.toLocaleString('fr-FR')} habitants
+                </p>
+              </div>
+            )}
+
+            <Button onClick={handleSaveCommune} disabled={!selectedCommune} className="gradient-primary w-full border-0 text-primary-foreground">
+              Enregistrer la commune
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Header */}
       <header className="border-b border-border bg-card">
         <div className="container mx-auto flex items-start justify-between gap-3 px-4 py-4 sm:items-center">
@@ -56,6 +125,36 @@ const AdminDashboard = () => {
       </header>
 
       <main className="container mx-auto px-3 py-4 sm:px-4 sm:py-6 md:py-8">
+        <section className="mb-6">
+          <Card className="border border-border bg-card shadow-card">
+            <CardContent className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-foreground">Profil administrateur</p>
+                  <p className="text-sm text-muted-foreground">
+                    {commune ? 'Collectivité de rattachement enregistrée pour ce compte.' : 'Aucune commune rattachée à ce compte.'}
+                  </p>
+                  {commune && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-primary">
+                        <MapPin className="h-3 w-3" />
+                        {commune.name}
+                      </span>
+                      <span>{commune.population.toLocaleString('fr-FR')} habitants</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+              <Button variant="outline" onClick={() => setIsCommuneDialogOpen(true)}>
+                {commune ? 'Changer de commune' : 'Choisir une commune'}
+              </Button>
+            </CardContent>
+          </Card>
+        </section>
+
         {/* Stats with icons */}
         <div className="mb-8 grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           {stats.map((s, i) => {
@@ -109,7 +208,7 @@ const AdminDashboard = () => {
         {/* Contrôleur access codes */}
         <section>
           <h2 className="mb-4 text-base font-semibold text-foreground">Accès contrôleurs</h2>
-          <ControleurCodesPanel />
+          <ControleurCodesPanel commune={commune} onRequestCommuneSetup={() => setIsCommuneDialogOpen(true)} />
         </section>
       </main>
 

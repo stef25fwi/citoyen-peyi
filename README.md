@@ -63,6 +63,11 @@ npm run extract:vote-libre
 
 Le contenu recupere depuis l'archive est disponible dans [vote-libre-main](vote-libre-main).
 
+Consultation en ligne via GitHub Pages:
+
+- URL attendue: https://stef25fwi.github.io/citoyen-peyi/
+- Le workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) publie automatiquement le contenu de [vote-libre-main](vote-libre-main) apres chaque push sur main.
+
 Commandes utiles pour ce projet extrait:
 
 - Installer les dependances: npm run install:vote-libre

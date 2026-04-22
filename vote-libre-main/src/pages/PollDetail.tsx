@@ -1,11 +1,12 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { demoPolls, demoTokens } from '@/lib/demo-data';
+import { demoPolls } from '@/lib/demo-data';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ResultsChart from '@/components/ResultsChart';
 import { ArrowLeft, QrCode, Users, Download } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
+import { loadPollVoteAccessRecords } from '@/lib/vote-access';
 
 const PollDetail = () => {
   const { id } = useParams();
@@ -20,7 +21,7 @@ const PollDetail = () => {
     );
   }
 
-  const tokens = demoTokens.filter(t => t.pollId === poll.id);
+  const tokens = loadPollVoteAccessRecords(poll.id);
   const totalVotes = poll.options.reduce((s, o) => s + o.votes, 0);
 
   return (
@@ -85,10 +86,10 @@ const PollDetail = () => {
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {tokens.slice(0, 4).map(token => (
                   <div key={token.id} className="flex flex-col items-center rounded-lg border border-border bg-muted/50 p-3">
-                    <QRCodeSVG value={`${window.location.origin}/vote/${token.token}`} size={64} />
-                    <p className="mt-2 break-all text-center text-[10px] font-mono text-muted-foreground">{token.token}</p>
+                    <QRCodeSVG value={token.qrPayload || `${window.location.origin}/vote/${token.code}`} size={64} />
+                    <p className="mt-2 break-all text-center text-[10px] font-mono text-muted-foreground">{token.code}</p>
                     <Badge variant="outline" className="mt-1 text-[10px]">
-                      {token.hasVoted ? 'Voté' : token.activated ? 'Activé' : 'En attente'}
+                      {token.hasVoted ? 'Vote' : token.activated ? 'Active' : 'Valide'}
                     </Badge>
                   </div>
                 ))}

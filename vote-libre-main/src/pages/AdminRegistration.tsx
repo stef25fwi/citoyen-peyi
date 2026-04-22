@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,7 +15,7 @@ import { QRCodeSVG } from 'qrcode.react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CommuneConfig, RegistrationCode, ID_DOCUMENT_TYPES, PROOF_OF_ADDRESS_TYPES,
-  generateCode, getExpiryDate,
+  generateCode, getExpiryDate, loadAdminCommune, loadRegistrationCodes, saveAdminCommune, saveRegistrationCodes,
 } from '@/lib/registration-data';
 import {
   getActiveControleurSession,
@@ -27,26 +27,60 @@ import { toast } from 'sonner';
 
 const AdminRegistration = () => {
   const navigate = useNavigate();
+  const controleurSession = getActiveControleurSession();
 
   // Commune config
-  const [commune, setCommune] = useState<CommuneConfig | null>(null);
+  const [commune, setCommune] = useState<CommuneConfig | null>(() => loadAdminCommune() ?? controleurSession?.commune ?? null);
   const [selected, setSelected] = useState<{ commune: CommuneSuggestion; codePostal: string } | null>(null);
 
   // Codes & validation
-  const [codes, setCodes] = useState<RegistrationCode[]>([]);
+  const [codes, setCodes] = useState<RegistrationCode[]>(() => loadRegistrationCodes());
   const [selectedCode, setSelectedCode] = useState<RegistrationCode | null>(null);
   const [checkedIdDoc, setCheckedIdDoc] = useState<string | null>(null);
   const [checkedAddressDoc, setCheckedAddressDoc] = useState<string | null>(null);
   const [validatedQR, setValidatedQR] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('verification');
   const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
-
-  const controleurSession = getActiveControleurSession();
   const controleurCodeMeta = controleurSession
     ? loadControleurCodes().find(item => item.code === controleurSession.code) || null
     : null;
   const verificationLogs = controleurSession
     ? loadControleurActivities(controleurSession.code)
+    : [];
+  const codeActivityEntries = controleurSession
+    ? codes.flatMap(code => {
+        if (code.verifiedByControleurCode !== controleurSession.code) return [];
+
+        const entries = [] as Array<{
+          id: string;
+          type: 'assigned' | 'verified' | 'activated' | 'voted';
+          at: string;
+          label: string;
+          detail: string;
+        }>;
+
+        if (code.activatedAt) {
+          entries.push({
+            id: `${code.id}-activated`,
+            type: 'activated',
+            at: code.activatedAt,
+            label: `Code active: ${code.code}`,
+            detail: 'L\'electeur a ouvert sa page de vote avec ce code.',
+          });
+        }
+
+        if (code.votedAt) {
+          entries.push({
+            id: `${code.id}-voted`,
+            type: 'voted',
+            at: code.votedAt,
+            label: `Vote depose: ${code.code}`,
+            detail: 'Le code a ete utilise pour enregistrer un vote.',
+          });
+        }
+
+        return entries;
+      })
     : [];
 
   const historyEntries = [
@@ -56,7 +90,7 @@ const AdminRegistration = () => {
           type: 'assigned' as const,
           at: controleurCodeMeta.createdAt,
           label: `Code attribue: ${controleurCodeMeta.code}`,
-          detail: `Attribue a ${controleurCodeMeta.label}`,
+          detail: `Attribue a ${controleurCodeMeta.label}${controleurCodeMeta.commune ? ` · ${controleurCodeMeta.commune.name}` : ''}`,
         }]
       : []),
     ...verificationLogs.map(item => ({
@@ -66,7 +100,12 @@ const AdminRegistration = () => {
       label: `Code verifie: ${item.registrationCode}`,
       detail: `Verification effectuee par ${item.controleurLabel}`,
     })),
+    ...codeActivityEntries,
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
+
+  useEffect(() => {
+    saveRegistrationCodes(codes);
+  }, [codes]);
 
   const stats = useMemo(() => ({
     total: codes.length,
@@ -85,7 +124,15 @@ const AdminRegistration = () => {
       return;
     }
     const { commune: c, codePostal } = selected;
-    setCommune({ name: `${c.nom} (${codePostal})`, population: c.population, maxCodes: c.population });
+    const nextCommune = {
+      name: `${c.nom} (${codePostal})`,
+      code: c.code,
+      codePostal,
+      population: c.population,
+      maxCodes: c.population,
+    };
+    setCommune(nextCommune);
+    saveAdminCommune(nextCommune);
     toast.success(`Commune "${c.nom}" configurée (${c.population.toLocaleString('fr-FR')} codes max).`);
   };
 
@@ -101,12 +148,19 @@ const AdminRegistration = () => {
     const newCodes: RegistrationCode[] = Array.from({ length: toCreate }, (_, i) => ({
       id: `reg-${Date.now()}-${i}`,
       code: generateCode(),
+      pollId: 'poll-1',
       createdAt: new Date().toISOString().split('T')[0],
       usedBy: null,
       status: 'available' as const,
       documentType: null,
       validatedAt: null,
       expiresAt: null,
+      communeName: commune.name,
+      qrPayload: null,
+      activatedAt: null,
+      votedAt: null,
+      verifiedByControleurCode: null,
+      verifiedByControleurLabel: null,
     }));
     setCodes(prev => [...prev, ...newCodes]);
     toast.success(`${toCreate} code(s) généré(s).`);
@@ -117,20 +171,27 @@ const AdminRegistration = () => {
     if (!selectedCode || !checkedIdDoc || !checkedAddressDoc) return;
     const selectedCodeRef = selectedCode.code;
     const now = new Date().toISOString().split('T')[0];
+    const expiresAt = getExpiryDate();
     const documentType = `${checkedIdDoc} + ${checkedAddressDoc}`;
-    setCodes(prev =>
-      prev.map(c =>
-        c.id === selectedCode.id
-          ? { ...c, status: 'validated' as const, documentType, validatedAt: now, expiresAt: getExpiryDate() }
-          : c
-      )
-    );
     const qrData = JSON.stringify({
       code: selectedCode.code,
       validatedAt: now,
-      expiresAt: getExpiryDate(),
+      expiresAt,
       commune: commune?.name,
     });
+    const updatedCode: RegistrationCode = {
+      ...selectedCode,
+      status: 'validated',
+      documentType,
+      validatedAt: now,
+      expiresAt,
+      communeName: commune?.name || null,
+      qrPayload: qrData,
+      verifiedByControleurCode: controleurSession?.code || null,
+      verifiedByControleurLabel: controleurSession?.label || null,
+    };
+    setCodes(prev => prev.map(c => c.id === selectedCode.id ? updatedCode : c));
+    setSelectedCode(updatedCode);
     setValidatedQR(qrData);
 
     if (controleurSession) {
@@ -252,7 +313,7 @@ const AdminRegistration = () => {
                 {controleurSession && (
                   <span className="inline-flex items-center gap-1 rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-primary">
                     <UserRound className="h-3 w-3" />
-                    Connecte: {controleurSession.label}
+                    Connecte: {controleurSession.label}{controleurSession.commune ? ` · ${controleurSession.commune.name}` : ''}
                   </span>
                 )}
               </div>
@@ -331,7 +392,7 @@ const AdminRegistration = () => {
                   </div>
                   <CardTitle className="text-lg">Inscription validée !</CardTitle>
                   <CardDescription>
-                    L'utilisateur peut scanner ce QR code. Validité : 2 ans.
+                    L'utilisateur peut scanner ce QR code ou saisir le code ci-dessous. Validité : 2 ans.
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="flex flex-col items-center gap-4">
@@ -451,25 +512,42 @@ const AdminRegistration = () => {
                 >
                   <div className="flex w-full min-w-0 items-center gap-3 sm:w-auto">
                     <div className={`flex h-9 w-9 items-center justify-center rounded-lg ${
-                      c.status === 'validated' ? 'bg-success/10 text-success'
-                        : c.status === 'assigned' ? 'bg-warning/10 text-warning'
-                        : 'bg-primary/10 text-primary'
+                      c.votedAt
+                        ? 'bg-success/10 text-success'
+                        : c.activatedAt
+                          ? 'bg-accent/10 text-accent'
+                          : c.status === 'validated'
+                            ? 'bg-success/10 text-success'
+                            : c.status === 'assigned'
+                              ? 'bg-warning/10 text-warning'
+                              : 'bg-primary/10 text-primary'
                     }`}>
-                      {c.status === 'validated' ? <CheckCircle2 className="h-4 w-4" /> : <Hash className="h-4 w-4" />}
+                      {c.status === 'validated' || c.activatedAt || c.votedAt ? <CheckCircle2 className="h-4 w-4" /> : <Hash className="h-4 w-4" />}
                     </div>
                     <div className="min-w-0">
                       <p className="break-all font-mono text-sm font-semibold text-foreground">{c.code}</p>
                       <p className="text-xs text-muted-foreground break-words">
-                        {c.status === 'validated'
-                          ? `Validé le ${c.validatedAt} · Expire ${c.expiresAt}`
-                          : `Créé le ${c.createdAt}`
-                        }
+                        {c.votedAt
+                          ? `Vote depose le ${new Date(c.votedAt).toLocaleString('fr-FR')}`
+                          : c.activatedAt
+                            ? `Page de vote ouverte le ${new Date(c.activatedAt).toLocaleString('fr-FR')}`
+                            : c.status === 'validated'
+                              ? `Valide le ${c.validatedAt} · Expire ${c.expiresAt}`
+                              : `Cree le ${c.createdAt}`}
                       </p>
                     </div>
                   </div>
                   <div className="flex w-full items-center justify-between gap-2 sm:w-auto sm:justify-end">
-                    <Badge variant={c.status === 'validated' ? 'default' : 'secondary'} className="text-xs">
-                      {c.status === 'validated' ? 'Validé' : c.status === 'assigned' ? 'Attribué' : 'Disponible'}
+                    <Badge variant={c.status === 'validated' || c.votedAt ? 'default' : 'secondary'} className="text-xs">
+                      {c.votedAt
+                        ? 'Vote'
+                        : c.activatedAt
+                          ? 'Active'
+                          : c.status === 'validated'
+                            ? 'Valide'
+                            : c.status === 'assigned'
+                              ? 'Attribue'
+                              : 'Disponible'}
                     </Badge>
                     {c.status === 'available' && (
                       <Button
@@ -540,8 +618,14 @@ const AdminRegistration = () => {
                             <p className="text-sm font-semibold text-foreground">{entry.label}</p>
                             <p className="mt-1 text-xs text-muted-foreground">{entry.detail}</p>
                           </div>
-                          <Badge variant={entry.type === 'verified' ? 'default' : 'secondary'} className="w-fit">
-                            {entry.type === 'verified' ? 'Verifie' : 'Attribue'}
+                          <Badge variant={entry.type === 'verified' || entry.type === 'voted' ? 'default' : 'secondary'} className="w-fit">
+                            {entry.type === 'verified'
+                              ? 'Verifie'
+                              : entry.type === 'activated'
+                                ? 'Active'
+                                : entry.type === 'voted'
+                                  ? 'Vote'
+                                  : 'Attribue'}
                           </Badge>
                         </div>
                         <p className="mt-2 text-xs text-muted-foreground">

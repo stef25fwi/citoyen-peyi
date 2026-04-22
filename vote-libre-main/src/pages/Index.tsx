@@ -57,7 +57,7 @@ const Index = () => {
               </span>
             </h1>
             <p className="mx-auto mt-5 max-w-lg text-sm leading-relaxed text-white/75 sm:text-base md:mt-6 md:text-lg">
-              Une solution moderne pour recueillir l'avis de vos parties prenantes, avec un anonymat total et une transparence des résultats.
+              <span className="font-semibold text-white/85">Votre collectivité place votre parole au coeur de l'action publique</span> : une solution moderne pour recueillir l'avis de vos parties prenantes, dans un cadre garantissant l'anonymat total et la transparence des résultats.
             </p>
             <div className="mt-6 flex flex-col items-center gap-2.5 sm:mt-8 sm:gap-3 sm:flex-row sm:justify-center sm:flex-wrap">
               <Button size="lg" onClick={() => navigate('/admin')} className="h-12 w-full border-0 bg-white text-[hsl(200,75%,35%)] font-semibold shadow-lg hover:bg-white/90 sm:h-11 sm:w-auto">

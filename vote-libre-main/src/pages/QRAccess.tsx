@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -6,7 +6,7 @@ import { Card } from '@/components/ui/card';
 import { ArrowLeft, QrCode, ArrowRight } from 'lucide-react';
 import AnonymityBadge from '@/components/AnonymityBadge';
 import StepIndicator from '@/components/StepIndicator';
-import { demoTokens } from '@/lib/demo-data';
+import { findVoteAccessRecord, markVoteAccessActivated, resolveVoteAccessCode } from '@/lib/vote-access';
 import { toast } from 'sonner';
 
 const STEPS = ['Accès', 'Vote', 'Confirmation'];
@@ -14,14 +14,66 @@ const STEPS = ['Accès', 'Vote', 'Confirmation'];
 const QRAccess = () => {
   const navigate = useNavigate();
   const [code, setCode] = useState('');
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+  const openVoteAccess = (rawValue: string) => {
+    const resolvedCode = resolveVoteAccessCode(rawValue);
+    if (!resolvedCode) {
+      toast.error('QR code ou code invalide. Vérifiez et réessayez.');
+      return;
+    }
+
+    const record = findVoteAccessRecord(resolvedCode);
+    if (!record) {
+      toast.error('Code invalide. Vérifiez votre QR code et réessayez.');
+      return;
+    }
+
+    markVoteAccessActivated(record.code);
+    navigate(`/vote/${record.code}`);
+  };
 
   const handleAccess = (e: React.FormEvent) => {
     e.preventDefault();
-    const token = demoTokens.find(t => t.token.toUpperCase() === code.toUpperCase());
-    if (token) {
-      navigate(`/vote/${token.token}`);
-    } else {
-      toast.error('Code invalide. Vérifiez votre QR code et réessayez.');
+    openVoteAccess(code);
+  };
+
+  const handleScanClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleScanFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+
+    if (!file) return;
+
+    const BarcodeDetectorApi = (window as Window & {
+      BarcodeDetector?: new (options?: { formats?: string[] }) => {
+        detect: (source: ImageBitmapSource) => Promise<Array<{ rawValue?: string }>>;
+      };
+    }).BarcodeDetector;
+
+    if (!BarcodeDetectorApi) {
+      toast.error('Le scan automatique n\'est pas disponible sur cet appareil. Saisissez le code manuellement.');
+      return;
+    }
+
+    try {
+      const bitmap = await createImageBitmap(file);
+      const detector = new BarcodeDetectorApi({ formats: ['qr_code'] });
+      const result = await detector.detect(bitmap);
+      bitmap.close();
+      const rawValue = result[0]?.rawValue;
+
+      if (!rawValue) {
+        toast.error('Aucun QR code détecté sur cette image.');
+        return;
+      }
+
+      openVoteAccess(rawValue);
+    } catch {
+      toast.error('Impossible de lire ce QR code. Essayez avec une image plus nette ou saisissez le code.');
     }
   };
 
@@ -45,16 +97,30 @@ const QRAccess = () => {
             <div className="absolute inset-0 rounded-full border-2 border-primary/30 animate-pulse-ring" />
             <div className="absolute inset-2 rounded-full border-2 border-primary/20 animate-pulse-ring-delayed" />
             <div className="absolute inset-4 rounded-full border-2 border-primary/10 animate-pulse-ring-delayed-2" />
-            <div className="relative z-10 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
+            <button
+              type="button"
+              onClick={handleScanClick}
+              className="relative z-10 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 transition-transform hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+              aria-label="Scanner un QR code"
+            >
               <QrCode className="h-10 w-10 text-primary" />
-            </div>
+            </button>
           </div>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            capture="environment"
+            className="hidden"
+            onChange={handleScanFile}
+          />
 
           <div className="text-center">
             <h2 className="text-base font-bold text-foreground sm:text-xl md:text-2xl">Accédez à votre vote</h2>
             <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground sm:mt-2 sm:text-sm">
               Scannez votre QR code ou entrez le code manuellement ci-dessous.
             </p>
+            <p className="mt-1 text-xs text-primary">Touchez le logo QR pour ouvrir l'appareil photo et scanner.</p>
           </div>
 
           <Card className="border border-border bg-card p-4 shadow-card sm:p-6">
