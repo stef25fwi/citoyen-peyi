@@ -152,7 +152,7 @@ const VotePage = () => {
                 onClick={() => setSelected(opt.id)}
                 className={`flex w-full items-center gap-2 rounded-xl border p-3 text-left transition-all duration-200 sm:gap-3 sm:p-4 ${
                   selected === opt.id
-                    ? 'border-poll-primary bg-poll-primary\/5 shadow-md ring-1 ring-poll-primary'
+                    ? 'border-poll-primary bg-poll-primary/5 shadow-md ring-1 ring-poll-primary'
                     : 'border-border bg-card hover:border-muted-foreground/30 hover:shadow-card'
                 }`}
               >
