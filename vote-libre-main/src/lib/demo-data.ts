@@ -16,14 +16,6 @@ export interface Poll {
   totalVoted: number;
 }
 
-export interface AccessToken {
-  id: string;
-  token: string;
-  pollId: string;
-  activated: boolean;
-  hasVoted: boolean;
-}
-
 export const demoPoll: Poll = {
   id: 'poll-1',
   projectTitle: 'Réaménagement de la Place Centrale',
@@ -75,15 +67,3 @@ export const demoPoll3: Poll = {
 };
 
 export const demoPolls: Poll[] = [demoPoll, demoPoll2, demoPoll3];
-
-// Les tokens de démo sont uniquement disponibles en mode développement.
-// En production, les tokens doivent être générés et validés côté serveur.
-export const demoTokens: AccessToken[] = import.meta.env.DEV
-  ? [
-      { id: 'tk-1', token: 'VOTE-A1B2C3', pollId: 'poll-1', activated: true, hasVoted: true },
-      { id: 'tk-2', token: 'VOTE-D4E5F6', pollId: 'poll-1', activated: true, hasVoted: false },
-      { id: 'tk-3', token: 'VOTE-G7H8I9', pollId: 'poll-1', activated: false, hasVoted: false },
-      { id: 'tk-4', token: 'VOTE-J0K1L2', pollId: 'poll-1', activated: true, hasVoted: true },
-      { id: 'tk-5', token: 'VOTE-DEMO01', pollId: 'poll-1', activated: false, hasVoted: false },
-    ]
-  : [];

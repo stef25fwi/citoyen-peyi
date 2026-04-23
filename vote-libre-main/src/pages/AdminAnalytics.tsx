@@ -1,10 +1,14 @@
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { demoPolls, demoTokens } from '@/lib/demo-data';
-import { loadCodes } from '@/lib/controleur-codes';
+import { type Poll } from '@/lib/demo-data';
 import MobileNav from '@/components/MobileNav';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { loadControleurCodesData } from '@/lib/data/controleur-store';
+import { loadPollsData } from '@/lib/data/poll-store';
+import { loadPollVoteAccessRecords, type VoteAccessRecord } from '@/lib/vote-access';
 import {
   BarChart,
   Bar,
@@ -60,22 +64,100 @@ const ChartTooltip = ({ active, payload, label }: TooltipProps) => {
 
 const AdminAnalytics = () => {
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
+  const [polls, setPolls] = useState<Poll[]>([]);
+  const [controleurCodesCount, setControleurCodesCount] = useState(0);
+  const [controleurUsedCount, setControleurUsedCount] = useState(0);
+  const [tokenStats, setTokenStats] = useState<Array<{ id: string; name: string; total: number; activated: number; voted: number }>>([]);
+  const [activityData, setActivityData] = useState<Array<{ jour: string; votes: number }>>([]);
 
-  const active = demoPolls.filter(p => p.status === 'active');
-  const closed = demoPolls.filter(p => p.status === 'closed');
-  const drafts = demoPolls.filter(p => p.status === 'draft');
+  useEffect(() => {
+    let isMounted = true;
 
-  const totalVotes = demoPolls.reduce((s, p) => s + p.totalVoted, 0);
-  const totalVoters = demoPolls.reduce((s, p) => s + p.totalVoters, 0);
+    const syncAnalytics = async () => {
+      const [storedPolls, controleurCodes] = await Promise.all([
+        loadPollsData(),
+        loadControleurCodesData(),
+      ]);
 
-  const nonDraftPolls = demoPolls.filter(p => p.status !== 'draft' && p.totalVoters > 0);
+      const pollAccessRecords = await Promise.all(
+        storedPolls.map(async (poll) => ({
+          poll,
+          records: await loadPollVoteAccessRecords(poll.id),
+        })),
+      );
+
+      if (!isMounted) {
+        return;
+      }
+
+      setPolls(storedPolls);
+      setControleurCodesCount(controleurCodes.length);
+      setControleurUsedCount(controleurCodes.filter((item) => item.usedAt).length);
+      setTokenStats(
+        pollAccessRecords
+          .map(({ poll, records }) => {
+            if (records.length === 0) {
+              return null;
+            }
+
+            return {
+              id: poll.id,
+              name: poll.projectTitle.length > 22 ? `${poll.projectTitle.slice(0, 22)}…` : poll.projectTitle,
+              total: records.length,
+              activated: records.filter((record) => record.activated).length,
+              voted: records.filter((record) => record.hasVoted).length,
+            };
+          })
+          .filter(Boolean) as Array<{ id: string; name: string; total: number; activated: number; voted: number }>,
+      );
+
+      const dailyVotes = new Map<string, number>();
+      const formatter = new Intl.DateTimeFormat('fr-FR', { weekday: 'short', day: '2-digit' });
+      const now = new Date();
+      const lastSevenDays = Array.from({ length: 7 }, (_, index) => {
+        const date = new Date(now);
+        date.setDate(now.getDate() - (6 - index));
+        const key = date.toISOString().split('T')[0];
+        dailyVotes.set(key, 0);
+        return { key, label: formatter.format(date).replace('.', '') };
+      });
+
+      pollAccessRecords.forEach(({ records }) => {
+        records.forEach((record: VoteAccessRecord) => {
+          if (!record.votedAt) {
+            return;
+          }
+
+          const key = record.votedAt.split('T')[0];
+          if (dailyVotes.has(key)) {
+            dailyVotes.set(key, (dailyVotes.get(key) || 0) + 1);
+          }
+        });
+      });
+
+      setActivityData(lastSevenDays.map(({ key, label }) => ({ jour: label, votes: dailyVotes.get(key) || 0 })));
+    };
+
+    void syncAnalytics();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const active = useMemo(() => polls.filter(p => p.status === 'active'), [polls]);
+  const closed = useMemo(() => polls.filter(p => p.status === 'closed'), [polls]);
+  const drafts = useMemo(() => polls.filter(p => p.status === 'draft'), [polls]);
+
+  const totalVotes = useMemo(() => polls.reduce((s, p) => s + p.totalVoted, 0), [polls]);
+  const totalVoters = useMemo(() => polls.reduce((s, p) => s + p.totalVoters, 0), [polls]);
+
+  const nonDraftPolls = useMemo(() => polls.filter(p => p.status !== 'draft' && p.totalVoters > 0), [polls]);
   const avgParticipation =
     nonDraftPolls.length > 0
       ? nonDraftPolls.reduce((s, p) => s + p.totalVoted / p.totalVoters, 0) / nonDraftPolls.length
       : 0;
-
-  const controleurCodes = loadCodes();
-  const controleurUsed = controleurCodes.filter(c => c.usedAt).length;
 
   // Participation bar chart data
   const participationData = nonDraftPolls.map(p => ({
@@ -92,31 +174,13 @@ const AdminAnalytics = () => {
     { name: 'Brouillons', value: drafts.length, color: CHART_COLORS[2] },
   ].filter(d => d.value > 0);
 
-  // Simulated daily activity (last 7 days)
-  const activityData = [
-    { jour: 'Lun 14', votes: 18 },
-    { jour: 'Mar 15', votes: 24 },
-    { jour: 'Mer 16', votes: 31 },
-    { jour: 'Jeu 17', votes: 22 },
-    { jour: 'Ven 18', votes: 38 },
-    { jour: 'Sam 19', votes: 15 },
-    { jour: 'Dim 20', votes: 12 },
-  ];
+  const participationChartHeight = isMobile
+    ? Math.max(participationData.length * 56, 240)
+    : participationData.length * 64 + 16;
 
-  // Token utilization per poll
-  const tokenStats = demoPolls
-    .map(poll => {
-      const tokens = demoTokens.filter(t => t.pollId === poll.id);
-      if (tokens.length === 0) return null;
-      return {
-        id: poll.id,
-        name: poll.projectTitle.length > 22 ? poll.projectTitle.slice(0, 22) + '…' : poll.projectTitle,
-        total: tokens.length,
-        activated: tokens.filter(t => t.activated).length,
-        voted: tokens.filter(t => t.hasVoted).length,
-      };
-    })
-    .filter(Boolean) as Array<{ id: string; name: string; total: number; activated: number; voted: number }>;
+  const activePollChartHeight = (optionCount: number) => (
+    isMobile ? Math.max(optionCount * 48, 220) : optionCount * 52 + 8
+  );
 
   const kpis = [
     {
@@ -142,7 +206,7 @@ const AdminAnalytics = () => {
     },
     {
       label: 'Contrôleurs actifs',
-      value: `${controleurUsed}/${controleurCodes.length}`,
+      value: `${controleurUsedCount}/${controleurCodesCount}`,
       sub: 'codes utilisés',
       colorClass: 'bg-warning/10 text-warning',
       Icon: UserCheck,
@@ -153,9 +217,9 @@ const AdminAnalytics = () => {
     <div className="min-h-screen bg-background pb-20 md:pb-0">
       {/* Header */}
       <header className="border-b border-border bg-card">
-        <div className="container mx-auto flex items-center justify-between px-4 py-4">
+        <div className="container mx-auto flex flex-col gap-3 px-3 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-4">
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')}>
+            <Button variant="ghost" size="icon" onClick={() => navigate('/admin')} className="h-10 w-10 sm:h-11 sm:w-11">
               <ArrowLeft className="h-4 w-4" />
             </Button>
             <div className="flex items-center gap-2">
@@ -163,18 +227,18 @@ const AdminAnalytics = () => {
               <h1 className="text-lg font-bold text-foreground">Analytiques</h1>
             </div>
           </div>
-          <Badge variant="outline" className="text-xs text-muted-foreground">
+          <Badge variant="outline" className="w-full justify-center text-xs text-muted-foreground sm:w-auto">
             Données agrégées · RGPD
           </Badge>
         </div>
       </header>
 
-      <main className="container mx-auto space-y-8 px-4 py-6">
+      <main className="container mx-auto space-y-6 px-3 py-4 sm:space-y-8 sm:px-4 sm:py-6">
         {/* KPI Cards */}
         <section>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="grid grid-cols-1 gap-3 min-[480px]:grid-cols-2 xl:grid-cols-4">
             {kpis.map(({ label, value, sub, colorClass, Icon }) => (
-              <Card key={label} className="border border-border bg-card p-4 shadow-card">
+              <Card key={label} className="border border-border bg-card p-4 shadow-card sm:p-5">
                 <div className="flex items-center gap-3">
                   <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${colorClass}`}>
                     <Icon className="h-5 w-5" />
@@ -193,32 +257,32 @@ const AdminAnalytics = () => {
         {/* Participation + Status side by side */}
         <section className="grid gap-6 lg:grid-cols-3">
           {/* Participation bar chart */}
-          <Card className="border border-border bg-card p-6 shadow-card lg:col-span-2">
+          <Card className="border border-border bg-card p-4 shadow-card sm:p-6 lg:col-span-2">
             <div className="mb-4 flex items-center gap-2">
               <BarChart3 className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-semibold text-card-foreground">Taux de participation par sondage</h2>
             </div>
             {participationData.length > 0 ? (
-              <ResponsiveContainer width="100%" height={participationData.length * 64 + 16}>
+              <ResponsiveContainer width="100%" height={participationChartHeight}>
                 <BarChart
                   data={participationData}
                   layout="vertical"
-                  margin={{ left: 0, right: 40, top: 0, bottom: 0 }}
+                  margin={{ left: 0, right: isMobile ? 12 : 40, top: 0, bottom: 0 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" horizontal={false} />
                   <XAxis
                     type="number"
                     domain={[0, 100]}
                     tickFormatter={v => `${v}%`}
-                    tick={{ fontSize: 11, fill: 'hsl(220 10% 46%)' }}
+                    tick={{ fontSize: isMobile ? 10 : 11, fill: 'hsl(220 10% 46%)' }}
                     axisLine={false}
                     tickLine={false}
                   />
                   <YAxis
                     type="category"
                     dataKey="name"
-                    width={140}
-                    tick={{ fontSize: 11, fill: 'hsl(222 47% 11%)' }}
+                    width={isMobile ? 92 : 140}
+                    tick={{ fontSize: isMobile ? 10 : 11, fill: 'hsl(222 47% 11%)' }}
                     axisLine={false}
                     tickLine={false}
                   />
@@ -231,7 +295,7 @@ const AdminAnalytics = () => {
                     name="Participation"
                     fill={CHART_COLORS[0]}
                     radius={[0, 6, 6, 0]}
-                    label={{ position: 'right', formatter: (v: number) => `${v}%`, fontSize: 11, fill: 'hsl(220 10% 46%)' }}
+                    label={isMobile ? false : { position: 'right', formatter: (v: number) => `${v}%`, fontSize: 11, fill: 'hsl(220 10% 46%)' }}
                   />
                 </BarChart>
               </ResponsiveContainer>
@@ -241,12 +305,12 @@ const AdminAnalytics = () => {
           </Card>
 
           {/* Status pie chart */}
-          <Card className="border border-border bg-card p-6 shadow-card">
+          <Card className="border border-border bg-card p-4 shadow-card sm:p-6">
             <div className="mb-4 flex items-center gap-2">
               <PieIcon className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-semibold text-card-foreground">Statuts des sondages</h2>
             </div>
-            <ResponsiveContainer width="100%" height={160}>
+            <ResponsiveContainer width="100%" height={isMobile ? 190 : 160}>
               <PieChart>
                 <Pie
                   data={statusData}
@@ -281,13 +345,13 @@ const AdminAnalytics = () => {
 
         {/* Activity Area Chart */}
         <section>
-          <Card className="border border-border bg-card p-6 shadow-card">
+          <Card className="border border-border bg-card p-4 shadow-card sm:p-6">
             <div className="mb-4 flex items-center gap-2">
               <Activity className="h-4 w-4 text-primary" />
               <h2 className="text-sm font-semibold text-card-foreground">Activité de vote — 7 derniers jours</h2>
             </div>
-            <ResponsiveContainer width="100%" height={180}>
-              <AreaChart data={activityData} margin={{ left: 0, right: 8, top: 4, bottom: 0 }}>
+            <ResponsiveContainer width="100%" height={isMobile ? 220 : 180}>
+              <AreaChart data={activityData} margin={{ left: 0, right: isMobile ? 0 : 8, top: 4, bottom: 0 }}>
                 <defs>
                   <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor={CHART_COLORS[0]} stopOpacity={0.18} />
@@ -302,10 +366,10 @@ const AdminAnalytics = () => {
                   tickLine={false}
                 />
                 <YAxis
-                  tick={{ fontSize: 11, fill: 'hsl(220 10% 46%)' }}
+                  tick={{ fontSize: isMobile ? 10 : 11, fill: 'hsl(220 10% 46%)' }}
                   axisLine={false}
                   tickLine={false}
-                  width={28}
+                  width={isMobile ? 22 : 28}
                 />
                 <Tooltip content={<ChartTooltip />} />
                 <Area
@@ -337,29 +401,29 @@ const AdminAnalytics = () => {
                   fill: CHART_COLORS[i % CHART_COLORS.length],
                 }));
                 return (
-                  <Card key={poll.id} className="border border-border bg-card p-6 shadow-card">
+                  <Card key={poll.id} className="border border-border bg-card p-4 shadow-card sm:p-6">
                     <p className="mb-0.5 text-sm font-semibold text-card-foreground">{poll.projectTitle}</p>
                     <p className="mb-4 text-xs text-muted-foreground">
                       {total} vote{total !== 1 ? 's' : ''} · {Math.round((poll.totalVoted / poll.totalVoters) * 100)}% de participation
                     </p>
-                    <ResponsiveContainer width="100%" height={chartData.length * 52 + 8}>
+                    <ResponsiveContainer width="100%" height={activePollChartHeight(chartData.length)}>
                       <BarChart
                         data={chartData}
                         layout="vertical"
-                        margin={{ left: 0, right: 40, top: 0, bottom: 0 }}
+                        margin={{ left: 0, right: isMobile ? 12 : 40, top: 0, bottom: 0 }}
                       >
                         <CartesianGrid strokeDasharray="3 3" stroke="hsl(220 13% 91%)" horizontal={false} />
                         <XAxis
                           type="number"
-                          tick={{ fontSize: 10, fill: 'hsl(220 10% 46%)' }}
+                          tick={{ fontSize: isMobile ? 9 : 10, fill: 'hsl(220 10% 46%)' }}
                           axisLine={false}
                           tickLine={false}
                         />
                         <YAxis
                           type="category"
                           dataKey="name"
-                          width={128}
-                          tick={{ fontSize: 10, fill: 'hsl(222 47% 11%)' }}
+                          width={isMobile ? 84 : 128}
+                          tick={{ fontSize: isMobile ? 9 : 10, fill: 'hsl(222 47% 11%)' }}
                           axisLine={false}
                           tickLine={false}
                         />
@@ -368,7 +432,7 @@ const AdminAnalytics = () => {
                           dataKey="votes"
                           name="Votes"
                           radius={[0, 6, 6, 0]}
-                          label={{ position: 'right', formatter: (v: number) => `${v}`, fontSize: 10, fill: 'hsl(220 10% 46%)' }}
+                          label={isMobile ? false : { position: 'right', formatter: (v: number) => `${v}`, fontSize: 10, fill: 'hsl(220 10% 46%)' }}
                         >
                           {chartData.map((entry, i) => (
                             <Cell key={i} fill={entry.fill} />
@@ -389,7 +453,7 @@ const AdminAnalytics = () => {
             <h2 className="mb-4 text-base font-semibold text-foreground">Utilisation des QR codes</h2>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {tokenStats.map(stat => (
-                <Card key={stat.id} className="border border-border bg-card p-5 shadow-card">
+                <Card key={stat.id} className="border border-border bg-card p-4 shadow-card sm:p-5">
                   <p className="mb-4 truncate text-sm font-medium text-card-foreground">{stat.name}</p>
                   <div className="space-y-3">
                     {[

@@ -2,13 +2,15 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { demoPolls } from '@/lib/demo-data';
+import { type Poll } from '@/lib/demo-data';
 import PollCard from '@/components/PollCard';
 import MobileNav from '@/components/MobileNav';
 import ControleurCodesPanel from '@/components/ControleurCodesPanel';
 import CommuneAutocomplete, { CommuneSuggestion } from '@/components/CommuneAutocomplete';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { loadAdminCommune, saveAdminCommune, type CommuneConfig } from '@/lib/registration-data';
+import { type CommuneConfig } from '@/lib/registration-data';
+import { loadAdminProfileCommune, saveAdminProfileCommune } from '@/lib/data/admin-profile-store';
+import { loadPollsData } from '@/lib/data/poll-store';
 import { Plus, ArrowLeft, LayoutDashboard, BarChart3, Vote, FileEdit, TrendingUp, Building2, MapPin } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -23,27 +25,61 @@ const statColors = [
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const [commune, setCommune] = useState<CommuneConfig | null>(null);
+  const [polls, setPolls] = useState<Poll[]>([]);
   const [isCommuneDialogOpen, setIsCommuneDialogOpen] = useState(false);
   const [selectedCommune, setSelectedCommune] = useState<{ commune: CommuneSuggestion; codePostal: string } | null>(null);
 
   useEffect(() => {
-    const storedCommune = loadAdminCommune();
-    setCommune(storedCommune);
-    setIsCommuneDialogOpen(!storedCommune);
+    let isMounted = true;
+
+    const syncAdminCommune = async () => {
+      const storedCommune = await loadAdminProfileCommune();
+      if (!isMounted) {
+        return;
+      }
+
+      setCommune(storedCommune);
+      setIsCommuneDialogOpen(!storedCommune);
+    };
+
+    void syncAdminCommune();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const active = demoPolls.filter(p => p.status === 'active');
-  const closed = demoPolls.filter(p => p.status === 'closed');
-  const drafts = demoPolls.filter(p => p.status === 'draft');
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncPolls = async () => {
+      const storedPolls = await loadPollsData();
+      if (!isMounted) {
+        return;
+      }
+
+      setPolls(storedPolls);
+    };
+
+    void syncPolls();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const active = polls.filter(p => p.status === 'active');
+  const closed = polls.filter(p => p.status === 'closed');
+  const drafts = polls.filter(p => p.status === 'draft');
 
   const stats = [
-    { label: 'Total sondages', value: demoPolls.length },
+    { label: 'Total sondages', value: polls.length },
     { label: 'En cours', value: active.length },
     { label: 'Terminés', value: closed.length },
     { label: 'Brouillons', value: drafts.length },
   ];
 
-  const handleSaveCommune = () => {
+  const handleSaveCommune = async () => {
     if (!selectedCommune) {
       toast.error('Sélectionnez une commune dans la liste.');
       return;
@@ -57,7 +93,7 @@ const AdminDashboard = () => {
       maxCodes: selectedCommune.commune.population,
     };
 
-    saveAdminCommune(nextCommune);
+    await saveAdminProfileCommune(nextCommune);
     setCommune(nextCommune);
     setIsCommuneDialogOpen(false);
     toast.success(`Compte administrateur rattaché à ${nextCommune.name}.`);

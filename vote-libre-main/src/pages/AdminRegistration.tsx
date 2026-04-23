@@ -15,14 +15,24 @@ import { QRCodeSVG } from 'qrcode.react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   CommuneConfig, RegistrationCode, ID_DOCUMENT_TYPES, PROOF_OF_ADDRESS_TYPES,
-  generateCode, getExpiryDate, loadAdminCommune, loadRegistrationCodes, saveAdminCommune, saveRegistrationCodes,
+  generateCode, getExpiryDate,
 } from '@/lib/registration-data';
+import { loadAdminProfileCommune, saveAdminProfileCommune } from '@/lib/data/admin-profile-store';
 import {
-  getActiveControleurSession,
-  loadControleurActivities,
-  recordControleurVerification,
-  loadCodes as loadControleurCodes,
+  loadRegistrationCodesData,
+  saveRegistrationCodeData,
+  saveRegistrationCodesBatchData,
+} from '@/lib/data/registration-store';
+import {
+  type ControleurActivity,
+  type ControleurCode,
 } from '@/lib/controleur-codes';
+import { getActiveControleurSession } from '@/lib/controleur-codes';
+import {
+  loadControleurActivitiesData,
+  loadControleurCodeBySession,
+  recordControleurVerificationData,
+} from '@/lib/data/controleur-store';
 import { toast } from 'sonner';
 
 const AdminRegistration = () => {
@@ -30,23 +40,19 @@ const AdminRegistration = () => {
   const controleurSession = getActiveControleurSession();
 
   // Commune config
-  const [commune, setCommune] = useState<CommuneConfig | null>(() => loadAdminCommune() ?? controleurSession?.commune ?? null);
+  const [commune, setCommune] = useState<CommuneConfig | null>(controleurSession?.commune ?? null);
   const [selected, setSelected] = useState<{ commune: CommuneSuggestion; codePostal: string } | null>(null);
 
   // Codes & validation
-  const [codes, setCodes] = useState<RegistrationCode[]>(() => loadRegistrationCodes());
+  const [codes, setCodes] = useState<RegistrationCode[]>([]);
+  const [codesHydrated, setCodesHydrated] = useState(false);
   const [selectedCode, setSelectedCode] = useState<RegistrationCode | null>(null);
   const [checkedIdDoc, setCheckedIdDoc] = useState<string | null>(null);
   const [checkedAddressDoc, setCheckedAddressDoc] = useState<string | null>(null);
   const [validatedQR, setValidatedQR] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('verification');
-  const [historyRefreshKey, setHistoryRefreshKey] = useState(0);
-  const controleurCodeMeta = controleurSession
-    ? loadControleurCodes().find(item => item.code === controleurSession.code) || null
-    : null;
-  const verificationLogs = controleurSession
-    ? loadControleurActivities(controleurSession.code)
-    : [];
+  const [controleurCodeMeta, setControleurCodeMeta] = useState<ControleurCode | null>(null);
+  const [verificationLogs, setVerificationLogs] = useState<ControleurActivity[]>([]);
   const codeActivityEntries = controleurSession
     ? codes.flatMap(code => {
         if (code.verifiedByControleurCode !== controleurSession.code) return [];
@@ -104,8 +110,73 @@ const AdminRegistration = () => {
   ].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime());
 
   useEffect(() => {
-    saveRegistrationCodes(codes);
-  }, [codes]);
+    let isMounted = true;
+
+    const syncCodes = async () => {
+      const storedCodes = await loadRegistrationCodesData();
+      if (!isMounted) {
+        return;
+      }
+
+      setCodes(storedCodes);
+      setCodesHydrated(true);
+    };
+
+    void syncCodes();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncAdminCommune = async () => {
+      const storedCommune = await loadAdminProfileCommune();
+      if (!isMounted || !storedCommune) {
+        return;
+      }
+
+      setCommune(storedCommune);
+    };
+
+    void syncAdminCommune();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!controleurSession) {
+      setControleurCodeMeta(null);
+      setVerificationLogs([]);
+      return;
+    }
+
+    let isMounted = true;
+
+    const syncControleurData = async () => {
+      const [meta, logs] = await Promise.all([
+        loadControleurCodeBySession(controleurSession.code),
+        loadControleurActivitiesData(controleurSession.code),
+      ]);
+
+      if (!isMounted) {
+        return;
+      }
+
+      setControleurCodeMeta(meta);
+      setVerificationLogs(logs);
+    };
+
+    void syncControleurData();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [controleurSession]);
 
   const stats = useMemo(() => ({
     total: codes.length,
@@ -117,7 +188,7 @@ const AdminRegistration = () => {
   const canGenerate = commune && codes.length < commune.maxCodes;
 
   // Setup commune
-  const handleSetup = (e: React.FormEvent) => {
+  const handleSetup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selected) {
       toast.error('Veuillez sélectionner une commune dans la liste.');
@@ -132,12 +203,12 @@ const AdminRegistration = () => {
       maxCodes: c.population,
     };
     setCommune(nextCommune);
-    saveAdminCommune(nextCommune);
+    await saveAdminProfileCommune(nextCommune);
     toast.success(`Commune "${c.nom}" configurée (${c.population.toLocaleString('fr-FR')} codes max).`);
   };
 
   // Generate codes
-  const handleGenerate = (count: number) => {
+  const handleGenerate = async (count: number) => {
     if (!commune) return;
     const remaining = commune.maxCodes - codes.length;
     const toCreate = Math.min(count, remaining);
@@ -162,12 +233,13 @@ const AdminRegistration = () => {
       verifiedByControleurCode: null,
       verifiedByControleurLabel: null,
     }));
+    await saveRegistrationCodesBatchData(newCodes);
     setCodes(prev => [...prev, ...newCodes]);
     toast.success(`${toCreate} code(s) généré(s).`);
   };
 
   // Validate a registration
-  const handleValidate = () => {
+  const handleValidate = async () => {
     if (!selectedCode || !checkedIdDoc || !checkedAddressDoc) return;
     const selectedCodeRef = selectedCode.code;
     const now = new Date().toISOString().split('T')[0];
@@ -190,13 +262,15 @@ const AdminRegistration = () => {
       verifiedByControleurCode: controleurSession?.code || null,
       verifiedByControleurLabel: controleurSession?.label || null,
     };
+    await saveRegistrationCodeData(updatedCode);
     setCodes(prev => prev.map(c => c.id === selectedCode.id ? updatedCode : c));
     setSelectedCode(updatedCode);
     setValidatedQR(qrData);
 
     if (controleurSession) {
-      recordControleurVerification(controleurSession, selectedCodeRef);
-      setHistoryRefreshKey(prev => prev + 1);
+      await recordControleurVerificationData(controleurSession, selectedCodeRef);
+      const refreshedLogs = await loadControleurActivitiesData(controleurSession.code);
+      setVerificationLogs(refreshedLogs);
     }
 
     toast.success('Inscription validée ! QR code généré.');
@@ -587,7 +661,7 @@ const AdminRegistration = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="history" key={historyRefreshKey}>
+          <TabsContent value="history">
             <Card className="border border-border shadow-card">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg">

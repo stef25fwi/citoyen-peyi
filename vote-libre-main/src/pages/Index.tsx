@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { ShieldCheck, Vote, BarChart3, QrCode, ArrowRight, ClipboardCheck, Settings } from 'lucide-react';
+import { ShieldCheck, Vote, BarChart3, QrCode, ClipboardCheck, Settings } from 'lucide-react';
 import { motion, useScroll, useTransform, useReducedMotion } from 'framer-motion';
 import AnonymityBadge from '@/components/AnonymityBadge';
 import HibiscusPattern from '@/components/HibiscusPattern';
@@ -60,7 +60,7 @@ const Index = () => {
               <span className="font-semibold text-white/85">Votre collectivité place votre parole au coeur de l'action publique</span> : une solution moderne pour recueillir l'avis de vos parties prenantes, dans un cadre garantissant l'anonymat total et la transparence des résultats.
             </p>
             <div className="mt-6 flex flex-col items-center gap-2.5 sm:mt-8 sm:gap-3 sm:flex-row sm:justify-center sm:flex-wrap">
-              <Button size="lg" onClick={() => navigate('/admin')} className="h-12 w-full border-0 bg-white text-[hsl(200,75%,35%)] font-semibold shadow-lg hover:bg-white/90 sm:h-11 sm:w-auto">
+              <Button size="lg" onClick={() => navigate('/admin/login')} className="h-12 w-full border-0 bg-white text-[hsl(200,75%,35%)] font-semibold shadow-lg hover:bg-white/90 sm:h-11 sm:w-auto">
                 <Settings className="mr-2 h-4 w-4" />
                 <span className="hidden xs:inline">Espace</span> Admin
               </Button>

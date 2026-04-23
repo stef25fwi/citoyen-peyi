@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
 import { ArrowLeft, Plus, Trash2, Save } from 'lucide-react';
+import { createPollData } from '@/lib/data/poll-store';
 import { toast } from 'sonner';
 
 const CreatePoll = () => {
@@ -24,7 +25,7 @@ const CreatePoll = () => {
     setOptions(copy);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) {
       toast.error('Le titre du projet est obligatoire.');
@@ -46,7 +47,17 @@ const CreatePoll = () => {
       toast.error('La date de fermeture doit être postérieure à la date d’ouverture.');
       return;
     }
-    toast.success('Sondage créé avec succès ! (mode démo)');
+
+    await createPollData({
+      projectTitle: title,
+      question,
+      options,
+      openDate: openDate || new Date().toISOString().split('T')[0],
+      closeDate: closeDate || new Date().toISOString().split('T')[0],
+      totalVoters: qrCount,
+    });
+
+    toast.success('Sondage créé avec succès.');
     navigate('/admin');
   };
 

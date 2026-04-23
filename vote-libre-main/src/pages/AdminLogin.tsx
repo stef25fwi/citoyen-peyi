@@ -1,28 +1,33 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
+import { ArrowLeft, ArrowRight, LockKeyhole, Settings } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowLeft, ClipboardCheck, KeyRound, ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
-import { signInControleurWithCode } from '@/lib/controller-auth';
+import { signInAdminWithAccessKey } from '@/lib/admin-auth';
 import { toast } from 'sonner';
 
-const ControleurLogin = () => {
+const AdminLogin = () => {
   const navigate = useNavigate();
-  const [code, setCode] = useState('');
+  const [accessKey, setAccessKey] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
     setIsSubmitting(true);
 
     try {
-      const result = await signInControleurWithCode(code);
-      toast.success(result.profile.commune ? `Bienvenue, ${result.profile.label} · ${result.profile.commune.name}` : `Bienvenue, ${result.profile.label}`);
-      navigate('/admin/inscriptions');
+      const result = await signInAdminWithAccessKey(accessKey);
+      if (result.mode === 'fallback') {
+        toast.success('Mode local actif. Acces administrateur ouvert sans echange backend.');
+      } else {
+        toast.success('Connexion administrateur securisee etablie.');
+      }
+
+      navigate('/admin');
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Connexion controleur impossible.';
+      const message = error instanceof Error ? error.message : 'Connexion administrateur impossible.';
       toast.error(message);
     } finally {
       setIsSubmitting(false);
@@ -37,8 +42,8 @@ const ControleurLogin = () => {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex items-center gap-2">
-            <ClipboardCheck className="h-5 w-5 text-primary" />
-            <h1 className="text-lg font-bold text-foreground">Espace contrôleur</h1>
+            <Settings className="h-5 w-5 text-primary" />
+            <h1 className="text-lg font-bold text-foreground">Espace administrateur</h1>
           </div>
         </div>
       </header>
@@ -52,31 +57,36 @@ const ControleurLogin = () => {
           <Card className="border border-border shadow-card">
             <CardHeader className="space-y-3 text-center">
               <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-primary/10 sm:h-16 sm:w-16">
-                <KeyRound className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
+                <LockKeyhole className="h-6 w-6 text-primary sm:h-8 sm:w-8" />
               </div>
-              <CardTitle className="text-lg sm:text-xl">Connexion contrôleur</CardTitle>
+              <CardTitle className="text-lg sm:text-xl">Connexion administrateur</CardTitle>
               <CardDescription>
-                Entrez le code fourni par un administrateur pour accéder à l'interface de contrôle des pièces.
+                Entrez votre cle d'acces administrateur pour recevoir un jeton de confiance emis par le backend.
               </CardDescription>
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 <Input
-                  value={code}
-                  onChange={e => setCode(e.target.value.toUpperCase())}
-                  placeholder="Ex : CTRL-A1B2C3D4"
-                  className="h-12 text-center font-mono text-base tracking-wide sm:text-lg sm:tracking-wider"
-                  maxLength={20}
+                  value={accessKey}
+                  onChange={event => setAccessKey(event.target.value)}
+                  type="password"
+                  placeholder="Cle administrateur"
+                  className="h-12 text-center font-mono text-base tracking-wide sm:text-lg"
                   autoFocus
                   disabled={isSubmitting}
                 />
-                <Button type="submit" className="gradient-primary h-12 w-full border-0 text-primary-foreground" size="lg" disabled={isSubmitting || !code.trim()}>
-                  {isSubmitting ? 'Connexion en cours...' : 'Accéder à mon profil'}
+                <Button
+                  type="submit"
+                  className="gradient-primary h-12 w-full border-0 text-primary-foreground"
+                  size="lg"
+                  disabled={isSubmitting || !accessKey.trim()}
+                >
+                  {isSubmitting ? 'Connexion en cours...' : 'Acceder au tableau de bord'}
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </form>
               <p className="mt-4 text-center text-xs text-muted-foreground">
-                Votre commune de rattachement s'affichera automatiquement après verification securisee du code.
+                En mode configure, cette cle est verifiee par le backend avant emission des claims admin.
               </p>
             </CardContent>
           </Card>
@@ -86,4 +96,4 @@ const ControleurLogin = () => {
   );
 };
 
-export default ControleurLogin;
+export default AdminLogin;

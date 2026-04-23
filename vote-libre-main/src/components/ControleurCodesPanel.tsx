@@ -6,8 +6,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Copy, KeyRound, Plus, Trash2, ClipboardCheck, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  ControleurCode, generateControleurCode, loadCodes, saveCodes,
+  type ControleurCode,
 } from '@/lib/controleur-codes';
+import {
+  createControleurCodeRecord,
+  deleteControleurCodeData,
+  loadControleurCodesData,
+} from '@/lib/data/controleur-store';
 import type { CommuneConfig } from '@/lib/registration-data';
 import { toast } from 'sonner';
 
@@ -21,15 +26,25 @@ const ControleurCodesPanel = ({ commune, onRequestCommuneSetup }: ControleurCode
   const [label, setLabel] = useState('');
 
   useEffect(() => {
-    setCodes(loadCodes());
+    let isMounted = true;
+
+    const syncCodes = async () => {
+      const nextCodes = await loadControleurCodesData();
+      if (!isMounted) {
+        return;
+      }
+
+      setCodes(nextCodes);
+    };
+
+    void syncCodes();
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
-  const persist = (next: ControleurCode[]) => {
-    setCodes(next);
-    saveCodes(next);
-  };
-
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     if (!commune) {
       toast.error('Sélectionnez d\'abord la commune de rattachement du compte administrateur.');
       onRequestCommuneSetup();
@@ -37,8 +52,8 @@ const ControleurCodesPanel = ({ commune, onRequestCommuneSetup }: ControleurCode
     }
 
     const sanitizedLabel = label.trim().slice(0, 50).replace(/<[^>]*>/g, '');
-    const next = [generateControleurCode(sanitizedLabel, commune), ...codes];
-    persist(next);
+    const nextCode = await createControleurCodeRecord(sanitizedLabel, commune);
+    setCodes((previous) => [nextCode, ...previous]);
     setLabel('');
     toast.success(`Code contrôleur généré pour ${commune.name}`);
   };
@@ -52,8 +67,9 @@ const ControleurCodesPanel = ({ commune, onRequestCommuneSetup }: ControleurCode
     }
   };
 
-  const handleRevoke = (id: string) => {
-    persist(codes.filter(c => c.id !== id));
+  const handleRevoke = async (id: string) => {
+    setCodes(codes.filter(c => c.id !== id));
+    await deleteControleurCodeData(id);
     toast.success('Code révoqué');
   };
 

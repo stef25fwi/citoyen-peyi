@@ -1,17 +1,66 @@
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { demoPolls } from '@/lib/demo-data';
+import { type Poll } from '@/lib/demo-data';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import ResultsChart from '@/components/ResultsChart';
-import { ArrowLeft, QrCode, Users, Download } from 'lucide-react';
+import { ArrowLeft, Download } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { loadPollVoteAccessRecords } from '@/lib/vote-access';
+import { loadPollByIdData } from '@/lib/data/poll-store';
 
 const PollDetail = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const poll = demoPolls.find(p => p.id === id);
+  const [tokens, setTokens] = useState<Awaited<ReturnType<typeof loadPollVoteAccessRecords>>>([]);
+  const [poll, setPoll] = useState<Poll | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncPoll = async () => {
+      if (!id) {
+        return;
+      }
+
+      const nextPoll = await loadPollByIdData(id);
+      if (!isMounted) {
+        return;
+      }
+
+      setPoll(nextPoll);
+    };
+
+    void syncPoll();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const syncTokens = async () => {
+      if (!poll) {
+        return;
+      }
+
+      const nextTokens = await loadPollVoteAccessRecords(poll.id);
+      if (!isMounted) {
+        return;
+      }
+
+      setTokens(nextTokens);
+    };
+
+    void syncTokens();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [poll]);
 
   if (!poll) {
     return (
@@ -21,7 +70,6 @@ const PollDetail = () => {
     );
   }
 
-  const tokens = loadPollVoteAccessRecords(poll.id);
   const totalVotes = poll.options.reduce((s, o) => s + o.votes, 0);
 
   return (

@@ -16,26 +16,26 @@ const QRAccess = () => {
   const [code, setCode] = useState('');
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
-  const openVoteAccess = (rawValue: string) => {
+  const openVoteAccess = async (rawValue: string) => {
     const resolvedCode = resolveVoteAccessCode(rawValue);
     if (!resolvedCode) {
       toast.error('QR code ou code invalide. Vérifiez et réessayez.');
       return;
     }
 
-    const record = findVoteAccessRecord(resolvedCode);
+    const record = await findVoteAccessRecord(resolvedCode);
     if (!record) {
       toast.error('Code invalide. Vérifiez votre QR code et réessayez.');
       return;
     }
 
-    markVoteAccessActivated(record.code);
+    await markVoteAccessActivated(record.code);
     navigate(`/vote/${record.code}`);
   };
 
-  const handleAccess = (e: React.FormEvent) => {
+  const handleAccess = async (e: React.FormEvent) => {
     e.preventDefault();
-    openVoteAccess(code);
+    await openVoteAccess(code);
   };
 
   const handleScanClick = () => {
@@ -71,7 +71,7 @@ const QRAccess = () => {
         return;
       }
 
-      openVoteAccess(rawValue);
+      await openVoteAccess(rawValue);
     } catch {
       toast.error('Impossible de lire ce QR code. Essayez avec une image plus nette ou saisissez le code.');
     }
@@ -142,12 +142,6 @@ const QRAccess = () => {
           </Card>
 
           <AnonymityBadge />
-
-          {import.meta.env.DEV && (
-            <p className="text-center text-xs text-muted-foreground">
-              Code de démo : <span className="font-mono font-medium text-foreground">VOTE-D4E5F6</span>
-            </p>
-          )}
         </div>
       </main>
     </div>

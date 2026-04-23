@@ -1,16 +1,16 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { demoPoll } from '@/lib/demo-data';
+import { type Poll } from '@/lib/demo-data';
 import AnonymityBadge from '@/components/AnonymityBadge';
 import StepIndicator from '@/components/StepIndicator';
 import SuccessAnimation from '@/components/SuccessAnimation';
 import { ArrowLeft, Send, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { usePollTheme } from '@/hooks/usePollTheme';
 import { findVoteAccessRecord, markVoteAccessVoted } from '@/lib/vote-access';
+import { loadPollByIdData, recordVoteForPollData } from '@/lib/data/poll-store';
 
 const STEPS = ['Accès', 'Vote', 'Confirmation'];
 
@@ -20,17 +20,63 @@ const VotePage = () => {
   const [selected, setSelected] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [accessToken, setAccessToken] = useState<Awaited<ReturnType<typeof findVoteAccessRecord>>>(null);
+  const [isLoadingAccess, setIsLoadingAccess] = useState(true);
+  const [poll, setPoll] = useState<Poll | null>(null);
 
-  const accessToken = token ? findVoteAccessRecord(token) : null;
-  const poll = demoPoll;
-  const palette = usePollTheme(poll.id);
+  useEffect(() => {
+    let isMounted = true;
 
-  if (!accessToken) {
+    const loadAccessToken = async () => {
+      if (!token) {
+        setAccessToken(null);
+        setIsLoadingAccess(false);
+        return;
+      }
+
+      const record = await findVoteAccessRecord(token);
+      if (!isMounted) {
+        return;
+      }
+
+      setAccessToken(record);
+      if (record) {
+        const nextPoll = await loadPollByIdData(record.pollId);
+        if (!isMounted) {
+          return;
+        }
+
+        setPoll(nextPoll);
+      } else {
+        setPoll(null);
+      }
+      setIsLoadingAccess(false);
+    };
+
+    void loadAccessToken();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [token]);
+
+  if (isLoadingAccess) {
     return (
       <div className="flex min-h-screen items-center justify-center px-4 bg-background">
         <Card className="max-w-sm border border-border bg-card p-6 text-center shadow-card">
-          <p className="text-foreground font-semibold">Code d'accès invalide</p>
-          <p className="mt-2 text-sm text-muted-foreground">Ce code n'existe pas ou a expiré.</p>
+          <p className="text-foreground font-semibold">Chargement de votre accès</p>
+          <p className="mt-2 text-sm text-muted-foreground">Vérification sécurisée du code en cours.</p>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!accessToken || !poll) {
+    return (
+      <div className="flex min-h-screen items-center justify-center px-4 bg-background">
+        <Card className="max-w-sm border border-border bg-card p-6 text-center shadow-card">
+          <p className="text-foreground font-semibold">Accès au sondage indisponible</p>
+          <p className="mt-2 text-sm text-muted-foreground">Ce code n'existe pas, a expiré, ou le sondage associé est introuvable.</p>
           <Button variant="outline" className="mt-4" onClick={() => navigate('/access')}>Retour</Button>
         </Card>
       </div>
@@ -62,15 +108,16 @@ const VotePage = () => {
     );
   }
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!selected || isSubmitting) {
       if (!selected) toast.error('Veuillez sélectionner une option.');
       return;
     }
     setIsSubmitting(true);
     if (token) {
-      markVoteAccessVoted(token);
+      await markVoteAccessVoted(token);
     }
+    await recordVoteForPollData(accessToken.pollId, selected);
     setSubmitted(true);
     toast.success('Vote enregistré avec succès !');
   };

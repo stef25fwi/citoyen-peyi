@@ -1,0 +1,94 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAnonymousSession() {
+      return isSignedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && (
+        request.auth.token.role == role ||
+        request.auth.token[role] == true
+      );
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isController() {
+      return hasRole('controller') || isAdmin();
+    }
+
+    function hasOnlyKeys(allowedKeys) {
+      return request.resource.data.keys().hasOnly(allowedKeys);
+    }
+
+    function isAdminProfileShape() {
+      return hasOnlyKeys(['commune', 'updatedAt']);
+    }
+
+    function isPollShape() {
+      return hasOnlyKeys(['id', 'projectTitle', 'question', 'options', 'openDate', 'closeDate', 'status', 'totalVoters', 'totalVoted', 'updatedAt']);
+    }
+
+    function isRegistrationCodeShape() {
+      return hasOnlyKeys(['id', 'code', 'pollId', 'createdAt', 'usedBy', 'status', 'documentType', 'validatedAt', 'expiresAt', 'communeName', 'qrPayload', 'activatedAt', 'votedAt', 'verifiedByControleurCode', 'verifiedByControleurLabel', 'updatedAt']);
+    }
+
+    function isControleurCodeShape() {
+      return hasOnlyKeys(['id', 'code', 'label', 'commune', 'createdAt', 'usedAt', 'updatedAt']);
+    }
+
+    function isControleurActivityShape() {
+      return hasOnlyKeys(['id', 'controleurCode', 'controleurLabel', 'registrationCode', 'verifiedAt', 'createdAt']);
+    }
+
+    function registrationCodeVoterUpdate() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['activatedAt', 'votedAt', 'updatedAt']);
+    }
+
+    function pollVoterUpdate() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['options', 'totalVoted', 'updatedAt']);
+    }
+
+    match /adminProfiles/{document=**} {
+      allow read: if isAdmin();
+      allow write: if isAdmin() && isAdminProfileShape();
+    }
+
+    match /polls/{document=**} {
+      allow read: if true;
+      allow write: if isPollShape() && (
+        isAdmin() ||
+        (isAnonymousSession() && pollVoterUpdate())
+      );
+    }
+
+    match /registrationCodes/{document=**} {
+      allow read: if isController();
+      allow write: if isRegistrationCodeShape() && (
+        isController() ||
+        (isAnonymousSession() && registrationCodeVoterUpdate())
+      );
+    }
+
+    match /controleurCodes/{document=**} {
+      allow read: if isSignedIn();
+      allow write: if isAdmin() && isControleurCodeShape();
+    }
+
+    match /controleurActivities/{document=**} {
+      allow read: if isController();
+      allow write: if isController() && isControleurActivityShape();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
