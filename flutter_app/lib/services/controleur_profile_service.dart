@@ -113,6 +113,33 @@ class ControleurProfileService {
     return profile;
   }
 
+  /// Insère un profil avec un code fixe si ce code n'existe pas encore.
+  Future<void> seedCode({
+    required String code,
+    required String label,
+    required String communeName,
+    String? communeCode,
+    String? codePostal,
+  }) async {
+    final profiles = await loadProfiles();
+    final alreadyExists = profiles.any(
+      (p) => p.code.toUpperCase() == code.toUpperCase(),
+    );
+    if (alreadyExists) return;
+
+    final profile = ControleurProfileModel(
+      id: code.toLowerCase(),
+      code: code,
+      label: label,
+      communeName: communeName,
+      communeCode: communeCode,
+      codePostal: codePostal,
+      createdAt: DateTime.now().toIso8601String(),
+    );
+    profiles.add(profile);
+    await _save(profiles);
+  }
+
   Future<void> deleteProfile(String code) async {
     final profiles = await loadProfiles();
     profiles.removeWhere((p) => p.code == code);
