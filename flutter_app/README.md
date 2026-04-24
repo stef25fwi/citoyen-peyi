@@ -1,17 +1,57 @@
-# citoyen_peyi_flutter
+# Citoyen Peyi Flutter
 
-A new Flutter project.
+Port Flutter Web de l'application Citoyen Peyi.
 
-## Getting Started
+## Prerequis
 
-This project is a starting point for a Flutter application.
+- Flutter SDK disponible dans le PATH
+- Navigateur compatible Flutter Web
+- Optionnel: backend Node accessible pour l'auth admin/controleur
+- Optionnel: configuration Firebase pour l'auth custom-token et Firestore
 
-A few resources to get you started if this is your first Flutter project:
+## Lancer en local
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+1. Installer les dependances:
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+	flutter pub get
+
+2. Lancer l'apercu web:
+
+	flutter run -d web-server --web-hostname 0.0.0.0 --web-port=8081
+
+3. Ou construire la version Pages:
+
+	flutter build web --release --base-href /citoyen-peyi/
+
+## Variables compile-time
+
+Les variables suivantes sont lues via `--dart-define` dans [lib/config/app_config.dart](lib/config/app_config.dart):
+
+- `API_BASE_URL`
+- `FIREBASE_API_KEY`
+- `FIREBASE_AUTH_DOMAIN`
+- `FIREBASE_PROJECT_ID`
+- `FIREBASE_STORAGE_BUCKET`
+- `FIREBASE_MESSAGING_SENDER_ID`
+- `FIREBASE_APP_ID`
+
+Si les variables Firebase sont absentes, l'application reste utilisable avec son fallback local, mais l'auth Firebase et Firestore ne seront pas actives.
+
+## GitHub Pages
+
+Le workflow [deploy-pages.yml](../.github/workflows/deploy-pages.yml) construit et publie [flutter_app](.) sur GitHub Pages.
+
+Configuration attendue dans GitHub:
+
+- Variable de repository: `API_BASE_URL`
+- Secrets de repository:
+  - `VITE_FIREBASE_API_KEY`
+  - `VITE_FIREBASE_AUTH_DOMAIN`
+  - `VITE_FIREBASE_PROJECT_ID`
+  - `VITE_FIREBASE_STORAGE_BUCKET`
+  - `VITE_FIREBASE_MESSAGING_SENDER_ID`
+  - `VITE_FIREBASE_APP_ID`
+
+URL de publication attendue:
+
+- https://stef25fwi.github.io/citoyen-peyi/

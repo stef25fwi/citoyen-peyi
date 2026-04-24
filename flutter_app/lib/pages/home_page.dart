@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../widgets/feature_card.dart';
+import '../widgets/public_bottom_nav.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -17,28 +18,18 @@ class HomePage extends StatelessWidget {
           SliverToBoxAdapter(
             child: DecoratedBox(
               decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [Color(0xFF08354A), Color(0xFF0F6D8F)],
-                ),
+                color: Color(0xFF08354A),
               ),
               child: Stack(
                 children: [
-                  Positioned(
-                    top: -80,
-                    left: -40,
-                    child: _GlowCircle(size: 220, color: Colors.white.withValues(alpha: 0.10)),
-                  ),
-                  Positioned(
-                    right: -70,
-                    top: 40,
-                    child: _GlowCircle(size: 180, color: const Color(0xFFE58F2A).withValues(alpha: 0.18)),
-                  ),
-                  Positioned(
-                    right: 40,
-                    bottom: -30,
-                    child: _GlowCircle(size: 200, color: const Color(0xFF2B9F82).withValues(alpha: 0.18)),
+                  // Fond d'écran
+                  Positioned.fill(
+                    child: Image.asset(
+                      'assets/images/fondecran.png',
+                      fit: BoxFit.cover,
+                      color: Colors.black.withValues(alpha: 0.45),
+                      colorBlendMode: BlendMode.darken,
+                    ),
                   ),
                   Center(
                     child: ConstrainedBox(
@@ -47,6 +38,12 @@ class HomePage extends StatelessWidget {
                         padding: EdgeInsets.fromLTRB(20, isWide ? 120 : 88, 20, isWide ? 96 : 56),
                         child: Column(
                           children: [
+                            // Logo
+                            Image.asset(
+                              'assets/images/logo.png',
+                              height: isWide ? 96 : 72,
+                            ),
+                            const SizedBox(height: 24),
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
                               decoration: BoxDecoration(
@@ -256,25 +253,7 @@ class HomePage extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-}
-
-class _GlowCircle extends StatelessWidget {
-  const _GlowCircle({required this.size, required this.color});
-
-  final double size;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: color,
-      ),
+      bottomNavigationBar: const PublicBottomNav(currentTab: PublicTab.home),
     );
   }
 }

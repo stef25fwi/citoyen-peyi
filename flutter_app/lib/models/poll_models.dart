@@ -33,7 +33,7 @@ class PollOptionModel {
     return PollOptionModel(
       id: json['id'] as String? ?? 'opt-${index + 1}',
       label: json['label'] as String? ?? 'Option ${index + 1}',
-      votes: json['votes'] as int? ?? 0,
+      votes: (json['votes'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -110,8 +110,8 @@ class PollModel {
       openDate: json['openDate'] as String? ?? '',
       closeDate: json['closeDate'] as String? ?? '',
       status: json['status'] as String? ?? 'draft',
-      totalVoters: json['totalVoters'] as int? ?? 0,
-      totalVoted: json['totalVoted'] as int? ?? 0,
+      totalVoters: (json['totalVoters'] as num?)?.toInt() ?? 0,
+      totalVoted: (json['totalVoted'] as num?)?.toInt() ?? 0,
     );
   }
 }
@@ -121,6 +121,7 @@ class VoteAccessRecordModel {
     required this.id,
     required this.code,
     required this.pollId,
+    required this.createdAt,
     required this.activated,
     required this.hasVoted,
     required this.activatedAt,
@@ -129,11 +130,16 @@ class VoteAccessRecordModel {
     required this.communeName,
     required this.qrPayload,
     required this.status,
+    required this.documentType,
+    required this.validatedAt,
+    required this.verifiedByControleurCode,
+    required this.verifiedByControleurLabel,
   });
 
   final String id;
   final String code;
   final String pollId;
+  final String createdAt;
   final bool activated;
   final bool hasVoted;
   final String? activatedAt;
@@ -142,23 +148,43 @@ class VoteAccessRecordModel {
   final String? communeName;
   final String? qrPayload;
   final String status;
+  final String? documentType;
+  final String? validatedAt;
+  final String? verifiedByControleurCode;
+  final String? verifiedByControleurLabel;
 
   VoteAccessRecordModel copyWith({
+    String? code,
+    String? pollId,
+    String? createdAt,
+    String? status,
     String? activatedAt,
     String? votedAt,
+    String? expiresAt,
+    String? communeName,
+    String? qrPayload,
+    String? documentType,
+    String? validatedAt,
+    String? verifiedByControleurCode,
+    String? verifiedByControleurLabel,
   }) {
     return VoteAccessRecordModel(
       id: id,
-      code: code,
-      pollId: pollId,
+      code: code ?? this.code,
+      pollId: pollId ?? this.pollId,
+      createdAt: createdAt ?? this.createdAt,
       activated: activatedAt != null || this.activated,
       hasVoted: votedAt != null || hasVoted,
       activatedAt: activatedAt ?? this.activatedAt,
       votedAt: votedAt ?? this.votedAt,
-      expiresAt: expiresAt,
-      communeName: communeName,
-      qrPayload: qrPayload,
-      status: status,
+      expiresAt: expiresAt ?? this.expiresAt,
+      communeName: communeName ?? this.communeName,
+      qrPayload: qrPayload ?? this.qrPayload,
+      status: status ?? this.status,
+      documentType: documentType ?? this.documentType,
+      validatedAt: validatedAt ?? this.validatedAt,
+      verifiedByControleurCode: verifiedByControleurCode ?? this.verifiedByControleurCode,
+      verifiedByControleurLabel: verifiedByControleurLabel ?? this.verifiedByControleurLabel,
     );
   }
 
@@ -166,16 +192,18 @@ class VoteAccessRecordModel {
         'id': id,
         'code': code,
         'pollId': pollId,
-        'createdAt': DateTime.now().toIso8601String(),
+        'createdAt': createdAt,
         'usedBy': null,
         'status': status,
-        'documentType': null,
-        'validatedAt': null,
+        'documentType': documentType,
+        'validatedAt': validatedAt,
         'expiresAt': expiresAt,
         'communeName': communeName,
         'qrPayload': qrPayload,
         'activatedAt': activatedAt,
         'votedAt': votedAt,
+        'verifiedByControleurCode': verifiedByControleurCode,
+        'verifiedByControleurLabel': verifiedByControleurLabel,
       };
 
   static VoteAccessRecordModel? fromJson(Map<String, dynamic> json) {
@@ -188,6 +216,7 @@ class VoteAccessRecordModel {
       id: json['id'] as String? ?? 'reg-${DateTime.now().millisecondsSinceEpoch}',
       code: code,
       pollId: json['pollId'] as String? ?? 'poll-1',
+      createdAt: json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
       activated: (json['activatedAt'] as String?) != null,
       hasVoted: (json['votedAt'] as String?) != null,
       activatedAt: json['activatedAt'] as String?,
@@ -196,6 +225,10 @@ class VoteAccessRecordModel {
       communeName: json['communeName'] as String?,
       qrPayload: json['qrPayload'] as String?,
       status: json['status'] as String? ?? 'validated',
+      documentType: json['documentType'] as String?,
+      validatedAt: json['validatedAt'] as String?,
+      verifiedByControleurCode: json['verifiedByControleurCode'] as String?,
+      verifiedByControleurLabel: json['verifiedByControleurLabel'] as String?,
     );
   }
 }

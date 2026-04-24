@@ -62,7 +62,8 @@ class AuthSession {
   final String? label;
   final AuthSessionCommune? commune;
 
-  bool get isAdmin => admin || role == 'admin';
+  bool get isSuperAdmin => role == 'super_admin';
+  bool get isAdmin => admin || role == 'admin' || role == 'super_admin';
   bool get isController => controller || role == 'controller';
   bool get isAuthenticated => isAdmin || isController;
 
@@ -70,12 +71,9 @@ class AuthSession {
 
   bool hasAnyRole(Iterable<String> roles) {
     for (final roleName in roles) {
-      if (roleName == 'admin' && isAdmin) {
-        return true;
-      }
-      if (roleName == 'controller' && isController) {
-        return true;
-      }
+      if (roleName == 'super_admin' && isSuperAdmin) return true;
+      if (roleName == 'admin' && isAdmin) return true;
+      if (roleName == 'controller' && isController) return true;
     }
     return false;
   }

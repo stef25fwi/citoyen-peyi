@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../models/poll_models.dart';
 import '../services/vote_access_service.dart';
+import '../widgets/public_bottom_nav.dart';
 
 class QrAccessPage extends StatefulWidget {
   const QrAccessPage({super.key});
@@ -136,6 +137,7 @@ class _QrAccessPageState extends State<QrAccessPage> {
           ),
         ),
       ),
+      bottomNavigationBar: const PublicBottomNav(currentTab: PublicTab.vote),
     );
   }
 }

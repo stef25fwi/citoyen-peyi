@@ -35,7 +35,12 @@ class _VotePageState extends State<VotePage> {
       _isLoading = true;
     });
 
-    final accessRecord = await VoteAccessService.instance.findByCode(widget.token);
+    var accessRecord = await VoteAccessService.instance.findByCode(widget.token);
+    if (accessRecord != null && !accessRecord.activated && !accessRecord.hasVoted) {
+      await VoteAccessService.instance.markActivated(widget.token);
+      accessRecord = await VoteAccessService.instance.findByCode(widget.token);
+    }
+
     final poll = accessRecord == null ? null : await PollService.instance.loadPollById(accessRecord.pollId);
 
     if (!mounted) {

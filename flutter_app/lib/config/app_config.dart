@@ -13,6 +13,8 @@ class AppConfig {
   static const String firebaseMessagingSenderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '');
   static const String firebaseAppId = String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '');
 
+  static const String superAdminKey = String.fromEnvironment('SUPER_ADMIN_KEY', defaultValue: '');
+
   static bool get isFirebaseConfigured => [
         firebaseApiKey,
         firebaseAuthDomain,

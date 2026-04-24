@@ -2,8 +2,9 @@
 
 Application de vote anonyme avec une architecture complete:
 
-- frontend React (Vite)
 - backend Node.js + Express
+- application Flutter Web publiee sur GitHub Pages
+- source React historique conservee pour reference dans [vote-libre-main](vote-libre-main)
 - workflow CI GitHub Actions
 - script pour generer un ZIP complet du projet
 
@@ -22,6 +23,7 @@ app/
 
 - Node.js 20+
 - npm 10+
+- Flutter SDK pour la version web publiee
 
 ## Installation
 
@@ -34,16 +36,26 @@ app/
 	cp .env.example .env
 	cp app/frontend/.env.example app/frontend/.env
 
-3. Lancer frontend et backend:
+3. Lancer le backend Node:
 
 	npm run dev
 
-Frontend: http://localhost:5173
 Backend: http://localhost:4000
+
+4. Pour l'application Flutter Web:
+
+	cd flutter_app
+	flutter pub get
+	flutter run -d web-server --web-hostname 0.0.0.0 --web-port=8081
 
 ## Build
 
 npm run build
+
+Pour la version Flutter GitHub Pages:
+
+	cd flutter_app
+	flutter build web --release --base-href /citoyen-peyi/
 
 ## Creer le ZIP complet de l'app
 
@@ -66,9 +78,20 @@ Le contenu recupere depuis l'archive est disponible dans [vote-libre-main](vote-
 Consultation en ligne via GitHub Pages:
 
 - URL attendue: https://stef25fwi.github.io/citoyen-peyi/
-- Le workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) publie automatiquement le contenu de [vote-libre-main](vote-libre-main) apres chaque push sur main.
+- Le workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) publie automatiquement le contenu de [flutter_app](flutter_app) apres chaque push sur main.
 
-Commandes utiles pour ce projet extrait:
+Configuration GitHub Pages requise:
+
+- Variable de repository: `API_BASE_URL`
+- Secrets de repository:
+	- `VITE_FIREBASE_API_KEY`
+	- `VITE_FIREBASE_AUTH_DOMAIN`
+	- `VITE_FIREBASE_PROJECT_ID`
+	- `VITE_FIREBASE_STORAGE_BUCKET`
+	- `VITE_FIREBASE_MESSAGING_SENDER_ID`
+	- `VITE_FIREBASE_APP_ID`
+
+Commandes utiles pour le projet React historique:
 
 - Installer les dependances: npm run install:vote-libre
 - Lancer en dev: npm run dev:vote-libre
@@ -77,5 +100,6 @@ Commandes utiles pour ce projet extrait:
 
 ## Clarification structure
 
-- [app](app): structure app creee dans ce depot (frontend/backend minimal)
-- [vote-libre-main](vote-libre-main): application complete recuperee depuis l'archive ZIP
+- [app](app): backend et structure minimale initiale
+- [flutter_app](flutter_app): application Flutter Web courante, cible de GitHub Pages
+- [vote-libre-main](vote-libre-main): application React conservee comme reference de migration
