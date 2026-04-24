@@ -1,5 +1,9 @@
+import 'dart:async';
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:http/http.dart' as http;
 
 import '../services/auth_session_store.dart';
 import '../services/firebase_auth_service.dart';
@@ -226,12 +230,11 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                             'Aucun profil administrateur cree.',
                             style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
                           ),
-                          const SizedBox(height: 16),
-                          FilledButton.icon(
-                            style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6B21A8)),
-                            onPressed: _openCreateDialog,
-                            icon: const Icon(Icons.person_add_rounded),
-                            label: const Text('Creer le premier profil'),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Utilisez le bouton + en bas a droite pour creer le premier profil.',
+                            style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF9AA9B8)),
+                            textAlign: TextAlign.center,
                           ),
                         ],
                       ),
@@ -379,6 +382,25 @@ class _ProfileCardState extends State<_ProfileCard> {
   }
 }
 
+// ---------- Commune suggestion model ----------
+
+class _CommuneSuggestion {
+  const _CommuneSuggestion({
+    required this.nom,
+    required this.code,
+    required this.codesPostaux,
+  });
+
+  final String nom;
+  final String code;
+  final List<String> codesPostaux;
+
+  String get firstPostal => codesPostaux.isNotEmpty ? codesPostaux.first : '';
+
+  String get displayLabel =>
+      codesPostaux.isEmpty ? nom : '$nom (${codesPostaux.join(', ')})';
+}
+
 // ---------- Create profile dialog ----------
 
 class _CreateProfileDialog extends StatefulWidget {
@@ -398,13 +420,80 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
   final _postalCtrl = TextEditingController();
   bool _isSubmitting = false;
 
+  Timer? _debounce;
+  List<_CommuneSuggestion> _suggestions = [];
+  bool _searching = false;
+
   @override
   void dispose() {
+    _debounce?.cancel();
     _labelCtrl.dispose();
     _communeCtrl.dispose();
     _codeCtrl.dispose();
     _postalCtrl.dispose();
     super.dispose();
+  }
+
+  Future<List<_CommuneSuggestion>> _fetchCommunes(String query) async {
+    final q = query.trim();
+    if (q.length < 2) return [];
+
+    final isPostal = RegExp(r'^\d{2,5}$').hasMatch(q);
+    final url = isPostal
+        ? 'https://geo.api.gouv.fr/communes?codePostal=$q&fields=nom,code,codesPostaux,population&limit=10'
+        : 'https://geo.api.gouv.fr/communes?nom=${Uri.encodeComponent(q)}&fields=nom,code,codesPostaux,population&boost=population&limit=10';
+
+    try {
+      final response = await http.get(Uri.parse(url))
+          .timeout(const Duration(seconds: 5));
+      if (response.statusCode != 200) return [];
+      final data = jsonDecode(response.body) as List<dynamic>;
+      return data.map((e) {
+        final m = e as Map<String, dynamic>;
+        return _CommuneSuggestion(
+          nom: m['nom'] as String? ?? '',
+          code: m['code'] as String? ?? '',
+          codesPostaux: (m['codesPostaux'] as List<dynamic>?)
+                  ?.map((c) => c as String)
+                  .toList() ??
+              [],
+        );
+      }).toList();
+    } catch (_) {
+      return [];
+    }
+  }
+
+  void _onCommuneChanged(String value) {
+    _debounce?.cancel();
+    if (value.trim().length < 2) {
+      setState(() => _suggestions = []);
+      return;
+    }
+    setState(() => _searching = true);
+    _debounce = Timer(const Duration(milliseconds: 280), () async {
+      final results = await _fetchCommunes(value);
+      if (mounted) {
+        setState(() {
+          _suggestions = results;
+          _searching = false;
+        });
+      }
+    });
+  }
+
+  void _selectCommune(_CommuneSuggestion commune) {
+    setState(() {
+      _communeCtrl.text = commune.nom;
+      _postalCtrl.text = commune.firstPostal;
+      _codeCtrl.text = commune.code;
+      _suggestions = [];
+      // Pré-remplit le libellé si encore vide ou générique
+      if (_labelCtrl.text.trim().isEmpty ||
+          _labelCtrl.text.trim().toLowerCase().startsWith('mairie de ')) {
+        _labelCtrl.text = 'Mairie de ${commune.nom}';
+      }
+    });
   }
 
   Future<void> _submit() async {
@@ -434,7 +523,7 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
     return AlertDialog(
       title: const Row(
         children: [
-          Icon(Icons.person_add_rounded, color: Color(0xFF6B21A8)),
+          Icon(Icons.person_add_rounded, color: Color(0xFF0F6D8F)),
           SizedBox(width: 10),
           Text('Nouveau profil administrateur'),
         ],
@@ -446,26 +535,74 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TextFormField(
-                controller: _labelCtrl,
-                enabled: !_isSubmitting,
-                decoration: const InputDecoration(
-                  labelText: 'Libelle du profil *',
-                  hintText: 'Ex : Mairie de Baie-Mahault',
-                ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Champ requis.' : null,
+              // ---------- Commune avec autocomplétion ----------
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  TextFormField(
+                    controller: _communeCtrl,
+                    enabled: !_isSubmitting,
+                    decoration: InputDecoration(
+                      labelText: 'Commune *',
+                      hintText: 'Tapez le nom ou le code postal…',
+                      suffixIcon: _searching
+                          ? const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                            )
+                          : const Icon(Icons.location_on_outlined),
+                    ),
+                    onChanged: _onCommuneChanged,
+                    validator: (v) =>
+                        (v == null || v.trim().isEmpty) ? 'Champ requis.' : null,
+                  ),
+                  if (_suggestions.isNotEmpty)
+                    Container(
+                      constraints: const BoxConstraints(maxHeight: 200),
+                      margin: const EdgeInsets.only(top: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFD7E0EA)),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        padding: EdgeInsets.zero,
+                        itemCount: _suggestions.length,
+                        separatorBuilder: (_, __) =>
+                            const Divider(height: 1),
+                        itemBuilder: (context, i) {
+                          final c = _suggestions[i];
+                          return ListTile(
+                            dense: true,
+                            leading: const Icon(Icons.location_city_rounded,
+                                size: 18, color: Color(0xFF0F6D8F)),
+                            title: Text(c.nom,
+                                style: const TextStyle(fontWeight: FontWeight.w600)),
+                            subtitle: Text(
+                              '${c.codesPostaux.join(', ')}  •  INSEE ${c.code}',
+                              style: const TextStyle(fontSize: 12),
+                            ),
+                            onTap: () => _selectCommune(c),
+                          );
+                        },
+                      ),
+                    ),
+                ],
               ),
               const SizedBox(height: 14),
-              TextFormField(
-                controller: _communeCtrl,
-                enabled: !_isSubmitting,
-                decoration: const InputDecoration(
-                  labelText: 'Commune *',
-                  hintText: 'Ex : Baie-Mahault',
-                ),
-                validator: (v) => (v == null || v.trim().isEmpty) ? 'Champ requis.' : null,
-              ),
-              const SizedBox(height: 14),
+              // ---------- Code postal + INSEE (auto-remplis, modifiables) ----------
               Row(
                 children: [
                   Expanded(
@@ -476,6 +613,7 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                       decoration: const InputDecoration(
                         labelText: 'Code postal',
                         hintText: '97122',
+                        prefixIcon: Icon(Icons.markunread_mailbox_outlined),
                       ),
                     ),
                   ),
@@ -487,10 +625,24 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                       decoration: const InputDecoration(
                         labelText: 'Code INSEE',
                         hintText: '97109',
+                        prefixIcon: Icon(Icons.tag_rounded),
                       ),
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 14),
+              // ---------- Libellé (auto-rempli "Mairie de …", modifiable) ----------
+              TextFormField(
+                controller: _labelCtrl,
+                enabled: !_isSubmitting,
+                decoration: const InputDecoration(
+                  labelText: 'Libelle du profil *',
+                  hintText: 'Ex : Mairie de Baie-Mahault',
+                  prefixIcon: Icon(Icons.badge_outlined),
+                ),
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Champ requis.' : null,
               ),
               const SizedBox(height: 8),
               const Text(
@@ -508,7 +660,7 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
           child: const Text('Annuler'),
         ),
         FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF6B21A8)),
+          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0F6D8F)),
           onPressed: _isSubmitting ? null : _submit,
           icon: _isSubmitting
               ? const SizedBox(
