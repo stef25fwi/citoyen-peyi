@@ -1,0 +1,97 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Apercu web local",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev:frontend"],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Lance le frontend Vite sur le port 8080 pour un apercu local."
+    },
+    {
+      "label": "Apercu build GitHub Pages",
+      "type": "shell",
+      "command": "GITHUB_ACTIONS=true npm run build --workspace vote-libre-main && npm run preview --workspace vote-libre-main -- --host 0.0.0.0 --port 4173",
+      "problemMatcher": [],
+      "isBackground": true,
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Construit puis sert la version utilisee par GitHub Pages sur le port 4173."
+    },
+    {
+      "label": "Flutter generer web",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter create . --platforms=web"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Genere les fichiers plateforme Flutter Web autour du squelette existant."
+    },
+    {
+      "label": "Flutter apercu web",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter run -d web-server --web-hostname 0.0.0.0 --web-port=8081 --dart-define=API_BASE_URL=${API_BASE_URL:-http://localhost:4000} --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}"
+      ],
+      "isBackground": true,
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Lance le port Flutter Web local sur le port 8081."
+    },
+    {
+      "label": "Flutter build GitHub Pages",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter build web --release --base-href /citoyen-peyi/ --dart-define=API_BASE_URL=${API_BASE_URL:-http://localhost:4000} --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Construit la version Flutter Web de production pour GitHub Pages."
+    },
+    {
+      "label": "Git publier migration Flutter",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && git add -A && git commit -m \"feat: migrate app to Flutter web pages\" && git push origin main"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Stage, commit puis pousse la migration Flutter vers main."
+    }
+  ]
+}

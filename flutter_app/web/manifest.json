@@ -1,0 +1,12 @@
+{
+  "name": "Citoyen Peyi Flutter",
+  "short_name": "CitoyenPeyi",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#08354A",
+  "theme_color": "#0F6D8F",
+  "description": "Port Flutter Web de l'application Citoyen Peyi.",
+  "orientation": "portrait-primary",
+  "prefer_related_applications": false,
+  "icons": []
+}
