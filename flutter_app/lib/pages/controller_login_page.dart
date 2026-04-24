@@ -138,6 +138,43 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                         label: Text(_isSubmitting ? 'Connexion en cours...' : 'Acceder a mon profil'),
                       ),
                     ),
+                    const SizedBox(height: 20),
+                    InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () {
+                        _codeController.text = 'ADMIN2026';
+                        setState(() {});
+                      },
+                      child: Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF8E1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFFFE082)),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.info_outline_rounded, size: 16, color: Color(0xFFF59E0B)),
+                            const SizedBox(width: 8),
+                            RichText(
+                              text: const TextSpan(
+                                style: TextStyle(fontSize: 13, color: Color(0xFF92400E)),
+                                children: [
+                                  TextSpan(text: 'Mode demo · code : '),
+                                  TextSpan(
+                                    text: 'ADMIN2026',
+                                    style: TextStyle(fontWeight: FontWeight.w700, letterSpacing: 1),
+                                  ),
+                                  TextSpan(text: '  (appuyez pour remplir)'),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
