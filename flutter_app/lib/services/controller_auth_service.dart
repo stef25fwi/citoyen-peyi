@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -35,21 +36,35 @@ class ControllerAuthService {
       throw const ControllerAuthException('Le code controleur est requis.');
     }
 
-    if (AppConfig.apiBaseUrl.isEmpty) {
+    final isLocalMode = AppConfig.apiBaseUrl.isEmpty ||
+        AppConfig.apiBaseUrl.contains('localhost') ||
+        AppConfig.apiBaseUrl.contains('127.0.0.1');
+
+    if (isLocalMode) {
       final fallbackSession = await _loadFallbackSession(normalizedCode);
       if (fallbackSession == null) {
         throw const ControllerAuthException('Code invalide. Demandez un code a un administrateur.');
       }
-
       await AuthSessionStore.instance.save(fallbackSession);
       return ControllerSignInResult(session: fallbackSession, isFallback: true);
     }
 
-    final response = await http.post(
-      Uri.parse('${AppConfig.apiBaseUrl}/api/auth/controller/exchange'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'code': normalizedCode}),
-    );
+    late http.Response response;
+    try {
+      response = await http.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/auth/controller/exchange'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({'code': normalizedCode}),
+      ).timeout(const Duration(seconds: 10));
+    } catch (_) {
+      // Réseau inaccessible → mode fallback
+      final fallbackSession = await _loadFallbackSession(normalizedCode);
+      if (fallbackSession == null) {
+        throw const ControllerAuthException('Code invalide. Demandez un code a un administrateur.');
+      }
+      await AuthSessionStore.instance.save(fallbackSession);
+      return ControllerSignInResult(session: fallbackSession, isFallback: true);
+    }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ControllerAuthException(_readErrorMessage(response.body));
