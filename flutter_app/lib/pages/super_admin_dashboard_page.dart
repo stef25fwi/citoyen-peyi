@@ -87,9 +87,9 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
-                color: const Color(0xFFF3E8FF),
+                color: const Color(0xFFE0F2FE),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: const Color(0xFFD8B4FE)),
+                border: Border.all(color: const Color(0xFFBAE6FD)),
               ),
               child: Row(
                 children: [
@@ -101,12 +101,12 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                         fontWeight: FontWeight.w700,
                         fontSize: 17,
                         letterSpacing: 1.2,
-                        color: Color(0xFF6B21A8),
+                        color: Color(0xFF0F6D8F),
                       ),
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy_rounded, color: Color(0xFF6B21A8)),
+                    icon: const Icon(Icons.copy_rounded, color: Color(0xFF0F6D8F)),
                     tooltip: 'Copier la cle',
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: profile.accessKey));
@@ -138,8 +138,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Super Administration'),
-        titleTextStyle: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF6B21A8)),
-        leading: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF6B21A8)),
+        titleTextStyle: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF0F6D8F)),
+        leading: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF0F6D8F)),
         leadingWidth: 56,
         actions: [
           TextButton(
@@ -153,13 +153,6 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFF6B21A8),
-        foregroundColor: Colors.white,
-        onPressed: _openCreateDialog,
-        icon: const Icon(Icons.person_add_rounded),
-        label: const Text('Creer un admin'),
-      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 900),
@@ -170,12 +163,12 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
               children: [
                 // Session card
                 Card(
-                  color: const Color(0xFFF3E8FF),
+                  color: const Color(0xFFE0F2FE),
                   child: Padding(
                     padding: const EdgeInsets.all(20),
                     child: Row(
                       children: [
-                        const Icon(Icons.shield_rounded, color: Color(0xFF6B21A8), size: 32),
+                        const Icon(Icons.shield_rounded, color: Color(0xFF0F6D8F), size: 32),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -184,13 +177,13 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                               Text(
                                 session?.label ?? 'Super Administrateur',
                                 style: theme.textTheme.titleMedium?.copyWith(
-                                  color: const Color(0xFF6B21A8),
+                                  color: const Color(0xFF0F6D8F),
                                   fontWeight: FontWeight.w700,
                                 ),
                               ),
                               Text(
                                 'Role: ${session?.role ?? '-'}  •  Mode: ${session?.modeLabel ?? '-'}',
-                                style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF7C3AED)),
+                                style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF0891B2)),
                               ),
                             ],
                           ),
@@ -208,6 +201,13 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                     ),
                     const SizedBox(width: 12),
                     Chip(label: Text('${_profiles.length}')),
+                    const Spacer(),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0F6D8F)),
+                      onPressed: _openCreateDialog,
+                      icon: const Icon(Icons.person_add_rounded, size: 18),
+                      label: const Text('Nouveau profil'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -339,7 +339,7 @@ class _ProfileCardState extends State<_ProfileCard> {
                             fontWeight: FontWeight.w700,
                             fontSize: 15,
                             letterSpacing: 1.1,
-                            color: Color(0xFF6B21A8),
+                            color: Color(0xFF0F6D8F),
                           ),
                         )
                       : Text(
