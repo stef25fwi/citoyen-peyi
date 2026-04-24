@@ -87,7 +87,8 @@ class SuperAdminService {
     }
 
     final isLocalMode = AppConfig.apiBaseUrl.isEmpty ||
-        AppConfig.apiBaseUrl == 'http://localhost:4000';
+        AppConfig.apiBaseUrl.contains('localhost') ||
+        AppConfig.apiBaseUrl.contains('127.0.0.1');
 
     if (isLocalMode) {
       final expected = AppConfig.superAdminKey;
