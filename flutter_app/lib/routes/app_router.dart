@@ -95,11 +95,21 @@ class AppRouter {
     }
   }
 
-  static MaterialPageRoute<void> _page(Widget child, RouteSettings settings) {
+  static Route<void> _page(Widget child, RouteSettings settings) {
+    if (_shouldDisableTransition(settings)) {
+      return PageRouteBuilder<void>(
+        settings: settings,
+        pageBuilder: (_, __, ___) => child,
+        transitionDuration: Duration.zero,
+        reverseTransitionDuration: Duration.zero,
+        transitionsBuilder: (_, __, ___, pageChild) => pageChild,
+      );
+    }
+
     return MaterialPageRoute<void>(builder: (_) => child, settings: settings);
   }
 
-  static MaterialPageRoute<void> _requireRoles(
+  static Route<void> _requireRoles(
     RouteSettings settings,
     Widget child,
     List<String> allowedRoles,
@@ -122,11 +132,20 @@ class AppRouter {
     );
   }
 
-  static MaterialPageRoute<void> _placeholder(
+  static Route<void> _placeholder(
     RouteSettings settings,
     String title, {
     String? subtitle,
   }) {
     return _page(PlaceholderPage(title: title, subtitle: subtitle), settings);
+  }
+
+  static bool _shouldDisableTransition(RouteSettings settings) {
+    final arguments = settings.arguments;
+    if (arguments is Map<Object?, Object?>) {
+      return arguments['disableTransition'] == true;
+    }
+
+    return false;
   }
 }

@@ -1,9 +1,14 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/poll_models.dart';
 import '../services/auth_session_store.dart';
 import '../services/poll_service.dart';
+import '../services/qr_download_service.dart';
 import '../services/vote_access_service.dart';
 
 class RegistrationReviewPage extends StatefulWidget {
@@ -172,10 +177,137 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
     );
   }
 
+  Future<void> _copyToClipboard(String value, String message) async {
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!mounted) {
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showQrPreview(VoteAccessRecordModel record) {
+    return showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('QR code d\'acces'),
+        content: SizedBox(
+          width: 320,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (record.qrPayload != null)
+                QrImageView(
+                  data: record.qrPayload!,
+                  version: QrVersions.auto,
+                  size: 220,
+                  backgroundColor: Colors.white,
+                ),
+              const SizedBox(height: 16),
+              SelectableText(
+                record.code,
+                style: Theme.of(context).textTheme.titleMedium,
+                textAlign: TextAlign.center,
+              ),
+              if (record.qrPayload != null) ...[
+                const SizedBox(height: 12),
+                SelectableText(
+                  record.qrPayload!,
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => _copyToClipboard(record.code, 'Code copie dans le presse-papiers.'),
+            child: const Text('Copier le code'),
+          ),
+          if (record.qrPayload != null)
+            TextButton(
+              onPressed: () => _copyToClipboard(record.qrPayload!, 'Contenu du QR copie dans le presse-papiers.'),
+              child: const Text('Copier le QR'),
+            ),
+          if (record.qrPayload != null)
+            TextButton(
+              onPressed: () => _downloadQrPng(record),
+              child: const Text('Telecharger PNG'),
+            ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _downloadQrPng(VoteAccessRecordModel record) async {
+    if (record.qrPayload == null || record.qrPayload!.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aucun QR disponible pour ce dossier.')),
+      );
+      return;
+    }
+
+    try {
+      final bytes = await _buildQrPngBytes(record.qrPayload!);
+      await QrDownloadService.instance.downloadPng(
+        bytes: bytes,
+        fileName: 'qr-${record.code.toLowerCase()}.png',
+      );
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('QR telecharge pour ${record.code}.')),
+      );
+    } on UnsupportedError catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message ?? 'Telechargement indisponible.')),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossible de generer le fichier PNG du QR.')),
+      );
+    }
+  }
+
+  Future<Uint8List> _buildQrPngBytes(String data) async {
+    final painter = QrPainter(
+      data: data,
+      version: QrVersions.auto,
+      gapless: true,
+      color: const Color(0xFF111827),
+      emptyColor: Colors.white,
+    );
+    final imageData = await painter.toImageData(1200, format: ui.ImageByteFormat.png);
+    if (imageData == null) {
+      throw StateError('QR PNG vide');
+    }
+
+    return imageData.buffer.asUint8List();
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final session = AuthSessionStore.instance.currentSession;
+    final canManageCodes = session?.isAdmin == true;
+    final canValidateFiles = session?.isController == true;
+    final pollTitlesById = {
+      for (final poll in _polls) poll.id: poll.projectTitle,
+    };
     final pollScopedRecords = _selectedPollId == null
         ? _records
         : _records.where((item) => item.pollId == _selectedPollId).toList();
@@ -220,6 +352,27 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                                     : 'Role: ${session.role}\nProfil: ${session.label ?? 'Utilisateur'}\nCode: ${session.code ?? '-'}\nCommune: ${session.commune?.name ?? '-'}\nMode: ${session.modeLabel}',
                                 style: theme.textTheme.bodyLarge,
                               ),
+                              const SizedBox(height: 16),
+                              Wrap(
+                                spacing: 10,
+                                runSpacing: 10,
+                                children: [
+                                  _RoleCapabilityChip(
+                                    label: 'Admin',
+                                    enabled: canManageCodes,
+                                    icon: Icons.admin_panel_settings_rounded,
+                                    activeText: 'Generation et pilotage des codes autorises',
+                                    inactiveText: 'Generation reservee aux administrateurs',
+                                  ),
+                                  _RoleCapabilityChip(
+                                    label: 'Controleur',
+                                    enabled: canValidateFiles,
+                                    icon: Icons.verified_user_rounded,
+                                    activeText: 'Verification des dossiers et diffusion du QR autorisees',
+                                    inactiveText: 'Validation reservee aux controleurs',
+                                  ),
+                                ],
+                              ),
                             ],
                           ),
                         ),
@@ -240,6 +393,12 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                         builder: (context, constraints) {
                           final wide = constraints.maxWidth >= 860;
                           final left = _ManagementCard(
+                            title: 'Zone administrateur',
+                            roleLabel: 'ADMIN',
+                            roleDescription: canManageCodes
+                                ? 'Vous pouvez generer et suivre les codes d\'inscription pour le sondage selectionne.'
+                                : 'Lecture seule. La generation de codes est reservee aux administrateurs.',
+                            enabled: canManageCodes,
                             polls: _polls,
                             selectedPollId: _selectedPollId,
                             generateCountController: _generateCountController,
@@ -249,17 +408,47 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                                 _selectedRecordId = null;
                               });
                             },
-                            onGenerate: _isSubmitting ? null : _generateCodes,
+                            onGenerate: canManageCodes && !_isSubmitting ? _generateCodes : null,
                           );
                           final right = _ValidationCard(
+                            title: 'Zone controleur',
+                            roleLabel: 'CONTROLEUR',
+                            roleDescription: canValidateFiles
+                              ? 'Vous pouvez verifier les pieces, valider le dossier, puis diffuser ou telecharger le QR.'
+                              : 'Lecture seule. La validation des dossiers est reservee aux controleurs.',
+                            enabled: canValidateFiles,
                             availableRecords: availableRecords,
                             selectedRecordId: _selectedRecordId,
                             selectedIdDoc: _selectedIdDoc,
                             selectedAddressDoc: _selectedAddressDoc,
-                            onRecordChanged: (value) => setState(() => _selectedRecordId = value),
-                            onIdDocChanged: (value) => setState(() => _selectedIdDoc = value),
-                            onAddressDocChanged: (value) => setState(() => _selectedAddressDoc = value),
-                            onValidate: _isSubmitting ? null : _validateSelectedRecord,
+                            onRecordChanged: canValidateFiles
+                              ? (value) => setState(() => _selectedRecordId = value)
+                              : null,
+                            onIdDocChanged: canValidateFiles
+                              ? (value) => setState(() => _selectedIdDoc = value)
+                              : null,
+                            onAddressDocChanged: canValidateFiles
+                              ? (value) => setState(() => _selectedAddressDoc = value)
+                              : null,
+                            onValidate: canValidateFiles && !_isSubmitting ? _validateSelectedRecord : null,
+                            onPreviewQr: selectedRecord?.qrPayload == null
+                                ? null
+                                : () => _showQrPreview(selectedRecord!),
+                            onCopyCode: selectedRecord == null
+                                ? null
+                                : () => _copyToClipboard(
+                                      selectedRecord.code,
+                                      'Code copie dans le presse-papiers.',
+                                    ),
+                            onCopyQrPayload: selectedRecord?.qrPayload == null
+                                ? null
+                                : () => _copyToClipboard(
+                                      selectedRecord!.qrPayload!,
+                                      'Contenu du QR copie dans le presse-papiers.',
+                                    ),
+                            onDownloadQr: selectedRecord?.qrPayload == null
+                                ? null
+                                : () => _downloadQrPng(selectedRecord!),
                             idDocumentTypes: _idDocumentTypes,
                             addressDocumentTypes: _addressDocumentTypes,
                             selectedRecord: selectedRecord,
@@ -342,7 +531,26 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                                 for (final record in filteredRecords.take(12))
                                   Padding(
                                     padding: const EdgeInsets.only(bottom: 12),
-                                    child: _CodeRow(record: record),
+                                    child: _CodeRow(
+                                      record: record,
+                                      pollLabel: pollTitlesById[record.pollId] ?? record.pollId,
+                                      onPreviewQr: record.qrPayload == null
+                                          ? null
+                                          : () => _showQrPreview(record),
+                                      onCopyCode: () => _copyToClipboard(
+                                        record.code,
+                                        'Code copie dans le presse-papiers.',
+                                      ),
+                                      onCopyQrPayload: record.qrPayload == null
+                                          ? null
+                                          : () => _copyToClipboard(
+                                                record.qrPayload!,
+                                                'Contenu du QR copie dans le presse-papiers.',
+                                              ),
+                                      onDownloadQr: record.qrPayload == null
+                                          ? null
+                                          : () => _downloadQrPng(record),
+                                    ),
                                   ),
                             ],
                           ),
@@ -396,6 +604,10 @@ class _StatCard extends StatelessWidget {
 
 class _ManagementCard extends StatelessWidget {
   const _ManagementCard({
+    required this.title,
+    required this.roleLabel,
+    required this.roleDescription,
+    required this.enabled,
     required this.polls,
     required this.selectedPollId,
     required this.generateCountController,
@@ -403,6 +615,10 @@ class _ManagementCard extends StatelessWidget {
     required this.onGenerate,
   });
 
+  final String title;
+  final String roleLabel;
+  final String roleDescription;
+  final bool enabled;
   final List<PollModel> polls;
   final String? selectedPollId;
   final TextEditingController generateCountController;
@@ -417,7 +633,13 @@ class _ManagementCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Pilotage des inscriptions', style: Theme.of(context).textTheme.titleLarge),
+            _RoleSectionHeader(
+              title: title,
+              roleLabel: roleLabel,
+              icon: Icons.admin_panel_settings_rounded,
+            ),
+            const SizedBox(height: 12),
+            Text(roleDescription, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: selectedPollId,
@@ -430,17 +652,18 @@ class _ManagementCard extends StatelessWidget {
                     ),
                   )
                   .toList(),
-              onChanged: onPollChanged,
+              onChanged: enabled ? onPollChanged : null,
             ),
             const SizedBox(height: 16),
             TextFormField(
               controller: generateCountController,
+              enabled: enabled,
               keyboardType: TextInputType.number,
               decoration: const InputDecoration(labelText: 'Nombre de codes a generer'),
             ),
             const SizedBox(height: 12),
             FilledButton.icon(
-              onPressed: polls.isEmpty ? null : onGenerate,
+              onPressed: enabled && polls.isNotEmpty ? onGenerate : null,
               icon: const Icon(Icons.qr_code_2_rounded),
               label: const Text('Generer des codes'),
             ),
@@ -453,6 +676,10 @@ class _ManagementCard extends StatelessWidget {
 
 class _ValidationCard extends StatelessWidget {
   const _ValidationCard({
+    required this.title,
+    required this.roleLabel,
+    required this.roleDescription,
+    required this.enabled,
     required this.availableRecords,
     required this.selectedRecordId,
     required this.selectedIdDoc,
@@ -461,19 +688,31 @@ class _ValidationCard extends StatelessWidget {
     required this.onIdDocChanged,
     required this.onAddressDocChanged,
     required this.onValidate,
+    required this.onPreviewQr,
+    required this.onCopyCode,
+    required this.onCopyQrPayload,
+    required this.onDownloadQr,
     required this.idDocumentTypes,
     required this.addressDocumentTypes,
     required this.selectedRecord,
   });
 
+  final String title;
+  final String roleLabel;
+  final String roleDescription;
+  final bool enabled;
   final List<VoteAccessRecordModel> availableRecords;
   final String? selectedRecordId;
   final String? selectedIdDoc;
   final String? selectedAddressDoc;
-  final ValueChanged<String?> onRecordChanged;
-  final ValueChanged<String?> onIdDocChanged;
-  final ValueChanged<String?> onAddressDocChanged;
+  final ValueChanged<String?>? onRecordChanged;
+  final ValueChanged<String?>? onIdDocChanged;
+  final ValueChanged<String?>? onAddressDocChanged;
   final VoidCallback? onValidate;
+  final VoidCallback? onPreviewQr;
+  final VoidCallback? onCopyCode;
+  final VoidCallback? onCopyQrPayload;
+  final VoidCallback? onDownloadQr;
   final List<String> idDocumentTypes;
   final List<String> addressDocumentTypes;
   final VoteAccessRecordModel? selectedRecord;
@@ -486,7 +725,13 @@ class _ValidationCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Verification d\'un dossier', style: Theme.of(context).textTheme.titleLarge),
+            _RoleSectionHeader(
+              title: title,
+              roleLabel: roleLabel,
+              icon: Icons.verified_user_rounded,
+            ),
+            const SizedBox(height: 12),
+            Text(roleDescription, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 16),
             DropdownButtonFormField<String>(
               initialValue: selectedRecordId,
@@ -499,7 +744,7 @@ class _ValidationCard extends StatelessWidget {
                     ),
                   )
                   .toList(),
-              onChanged: onRecordChanged,
+              onChanged: enabled ? onRecordChanged : null,
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -508,7 +753,7 @@ class _ValidationCard extends StatelessWidget {
               items: idDocumentTypes
                   .map((value) => DropdownMenuItem<String>(value: value, child: Text(value)))
                   .toList(),
-              onChanged: onIdDocChanged,
+              onChanged: enabled ? onIdDocChanged : null,
             ),
             const SizedBox(height: 12),
             DropdownButtonFormField<String>(
@@ -517,11 +762,11 @@ class _ValidationCard extends StatelessWidget {
               items: addressDocumentTypes
                   .map((value) => DropdownMenuItem<String>(value: value, child: Text(value)))
                   .toList(),
-              onChanged: onAddressDocChanged,
+              onChanged: enabled ? onAddressDocChanged : null,
             ),
             const SizedBox(height: 16),
             FilledButton.icon(
-              onPressed: onValidate,
+              onPressed: enabled ? onValidate : null,
               icon: const Icon(Icons.verified_user_outlined),
               label: const Text('Valider l\'inscription'),
             ),
@@ -548,6 +793,34 @@ class _ValidationCard extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     SelectableText(selectedRecord!.code, style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        FilledButton.tonalIcon(
+                          onPressed: onPreviewQr,
+                          icon: const Icon(Icons.fullscreen_rounded),
+                          label: const Text('Agrandir'),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: onCopyCode,
+                          icon: const Icon(Icons.copy_rounded),
+                          label: const Text('Copier le code'),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: onCopyQrPayload,
+                          icon: const Icon(Icons.qr_code_2_rounded),
+                          label: const Text('Copier le QR'),
+                        ),
+                        FilledButton.tonalIcon(
+                          onPressed: onDownloadQr,
+                          icon: const Icon(Icons.download_rounded),
+                          label: const Text('Telecharger PNG'),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -562,9 +835,21 @@ class _ValidationCard extends StatelessWidget {
 }
 
 class _CodeRow extends StatelessWidget {
-  const _CodeRow({required this.record});
+  const _CodeRow({
+    required this.record,
+    required this.pollLabel,
+    required this.onPreviewQr,
+    required this.onCopyCode,
+    required this.onCopyQrPayload,
+    required this.onDownloadQr,
+  });
 
   final VoteAccessRecordModel record;
+  final String pollLabel;
+  final VoidCallback? onPreviewQr;
+  final VoidCallback onCopyCode;
+  final VoidCallback? onCopyQrPayload;
+  final VoidCallback? onDownloadQr;
 
   @override
   Widget build(BuildContext context) {
@@ -591,12 +876,119 @@ class _CodeRow extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 8),
-          Text('Sondage: ${record.pollId}'),
+          Text('Sondage: $pollLabel'),
           if (record.communeName != null) Text('Commune: ${record.communeName}'),
           if (record.documentType != null) Text('Documents: ${record.documentType}'),
           if (record.validatedAt != null) Text('Valide le: ${record.validatedAt}'),
           if (record.expiresAt != null) Text('Expire le: ${record.expiresAt}'),
           if (record.verifiedByControleurLabel != null) Text('Verifie par: ${record.verifiedByControleurLabel}'),
+          const SizedBox(height: 12),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            children: [
+              OutlinedButton.icon(
+                onPressed: onCopyCode,
+                icon: const Icon(Icons.copy_rounded, size: 18),
+                label: const Text('Copier le code'),
+              ),
+              if (record.qrPayload != null)
+                OutlinedButton.icon(
+                  onPressed: onPreviewQr,
+                  icon: const Icon(Icons.visibility_rounded, size: 18),
+                  label: const Text('Voir le QR'),
+                ),
+              if (record.qrPayload != null)
+                OutlinedButton.icon(
+                  onPressed: onCopyQrPayload,
+                  icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+                  label: const Text('Copier le QR'),
+                ),
+              if (record.qrPayload != null)
+                OutlinedButton.icon(
+                  onPressed: onDownloadQr,
+                  icon: const Icon(Icons.download_rounded, size: 18),
+                  label: const Text('Telecharger PNG'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RoleSectionHeader extends StatelessWidget {
+  const _RoleSectionHeader({
+    required this.title,
+    required this.roleLabel,
+    required this.icon,
+  });
+
+  final String title;
+  final String roleLabel;
+  final IconData icon;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: BoxDecoration(
+            color: const Color(0xFF0F6D8F).withValues(alpha: 0.10),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Icon(icon, size: 20, color: const Color(0xFF0F6D8F)),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(title, style: Theme.of(context).textTheme.titleLarge),
+        ),
+        Chip(label: Text(roleLabel)),
+      ],
+    );
+  }
+}
+
+class _RoleCapabilityChip extends StatelessWidget {
+  const _RoleCapabilityChip({
+    required this.label,
+    required this.enabled,
+    required this.icon,
+    required this.activeText,
+    required this.inactiveText,
+  });
+
+  final String label;
+  final bool enabled;
+  final IconData icon;
+  final String activeText;
+  final String inactiveText;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: enabled ? const Color(0xFFE0F2FE) : const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: enabled ? const Color(0xFF7DD3FC) : const Color(0xFFD7E0EA),
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 18, color: enabled ? const Color(0xFF0F6D8F) : const Color(0xFF64748B)),
+          const SizedBox(width: 8),
+          Flexible(
+            child: Text(
+              '$label · ${enabled ? activeText : inactiveText}',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+          ),
         ],
       ),
     );

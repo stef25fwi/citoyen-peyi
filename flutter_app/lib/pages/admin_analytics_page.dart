@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/poll_models.dart';
-import '../services/poll_service.dart';
-import '../services/vote_access_service.dart';
+import '../services/admin_analytics_service.dart';
 
 class AdminAnalyticsPage extends StatefulWidget {
   const AdminAnalyticsPage({super.key});
@@ -13,9 +12,7 @@ class AdminAnalyticsPage extends StatefulWidget {
 
 class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
   bool _isLoading = true;
-  List<PollModel> _polls = const [];
-  List<_PollAccessStats> _accessStats = const [];
-  List<_DailyVotes> _dailyVotes = const [];
+  AdminAnalyticsSummary _summary = const AdminAnalyticsSummary.empty();
 
   @override
   void initState() {
@@ -28,76 +25,23 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
       _isLoading = true;
     });
 
-    final polls = await PollService.instance.loadPolls();
-    final accessStats = <_PollAccessStats>[];
-    final votesByDay = <String, int>{};
-
-    for (final poll in polls) {
-      final records = await VoteAccessService.instance.loadRecordsForPoll(poll.id);
-      final activated = records.where((item) => item.activated).length;
-      final voted = records.where((item) => item.hasVoted).length;
-      accessStats.add(
-        _PollAccessStats(
-          pollId: poll.id,
-          pollName: poll.projectTitle,
-          total: records.length,
-          activated: activated,
-          voted: voted,
-        ),
-      );
-
-      for (final record in records) {
-        if (record.votedAt == null) {
-          continue;
-        }
-
-        final key = record.votedAt!.split('T').first;
-        votesByDay[key] = (votesByDay[key] ?? 0) + 1;
-      }
-    }
-
-    final now = DateTime.now();
-    final dailyVotes = List<_DailyVotes>.generate(7, (index) {
-      final date = now.subtract(Duration(days: 6 - index));
-      final key = date.toIso8601String().split('T').first;
-      return _DailyVotes(
-        label: _weekdayLabel(date.weekday),
-        votes: votesByDay[key] ?? 0,
-      );
-    });
+    final summary = await AdminAnalyticsService.instance.loadSummary();
 
     if (!mounted) {
       return;
     }
 
     setState(() {
-      _polls = polls;
-      _accessStats = accessStats;
-      _dailyVotes = dailyVotes;
+      _summary = summary;
       _isLoading = false;
     });
   }
 
-  String _weekdayLabel(int weekday) {
-    const labels = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
-    return labels[(weekday - 1).clamp(0, labels.length - 1)];
-  }
-
   @override
   Widget build(BuildContext context) {
-    final totalVotes = _polls.fold<int>(0, (sum, poll) => sum + poll.totalVoted);
-    final totalVoters = _polls.fold<int>(0, (sum, poll) => sum + poll.totalVoters);
-    final activeCount = _polls.where((item) => item.status == 'active').length;
-    final closedCount = _polls.where((item) => item.status == 'closed').length;
-    final draftCount = _polls.where((item) => item.status == 'draft').length;
-    final averageParticipation = _polls.where((item) => item.totalVoters > 0).isEmpty
-        ? 0
-        : (_polls
-                    .where((item) => item.totalVoters > 0)
-                    .map((item) => item.totalVoted / item.totalVoters)
-                    .reduce((left, right) => left + right) /
-                _polls.where((item) => item.totalVoters > 0).length) *
-            100;
+    final polls = _summary.polls;
+    final accessStats = _summary.accessStats;
+    final dailyVotes = _summary.dailyVotes;
 
     return Scaffold(
       appBar: AppBar(
@@ -117,10 +61,10 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                         spacing: 12,
                         runSpacing: 12,
                         children: [
-                          _KpiCard(label: 'Votes emis', value: '$totalVotes', subtitle: 'sur $totalVoters inscrits'),
-                          _KpiCard(label: 'Participation moyenne', value: '${averageParticipation.round()}%', subtitle: 'sondages actifs et clos'),
-                          _KpiCard(label: 'Sondages actifs', value: '$activeCount', subtitle: '$closedCount clos, $draftCount brouillons'),
-                          _KpiCard(label: 'Codes valides', value: '${_accessStats.fold<int>(0, (sum, item) => sum + item.total)}', subtitle: 'distribution en cours'),
+                          _KpiCard(label: 'Votes emis', value: '${_summary.totalVotes}', subtitle: 'sur ${_summary.totalVoters} inscrits'),
+                          _KpiCard(label: 'Participation moyenne', value: '${_summary.averageParticipation.round()}%', subtitle: 'sondages actifs et clos'),
+                          _KpiCard(label: 'Sondages actifs', value: '${_summary.activeCount}', subtitle: '${_summary.closedCount} clos, ${_summary.draftCount} brouillons'),
+                          _KpiCard(label: 'Codes valides', value: '${_summary.totalValidatedCodes}', subtitle: 'distribution en cours'),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -132,10 +76,10 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                             children: [
                               Text('Participation par sondage', style: Theme.of(context).textTheme.titleMedium),
                               const SizedBox(height: 16),
-                              if (_polls.isEmpty)
+                              if (polls.isEmpty)
                                 const Text('Aucun sondage disponible.')
                               else
-                                for (final poll in _polls)
+                                for (final poll in polls)
                                   Padding(
                                     padding: const EdgeInsets.only(bottom: 16),
                                     child: _PollParticipationRow(poll: poll),
@@ -156,10 +100,10 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                                   children: [
                                     Text('Activation des acces', style: Theme.of(context).textTheme.titleMedium),
                                     const SizedBox(height: 16),
-                                    if (_accessStats.isEmpty)
+                                    if (accessStats.isEmpty)
                                       const Text('Aucun code valide n\'a encore ete charge.')
                                     else
-                                      for (final stat in _accessStats)
+                                      for (final stat in accessStats)
                                         Padding(
                                           padding: const EdgeInsets.only(bottom: 16),
                                           child: _AccessUsageRow(stat: stat),
@@ -176,7 +120,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                                   children: [
                                     Text('Votes sur 7 jours', style: Theme.of(context).textTheme.titleMedium),
                                     const SizedBox(height: 16),
-                                    for (final daily in _dailyVotes)
+                                    for (final daily in dailyVotes)
                                       Padding(
                                         padding: const EdgeInsets.only(bottom: 14),
                                         child: _DailyVotesRow(daily: daily),
@@ -279,7 +223,7 @@ class _PollParticipationRow extends StatelessWidget {
 class _AccessUsageRow extends StatelessWidget {
   const _AccessUsageRow({required this.stat});
 
-  final _PollAccessStats stat;
+  final PollAccessStats stat;
 
   @override
   Widget build(BuildContext context) {
@@ -304,7 +248,7 @@ class _AccessUsageRow extends StatelessWidget {
 class _DailyVotesRow extends StatelessWidget {
   const _DailyVotesRow({required this.daily});
 
-  final _DailyVotes daily;
+  final DailyVotesMetric daily;
 
   @override
   Widget build(BuildContext context) {
@@ -321,27 +265,4 @@ class _DailyVotesRow extends StatelessWidget {
       ],
     );
   }
-}
-
-class _PollAccessStats {
-  const _PollAccessStats({
-    required this.pollId,
-    required this.pollName,
-    required this.total,
-    required this.activated,
-    required this.voted,
-  });
-
-  final String pollId;
-  final String pollName;
-  final int total;
-  final int activated;
-  final int voted;
-}
-
-class _DailyVotes {
-  const _DailyVotes({required this.label, required this.votes});
-
-  final String label;
-  final int votes;
 }

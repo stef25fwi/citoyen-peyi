@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/poll_models.dart';
-import '../services/poll_service.dart';
+import '../services/admin_analytics_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/auth_session_store.dart';
 import '../services/controleur_profile_service.dart';
@@ -18,6 +18,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   bool _isLoading = true;
   List<PollModel> _polls = const [];
   List<ControleurProfileModel> _controleurs = const [];
+  AdminAnalyticsSummary _analytics = const AdminAnalyticsSummary.empty();
 
   @override
   void initState() {
@@ -29,14 +30,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     setState(() => _isLoading = true);
 
     final results = await Future.wait([
-      PollService.instance.loadPolls(),
+      AdminAnalyticsService.instance.loadSummary(),
       ControleurProfileService.instance.loadProfiles(),
     ]);
 
     if (!mounted) return;
 
+    final analytics = results[0] as AdminAnalyticsSummary;
+
     setState(() {
-      _polls = results[0] as List<PollModel>;
+      _analytics = analytics;
+      _polls = analytics.polls;
       _controleurs = results[1] as List<ControleurProfileModel>;
       _isLoading = false;
     });
@@ -222,9 +226,121 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
-                  child: Text(
-                    'Cette version Flutter utilise deja le backend d\'echange admin. Les pages metier restantes peuvent maintenant se brancher sur cette session.',
-                    style: theme.textTheme.bodyLarge,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text('Vue analytics', style: theme.textTheme.titleLarge),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.of(context).pushNamed('/admin/analytics'),
+                            child: const Text('Voir le detail'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      Wrap(
+                        spacing: 12,
+                        runSpacing: 12,
+                        children: [
+                          _AnalyticsMetricCard(
+                            label: 'Votes emis',
+                            value: '${_analytics.totalVotes}',
+                            subtitle: 'sur ${_analytics.totalVoters} inscrits',
+                          ),
+                          _AnalyticsMetricCard(
+                            label: 'Participation moyenne',
+                            value: '${_analytics.averageParticipation.round()}%',
+                            subtitle: '${_analytics.activeCount} actifs, ${_analytics.closedCount} clos',
+                          ),
+                          _AnalyticsMetricCard(
+                            label: 'Codes actives',
+                            value: '${_analytics.totalActivatedCodes}',
+                            subtitle: 'sur ${_analytics.totalValidatedCodes} valides',
+                          ),
+                          _AnalyticsMetricCard(
+                            label: 'Votes traces',
+                            value: '${_analytics.totalUsedCodes}',
+                            subtitle: 'sur les 7 derniers jours et sondages charges',
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (!_isLoading && _analytics.polls.isEmpty)
+                        Text(
+                          'Aucune donnee analytics disponible pour le moment.',
+                          style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
+                        )
+                      else
+                        LayoutBuilder(
+                          builder: (context, constraints) {
+                            final wide = constraints.maxWidth >= 760;
+                            final maxDailyVotes = _analytics.dailyVotes.fold<int>(
+                              0,
+                              (maxValue, item) => item.votes > maxValue ? item.votes : maxValue,
+                            );
+                            final trend = Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: const Color(0xFFD7E0EA)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Votes sur 7 jours', style: theme.textTheme.titleMedium),
+                                  const SizedBox(height: 14),
+                                  for (final daily in _analytics.dailyVotes)
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 12),
+                                      child: _CompactDailyVotesRow(
+                                        daily: daily,
+                                        maxVotes: maxDailyVotes,
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            );
+                            final participation = Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: const Color(0xFFD7E0EA)),
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Participation par sondage', style: theme.textTheme.titleMedium),
+                                  const SizedBox(height: 14),
+                                  for (final poll in _analytics.polls.take(3))
+                                    Padding(
+                                      padding: const EdgeInsets.only(bottom: 14),
+                                      child: _CompactPollParticipationRow(poll: poll),
+                                    ),
+                                ],
+                              ),
+                            );
+
+                            if (wide) {
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Expanded(child: trend),
+                                  const SizedBox(width: 16),
+                                  Expanded(child: participation),
+                                ],
+                              );
+                            }
+
+                            return Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [trend, const SizedBox(height: 16), participation],
+                            );
+                          },
+                        ),
+                    ],
                   ),
                 ),
               ),
@@ -330,6 +446,100 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AnalyticsMetricCard extends StatelessWidget {
+  const _AnalyticsMetricCard({
+    required this.label,
+    required this.value,
+    required this.subtitle,
+  });
+
+  final String label;
+  final String value;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    final availableWidth = MediaQuery.sizeOf(context).width - 88;
+    final cardWidth = availableWidth < 240 ? availableWidth : 195.0;
+
+    return SizedBox(
+      width: cardWidth,
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: const Color(0xFFD7E0EA)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(value, style: Theme.of(context).textTheme.headlineMedium),
+            const SizedBox(height: 6),
+            Text(label, style: Theme.of(context).textTheme.titleSmall),
+            const SizedBox(height: 6),
+            Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompactDailyVotesRow extends StatelessWidget {
+  const _CompactDailyVotesRow({
+    required this.daily,
+    required this.maxVotes,
+  });
+
+  final DailyVotesMetric daily;
+  final int maxVotes;
+
+  @override
+  Widget build(BuildContext context) {
+    final scale = maxVotes <= 0 ? 1.0 : maxVotes.toDouble();
+
+    return Row(
+      children: [
+        SizedBox(width: 38, child: Text(daily.label)),
+        Expanded(
+          child: LinearProgressIndicator(
+            value: (daily.votes / scale).clamp(0, 1),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Text('${daily.votes}'),
+      ],
+    );
+  }
+}
+
+class _CompactPollParticipationRow extends StatelessWidget {
+  const _CompactPollParticipationRow({required this.poll});
+
+  final PollModel poll;
+
+  @override
+  Widget build(BuildContext context) {
+    final rate = poll.totalVoters == 0 ? 0.0 : poll.totalVoted / poll.totalVoters;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(child: Text(poll.projectTitle, style: Theme.of(context).textTheme.titleSmall)),
+            Text('${(rate * 100).round()}%'),
+          ],
+        ),
+        const SizedBox(height: 8),
+        LinearProgressIndicator(value: rate),
+        const SizedBox(height: 6),
+        Text('${poll.totalVoted}/${poll.totalVoters} votants'),
+      ],
     );
   }
 }
