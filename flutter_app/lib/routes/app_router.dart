@@ -4,7 +4,11 @@ import '../pages/admin_analytics_page.dart';
 import '../pages/admin_create_poll_page.dart';
 import '../pages/admin_dashboard_page.dart';
 import '../pages/admin_login_page.dart';
+import '../pages/commune_controller_activity_page.dart';
 import '../pages/controller_login_page.dart';
+import '../pages/controller_activity_dashboard_page.dart';
+import '../pages/duplicate_request_detail_page.dart';
+import '../pages/duplicate_request_list_page.dart';
 import '../pages/home_page.dart';
 import '../pages/poll_detail_page.dart';
 import '../pages/placeholder_page.dart';
@@ -30,6 +34,10 @@ class AppRouter {
         return _page(const SuperAdminLoginPage(), settings);
       case '/super':
         return _requireRoles(settings, const SuperAdminDashboardPage(), const ['super_admin']);
+      case '/super/duplicates':
+        return _requireRoles(settings, const DuplicateRequestListPage(), const ['super_admin']);
+      case '/super/activity':
+        return _requireRoles(settings, const ControllerActivityDashboardPage(), const ['super_admin']);
       case '/admin':
         return _requireRoles(settings, const AdminDashboardPage(), const ['admin']);
       case '/admin/analytics':
@@ -77,6 +85,27 @@ class AppRouter {
           settings,
         );
       default:
+        if (uri.pathSegments.length == 3 &&
+            uri.pathSegments[0] == 'super' &&
+            uri.pathSegments[1] == 'duplicates') {
+          return _requireRoles(
+            settings,
+            DuplicateRequestDetailPage(requestId: uri.pathSegments[2]),
+            const ['super_admin'],
+          );
+        }
+
+        if (uri.pathSegments.length == 4 &&
+            uri.pathSegments[0] == 'super' &&
+            uri.pathSegments[1] == 'activity' &&
+            uri.pathSegments[2] == 'commune') {
+          return _requireRoles(
+            settings,
+            CommuneControllerActivityPage(communeId: uri.pathSegments[3]),
+            const ['super_admin'],
+          );
+        }
+
         if (uri.pathSegments.length == 3 &&
             uri.pathSegments[0] == 'admin' &&
             uri.pathSegments[1] == 'poll') {

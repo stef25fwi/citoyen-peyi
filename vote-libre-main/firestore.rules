@@ -20,8 +20,24 @@ service cloud.firestore {
       return hasRole('admin');
     }
 
+    function isSuperAdmin() {
+      return hasRole('super_admin');
+    }
+
+    function isAdminCommune() {
+      return hasRole('adminCommune') || isAdmin();
+    }
+
     function isController() {
       return hasRole('controller') || isAdmin();
+    }
+
+    function isControllerOwner(controllerId) {
+      return isController() && (
+        request.auth.uid == controllerId ||
+        request.auth.token.controllerId == controllerId ||
+        request.auth.token.code == controllerId
+      );
     }
 
     function hasOnlyKeys(allowedKeys) {
@@ -46,6 +62,38 @@ service cloud.firestore {
 
     function isControleurActivityShape() {
       return hasOnlyKeys(['id', 'controleurCode', 'controleurLabel', 'registrationCode', 'verifiedAt', 'createdAt']);
+    }
+
+    function isCitizenAccessCodeShape() {
+      return hasOnlyKeys([
+        'accessCode', 'fingerprint', 'sourceKeyMasked', 'firstNameInitial', 'lastNameInitial',
+        'birthYear', 'phoneSuffix', 'communeId', 'communeName', 'createdByControllerId',
+        'createdByControllerName', 'createdAt', 'status', 'usedForLogin', 'regeneratedFromCode',
+        'regenerationIndex', 'approvedBySuperAdminId', 'approvedAt', 'updatedAt'
+      ]);
+    }
+
+    function isCitizenFingerprintShape() {
+      return hasOnlyKeys([
+        'fingerprint', 'sourceKeyMasked', 'firstAccessCode', 'latestAccessCode', 'communeId',
+        'createdAt', 'updatedAt', 'regenerationCount'
+      ]);
+    }
+
+    function isDuplicateCodeRequestShape() {
+      return hasOnlyKeys([
+        'id', 'fingerprint', 'sourceKeyMasked', 'existingAccessCode', 'requestedByControllerId',
+        'requestedByControllerName', 'communeId', 'communeName', 'requestedAt', 'status',
+        'duplicateReason', 'controllerComment', 'reviewedBySuperAdminId', 'reviewedAt',
+        'rejectionReason', 'newAccessCode', 'updatedAt'
+      ]);
+    }
+
+    function isControllerActivityLogShape() {
+      return hasOnlyKeys([
+        'id', 'communeId', 'communeName', 'controllerId', 'controllerName', 'actionType',
+        'accessCode', 'fingerprint', 'sourceKeyMasked', 'createdAt', 'metadata', 'updatedAt'
+      ]);
     }
 
     function registrationCodeVoterUpdate() {
@@ -85,6 +133,51 @@ service cloud.firestore {
     match /controleurActivities/{document=**} {
       allow read: if isController();
       allow write: if isController() && isControleurActivityShape();
+    }
+
+    match /citizen_access_codes/{accessCode} {
+      allow read: if isSuperAdmin() ||
+        isAdminCommune() ||
+        (isController() && resource.data.createdByControllerId == request.auth.uid) ||
+        (isController() && resource.data.createdByControllerId == request.auth.token.controllerId) ||
+        (isController() && resource.data.createdByControllerId == request.auth.token.code);
+      allow create: if isController() &&
+        isCitizenAccessCodeShape() &&
+        request.resource.data.createdByControllerId in [request.auth.uid, request.auth.token.controllerId, request.auth.token.code];
+      allow update: if isSuperAdmin() && isCitizenAccessCodeShape();
+      allow delete: if false;
+    }
+
+    match /citizen_fingerprints/{fingerprint} {
+      allow read: if isController() || isAdminCommune() || isSuperAdmin();
+      allow create: if isController() && isCitizenFingerprintShape();
+      allow update: if isSuperAdmin() && isCitizenFingerprintShape();
+      allow delete: if false;
+    }
+
+    match /duplicate_code_requests/{requestId} {
+      allow read: if isSuperAdmin() ||
+        (isController() && resource.data.requestedByControllerId == request.auth.uid) ||
+        (isController() && resource.data.requestedByControllerId == request.auth.token.controllerId) ||
+        (isController() && resource.data.requestedByControllerId == request.auth.token.code);
+      allow create: if isController() &&
+        isDuplicateCodeRequestShape() &&
+        request.resource.data.status == 'pending' &&
+        request.resource.data.requestedByControllerId in [request.auth.uid, request.auth.token.controllerId, request.auth.token.code];
+      allow update: if isSuperAdmin() && isDuplicateCodeRequestShape();
+      allow delete: if false;
+    }
+
+    match /controller_activity_logs/{logId} {
+      allow read: if isSuperAdmin() || isAdminCommune() ||
+        (isController() && resource.data.controllerId == request.auth.uid) ||
+        (isController() && resource.data.controllerId == request.auth.token.controllerId) ||
+        (isController() && resource.data.controllerId == request.auth.token.code);
+      allow create: if isController() &&
+        isControllerActivityLogShape() &&
+        request.resource.data.controllerId in [request.auth.uid, request.auth.token.controllerId, request.auth.token.code];
+      allow update: if false;
+      allow delete: if false;
     }
 
     match /{document=**} {

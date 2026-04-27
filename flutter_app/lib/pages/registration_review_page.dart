@@ -7,6 +7,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 
 import '../models/poll_models.dart';
 import '../services/auth_session_store.dart';
+import '../services/citizen_access_code_service.dart';
 import '../services/poll_service.dart';
 import '../services/qr_download_service.dart';
 import '../services/vote_access_service.dart';
@@ -44,6 +45,14 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
   String _statusFilter = 'all';
   final TextEditingController _generateCountController = TextEditingController(text: '10');
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _citizenFirstNameController = TextEditingController();
+  final TextEditingController _citizenLastNameController = TextEditingController();
+  final TextEditingController _citizenBirthYearController = TextEditingController();
+  final TextEditingController _citizenPhoneSuffixController = TextEditingController();
+  final TextEditingController _duplicateCommentController = TextEditingController();
+  DuplicateReason _duplicateReason = DuplicateReason.lostCode;
+  String? _lastCitizenCodeMessage;
+  bool _isCitizenCodeSubmitting = false;
 
   @override
   void initState() {
@@ -55,6 +64,11 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
   void dispose() {
     _generateCountController.dispose();
     _searchController.dispose();
+    _citizenFirstNameController.dispose();
+    _citizenLastNameController.dispose();
+    _citizenBirthYearController.dispose();
+    _citizenPhoneSuffixController.dispose();
+    _duplicateCommentController.dispose();
     super.dispose();
   }
 
@@ -175,6 +189,50 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Inscription validee et QR pret a diffuser.')),
     );
+  }
+
+  Future<void> _createCitizenAccessCode() async {
+    if (_isCitizenCodeSubmitting) {
+      return;
+    }
+
+    setState(() {
+      _isCitizenCodeSubmitting = true;
+      _lastCitizenCodeMessage = null;
+    });
+
+    try {
+      final result = await CitizenAccessCodeService.instance.createCitizenAccessCode(
+        firstName: _citizenFirstNameController.text,
+        lastName: _citizenLastNameController.text,
+        birthYear: _citizenBirthYearController.text,
+        phoneSuffix: _citizenPhoneSuffixController.text,
+        duplicateReason: _duplicateReason,
+        controllerComment: _duplicateCommentController.text,
+        session: AuthSessionStore.instance.currentSession,
+      );
+
+      if (!mounted) return;
+      setState(() {
+        if (result.created) {
+          _lastCitizenCodeMessage = 'Code citoyen genere : ${result.accessCode!.accessCode}';
+          _duplicateCommentController.clear();
+        } else {
+          _lastCitizenCodeMessage =
+              'Un acces existe deja pour cette personne. Une demande de verification a ete transmise au super administrateur.';
+        }
+      });
+    } on ArgumentError catch (error) {
+      if (!mounted) return;
+      setState(() => _lastCitizenCodeMessage = error.message?.toString() ?? 'Informations minimales invalides.');
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _lastCitizenCodeMessage = 'Impossible de generer le code citoyen.');
+    } finally {
+      if (mounted) {
+        setState(() => _isCitizenCodeSubmitting = false);
+      }
+    }
   }
 
   Future<void> _copyToClipboard(String value, String message) async {
@@ -389,6 +447,21 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                         ],
                       ),
                       const SizedBox(height: 16),
+                      if (canValidateFiles) ...[
+                        _CitizenCodeGeneratorCard(
+                          firstNameController: _citizenFirstNameController,
+                          lastNameController: _citizenLastNameController,
+                          birthYearController: _citizenBirthYearController,
+                          phoneSuffixController: _citizenPhoneSuffixController,
+                          duplicateCommentController: _duplicateCommentController,
+                          duplicateReason: _duplicateReason,
+                          isSubmitting: _isCitizenCodeSubmitting,
+                          lastMessage: _lastCitizenCodeMessage,
+                          onReasonChanged: (value) => setState(() => _duplicateReason = value),
+                          onSubmit: _createCitizenAccessCode,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
                       LayoutBuilder(
                         builder: (context, constraints) {
                           final wide = constraints.maxWidth >= 860;
@@ -826,6 +899,145 @@ class _ValidationCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               SelectableText(selectedRecord!.qrPayload!),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CitizenCodeGeneratorCard extends StatelessWidget {
+  const _CitizenCodeGeneratorCard({
+    required this.firstNameController,
+    required this.lastNameController,
+    required this.birthYearController,
+    required this.phoneSuffixController,
+    required this.duplicateCommentController,
+    required this.duplicateReason,
+    required this.isSubmitting,
+    required this.lastMessage,
+    required this.onReasonChanged,
+    required this.onSubmit,
+  });
+
+  final TextEditingController firstNameController;
+  final TextEditingController lastNameController;
+  final TextEditingController birthYearController;
+  final TextEditingController phoneSuffixController;
+  final TextEditingController duplicateCommentController;
+  final DuplicateReason duplicateReason;
+  final bool isSubmitting;
+  final String? lastMessage;
+  final ValueChanged<DuplicateReason> onReasonChanged;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.vpn_key_rounded, color: Color(0xFF0F6D8F)),
+                const SizedBox(width: 10),
+                Expanded(child: Text('Code citoyen anonyme', style: theme.textTheme.titleLarge)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Saisir uniquement les informations minimales autorisees. Les donnees completes ne sont jamais stockees.',
+              style: theme.textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 16),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final wide = constraints.maxWidth >= 760;
+                final fields = [
+                  TextField(
+                    controller: firstNameController,
+                    enabled: !isSubmitting,
+                    decoration: const InputDecoration(labelText: 'Premiere lettre du prenom ou prenom saisi'),
+                  ),
+                  TextField(
+                    controller: lastNameController,
+                    enabled: !isSubmitting,
+                    decoration: const InputDecoration(labelText: 'Premiere lettre du nom ou nom saisi'),
+                  ),
+                  TextField(
+                    controller: birthYearController,
+                    enabled: !isSubmitting,
+                    keyboardType: TextInputType.number,
+                    maxLength: 4,
+                    decoration: const InputDecoration(labelText: 'Annee de naissance', counterText: ''),
+                  ),
+                  TextField(
+                    controller: phoneSuffixController,
+                    enabled: !isSubmitting,
+                    keyboardType: TextInputType.phone,
+                    maxLength: 2,
+                    decoration: const InputDecoration(labelText: '2 derniers chiffres telephone', counterText: ''),
+                  ),
+                ];
+
+                if (!wide) {
+                  return Column(children: [for (final field in fields) ...[field, const SizedBox(height: 12)]]);
+                }
+
+                return Column(
+                  children: [
+                    Row(children: [Expanded(child: fields[0]), const SizedBox(width: 12), Expanded(child: fields[1])]),
+                    const SizedBox(height: 12),
+                    Row(children: [Expanded(child: fields[2]), const SizedBox(width: 12), Expanded(child: fields[3])]),
+                  ],
+                );
+              },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<DuplicateReason>(
+              initialValue: duplicateReason,
+              decoration: const InputDecoration(labelText: 'Motif si doublon detecte'),
+              items: DuplicateReason.values
+                  .map((reason) => DropdownMenuItem(value: reason, child: Text(reason.label)))
+                  .toList(),
+                onChanged: isSubmitting
+                  ? null
+                  : (value) {
+                    if (value != null) onReasonChanged(value);
+                  },
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: duplicateCommentController,
+              enabled: !isSubmitting,
+              minLines: 2,
+              maxLines: 4,
+              decoration: const InputDecoration(labelText: 'Commentaire controleur optionnel'),
+            ),
+            const SizedBox(height: 16),
+            FilledButton.icon(
+              onPressed: isSubmitting ? null : onSubmit,
+              icon: isSubmitting
+                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                  : const Icon(Icons.lock_reset_rounded),
+              label: Text(isSubmitting ? 'Traitement...' : 'Generer / verifier le code citoyen'),
+            ),
+            if (lastMessage != null) ...[
+              const SizedBox(height: 16),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: lastMessage!.contains('genere') ? const Color(0xFFE0F2FE) : const Color(0xFFFFF8E1),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: SelectableText(lastMessage!),
+              ),
             ],
           ],
         ),

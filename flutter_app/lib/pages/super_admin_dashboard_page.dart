@@ -6,8 +6,11 @@ import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
 import '../services/auth_session_store.dart';
+import '../services/citizen_access_code_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/super_admin_service.dart';
+import '../widgets/super_admin_controller_activity_tile.dart';
+import '../widgets/super_admin_duplicate_tile.dart';
 
 class SuperAdminDashboardPage extends StatefulWidget {
   const SuperAdminDashboardPage({super.key});
@@ -18,6 +21,18 @@ class SuperAdminDashboardPage extends StatefulWidget {
 
 class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
   List<AdminProfileModel> _profiles = const [];
+  List<DuplicateCodeRequestModel> _duplicateRequests = const [];
+  ControllerActivityAnalytics _activityAnalytics = const ControllerActivityAnalytics(
+    logs: [],
+    totalCodesGenerated: 0,
+    duplicatesDetected: 0,
+    regenerationRequests: 0,
+    regenerationsApproved: 0,
+    regenerationsRejected: 0,
+    loginCodesUsed: 0,
+    activityByDay: {},
+    activityByController: {},
+  );
   bool _isLoading = true;
 
   @override
@@ -28,10 +43,16 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
 
   Future<void> _loadProfiles() async {
     setState(() => _isLoading = true);
-    final profiles = await SuperAdminService.instance.loadProfiles();
+    final results = await Future.wait([
+      SuperAdminService.instance.loadProfiles(),
+      CitizenAccessCodeService.instance.getDuplicateRequestsForSuperAdmin(),
+      CitizenAccessCodeService.instance.getControllerAnalytics(),
+    ]);
     if (!mounted) return;
     setState(() {
-      _profiles = profiles;
+      _profiles = results[0] as List<AdminProfileModel>;
+      _duplicateRequests = results[1] as List<DuplicateCodeRequestModel>;
+      _activityAnalytics = results[2] as ControllerActivityAnalytics;
       _isLoading = false;
     });
   }
@@ -191,6 +212,61 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                       ],
                     ),
                   ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  children: [
+                    const Icon(Icons.analytics_rounded, color: Color(0xFF0F6D8F)),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text(
+                        'Donnees analytics superadmin',
+                        style: theme.textTheme.headlineSmall,
+                      ),
+                    ),
+                    if (_isLoading)
+                      const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Vue globale des doublons citoyens, regenerations et activites des controleurs par commune.',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
+                ),
+                const SizedBox(height: 16),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final pendingDuplicates = _duplicateRequests.where((item) => item.status == 'pending').length;
+                    final duplicateTile = SuperAdminDuplicateTile(
+                      pendingCount: pendingDuplicates,
+                      latestRequests: _duplicateRequests,
+                      onOpen: () => Navigator.of(context).pushNamed('/super/duplicates'),
+                    );
+                    final activityTile = SuperAdminControllerActivityTile(
+                      analytics: _activityAnalytics,
+                      onOpen: () => Navigator.of(context).pushNamed('/super/activity'),
+                    );
+
+                    if (constraints.maxWidth >= 760) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: duplicateTile),
+                          const SizedBox(width: 16),
+                          Expanded(child: activityTile),
+                        ],
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [duplicateTile, const SizedBox(height: 16), activityTile],
+                    );
+                  },
                 ),
                 const SizedBox(height: 24),
                 Row(
