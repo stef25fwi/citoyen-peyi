@@ -163,7 +163,7 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      'En mode sans backend, toute cle est acceptee si SUPER_ADMIN_KEY n\'est pas defini.',
+                      'La cle super administrateur est verifiee par le backend et n\'est jamais compilee dans Flutter.',
                       style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF7A8796)),
                       textAlign: TextAlign.center,
                     ),

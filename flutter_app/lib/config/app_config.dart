@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 class AppConfig {
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:4000',
+    defaultValue: 'http://localhost:3000',
   );
 
   static const String firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY', defaultValue: '');
@@ -12,8 +12,6 @@ class AppConfig {
   static const String firebaseStorageBucket = String.fromEnvironment('FIREBASE_STORAGE_BUCKET', defaultValue: '');
   static const String firebaseMessagingSenderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '');
   static const String firebaseAppId = String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '');
-
-  static const String superAdminKey = String.fromEnvironment('SUPER_ADMIN_KEY', defaultValue: '');
 
   static bool get isFirebaseConfigured => [
         firebaseApiKey,

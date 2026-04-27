@@ -26,6 +26,8 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
   String? _communeId;
   String? _controllerId;
   String? _actionType;
+  DateTime? _startDate;
+  DateTime? _endDate;
 
   @override
   void initState() {
@@ -40,15 +42,44 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
         communeId: _communeId,
         controllerId: _controllerId,
         actionType: _actionType,
+        startDate: _startDate,
+        endDate: _endDate,
       ),
     );
     final communes = await CitizenAccessCodeService.instance.getCommuneAnalyticsForSuperAdmin();
     if (!mounted) return;
     setState(() {
       _analytics = analytics;
-      _communes = communes;
+      _communes = communes..sort((left, right) => right.codesGenerated.compareTo(left.codesGenerated));
       _isLoading = false;
     });
+  }
+
+  Future<void> _selectDate({required bool start}) async {
+    final initial = start ? _startDate : _endDate;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial ?? DateTime.now(),
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 1)),
+    );
+    if (picked == null) return;
+    setState(() {
+      if (start) {
+        _startDate = picked;
+      } else {
+        _endDate = picked;
+      }
+    });
+    await _load();
+  }
+
+  void _clearDates() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+    });
+    _load();
   }
 
   @override
@@ -124,6 +155,21 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                         },
                       ),
                     ),
+                    OutlinedButton.icon(
+                      onPressed: () => _selectDate(start: true),
+                      icon: const Icon(Icons.date_range_rounded),
+                      label: Text(_startDate == null ? 'Date debut' : 'Debut ${_formatDate(_startDate!)}'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: () => _selectDate(start: false),
+                      icon: const Icon(Icons.event_rounded),
+                      label: Text(_endDate == null ? 'Date fin' : 'Fin ${_formatDate(_endDate!)}'),
+                    ),
+                    TextButton.icon(
+                      onPressed: _startDate == null && _endDate == null ? null : _clearDates,
+                      icon: const Icon(Icons.clear_rounded),
+                      label: const Text('Effacer periode'),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 18),
@@ -143,6 +189,33 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                     ],
                   ),
                   const SizedBox(height: 20),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final wide = constraints.maxWidth >= 850;
+                      final byDay = _ActivityBreakdownCard(
+                        title: 'Activite par jour',
+                        items: _analytics.activityByDay,
+                        emptyText: 'Aucune activite sur la periode.',
+                      );
+                      final byController = _ActivityBreakdownCard(
+                        title: 'Activite par controleur',
+                        items: _analytics.activityByController,
+                        emptyText: 'Aucun controleur actif sur la periode.',
+                      );
+                      if (!wide) {
+                        return Column(children: [byDay, const SizedBox(height: 12), byController]);
+                      }
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: byDay),
+                          const SizedBox(width: 12),
+                          Expanded(child: byController),
+                        ],
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 20),
                   Text('Communes', style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 12),
                   for (final commune in _communes)
@@ -152,7 +225,8 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                         subtitle: Text(
                           'Controleurs actifs: ${commune.activeControllers} · Codes: ${commune.codesGenerated} · '
                           'Doublons: ${commune.duplicatesDetected} · Pending: ${commune.pendingRequests} · '
-                          'Taux doublons: ${(commune.duplicateRate * 100).round()}%',
+                          'Taux doublons: ${(commune.duplicateRate * 100).round()}% · '
+                          'Dernier code: ${commune.lastCodeGeneratedAt ?? '-'}',
                         ),
                         trailing: TextButton(
                           onPressed: () => Navigator.of(context).pushNamed('/super/activity/commune/${commune.communeId}'),
@@ -170,7 +244,7 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                       Card(
                         child: ListTile(
                           title: Text('${log.actionType} · ${log.controllerName}'),
-                          subtitle: Text('${log.communeName} · ${log.createdAt}\nCode: ${log.accessCode ?? '-'} · Source: ${log.sourceKeyMasked ?? '-'}'),
+                          subtitle: Text('${log.communeName} · ${log.createdAt}\nCode: ${log.accessCode ?? '-'}'),
                           isThreeLine: true,
                         ),
                       ),
@@ -178,6 +252,60 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+String _formatDate(DateTime value) => '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+
+class _ActivityBreakdownCard extends StatelessWidget {
+  const _ActivityBreakdownCard({
+    required this.title,
+    required this.items,
+    required this.emptyText,
+  });
+
+  final String title;
+  final Map<String, int> items;
+  final String emptyText;
+
+  @override
+  Widget build(BuildContext context) {
+    final sorted = items.entries.toList()
+      ..sort((left, right) => right.value.compareTo(left.value));
+    final maxValue = sorted.isEmpty ? 1 : sorted.first.value;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 12),
+            if (sorted.isEmpty)
+              Text(emptyText)
+            else
+              for (final entry in sorted.take(8))
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(child: Text(entry.key)),
+                          Text('${entry.value}'),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      LinearProgressIndicator(value: entry.value / maxValue),
+                    ],
+                  ),
+                ),
+          ],
         ),
       ),
     );

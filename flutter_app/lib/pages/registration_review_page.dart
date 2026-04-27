@@ -38,6 +38,7 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
   bool _isSubmitting = false;
   List<PollModel> _polls = const [];
   List<VoteAccessRecordModel> _records = const [];
+  List<DuplicateCodeRequestModel> _duplicateRequests = const [];
   String? _selectedPollId;
   String? _selectedRecordId;
   String? _selectedIdDoc;
@@ -104,8 +105,12 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
       _isLoading = true;
     });
 
+    final session = AuthSessionStore.instance.currentSession;
     final polls = await PollService.instance.loadPolls();
     final records = await VoteAccessService.instance.loadAllRecords();
+    final duplicateRequests = session?.isController == true
+      ? await CitizenAccessCodeService.instance.getDuplicateRequestsForCurrentController(status: 'all')
+      : const <DuplicateCodeRequestModel>[];
 
     if (!mounted) {
       return;
@@ -114,6 +119,7 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
     setState(() {
       _polls = polls;
       _records = records;
+      _duplicateRequests = duplicateRequests;
       _selectedPollId ??= polls.isNotEmpty ? polls.first.id : null;
       _isLoading = false;
     });
@@ -222,6 +228,10 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
               'Un acces existe deja pour cette personne. Une demande de verification a ete transmise au super administrateur.';
         }
       });
+      final duplicateRequests = await CitizenAccessCodeService.instance.getDuplicateRequestsForCurrentController(status: 'all');
+      if (mounted) {
+        setState(() => _duplicateRequests = duplicateRequests);
+      }
     } on ArgumentError catch (error) {
       if (!mounted) return;
       setState(() => _lastCitizenCodeMessage = error.message?.toString() ?? 'Informations minimales invalides.');
@@ -460,6 +470,8 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                           onReasonChanged: (value) => setState(() => _duplicateReason = value),
                           onSubmit: _createCitizenAccessCode,
                         ),
+                        const SizedBox(height: 16),
+                        _ControllerDuplicateRequestsCard(requests: _duplicateRequests),
                         const SizedBox(height: 16),
                       ],
                       LayoutBuilder(
@@ -1123,6 +1135,117 @@ class _CodeRow extends StatelessWidget {
                   label: const Text('Telecharger PNG'),
                 ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ControllerDuplicateRequestsCard extends StatelessWidget {
+  const _ControllerDuplicateRequestsCard({required this.requests});
+
+  final List<DuplicateCodeRequestModel> requests;
+
+  @override
+  Widget build(BuildContext context) {
+    final recent = requests.take(6).toList();
+    final pending = requests.where((item) => item.status == 'pending').length;
+    final approved = requests.where((item) => item.status == 'approved').length;
+    final rejected = requests.where((item) => item.status == 'rejected').length;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.notifications_active_rounded, color: Color(0xFF0F6D8F)),
+                const SizedBox(width: 10),
+                Expanded(child: Text('Mes demandes de regeneration', style: Theme.of(context).textTheme.titleLarge)),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Suivi des doublons transmis au super administrateur. Les empreintes et la cle source restent masquees cote controleur.',
+              style: Theme.of(context).textTheme.bodyMedium,
+            ),
+            const SizedBox(height: 14),
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                Chip(label: Text('$pending en attente')),
+                Chip(label: Text('$approved validee(s)')),
+                Chip(label: Text('$rejected refusee(s)')),
+              ],
+            ),
+            const SizedBox(height: 14),
+            if (recent.isEmpty)
+              const Text('Aucune demande transmise pour le moment.')
+            else
+              for (final request in recent)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _ControllerDuplicateRequestRow(request: request),
+                ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ControllerDuplicateRequestRow extends StatelessWidget {
+  const _ControllerDuplicateRequestRow({required this.request});
+
+  final DuplicateCodeRequestModel request;
+
+  @override
+  Widget build(BuildContext context) {
+    final isApproved = request.status == 'approved';
+    final isRejected = request.status == 'rejected';
+    final background = isApproved
+        ? const Color(0xFFE0F2FE)
+        : isRejected
+            ? const Color(0xFFFEE2E2)
+            : const Color(0xFFFFF7ED);
+    final icon = isApproved
+        ? Icons.check_circle_rounded
+        : isRejected
+            ? Icons.cancel_rounded
+            : Icons.hourglass_top_rounded;
+    final title = isApproved
+        ? 'Nouveau code valide : ${request.newAccessCode ?? '-'}'
+        : isRejected
+            ? 'Demande refusee'
+            : 'En attente de decision superadmin';
+    final subtitle = isRejected && request.rejectionReason?.isNotEmpty == true
+        ? 'Motif : ${request.rejectionReason}'
+        : 'Motif demande : ${request.duplicateReason.label} · ${request.requestedAt}';
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: background,
+        borderRadius: BorderRadius.circular(14),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 22, color: const Color(0xFF0F172A)),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SelectableText(title, style: Theme.of(context).textTheme.titleSmall),
+                const SizedBox(height: 4),
+                Text(subtitle),
+              ],
+            ),
           ),
         ],
       ),

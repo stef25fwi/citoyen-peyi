@@ -165,6 +165,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
         actions: [
           TextButton(
             onPressed: () async {
+              SuperAdminService.instance.clearRuntimeSuperAdminKey();
               await FirebaseAuthService.instance.signOut();
               await AuthSessionStore.instance.clear();
               if (!context.mounted) return;

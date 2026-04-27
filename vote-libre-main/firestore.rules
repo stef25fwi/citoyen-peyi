@@ -36,8 +36,37 @@ service cloud.firestore {
       return isController() && (
         request.auth.uid == controllerId ||
         request.auth.token.controllerId == controllerId ||
+        request.auth.token.controleurCodeId == controllerId ||
         request.auth.token.code == controllerId
       );
+    }
+
+    function isAccessCode(value) {
+      return value is string && value.matches('^[A-F0-9]{8}$');
+    }
+
+    function isFingerprint(value) {
+      return value is string && value.matches('^[a-f0-9]{64}$');
+    }
+
+    function isMaskedSource(value) {
+      return value is string && value.matches('^[A-Z][A-Z][0-9]{6}$');
+    }
+
+    function isAccessStatus(value) {
+      return value in ['active', 'replaced', 'revoked'];
+    }
+
+    function isDuplicateStatus(value) {
+      return value in ['pending', 'approved', 'rejected'];
+    }
+
+    function isDuplicateReason(value) {
+      return value in ['lost_code', 'unreadable_code', 'citizen_claims_no_access', 'controller_error', 'other'];
+    }
+
+    function isControllerAction(value) {
+      return value in ['code_created', 'duplicate_detected', 'duplicate_request_created', 'regeneration_approved', 'regeneration_rejected', 'login_code_used'];
     }
 
     function hasOnlyKeys(allowedKeys) {
@@ -70,14 +99,26 @@ service cloud.firestore {
         'birthYear', 'phoneSuffix', 'communeId', 'communeName', 'createdByControllerId',
         'createdByControllerName', 'createdAt', 'status', 'usedForLogin', 'regeneratedFromCode',
         'regenerationIndex', 'approvedBySuperAdminId', 'approvedAt', 'updatedAt'
-      ]);
+      ]) &&
+      isAccessCode(request.resource.data.accessCode) &&
+      isFingerprint(request.resource.data.fingerprint) &&
+      isMaskedSource(request.resource.data.sourceKeyMasked) &&
+      isAccessStatus(request.resource.data.status) &&
+      request.resource.data.birthYear.matches('^[0-9]{4}$') &&
+      request.resource.data.phoneSuffix.matches('^[0-9]{2}$') &&
+      request.resource.data.regenerationIndex is int;
     }
 
     function isCitizenFingerprintShape() {
       return hasOnlyKeys([
         'fingerprint', 'sourceKeyMasked', 'firstAccessCode', 'latestAccessCode', 'communeId',
         'createdAt', 'updatedAt', 'regenerationCount'
-      ]);
+      ]) &&
+      isFingerprint(request.resource.data.fingerprint) &&
+      isMaskedSource(request.resource.data.sourceKeyMasked) &&
+      isAccessCode(request.resource.data.firstAccessCode) &&
+      isAccessCode(request.resource.data.latestAccessCode) &&
+      request.resource.data.regenerationCount is int;
     }
 
     function isDuplicateCodeRequestShape() {
@@ -86,14 +127,24 @@ service cloud.firestore {
         'requestedByControllerName', 'communeId', 'communeName', 'requestedAt', 'status',
         'duplicateReason', 'controllerComment', 'reviewedBySuperAdminId', 'reviewedAt',
         'rejectionReason', 'newAccessCode', 'updatedAt'
-      ]);
+      ]) &&
+      isFingerprint(request.resource.data.fingerprint) &&
+      isMaskedSource(request.resource.data.sourceKeyMasked) &&
+      isAccessCode(request.resource.data.existingAccessCode) &&
+      isDuplicateStatus(request.resource.data.status) &&
+      isDuplicateReason(request.resource.data.duplicateReason) &&
+      (!('newAccessCode' in request.resource.data) || request.resource.data.newAccessCode == null || isAccessCode(request.resource.data.newAccessCode));
     }
 
     function isControllerActivityLogShape() {
       return hasOnlyKeys([
         'id', 'communeId', 'communeName', 'controllerId', 'controllerName', 'actionType',
         'accessCode', 'fingerprint', 'sourceKeyMasked', 'createdAt', 'metadata', 'updatedAt'
-      ]);
+      ]) &&
+      isControllerAction(request.resource.data.actionType) &&
+      (!('accessCode' in request.resource.data) || request.resource.data.accessCode == null || isAccessCode(request.resource.data.accessCode)) &&
+      (!('fingerprint' in request.resource.data) || request.resource.data.fingerprint == null || isFingerprint(request.resource.data.fingerprint)) &&
+      (!('sourceKeyMasked' in request.resource.data) || request.resource.data.sourceKeyMasked == null || isMaskedSource(request.resource.data.sourceKeyMasked));
     }
 
     function registrationCodeVoterUpdate() {
@@ -136,46 +187,27 @@ service cloud.firestore {
     }
 
     match /citizen_access_codes/{accessCode} {
-      allow read: if isSuperAdmin() ||
-        isAdminCommune() ||
-        (isController() && resource.data.createdByControllerId == request.auth.uid) ||
-        (isController() && resource.data.createdByControllerId == request.auth.token.controllerId) ||
-        (isController() && resource.data.createdByControllerId == request.auth.token.code);
-      allow create: if isController() &&
-        isCitizenAccessCodeShape() &&
-        request.resource.data.createdByControllerId in [request.auth.uid, request.auth.token.controllerId, request.auth.token.code];
-      allow update: if isSuperAdmin() && isCitizenAccessCodeShape();
+      allow read: if isSuperAdmin();
+      allow create, update: if false;
       allow delete: if false;
     }
 
     match /citizen_fingerprints/{fingerprint} {
-      allow read: if isController() || isAdminCommune() || isSuperAdmin();
-      allow create: if isController() && isCitizenFingerprintShape();
-      allow update: if isSuperAdmin() && isCitizenFingerprintShape();
+      allow read: if isSuperAdmin();
+      allow create, update: if false;
       allow delete: if false;
     }
 
     match /duplicate_code_requests/{requestId} {
-      allow read: if isSuperAdmin() ||
-        (isController() && resource.data.requestedByControllerId == request.auth.uid) ||
-        (isController() && resource.data.requestedByControllerId == request.auth.token.controllerId) ||
-        (isController() && resource.data.requestedByControllerId == request.auth.token.code);
-      allow create: if isController() &&
-        isDuplicateCodeRequestShape() &&
-        request.resource.data.status == 'pending' &&
-        request.resource.data.requestedByControllerId in [request.auth.uid, request.auth.token.controllerId, request.auth.token.code];
+      allow read: if isSuperAdmin();
+      allow create: if false;
       allow update: if isSuperAdmin() && isDuplicateCodeRequestShape();
       allow delete: if false;
     }
 
     match /controller_activity_logs/{logId} {
-      allow read: if isSuperAdmin() || isAdminCommune() ||
-        (isController() && resource.data.controllerId == request.auth.uid) ||
-        (isController() && resource.data.controllerId == request.auth.token.controllerId) ||
-        (isController() && resource.data.controllerId == request.auth.token.code);
-      allow create: if isController() &&
-        isControllerActivityLogShape() &&
-        request.resource.data.controllerId in [request.auth.uid, request.auth.token.controllerId, request.auth.token.code];
+      allow read: if isSuperAdmin() || isAdminCommune();
+      allow create: if false;
       allow update: if false;
       allow delete: if false;
     }

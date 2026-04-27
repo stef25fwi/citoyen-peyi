@@ -2,10 +2,14 @@ import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:crypto/crypto.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
 
+import '../config/app_config.dart';
 import 'auth_session_store.dart';
 import 'browser_storage_service.dart';
 import 'firestore_data_service.dart';
+import 'super_admin_service.dart';
 
 enum DuplicateReason {
   lostCode('lost_code', 'Code perdu'),
@@ -523,6 +527,18 @@ class CitizenAccessCodeService {
     AuthSession? session,
   }) async {
     final currentSession = session ?? AuthSessionStore.instance.currentSession;
+    final backendResult = await _createCitizenAccessCodeOnBackend(
+      firstName: firstName,
+      lastName: lastName,
+      birthYear: birthYear,
+      phoneSuffix: phoneSuffix,
+      duplicateReason: duplicateReason,
+      controllerComment: controllerComment,
+    );
+    if (backendResult != null) {
+      return backendResult;
+    }
+
     final source = generateCitizenSourceKey(
       firstName: firstName,
       lastName: lastName,
@@ -644,6 +660,14 @@ class CitizenAccessCodeService {
     required String requestId,
     String? reviewedBySuperAdminId,
   }) async {
+    final backendRequest = await _postDuplicateDecisionOnBackend(
+      requestId: requestId,
+      approve: true,
+    );
+    if (backendRequest != null) {
+      return backendRequest;
+    }
+
     final request = await _loadDuplicateRequest(requestId);
     if (request == null || request.status != 'pending') {
       return request;
@@ -717,6 +741,15 @@ class CitizenAccessCodeService {
     required String rejectionReason,
     String? reviewedBySuperAdminId,
   }) async {
+    final backendRequest = await _postDuplicateDecisionOnBackend(
+      requestId: requestId,
+      approve: false,
+      rejectionReason: rejectionReason,
+    );
+    if (backendRequest != null) {
+      return backendRequest;
+    }
+
     final request = await _loadDuplicateRequest(requestId);
     if (request == null) {
       return null;
@@ -779,6 +812,11 @@ class CitizenAccessCodeService {
   Future<List<ControllerActivityLogModel>> getControllerActivityLogs({
     ControllerActivityFilters filters = const ControllerActivityFilters(),
   }) async {
+    final backendLogs = await _getControllerActivityLogsFromBackend(filters: filters);
+    if (backendLogs != null) {
+      return _applyDateFilters(backendLogs, filters)..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+    }
+
     final db = FirestoreDataService.instance;
     List<ControllerActivityLogModel> logs;
 
@@ -808,6 +846,15 @@ class CitizenAccessCodeService {
     String? controllerId,
     String? status,
   }) async {
+    final backendRequests = await _getDuplicateRequestsFromBackend(
+      communeId: communeId,
+      controllerId: controllerId,
+      status: status,
+    );
+    if (backendRequests != null) {
+      return backendRequests;
+    }
+
     final db = FirestoreDataService.instance;
     List<DuplicateCodeRequestModel> requests;
     if (db != null) {
@@ -829,6 +876,16 @@ class CitizenAccessCodeService {
       return true;
     }).toList()
       ..sort((left, right) => right.requestedAt.compareTo(left.requestedAt));
+  }
+
+  Future<List<DuplicateCodeRequestModel>> getDuplicateRequestsForCurrentController({
+    String? status,
+  }) {
+    final session = AuthSessionStore.instance.currentSession;
+    return getDuplicateRequestsForSuperAdmin(
+      controllerId: _sessionActorId(session),
+      status: status,
+    );
   }
 
   Future<List<CommuneAnalyticsModel>> getCommuneAnalyticsForSuperAdmin() async {
@@ -1009,6 +1066,161 @@ class CitizenAccessCodeService {
   String _sessionCommuneId(AuthSession? session) => session?.commune?.code ?? session?.commune?.name ?? 'unknown-commune';
 
   String _sessionCommuneName(AuthSession? session) => session?.commune?.name ?? 'Commune non renseignee';
+
+  bool get _secureBackendMode => AppConfig.apiBaseUrl.isNotEmpty &&
+      !AppConfig.apiBaseUrl.contains('localhost') &&
+      !AppConfig.apiBaseUrl.contains('127.0.0.1');
+
+  Future<CitizenCodeCreationResult?> _createCitizenAccessCodeOnBackend({
+    required String firstName,
+    required String lastName,
+    required String birthYear,
+    required String phoneSuffix,
+    required DuplicateReason duplicateReason,
+    String? controllerComment,
+  }) async {
+    final payload = await _authorizedBackendRequest(
+      method: 'POST',
+      path: '/api/citizen-access/codes',
+      body: {
+        'firstName': firstName,
+        'lastName': lastName,
+        'birthYear': birthYear,
+        'phoneSuffix': phoneSuffix,
+        'duplicateReason': duplicateReason.value,
+        'controllerComment': controllerComment,
+      },
+    );
+    if (payload == null) return null;
+
+    final status = payload['status'] as String?;
+    if (status == 'created') {
+      final access = CitizenAccessCodeModel.fromJson(payload['accessCode'] as Map<String, dynamic>? ?? const <String, dynamic>{});
+      return CitizenCodeCreationResult.created(access);
+    }
+    if (status == 'duplicate_request_created') {
+      final request = DuplicateCodeRequestModel.fromJson(payload['duplicateRequest'] as Map<String, dynamic>? ?? const <String, dynamic>{});
+      return CitizenCodeCreationResult.duplicate(
+        duplicateRequest: request,
+        existingAccessCode: request.existingAccessCode,
+      );
+    }
+    return null;
+  }
+
+  Future<DuplicateCodeRequestModel?> _postDuplicateDecisionOnBackend({
+    required String requestId,
+    required bool approve,
+    String? rejectionReason,
+  }) async {
+    final payload = await _authorizedBackendRequest(
+      method: 'POST',
+      path: '/api/citizen-access/duplicates/$requestId/${approve ? 'approve' : 'reject'}',
+      body: approve ? const <String, dynamic>{} : {'rejectionReason': rejectionReason},
+    );
+    if (payload == null) return null;
+    return DuplicateCodeRequestModel.fromJson(payload['request'] as Map<String, dynamic>? ?? const <String, dynamic>{}, id: requestId);
+  }
+
+  Future<List<DuplicateCodeRequestModel>?> _getDuplicateRequestsFromBackend({
+    String? communeId,
+    String? controllerId,
+    String? status,
+  }) async {
+    final payload = await _authorizedBackendRequest(
+      method: 'GET',
+      path: '/api/citizen-access/duplicates',
+      query: {
+        if (communeId?.isNotEmpty == true) 'communeId': communeId!,
+        if (controllerId?.isNotEmpty == true) 'controllerId': controllerId!,
+        if (status?.isNotEmpty == true) 'status': status!,
+      },
+    );
+    if (payload == null) return null;
+    final records = payload['requests'] as List<dynamic>? ?? const [];
+    return records
+        .whereType<Map<String, dynamic>>()
+        .map((item) => DuplicateCodeRequestModel.fromJson(item, id: item['id'] as String?))
+        .toList()
+      ..sort((left, right) => right.requestedAt.compareTo(left.requestedAt));
+  }
+
+  Future<List<ControllerActivityLogModel>?> _getControllerActivityLogsFromBackend({
+    required ControllerActivityFilters filters,
+  }) async {
+    final payload = await _authorizedBackendRequest(
+      method: 'GET',
+      path: '/api/citizen-access/activity',
+      query: {
+        if (filters.communeId?.isNotEmpty == true) 'communeId': filters.communeId!,
+        if (filters.controllerId?.isNotEmpty == true) 'controllerId': filters.controllerId!,
+        if (filters.actionType?.isNotEmpty == true) 'actionType': filters.actionType!,
+        if (filters.startDate != null) 'startDate': filters.startDate!.toIso8601String(),
+        if (filters.endDate != null) 'endDate': filters.endDate!.toIso8601String(),
+      },
+    );
+    if (payload == null) return null;
+    final records = payload['logs'] as List<dynamic>? ?? const [];
+    return records
+        .whereType<Map<String, dynamic>>()
+        .map((item) => ControllerActivityLogModel.fromJson(item, id: item['id'] as String?))
+        .toList();
+  }
+
+  Future<Map<String, dynamic>?> _authorizedBackendRequest({
+    required String method,
+    required String path,
+    Map<String, dynamic>? body,
+    Map<String, String> query = const {},
+  }) async {
+    if (!AppConfig.isFirebaseConfigured || AppConfig.apiBaseUrl.isEmpty) {
+      return null;
+    }
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        if (_secureBackendMode) {
+          throw StateError('Session Firebase requise pour cette operation.');
+        }
+        return null;
+      }
+      final token = await user.getIdToken();
+      var uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
+      if (query.isNotEmpty) {
+        uri = uri.replace(queryParameters: query);
+      }
+
+      final headers = {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+        if (SuperAdminService.instance.runtimeSuperAdminKey?.isNotEmpty == true)
+          'x-super-admin-key': SuperAdminService.instance.runtimeSuperAdminKey!,
+      };
+      final response = method == 'GET'
+          ? await http.get(uri, headers: headers).timeout(const Duration(seconds: 12))
+          : await http.post(uri, headers: headers, body: jsonEncode(body ?? const <String, dynamic>{})).timeout(const Duration(seconds: 12));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw StateError(_readBackendError(response.body));
+      }
+      return jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (error) {
+      if (_secureBackendMode) {
+        rethrow;
+      }
+      return null;
+    }
+  }
+
+  String _readBackendError(String body) {
+    try {
+      final payload = jsonDecode(body) as Map<String, dynamic>;
+      return payload['message'] as String? ?? 'Operation backend impossible.';
+    } catch (_) {
+      return 'Operation backend impossible.';
+    }
+  }
 }
 
 String _readDate(Object? value) {

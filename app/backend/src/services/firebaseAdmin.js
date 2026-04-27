@@ -1,13 +1,12 @@
 import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin/app';
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
-
-const resolvePrivateKey = () => process.env.FIREBASE_ADMIN_PRIVATE_KEY?.replace(/\\n/g, '\n');
+import { env, getFirebaseAdminPrivateKey, isFirebaseAdminConfigured } from '../config/env.js';
 
 const hasExplicitCredentials = () => Boolean(
-  process.env.FIREBASE_ADMIN_PROJECT_ID
-  && process.env.FIREBASE_ADMIN_CLIENT_EMAIL
-  && process.env.FIREBASE_ADMIN_PRIVATE_KEY,
+  env.firebaseAdminProjectId
+  && env.firebaseAdminClientEmail
+  && env.firebaseAdminPrivateKey,
 );
 
 const initializeFirebaseAdmin = () => {
@@ -19,22 +18,20 @@ const initializeFirebaseAdmin = () => {
   if (hasExplicitCredentials()) {
     return initializeApp({
       credential: cert({
-        projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-        clientEmail: process.env.FIREBASE_ADMIN_CLIENT_EMAIL,
-        privateKey: resolvePrivateKey(),
+        projectId: env.firebaseAdminProjectId,
+        clientEmail: env.firebaseAdminClientEmail,
+        privateKey: getFirebaseAdminPrivateKey(),
       }),
     });
   }
 
   return initializeApp({
     credential: applicationDefault(),
-    projectId: process.env.FIREBASE_ADMIN_PROJECT_ID || undefined,
+    projectId: env.firebaseAdminProjectId || undefined,
   });
 };
 
-export const isFirebaseAdminConfigured = () => Boolean(
-  hasExplicitCredentials() || process.env.GOOGLE_APPLICATION_CREDENTIALS,
-);
+export { isFirebaseAdminConfigured };
 
 export const getFirebaseAdminAuth = () => getAuth(initializeFirebaseAdmin());
 

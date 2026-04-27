@@ -1,5 +1,7 @@
 import express from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
+import { env } from '../config/env.js';
+import { requireSuperAdminKey } from '../middlewares/requireSuperAdminKey.js';
 import { getFirebaseAdminAuth, getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 
 const router = express.Router();
@@ -87,7 +89,7 @@ router.post('/admin/exchange', async (req, res) => {
     });
   }
 
-  const expectedAccessKey = process.env.ADMIN_ACCESS_KEY?.trim();
+  const expectedAccessKey = env.adminAccessKey;
   const providedAccessKey = typeof req.body?.accessKey === 'string' ? req.body.accessKey.trim() : '';
 
   if (!expectedAccessKey) {
@@ -117,6 +119,37 @@ router.post('/admin/exchange', async (req, res) => {
   } catch (error) {
     console.error('Emission du token administrateur impossible.', error);
     return res.status(500).json({ message: 'Emission du token administrateur impossible.' });
+  }
+});
+
+router.post('/super/exchange', requireSuperAdminKey, async (req, res) => {
+  if (!isFirebaseAdminConfigured()) {
+    return res.status(503).json({
+      message: 'Firebase Admin n\'est pas configure sur le backend.',
+    });
+  }
+
+  try {
+    const auth = getFirebaseAdminAuth();
+    const customToken = await auth.createCustomToken('super:default', {
+      role: 'super_admin',
+      super_admin: true,
+      admin: true,
+      adminScope: 'global',
+    });
+
+    return res.json({
+      customToken,
+      claims: {
+        role: 'super_admin',
+        super_admin: true,
+        admin: true,
+        adminScope: 'global',
+      },
+    });
+  } catch (error) {
+    console.error('Emission du token super administrateur impossible.', error);
+    return res.status(500).json({ message: 'Emission du token super administrateur impossible.' });
   }
 });
 

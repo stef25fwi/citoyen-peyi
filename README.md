@@ -48,6 +48,86 @@ Backend: http://localhost:4000
 	flutter pub get
 	flutter run -d web-server --web-hostname 0.0.0.0 --web-port=8081
 
+## Configuration d'environnement production
+
+### Variables backend obligatoires
+
+Le backend lit ses secrets depuis l'environnement serveur uniquement. Ne jamais passer ces valeurs a Flutter.
+
+- `SUPER_ADMIN_KEY`: cle longue et aleatoire exigee dans le header `x-super-admin-key` pour les routes super administrateur.
+- Firebase Admin, avec une des deux options suivantes:
+	- `GOOGLE_APPLICATION_CREDENTIALS`: chemin vers un fichier service account present sur le serveur.
+	- ou `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`.
+- `ADMIN_ACCESS_KEY`: cle d'acces admin si l'endpoint admin backend est utilise.
+- `PORT`: port HTTP backend, par defaut `4000`.
+- `CORS_ORIGIN`: origines autorisees separees par des virgules.
+- `API_BASE_URL`: URL publique du backend si necessaire cote backend ou documentation d'exploitation.
+
+Le backend refuse de demarrer si `SUPER_ADMIN_KEY` ou Firebase Admin ne sont pas correctement configures. Les valeurs de secrets ne sont jamais retournees par `/api/health` et ne doivent jamais etre loggees.
+
+### Exemple `.env` backend sans vraies cles
+
+Copier [app/backend/.env.example](app/backend/.env.example) vers un fichier `.env` local non commite, puis remplacer les placeholders.
+
+```env
+PORT=4000
+CORS_ORIGIN=http://localhost:5173,http://localhost:8081,https://votre-domaine-frontend.example
+API_BASE_URL=https://votre-backend-prod.example
+SUPER_ADMIN_KEY=change-me-long-random-secret
+ADMIN_ACCESS_KEY=ADMIN2026
+
+# Option 1
+GOOGLE_APPLICATION_CREDENTIALS=./secrets/firebase-admin.json
+
+# Option 2
+FIREBASE_ADMIN_PROJECT_ID=votre-project-id
+FIREBASE_ADMIN_CLIENT_EMAIL=firebase-adminsdk-xxx@votre-project-id.iam.gserviceaccount.com
+FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
+```
+
+Les fichiers `.env`, `.env.*`, `secrets/`, `firebase-admin.json` et `service-account*.json` sont exclus de Git.
+
+### Healthcheck backend
+
+```bash
+curl https://URL_BACKEND_PROD/api/health
+```
+
+Reponse attendue, sans secret:
+
+```json
+{
+	"ok": true,
+	"service": "citoyen-peyi-backend",
+	"firebaseAdminConfigured": true,
+	"superAdminConfigured": true,
+	"time": "2026-04-27T00:00:00.000Z"
+}
+```
+
+### Flutter: uniquement `API_BASE_URL`
+
+Flutter ne doit recevoir que l'URL du backend via `--dart-define=API_BASE_URL=...`. Ne jamais passer `SUPER_ADMIN_KEY`, `FIREBASE_ADMIN_PRIVATE_KEY` ou un service account a Flutter.
+
+Execution locale Flutter Web:
+
+```bash
+cd flutter_app
+flutter run -d web-server \
+	--web-hostname 0.0.0.0 \
+	--web-port=8081 \
+	--dart-define=API_BASE_URL=http://localhost:4000
+```
+
+Build Flutter Web production:
+
+```bash
+cd flutter_app
+flutter build web --release \
+	--base-href /citoyen-peyi/ \
+	--dart-define=API_BASE_URL=https://URL_BACKEND_PROD
+```
+
 ## Build
 
 npm run build

@@ -77,9 +77,16 @@ class SuperAdminService {
   static const _profilesKey = 'super_admin_profiles_v1';
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
+  String? _runtimeSuperAdminKey;
 
-  /// Authenticate as super admin. En mode fallback, vérifie contre SUPER_ADMIN_KEY
-  /// si défini, sinon accepte n'importe quelle clé (mode démo).
+  String? get runtimeSuperAdminKey => _runtimeSuperAdminKey;
+
+  void clearRuntimeSuperAdminKey() {
+    _runtimeSuperAdminKey = null;
+  }
+
+  /// Authenticate as super admin. La cle saisie est envoyee au backend comme
+  /// header runtime et n'est jamais compilee dans Flutter.
   Future<void> signIn(String accessKey) async {
     final trimmed = accessKey.trim();
     if (trimmed.isEmpty) {
@@ -91,10 +98,7 @@ class SuperAdminService {
         AppConfig.apiBaseUrl.contains('127.0.0.1');
 
     if (isLocalMode) {
-      final expected = AppConfig.superAdminKey;
-      if (expected.isNotEmpty && trimmed != expected) {
-        throw const SuperAdminAuthException('Cle super admin invalide.');
-      }
+      _runtimeSuperAdminKey = trimmed;
       await AuthSessionStore.instance.save(AuthSession(
         role: 'super_admin',
         admin: true,
@@ -108,8 +112,11 @@ class SuperAdminService {
 
     final response = await http.post(
       Uri.parse('${AppConfig.apiBaseUrl}/api/auth/super/exchange'),
-      headers: const {'Content-Type': 'application/json'},
-      body: jsonEncode({'accessKey': trimmed}),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-super-admin-key': trimmed,
+      },
+      body: jsonEncode(const <String, dynamic>{}),
     );
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -122,6 +129,8 @@ class SuperAdminService {
     if (customToken != null && customToken.isNotEmpty) {
       await FirebaseAuthService.instance.signInWithCustomToken(customToken);
     }
+
+    _runtimeSuperAdminKey = trimmed;
 
     await AuthSessionStore.instance.save(AuthSession(
       role: 'super_admin',
