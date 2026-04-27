@@ -7,6 +7,22 @@ import '../services/firebase_auth_service.dart';
 import '../services/auth_session_store.dart';
 import '../services/controleur_profile_service.dart';
 
+class _DashboardTheme {
+  static const background = Color(0xFFF6F7F9);
+  static const foreground = Color(0xFF0F172A);
+  static const mutedForeground = Color(0xFF64748B);
+  static const border = Color(0xFFE5E7EB);
+  static const primary = Color(0xFF0D73F2);
+  static const accent = Color(0xFF20B69C);
+  static const success = Color(0xFF2BA66A);
+  static const warning = Color(0xFFF59E0B);
+  static const gradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF0D73F2), Color(0xFF4F70F5)],
+  );
+}
+
 class AdminDashboardPage extends StatefulWidget {
   const AdminDashboardPage({super.key});
 
@@ -145,10 +161,34 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final theme = Theme.of(context);
     final session = AuthSessionStore.instance.currentSession;
 
+    final activeCount = _polls.where((poll) => poll.status == 'active').length;
+    final closedCount = _polls.where((poll) => poll.status == 'closed').length;
+    final draftCount = _polls.where((poll) => poll.status == 'draft').length;
+
     return Scaffold(
+      backgroundColor: _DashboardTheme.background,
       appBar: AppBar(
-        title: const Text('Tableau de bord admin'),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: () => Navigator.of(context).pushNamed('/'),
+        ),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.dashboard_rounded, color: _DashboardTheme.primary, size: 22),
+            SizedBox(width: 8),
+            Text('Tableau de bord'),
+          ],
+        ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: FilledButton.icon(
+              onPressed: () => Navigator.of(context).pushNamed('/admin/create'),
+              icon: const Icon(Icons.add_rounded, size: 18),
+              label: const Text('Nouveau sondage'),
+            ),
+          ),
           TextButton(
             onPressed: () async {
               await FirebaseAuthService.instance.signOut();
@@ -170,13 +210,44 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              Wrap(
+                spacing: 12,
+                runSpacing: 12,
+                children: [
+                  _DashboardStatCard(
+                    label: 'Total sondages',
+                    value: '${_polls.length}',
+                    icon: Icons.how_to_vote_rounded,
+                    color: _DashboardTheme.primary,
+                  ),
+                  _DashboardStatCard(
+                    label: 'En cours',
+                    value: '$activeCount',
+                    icon: Icons.bar_chart_rounded,
+                    color: _DashboardTheme.success,
+                  ),
+                  _DashboardStatCard(
+                    label: 'Termines',
+                    value: '$closedCount',
+                    icon: Icons.dashboard_rounded,
+                    color: _DashboardTheme.accent,
+                  ),
+                  _DashboardStatCard(
+                    label: 'Brouillons',
+                    value: '$draftCount',
+                    icon: Icons.edit_document,
+                    color: _DashboardTheme.warning,
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Session administrateur', style: theme.textTheme.headlineMedium),
+                      Text('Session administrateur', style: theme.textTheme.titleLarge),
                       const SizedBox(height: 12),
                       Text(
                         session == null
@@ -450,6 +521,58 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 }
 
+class _DashboardStatCard extends StatelessWidget {
+  const _DashboardStatCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final IconData icon;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final cardWidth = width < 640 ? (width - 52) / 2 : 210.0;
+
+    return SizedBox(
+      width: cardWidth.clamp(150.0, 220.0),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(value, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 26)),
+                    Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: _DashboardTheme.mutedForeground)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 class _AnalyticsMetricCard extends StatelessWidget {
   const _AnalyticsMetricCard({
     required this.label,
@@ -566,10 +689,11 @@ class _ControleurRowState extends State<_ControleurRow> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFD7E0EA)),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _DashboardTheme.border),
       ),
       child: Row(
         children: [
@@ -577,10 +701,10 @@ class _ControleurRowState extends State<_ControleurRow> {
             width: 36,
             height: 36,
             decoration: BoxDecoration(
-              color: const Color(0xFF0F6D8F).withValues(alpha: 0.10),
+              color: _DashboardTheme.accent.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.key_rounded, size: 18, color: Color(0xFF0F6D8F)),
+            child: const Icon(Icons.key_rounded, size: 18, color: _DashboardTheme.accent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -593,7 +717,7 @@ class _ControleurRowState extends State<_ControleurRow> {
                 Text(
                   '${profile.communeName}${profile.codePostal != null ? " (${profile.codePostal})" : ""}',
                   style: theme.textTheme.bodySmall
-                      ?.copyWith(color: const Color(0xFF5A6573)),
+                      ?.copyWith(color: _DashboardTheme.mutedForeground),
                 ),
                 const SizedBox(height: 4),
                 Row(
@@ -606,7 +730,7 @@ class _ControleurRowState extends State<_ControleurRow> {
                               fontWeight: FontWeight.w600,
                               fontSize: 13,
                               letterSpacing: 1,
-                              color: Color(0xFF0F6D8F),
+                              color: _DashboardTheme.foreground,
                             ),
                           )
                         : Text(
@@ -617,8 +741,14 @@ class _ControleurRowState extends State<_ControleurRow> {
                     const SizedBox(width: 4),
                     if (profile.hasBeenUsed)
                       const Chip(
-                        label: Text('Utilise',
-                            style: TextStyle(fontSize: 11)),
+                        label: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(Icons.check_circle_rounded, size: 13),
+                            SizedBox(width: 4),
+                            Text('Utilise', style: TextStyle(fontSize: 11)),
+                          ],
+                        ),
                         padding: EdgeInsets.zero,
                         visualDensity: VisualDensity.compact,
                       ),

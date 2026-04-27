@@ -12,6 +12,23 @@ import '../services/poll_service.dart';
 import '../services/qr_download_service.dart';
 import '../services/vote_access_service.dart';
 
+class _ZipTheme {
+  static const background = Color(0xFFF6F7F9);
+  static const foreground = Color(0xFF0F172A);
+  static const mutedForeground = Color(0xFF64748B);
+  static const border = Color(0xFFE5E7EB);
+  static const muted = Color(0xFFF1F3F6);
+  static const primary = Color(0xFF0D73F2);
+  static const accent = Color(0xFF20B69C);
+  static const success = Color(0xFF2BA66A);
+  static const warning = Color(0xFFF59E0B);
+  static const gradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF0D73F2), Color(0xFF4F70F5)],
+  );
+}
+
 class RegistrationReviewPage extends StatefulWidget {
   const RegistrationReviewPage({super.key});
 
@@ -352,8 +369,16 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
     );
 
     return Scaffold(
+      backgroundColor: _ZipTheme.background,
       appBar: AppBar(
-        title: const Text('Inscriptions'),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.verified_user_rounded, color: _ZipTheme.primary, size: 22),
+            SizedBox(width: 8),
+            Text('Inscriptions'),
+          ],
+        ),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -374,10 +399,34 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                         spacing: 12,
                         runSpacing: 12,
                         children: [
-                          _StatCard(label: 'Codes', value: '${stats.total}', subtitle: 'pour le sondage selectionne'),
-                          _StatCard(label: 'Disponibles', value: '${stats.available}', subtitle: 'en attente de verification'),
-                          _StatCard(label: 'Valides', value: '${stats.validated}', subtitle: 'QR diffusable'),
-                          _StatCard(label: 'Votes', value: '${stats.voted}', subtitle: '${stats.activated} codes actives'),
+                          _StatCard(
+                            label: 'Codes',
+                            value: '${stats.total}',
+                            subtitle: 'pour le sondage selectionne',
+                            icon: Icons.tag_rounded,
+                            color: _ZipTheme.primary,
+                          ),
+                          _StatCard(
+                            label: 'Disponibles',
+                            value: '${stats.available}',
+                            subtitle: 'en attente de verification',
+                            icon: Icons.schedule_rounded,
+                            color: _ZipTheme.accent,
+                          ),
+                          _StatCard(
+                            label: 'Valides',
+                            value: '${stats.validated}',
+                            subtitle: 'QR diffusable',
+                            icon: Icons.check_circle_rounded,
+                            color: _ZipTheme.success,
+                          ),
+                          _StatCard(
+                            label: 'Votes',
+                            value: '${stats.voted}',
+                            subtitle: '${stats.activated} codes actives',
+                            icon: Icons.how_to_vote_rounded,
+                            color: _ZipTheme.warning,
+                          ),
                         ],
                       ),
                       const SizedBox(height: 16),
@@ -546,11 +595,15 @@ class _StatCard extends StatelessWidget {
     required this.label,
     required this.value,
     required this.subtitle,
+    required this.icon,
+    required this.color,
   });
 
   final String label;
   final String value;
   final String subtitle;
+  final IconData icon;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
@@ -561,15 +614,31 @@ class _StatCard extends StatelessWidget {
       width: cardWidth,
       child: Card(
         child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          padding: const EdgeInsets.all(16),
+          child: Row(
             children: [
-              Text(value, style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 8),
-              Text(label, style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 6),
-              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
+              Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(value, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 26)),
+                    const SizedBox(height: 2),
+                    Text(label, style: Theme.of(context).textTheme.titleSmall),
+                    const SizedBox(height: 2),
+                    Text(subtitle, style: Theme.of(context).textTheme.bodySmall, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -907,29 +976,39 @@ class _ValidationCard extends StatelessWidget {
                   .toList(),
               onChanged: enabled ? onRecordChanged : null,
             ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: selectedIdDoc,
-              decoration: const InputDecoration(labelText: 'Piece d\'identite'),
-              items: idDocumentTypes
-                  .map((value) => DropdownMenuItem<String>(value: value, child: Text(value)))
-                  .toList(),
-              onChanged: enabled ? onIdDocChanged : null,
-            ),
-            const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              initialValue: selectedAddressDoc,
-              decoration: const InputDecoration(labelText: 'Justificatif de domicile'),
-              items: addressDocumentTypes
-                  .map((value) => DropdownMenuItem<String>(value: value, child: Text(value)))
-                  .toList(),
-              onChanged: enabled ? onAddressDocChanged : null,
+            const SizedBox(height: 18),
+            Text(
+              'L\'habitant doit presenter une piece d\'identite et un justificatif de domicile.',
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: _ZipTheme.mutedForeground),
             ),
             const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: enabled ? onValidate : null,
-              icon: const Icon(Icons.verified_user_outlined),
-              label: const Text('Valider l\'inscription'),
+            _DocumentChoiceGroup(
+              title: '1. Piece d\'identite',
+              icon: Icons.shield_outlined,
+              options: idDocumentTypes,
+              value: selectedIdDoc,
+              enabled: enabled,
+              onChanged: onIdDocChanged,
+              color: _ZipTheme.primary,
+            ),
+            const SizedBox(height: 12),
+            _DocumentChoiceGroup(
+              title: '2. Justificatif de domicile',
+              icon: Icons.tag_rounded,
+              options: addressDocumentTypes,
+              value: selectedAddressDoc,
+              enabled: enabled,
+              onChanged: onAddressDocChanged,
+              color: _ZipTheme.accent,
+            ),
+            const SizedBox(height: 16),
+            Align(
+              alignment: Alignment.centerRight,
+              child: _GradientActionButton(
+                onPressed: enabled && selectedRecordId != null && selectedIdDoc != null && selectedAddressDoc != null ? onValidate : null,
+                icon: Icons.qr_code_2_rounded,
+                label: 'Valider & Generer QR',
+              ),
             ),
             if (selectedRecord?.qrPayload != null) ...[
               const SizedBox(height: 16),
@@ -1011,12 +1090,11 @@ class _ValidationCard extends StatelessWidget {
                   children: [
                     Align(
                       alignment: Alignment.centerRight,
-                      child: FilledButton.icon(
+                      child: _GradientActionButton(
                         onPressed: canGenerate ? onCitizenCodeSubmit : null,
-                        icon: isCitizenCodeSubmitting
-                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.lock_reset_rounded),
-                        label: Text(isCitizenCodeSubmitting ? 'Traitement...' : 'Generer / verifier le code citoyen'),
+                        icon: Icons.lock_reset_rounded,
+                        label: isCitizenCodeSubmitting ? 'Traitement...' : 'Generer / verifier le code citoyen',
+                        isLoading: isCitizenCodeSubmitting,
                       ),
                     ),
                     if (!canGenerate && !isCitizenCodeSubmitting) ...[
@@ -1327,17 +1405,144 @@ class _CodeDetailLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(icon, size: 18, color: const Color(0xFF0B6FA4)),
-          const SizedBox(width: 8),
-          SizedBox(width: 86, child: Text('$label :', style: const TextStyle(fontWeight: FontWeight.w600))),
-          Expanded(child: Text(value)),
-        ],
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: '$label : ',
+              style: theme.textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w700),
+            ),
+            TextSpan(text: value, style: theme.textTheme.bodyMedium),
+          ],
+        ),
       ),
+    );
+  }
+}
+
+class _GradientActionButton extends StatelessWidget {
+  const _GradientActionButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.isLoading = false,
+    this.expand = false,
+  });
+
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool isLoading;
+  final bool expand;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+    final button = InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: enabled ? onPressed : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 52,
+        padding: const EdgeInsets.symmetric(horizontal: 22),
+        decoration: BoxDecoration(
+          gradient: enabled ? _ZipTheme.gradient : null,
+          color: enabled ? null : _ZipTheme.muted,
+          borderRadius: BorderRadius.circular(18),
+          boxShadow: enabled
+              ? [BoxShadow(color: _ZipTheme.border.withValues(alpha: 0.45), blurRadius: 18, offset: const Offset(0, 8))]
+              : null,
+        ),
+        child: Row(
+          mainAxisSize: expand ? MainAxisSize.max : MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isLoading)
+              const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            else
+              Icon(icon, size: 19, color: enabled ? Colors.white : _ZipTheme.mutedForeground),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Text(
+                label,
+                style: TextStyle(color: enabled ? Colors.white : _ZipTheme.mutedForeground, fontWeight: FontWeight.w800),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return expand ? SizedBox(width: double.infinity, child: button) : button;
+  }
+}
+
+class _DocumentChoiceGroup extends StatelessWidget {
+  const _DocumentChoiceGroup({
+    required this.title,
+    required this.icon,
+    required this.options,
+    required this.value,
+    required this.enabled,
+    required this.onChanged,
+    required this.color,
+  });
+
+  final String title;
+  final IconData icon;
+  final List<String> options;
+  final String? value;
+  final bool enabled;
+  final ValueChanged<String?>? onChanged;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            const SizedBox(width: 8),
+            Text(title, style: Theme.of(context).textTheme.titleSmall),
+          ],
+        ),
+        const SizedBox(height: 10),
+        for (final option in options)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: !enabled ? null : () => onChanged?.call(value == option ? null : option),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.all(13),
+                decoration: BoxDecoration(
+                  color: value == option ? _ZipTheme.primary.withValues(alpha: 0.05) : Colors.white,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: value == option ? _ZipTheme.primary : _ZipTheme.border),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      value == option ? Icons.check_box_rounded : Icons.check_box_outline_blank_rounded,
+                      color: value == option ? _ZipTheme.primary : _ZipTheme.mutedForeground,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(child: Text(option, style: Theme.of(context).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600))),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

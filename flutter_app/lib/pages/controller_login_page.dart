@@ -2,6 +2,19 @@ import 'package:flutter/material.dart';
 
 import '../services/controller_auth_service.dart';
 
+class _ControllerLoginTheme {
+  static const background = Color(0xFFF6F7F9);
+  static const foreground = Color(0xFF0F172A);
+  static const mutedForeground = Color(0xFF64748B);
+  static const border = Color(0xFFE5E7EB);
+  static const primary = Color(0xFF0D73F2);
+  static const gradient = LinearGradient(
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+    colors: [Color(0xFF0D73F2), Color(0xFF4F70F5)],
+  );
+}
+
 class ControllerLoginPage extends StatefulWidget {
   const ControllerLoginPage({super.key});
 
@@ -60,9 +73,16 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: _ControllerLoginTheme.background,
       appBar: AppBar(
-        title: const Text('Espace controleur'),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.assignment_turned_in_rounded, color: _ControllerLoginTheme.primary, size: 22),
+            SizedBox(width: 8),
+            Text('Espace controleur'),
+          ],
+        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pushNamed('/'),
@@ -84,16 +104,16 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                       height: 72,
                       decoration: BoxDecoration(
                         color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(24),
+                        borderRadius: BorderRadius.circular(18),
                       ),
-                      child: Icon(Icons.key_rounded, size: 34, color: theme.colorScheme.primary),
+                      child: const Icon(Icons.key_rounded, size: 34, color: _ControllerLoginTheme.primary),
                     ),
                     const SizedBox(height: 18),
                     Text('Connexion controleur', style: theme.textTheme.headlineMedium?.copyWith(fontSize: 28), textAlign: TextAlign.center),
                     const SizedBox(height: 10),
                     Text(
                       'Entrez le code fourni par un administrateur pour acceder a l\'interface de controle des pieces.',
-                      style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
+                      style: theme.textTheme.bodyLarge?.copyWith(color: _ControllerLoginTheme.mutedForeground),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
@@ -108,11 +128,11 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                         counterText: '',
                         hintText: 'Ex : CTRL-A1B2C3D4',
                         filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
+                        fillColor: Colors.white,
                         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(18),
-                          borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
+                          borderSide: const BorderSide(color: _ControllerLoginTheme.border),
                         ),
                       ),
                       onChanged: (value) {
@@ -130,12 +150,10 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                     const SizedBox(height: 16),
                     SizedBox(
                       width: double.infinity,
-                      child: FilledButton.icon(
+                      child: _LoginGradientButton(
                         onPressed: _isSubmitting || _codeController.text.trim().isEmpty ? null : _submit,
-                        icon: _isSubmitting
-                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                            : const Icon(Icons.arrow_forward_rounded),
-                        label: Text(_isSubmitting ? 'Connexion en cours...' : 'Acceder a mon profil'),
+                        isLoading: _isSubmitting,
+                        label: _isSubmitting ? 'Connexion en cours...' : 'Acceder a mon profil',
                       ),
                     ),
                     const SizedBox(height: 20),
@@ -180,6 +198,59 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _LoginGradientButton extends StatelessWidget {
+  const _LoginGradientButton({
+    required this.onPressed,
+    required this.label,
+    this.isLoading = false,
+  });
+
+  final VoidCallback? onPressed;
+  final String label;
+  final bool isLoading;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = onPressed != null;
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(18),
+      onTap: enabled ? onPressed : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        height: 54,
+        decoration: BoxDecoration(
+          gradient: enabled ? _ControllerLoginTheme.gradient : null,
+          color: enabled ? null : const Color(0xFFF1F3F6),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            if (isLoading)
+              const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+            else ...[
+              Text(
+                label,
+                style: TextStyle(
+                  color: enabled ? Colors.white : _ControllerLoginTheme.mutedForeground,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(Icons.arrow_forward_rounded, color: enabled ? Colors.white : _ControllerLoginTheme.mutedForeground, size: 18),
+            ],
+            if (isLoading) ...[
+              const SizedBox(width: 10),
+              Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+            ],
+          ],
         ),
       ),
     );
