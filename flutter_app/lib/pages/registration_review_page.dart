@@ -406,44 +406,10 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                   child: ListView(
                     padding: const EdgeInsets.all(20),
                     children: [
-                      Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Session active', style: theme.textTheme.headlineSmall),
-                              const SizedBox(height: 12),
-                              Text(
-                                session == null
-                                    ? 'Aucune session chargee.'
-                                    : 'Role: ${session.role}\nProfil: ${session.label ?? 'Utilisateur'}\nCode: ${session.code ?? '-'}\nCommune: ${session.commune?.name ?? '-'}\nMode: ${session.modeLabel}',
-                                style: theme.textTheme.bodyLarge,
-                              ),
-                              const SizedBox(height: 16),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  _RoleCapabilityChip(
-                                    label: 'Admin',
-                                    enabled: canManageCodes,
-                                    icon: Icons.admin_panel_settings_rounded,
-                                    activeText: 'Generation et pilotage des codes autorises',
-                                    inactiveText: 'Generation reservee aux administrateurs',
-                                  ),
-                                  _RoleCapabilityChip(
-                                    label: 'Controleur',
-                                    enabled: canValidateFiles,
-                                    icon: Icons.verified_user_rounded,
-                                    activeText: 'Verification des dossiers et diffusion du QR autorisees',
-                                    inactiveText: 'Validation reservee aux controleurs',
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                      _ControllerHeaderCard(
+                        session: session,
+                        canManageCodes: canManageCodes,
+                        canValidateFiles: canValidateFiles,
                       ),
                       const SizedBox(height: 16),
                       Wrap(
@@ -457,6 +423,11 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                         ],
                       ),
                       const SizedBox(height: 16),
+                      const _SectionTitle(
+                        title: 'Gestion des acces',
+                        subtitle: 'Creer des codes et les valider cote controleur, avec QR diffusable.',
+                      ),
+                      const SizedBox(height: 12),
                       if (canValidateFiles) ...[
                         _CitizenCodeGeneratorCard(
                           firstNameController: _citizenFirstNameController,
@@ -567,7 +538,10 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Codes recents', style: theme.textTheme.titleLarge),
+                              const _SectionTitle(
+                                title: 'Codes recents',
+                                subtitle: 'Cartes inspirees de la page controleur du ZIP : statut, pieces, QR et actions rapides.',
+                              ),
                               const SizedBox(height: 16),
                               TextField(
                                 controller: _searchController,
@@ -683,6 +657,127 @@ class _StatCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _ControllerHeaderCard extends StatelessWidget {
+  const _ControllerHeaderCard({
+    required this.session,
+    required this.canManageCodes,
+    required this.canValidateFiles,
+  });
+
+  final AuthSession? session;
+  final bool canManageCodes;
+  final bool canValidateFiles;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final wide = constraints.maxWidth >= 760;
+            final icon = Container(
+              width: 76,
+              height: 76,
+              decoration: BoxDecoration(
+                color: const Color(0xFF0B6FA4).withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: const Icon(Icons.badge_outlined, size: 38, color: Color(0xFF0B6FA4)),
+            );
+            final content = Column(
+              crossAxisAlignment: wide ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+              children: [
+                Text(
+                  'Inscriptions et codes',
+                  style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                  textAlign: wide ? TextAlign.start : TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  session == null
+                      ? 'Aucune session chargee.'
+                      : 'Profil: ${session!.label ?? 'Utilisateur'} · Role: ${session!.role} · Commune: ${session!.commune?.name ?? '-'} · Mode: ${session!.modeLabel}',
+                  style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
+                  textAlign: wide ? TextAlign.start : TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  alignment: wide ? WrapAlignment.start : WrapAlignment.center,
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    _RoleCapabilityChip(
+                      label: 'Admin',
+                      enabled: canManageCodes,
+                      icon: Icons.admin_panel_settings_rounded,
+                      activeText: 'Generation et pilotage des codes autorises',
+                      inactiveText: 'Generation reservee aux administrateurs',
+                    ),
+                    _RoleCapabilityChip(
+                      label: 'Controleur',
+                      enabled: canValidateFiles,
+                      icon: Icons.verified_user_rounded,
+                      activeText: 'Verification des dossiers et diffusion du QR autorisees',
+                      inactiveText: 'Validation reservee aux controleurs',
+                    ),
+                  ],
+                ),
+              ],
+            );
+
+            if (!wide) {
+              return Column(
+                children: [icon, const SizedBox(height: 16), content],
+              );
+            }
+
+            return Row(
+              children: [
+                icon,
+                const SizedBox(width: 18),
+                Expanded(child: content),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle({
+    required this.title,
+    this.subtitle,
+  });
+
+  final String title;
+  final String? subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800),
+        ),
+        if (subtitle != null) ...[
+          const SizedBox(height: 4),
+          Text(
+            subtitle!,
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
+          ),
+        ],
+      ],
     );
   }
 }
@@ -1077,65 +1172,150 @@ class _CodeRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFD7E0EA)),
-        color: const Color(0xFFF8FAFC),
+    final theme = Theme.of(context);
+
+    return Card(
+      elevation: 0,
+      color: const Color(0xFFF8FAFC),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0xFFD7E0EA)),
       ),
-      child: Column(
+      child: ExpansionTile(
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 18),
+        leading: CircleAvatar(
+          backgroundColor: const Color(0xFF0B6FA4).withValues(alpha: 0.10),
+          child: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF0B6FA4)),
+        ),
+        title: SelectableText(
+          record.code,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontFamily: 'monospace',
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Text('Sondage: $pollLabel · ${record.communeName ?? 'Commune non renseignee'}'),
+        ),
+        trailing: _StatusBadge(record: record),
+        children: [
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final wide = constraints.maxWidth >= 620;
+              final details = Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _CodeDetailLine(icon: Icons.how_to_vote_outlined, label: 'Sondage', value: pollLabel),
+                  if (record.communeName != null) _CodeDetailLine(icon: Icons.location_city_rounded, label: 'Commune', value: record.communeName!),
+                  if (record.documentType != null) _CodeDetailLine(icon: Icons.description_outlined, label: 'Documents', value: record.documentType!),
+                  if (record.validatedAt != null) _CodeDetailLine(icon: Icons.verified_user_outlined, label: 'Valide le', value: record.validatedAt!),
+                  if (record.expiresAt != null) _CodeDetailLine(icon: Icons.event_busy_outlined, label: 'Expire le', value: record.expiresAt!),
+                  if (record.verifiedByControleurLabel != null)
+                    _CodeDetailLine(icon: Icons.badge_outlined, label: 'Controleur', value: record.verifiedByControleurLabel!),
+                ],
+              );
+              final qr = record.qrPayload == null
+                  ? const SizedBox.shrink()
+                  : Container(
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFD7E0EA)),
+                      ),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          QrImageView(
+                            data: record.qrPayload!,
+                            size: 112,
+                            backgroundColor: Colors.white,
+                          ),
+                          const SizedBox(height: 8),
+                          Text('QR diffusable', style: theme.textTheme.bodySmall),
+                        ],
+                      ),
+                    );
+
+              if (!wide) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [details, if (record.qrPayload != null) ...[const SizedBox(height: 14), Center(child: qr)]],
+                );
+              }
+
+              return Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: details),
+                  if (record.qrPayload != null) ...[const SizedBox(width: 16), qr],
+                ],
+              );
+            },
+          ),
+          const SizedBox(height: 14),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: onCopyCode,
+                  icon: const Icon(Icons.copy_rounded, size: 18),
+                  label: const Text('Copier le code'),
+                ),
+                if (record.qrPayload != null)
+                  OutlinedButton.icon(
+                    onPressed: onPreviewQr,
+                    icon: const Icon(Icons.visibility_rounded, size: 18),
+                    label: const Text('Voir le QR'),
+                  ),
+                if (record.qrPayload != null)
+                  OutlinedButton.icon(
+                    onPressed: onCopyQrPayload,
+                    icon: const Icon(Icons.qr_code_2_rounded, size: 18),
+                    label: const Text('Copier le QR'),
+                  ),
+                if (record.qrPayload != null)
+                  OutlinedButton.icon(
+                    onPressed: onDownloadQr,
+                    icon: const Icon(Icons.download_rounded, size: 18),
+                    label: const Text('Telecharger PNG'),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CodeDetailLine extends StatelessWidget {
+  const _CodeDetailLine({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: SelectableText(
-                  record.code,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(fontFamily: 'monospace'),
-                ),
-              ),
-              const SizedBox(width: 12),
-              _StatusBadge(record: record),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text('Sondage: $pollLabel'),
-          if (record.communeName != null) Text('Commune: ${record.communeName}'),
-          if (record.documentType != null) Text('Documents: ${record.documentType}'),
-          if (record.validatedAt != null) Text('Valide le: ${record.validatedAt}'),
-          if (record.expiresAt != null) Text('Expire le: ${record.expiresAt}'),
-          if (record.verifiedByControleurLabel != null) Text('Verifie par: ${record.verifiedByControleurLabel}'),
-          const SizedBox(height: 12),
-          Wrap(
-            spacing: 10,
-            runSpacing: 10,
-            children: [
-              OutlinedButton.icon(
-                onPressed: onCopyCode,
-                icon: const Icon(Icons.copy_rounded, size: 18),
-                label: const Text('Copier le code'),
-              ),
-              if (record.qrPayload != null)
-                OutlinedButton.icon(
-                  onPressed: onPreviewQr,
-                  icon: const Icon(Icons.visibility_rounded, size: 18),
-                  label: const Text('Voir le QR'),
-                ),
-              if (record.qrPayload != null)
-                OutlinedButton.icon(
-                  onPressed: onCopyQrPayload,
-                  icon: const Icon(Icons.qr_code_2_rounded, size: 18),
-                  label: const Text('Copier le QR'),
-                ),
-              if (record.qrPayload != null)
-                OutlinedButton.icon(
-                  onPressed: onDownloadQr,
-                  icon: const Icon(Icons.download_rounded, size: 18),
-                  label: const Text('Telecharger PNG'),
-                ),
-            ],
-          ),
+          Icon(icon, size: 18, color: const Color(0xFF0B6FA4)),
+          const SizedBox(width: 8),
+          SizedBox(width: 86, child: Text('$label :', style: const TextStyle(fontWeight: FontWeight.w600))),
+          Expanded(child: Text(value)),
         ],
       ),
     );
