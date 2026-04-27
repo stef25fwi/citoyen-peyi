@@ -44,7 +44,6 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
   String? _selectedIdDoc;
   String? _selectedAddressDoc;
   String _statusFilter = 'all';
-  final TextEditingController _generateCountController = TextEditingController(text: '10');
   final TextEditingController _searchController = TextEditingController();
   final TextEditingController _citizenFirstNameController = TextEditingController();
   final TextEditingController _citizenLastNameController = TextEditingController();
@@ -63,7 +62,6 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
 
   @override
   void dispose() {
-    _generateCountController.dispose();
     _searchController.dispose();
     _citizenFirstNameController.dispose();
     _citizenLastNameController.dispose();
@@ -123,44 +121,6 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
       _selectedPollId ??= polls.isNotEmpty ? polls.first.id : null;
       _isLoading = false;
     });
-  }
-
-  Future<void> _generateCodes() async {
-    if (_isSubmitting || _selectedPollId == null) {
-      return;
-    }
-
-    final count = int.tryParse(_generateCountController.text.trim());
-    if (count == null || count < 1 || count > 500) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Saisir un nombre de codes entre 1 et 500.')),
-      );
-      return;
-    }
-
-    final session = AuthSessionStore.instance.currentSession;
-
-    setState(() {
-      _isSubmitting = true;
-    });
-
-    await VoteAccessService.instance.generateCodes(
-      pollId: _selectedPollId!,
-      count: count,
-      communeName: session?.commune?.name,
-    );
-    await _load();
-
-    if (!mounted) {
-      return;
-    }
-
-    setState(() {
-      _isSubmitting = false;
-    });
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$count code(s) d\'inscription generes.')),
-    );
   }
 
   Future<void> _validateSelectedRecord() async {
@@ -371,7 +331,6 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final session = AuthSessionStore.instance.currentSession;
-    final canManageCodes = session?.isAdmin == true;
     final canValidateFiles = session?.isController == true;
     final pollTitlesById = {
       for (final poll in _polls) poll.id: poll.projectTitle,
@@ -408,7 +367,6 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                     children: [
                       _ControllerHeaderCard(
                         session: session,
-                        canManageCodes: canManageCodes,
                         canValidateFiles: canValidateFiles,
                       ),
                       const SizedBox(height: 16),
@@ -425,111 +383,70 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                       const SizedBox(height: 16),
                       const _SectionTitle(
                         title: 'Gestion des acces',
-                        subtitle: 'Creer des codes et les valider cote controleur, avec QR diffusable.',
+                        subtitle: 'Zone controleur unique : code citoyen anonyme, verification du dossier et QR diffusable.',
                       ),
                       const SizedBox(height: 12),
-                      if (canValidateFiles) ...[
-                        _CitizenCodeGeneratorCard(
-                          firstNameController: _citizenFirstNameController,
-                          lastNameController: _citizenLastNameController,
-                          birthYearController: _citizenBirthYearController,
-                          phoneSuffixController: _citizenPhoneSuffixController,
-                          duplicateCommentController: _duplicateCommentController,
-                          duplicateReason: _duplicateReason,
-                          isSubmitting: _isCitizenCodeSubmitting,
-                          lastMessage: _lastCitizenCodeMessage,
-                          onReasonChanged: (value) => setState(() => _duplicateReason = value),
-                          onSubmit: _createCitizenAccessCode,
-                        ),
-                        const SizedBox(height: 16),
-                        _ControllerDuplicateRequestsCard(requests: _duplicateRequests),
-                        const SizedBox(height: 16),
-                      ],
-                      LayoutBuilder(
-                        builder: (context, constraints) {
-                          final wide = constraints.maxWidth >= 860;
-                          final left = _ManagementCard(
-                            title: 'Zone administrateur',
-                            roleLabel: 'ADMIN',
-                            roleDescription: canManageCodes
-                                ? 'Vous pouvez generer et suivre les codes d\'inscription pour le sondage selectionne.'
-                                : 'Lecture seule. La generation de codes est reservee aux administrateurs.',
-                            enabled: canManageCodes,
-                            polls: _polls,
-                            selectedPollId: _selectedPollId,
-                            generateCountController: _generateCountController,
-                            onPollChanged: (value) {
-                              setState(() {
-                                _selectedPollId = value;
-                                _selectedRecordId = null;
-                              });
-                            },
-                            onGenerate: canManageCodes && !_isSubmitting ? _generateCodes : null,
-                          );
-                          final right = _ValidationCard(
-                            title: 'Zone controleur',
-                            roleLabel: 'CONTROLEUR',
-                            roleDescription: canValidateFiles
-                              ? 'Vous pouvez verifier les pieces, valider le dossier, puis diffuser ou telecharger le QR.'
-                              : 'Lecture seule. La validation des dossiers est reservee aux controleurs.',
-                            enabled: canValidateFiles,
-                            availableRecords: availableRecords,
-                            selectedRecordId: _selectedRecordId,
-                            selectedIdDoc: _selectedIdDoc,
-                            selectedAddressDoc: _selectedAddressDoc,
-                            onRecordChanged: canValidateFiles
-                              ? (value) => setState(() => _selectedRecordId = value)
-                              : null,
-                            onIdDocChanged: canValidateFiles
-                              ? (value) => setState(() => _selectedIdDoc = value)
-                              : null,
-                            onAddressDocChanged: canValidateFiles
-                              ? (value) => setState(() => _selectedAddressDoc = value)
-                              : null,
-                            onValidate: canValidateFiles && !_isSubmitting ? _validateSelectedRecord : null,
-                            onPreviewQr: selectedRecord?.qrPayload == null
-                                ? null
-                                : () => _showQrPreview(selectedRecord!),
-                            onCopyCode: selectedRecord == null
-                                ? null
-                                : () => _copyToClipboard(
-                                      selectedRecord.code,
-                                      'Code copie dans le presse-papiers.',
-                                    ),
-                            onCopyQrPayload: selectedRecord?.qrPayload == null
-                                ? null
-                                : () => _copyToClipboard(
-                                      selectedRecord!.qrPayload!,
-                                      'Contenu du QR copie dans le presse-papiers.',
-                                    ),
-                            onDownloadQr: selectedRecord?.qrPayload == null
-                                ? null
-                                : () => _downloadQrPng(selectedRecord!),
-                            idDocumentTypes: _idDocumentTypes,
-                            addressDocumentTypes: _addressDocumentTypes,
-                            selectedRecord: selectedRecord,
-                          );
-
-                          if (wide) {
-                            return Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Expanded(child: left),
-                                const SizedBox(width: 16),
-                                Expanded(child: right),
-                              ],
-                            );
-                          }
-
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              left,
-                              const SizedBox(height: 16),
-                              right,
-                            ],
-                          );
+                      _ValidationCard(
+                        title: 'Zone controleur',
+                        roleLabel: 'CONTROLEUR',
+                        roleDescription: canValidateFiles
+                          ? 'Vous pouvez generer/verifier un code citoyen anonyme, valider les pieces, puis diffuser ou telecharger le QR.'
+                          : 'Lecture seule. Les actions sont reservees aux controleurs.',
+                        enabled: canValidateFiles,
+                        polls: _polls,
+                        selectedPollId: _selectedPollId,
+                        onPollChanged: (value) {
+                          setState(() {
+                            _selectedPollId = value;
+                            _selectedRecordId = null;
+                          });
                         },
+                        firstNameController: _citizenFirstNameController,
+                        lastNameController: _citizenLastNameController,
+                        birthYearController: _citizenBirthYearController,
+                        phoneSuffixController: _citizenPhoneSuffixController,
+                        duplicateCommentController: _duplicateCommentController,
+                        duplicateReason: _duplicateReason,
+                        isCitizenCodeSubmitting: _isCitizenCodeSubmitting,
+                        lastCitizenCodeMessage: _lastCitizenCodeMessage,
+                        duplicateRequests: _duplicateRequests,
+                        onReasonChanged: (value) => setState(() => _duplicateReason = value),
+                        onCitizenCodeSubmit: _createCitizenAccessCode,
+                        availableRecords: availableRecords,
+                        selectedRecordId: _selectedRecordId,
+                        selectedIdDoc: _selectedIdDoc,
+                        selectedAddressDoc: _selectedAddressDoc,
+                        onRecordChanged: canValidateFiles
+                          ? (value) => setState(() => _selectedRecordId = value)
+                          : null,
+                        onIdDocChanged: canValidateFiles
+                          ? (value) => setState(() => _selectedIdDoc = value)
+                          : null,
+                        onAddressDocChanged: canValidateFiles
+                          ? (value) => setState(() => _selectedAddressDoc = value)
+                          : null,
+                        onValidate: canValidateFiles && !_isSubmitting ? _validateSelectedRecord : null,
+                        onPreviewQr: selectedRecord?.qrPayload == null
+                            ? null
+                            : () => _showQrPreview(selectedRecord!),
+                        onCopyCode: selectedRecord == null
+                            ? null
+                            : () => _copyToClipboard(
+                                  selectedRecord.code,
+                                  'Code copie dans le presse-papiers.',
+                                ),
+                        onCopyQrPayload: selectedRecord?.qrPayload == null
+                            ? null
+                            : () => _copyToClipboard(
+                                  selectedRecord!.qrPayload!,
+                                  'Contenu du QR copie dans le presse-papiers.',
+                                ),
+                        onDownloadQr: selectedRecord?.qrPayload == null
+                            ? null
+                            : () => _downloadQrPng(selectedRecord!),
+                        idDocumentTypes: _idDocumentTypes,
+                        addressDocumentTypes: _addressDocumentTypes,
+                        selectedRecord: selectedRecord,
                       ),
                       const SizedBox(height: 16),
                       Card(
@@ -664,17 +581,19 @@ class _StatCard extends StatelessWidget {
 class _ControllerHeaderCard extends StatelessWidget {
   const _ControllerHeaderCard({
     required this.session,
-    required this.canManageCodes,
     required this.canValidateFiles,
   });
 
   final AuthSession? session;
-  final bool canManageCodes;
   final bool canValidateFiles;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final profileName = session?.label?.trim().isNotEmpty == true ? session!.label!.trim() : 'Utilisateur';
+    final communeName = session?.commune?.name.trim().isNotEmpty == true ? session!.commune!.name.trim() : 'Non renseignee';
+    final codePostal = session?.commune?.codePostal?.trim();
+    final communeLabel = codePostal != null && codePostal.isNotEmpty ? '$communeName · CP $codePostal' : communeName;
 
     return Card(
       child: Padding(
@@ -700,11 +619,27 @@ class _ControllerHeaderCard extends StatelessWidget {
                   textAlign: wide ? TextAlign.start : TextAlign.center,
                 ),
                 const SizedBox(height: 8),
+                Wrap(
+                  alignment: wide ? WrapAlignment.start : WrapAlignment.center,
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    _ControllerIdentityTile(
+                      icon: Icons.person_outline_rounded,
+                      label: 'Nom et prenom',
+                      value: session == null ? 'Aucune session chargee' : profileName,
+                    ),
+                    _ControllerIdentityTile(
+                      icon: Icons.location_city_rounded,
+                      label: 'Commune de rattachement',
+                      value: session == null ? 'Non renseignee' : communeLabel,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
                 Text(
-                  session == null
-                      ? 'Aucune session chargee.'
-                      : 'Profil: ${session!.label ?? 'Utilisateur'} · Role: ${session!.role} · Commune: ${session!.commune?.name ?? '-'} · Mode: ${session!.modeLabel}',
-                  style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
+                  session == null ? 'Mode: -' : 'Role: ${session!.role} · Mode: ${session!.modeLabel}',
+                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573)),
                   textAlign: wide ? TextAlign.start : TextAlign.center,
                 ),
                 const SizedBox(height: 16),
@@ -713,13 +648,6 @@ class _ControllerHeaderCard extends StatelessWidget {
                   spacing: 10,
                   runSpacing: 10,
                   children: [
-                    _RoleCapabilityChip(
-                      label: 'Admin',
-                      enabled: canManageCodes,
-                      icon: Icons.admin_panel_settings_rounded,
-                      activeText: 'Generation et pilotage des codes autorises',
-                      inactiveText: 'Generation reservee aux administrateurs',
-                    ),
                     _RoleCapabilityChip(
                       label: 'Controleur',
                       enabled: canValidateFiles,
@@ -747,6 +675,62 @@ class _ControllerHeaderCard extends StatelessWidget {
             );
           },
         ),
+      ),
+    );
+  }
+}
+
+class _ControllerIdentityTile extends StatelessWidget {
+  const _ControllerIdentityTile({
+    required this.icon,
+    required this.label,
+    required this.value,
+  });
+
+  final IconData icon;
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      constraints: const BoxConstraints(minWidth: 220, maxWidth: 340),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFD7E0EA)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: const Color(0xFF0B6FA4), size: 22),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: const Color(0xFF5A6573),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  value,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w800),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -782,84 +766,26 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _ManagementCard extends StatelessWidget {
-  const _ManagementCard({
-    required this.title,
-    required this.roleLabel,
-    required this.roleDescription,
-    required this.enabled,
-    required this.polls,
-    required this.selectedPollId,
-    required this.generateCountController,
-    required this.onPollChanged,
-    required this.onGenerate,
-  });
-
-  final String title;
-  final String roleLabel;
-  final String roleDescription;
-  final bool enabled;
-  final List<PollModel> polls;
-  final String? selectedPollId;
-  final TextEditingController generateCountController;
-  final ValueChanged<String?> onPollChanged;
-  final VoidCallback? onGenerate;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _RoleSectionHeader(
-              title: title,
-              roleLabel: roleLabel,
-              icon: Icons.admin_panel_settings_rounded,
-            ),
-            const SizedBox(height: 12),
-            Text(roleDescription, style: Theme.of(context).textTheme.bodyMedium),
-            const SizedBox(height: 16),
-            DropdownButtonFormField<String>(
-              initialValue: selectedPollId,
-              decoration: const InputDecoration(labelText: 'Sondage cible'),
-              items: polls
-                  .map(
-                    (poll) => DropdownMenuItem<String>(
-                      value: poll.id,
-                      child: Text(poll.projectTitle),
-                    ),
-                  )
-                  .toList(),
-              onChanged: enabled ? onPollChanged : null,
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: generateCountController,
-              enabled: enabled,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(labelText: 'Nombre de codes a generer'),
-            ),
-            const SizedBox(height: 12),
-            FilledButton.icon(
-              onPressed: enabled && polls.isNotEmpty ? onGenerate : null,
-              icon: const Icon(Icons.qr_code_2_rounded),
-              label: const Text('Generer des codes'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 class _ValidationCard extends StatelessWidget {
   const _ValidationCard({
     required this.title,
     required this.roleLabel,
     required this.roleDescription,
     required this.enabled,
+    required this.polls,
+    required this.selectedPollId,
+    required this.onPollChanged,
+    required this.firstNameController,
+    required this.lastNameController,
+    required this.birthYearController,
+    required this.phoneSuffixController,
+    required this.duplicateCommentController,
+    required this.duplicateReason,
+    required this.isCitizenCodeSubmitting,
+    required this.lastCitizenCodeMessage,
+    required this.duplicateRequests,
+    required this.onReasonChanged,
+    required this.onCitizenCodeSubmit,
     required this.availableRecords,
     required this.selectedRecordId,
     required this.selectedIdDoc,
@@ -881,6 +807,20 @@ class _ValidationCard extends StatelessWidget {
   final String roleLabel;
   final String roleDescription;
   final bool enabled;
+  final List<PollModel> polls;
+  final String? selectedPollId;
+  final ValueChanged<String?> onPollChanged;
+  final TextEditingController firstNameController;
+  final TextEditingController lastNameController;
+  final TextEditingController birthYearController;
+  final TextEditingController phoneSuffixController;
+  final TextEditingController duplicateCommentController;
+  final DuplicateReason duplicateReason;
+  final bool isCitizenCodeSubmitting;
+  final String? lastCitizenCodeMessage;
+  final List<DuplicateCodeRequestModel> duplicateRequests;
+  final ValueChanged<DuplicateReason> onReasonChanged;
+  final VoidCallback onCitizenCodeSubmit;
   final List<VoteAccessRecordModel> availableRecords;
   final String? selectedRecordId;
   final String? selectedIdDoc;
@@ -899,6 +839,13 @@ class _ValidationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final citizenCodeFields = Listenable.merge([
+      firstNameController,
+      lastNameController,
+      birthYearController,
+      phoneSuffixController,
+    ]);
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -913,6 +860,40 @@ class _ValidationCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(roleDescription, style: Theme.of(context).textTheme.bodyMedium),
             const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              initialValue: selectedPollId,
+              decoration: const InputDecoration(
+                labelText: 'Sondage suivi',
+                helperText: 'Les tuiles Codes / Disponibles / Valides / Votes utilisent ce sondage.',
+              ),
+              items: polls
+                  .map(
+                    (poll) => DropdownMenuItem<String>(
+                      value: poll.id,
+                      child: Text(poll.projectTitle),
+                    ),
+                  )
+                  .toList(),
+              onChanged: polls.isEmpty ? null : onPollChanged,
+            ),
+            const SizedBox(height: 18),
+            _CitizenCodeGeneratorCard(
+              firstNameController: firstNameController,
+              lastNameController: lastNameController,
+              birthYearController: birthYearController,
+              phoneSuffixController: phoneSuffixController,
+              duplicateCommentController: duplicateCommentController,
+              duplicateReason: duplicateReason,
+              isSubmitting: isCitizenCodeSubmitting,
+              lastMessage: lastCitizenCodeMessage,
+              enabled: enabled,
+              onReasonChanged: onReasonChanged,
+            ),
+            const SizedBox(height: 18),
+            _ControllerDuplicateRequestsCard(requests: duplicateRequests),
+            const SizedBox(height: 18),
+            const Divider(),
+            const SizedBox(height: 18),
             DropdownButtonFormField<String>(
               initialValue: selectedRecordId,
               decoration: const InputDecoration(labelText: 'Code a verifier'),
@@ -1007,6 +988,49 @@ class _ValidationCard extends StatelessWidget {
               const SizedBox(height: 12),
               SelectableText(selectedRecord!.qrPayload!),
             ],
+            const SizedBox(height: 18),
+            const Divider(),
+            const SizedBox(height: 16),
+            AnimatedBuilder(
+              animation: citizenCodeFields,
+              builder: (context, _) {
+                final hasFirstName = firstNameController.text.trim().isNotEmpty;
+                final hasLastName = lastNameController.text.trim().isNotEmpty;
+                final hasValidBirthYear = RegExp(r'^\d{4}$').hasMatch(birthYearController.text.trim());
+                final hasValidPhoneSuffix = RegExp(r'^\d{2}$').hasMatch(phoneSuffixController.text.trim());
+                final canGenerate = enabled &&
+                    !isCitizenCodeSubmitting &&
+                    selectedPollId != null &&
+                    hasFirstName &&
+                    hasLastName &&
+                    hasValidBirthYear &&
+                    hasValidPhoneSuffix;
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: FilledButton.icon(
+                        onPressed: canGenerate ? onCitizenCodeSubmit : null,
+                        icon: isCitizenCodeSubmitting
+                            ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                            : const Icon(Icons.lock_reset_rounded),
+                        label: Text(isCitizenCodeSubmitting ? 'Traitement...' : 'Generer / verifier le code citoyen'),
+                      ),
+                    ),
+                    if (!canGenerate && !isCitizenCodeSubmitting) ...[
+                      const SizedBox(height: 8),
+                      Text(
+                        'Renseigner le sondage, le prenom, le nom, l\'annee de naissance sur 4 chiffres et les 2 derniers chiffres du telephone pour activer la generation.',
+                        textAlign: TextAlign.right,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573)),
+                      ),
+                    ],
+                  ],
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -1024,8 +1048,8 @@ class _CitizenCodeGeneratorCard extends StatelessWidget {
     required this.duplicateReason,
     required this.isSubmitting,
     required this.lastMessage,
+    required this.enabled,
     required this.onReasonChanged,
-    required this.onSubmit,
   });
 
   final TextEditingController firstNameController;
@@ -1036,16 +1060,21 @@ class _CitizenCodeGeneratorCard extends StatelessWidget {
   final DuplicateReason duplicateReason;
   final bool isSubmitting;
   final String? lastMessage;
+  final bool enabled;
   final ValueChanged<DuplicateReason> onReasonChanged;
-  final VoidCallback onSubmit;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFD7E0EA)),
+      ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1068,24 +1097,24 @@ class _CitizenCodeGeneratorCard extends StatelessWidget {
                 final fields = [
                   TextField(
                     controller: firstNameController,
-                    enabled: !isSubmitting,
+                    enabled: enabled && !isSubmitting,
                     decoration: const InputDecoration(labelText: 'Premiere lettre du prenom ou prenom saisi'),
                   ),
                   TextField(
                     controller: lastNameController,
-                    enabled: !isSubmitting,
+                    enabled: enabled && !isSubmitting,
                     decoration: const InputDecoration(labelText: 'Premiere lettre du nom ou nom saisi'),
                   ),
                   TextField(
                     controller: birthYearController,
-                    enabled: !isSubmitting,
+                    enabled: enabled && !isSubmitting,
                     keyboardType: TextInputType.number,
                     maxLength: 4,
                     decoration: const InputDecoration(labelText: 'Annee de naissance', counterText: ''),
                   ),
                   TextField(
                     controller: phoneSuffixController,
-                    enabled: !isSubmitting,
+                    enabled: enabled && !isSubmitting,
                     keyboardType: TextInputType.phone,
                     maxLength: 2,
                     decoration: const InputDecoration(labelText: '2 derniers chiffres telephone', counterText: ''),
@@ -1112,7 +1141,7 @@ class _CitizenCodeGeneratorCard extends StatelessWidget {
               items: DuplicateReason.values
                   .map((reason) => DropdownMenuItem(value: reason, child: Text(reason.label)))
                   .toList(),
-                onChanged: isSubmitting
+                onChanged: !enabled || isSubmitting
                   ? null
                   : (value) {
                     if (value != null) onReasonChanged(value);
@@ -1121,18 +1150,10 @@ class _CitizenCodeGeneratorCard extends StatelessWidget {
             const SizedBox(height: 12),
             TextField(
               controller: duplicateCommentController,
-              enabled: !isSubmitting,
+              enabled: enabled && !isSubmitting,
               minLines: 2,
               maxLines: 4,
               decoration: const InputDecoration(labelText: 'Commentaire controleur optionnel'),
-            ),
-            const SizedBox(height: 16),
-            FilledButton.icon(
-              onPressed: isSubmitting ? null : onSubmit,
-              icon: isSubmitting
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : const Icon(Icons.lock_reset_rounded),
-              label: Text(isSubmitting ? 'Traitement...' : 'Generer / verifier le code citoyen'),
             ),
             if (lastMessage != null) ...[
               const SizedBox(height: 16),
@@ -1148,7 +1169,6 @@ class _CitizenCodeGeneratorCard extends StatelessWidget {
             ],
           ],
         ),
-      ),
     );
   }
 }
