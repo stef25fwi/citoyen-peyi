@@ -50,7 +50,11 @@ class AdminAnalyticsSummary {
 
   int get closedCount => polls.where((item) => item.status == 'closed').length;
 
+  int get archivedCount => polls.where((item) => item.status == 'archived').length;
+
   int get draftCount => polls.where((item) => item.status == 'draft').length;
+
+  int get completedCount => closedCount + archivedCount;
 
   int get totalValidatedCodes => accessStats.fold<int>(0, (sum, item) => sum + item.total);
 

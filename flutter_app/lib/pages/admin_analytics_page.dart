@@ -63,8 +63,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                         runSpacing: 12,
                         children: [
                           _KpiCard(label: 'Votes emis', value: '${_summary.totalVotes}', subtitle: 'sur ${_summary.totalVoters} inscrits'),
-                          _KpiCard(label: 'Participation moyenne', value: '${_summary.averageParticipation.round()}%', subtitle: 'consultations actives et closes'),
-                          _KpiCard(label: 'Consultations actives', value: '${_summary.activeCount}', subtitle: '${_summary.closedCount} closes, ${_summary.draftCount} brouillons'),
+                          _KpiCard(label: 'Participation moyenne', value: '${_summary.averageParticipation.round()}%', subtitle: 'consultations actives et terminees'),
+                          _KpiCard(label: 'Consultations actives', value: '${_summary.activeCount}', subtitle: '${_summary.completedCount} terminees, ${_summary.draftCount} brouillons'),
                           _KpiCard(label: 'Codes citoyens actifs', value: '${_summary.totalValidatedCodes}', subtitle: 'generes a l\'accueil communal'),
                         ],
                       ),
@@ -119,6 +119,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                               final chart = _PollStatusPieChart(
                                 active: _summary.activeCount,
                                 closed: _summary.closedCount,
+                                archived: _summary.archivedCount,
                                 draft: _summary.draftCount,
                               );
                               final legend = Column(
@@ -133,6 +134,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                                   const SizedBox(height: 18),
                                   _ChartLegendItem(color: const Color(0xFF0F9D58), label: 'Actifs', value: _summary.activeCount),
                                   _ChartLegendItem(color: const Color(0xFFF4A100), label: 'Clos', value: _summary.closedCount),
+                                  _ChartLegendItem(color: const Color(0xFF64748B), label: 'Archives', value: _summary.archivedCount),
                                   _ChartLegendItem(color: const Color(0xFF0B6FA4), label: 'Brouillons', value: _summary.draftCount),
                                 ],
                               );
@@ -236,16 +238,18 @@ class _PollStatusPieChart extends StatelessWidget {
   const _PollStatusPieChart({
     required this.active,
     required this.closed,
+    required this.archived,
     required this.draft,
   });
 
   final int active;
   final int closed;
+  final int archived;
   final int draft;
 
   @override
   Widget build(BuildContext context) {
-    final total = active + closed + draft;
+    final total = active + closed + archived + draft;
     final sections = total == 0
         ? [
             PieChartSectionData(
@@ -268,6 +272,13 @@ class _PollStatusPieChart extends StatelessWidget {
               value: closed.toDouble(),
               title: 'Clos\n$closed',
               color: const Color(0xFFF4A100),
+              radius: 76,
+              titleStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+            ),
+            PieChartSectionData(
+              value: archived.toDouble(),
+              title: 'Archives\n$archived',
+              color: const Color(0xFF64748B),
               radius: 76,
               titleStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
             ),

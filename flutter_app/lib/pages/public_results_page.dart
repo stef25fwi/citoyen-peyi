@@ -6,7 +6,7 @@ import '../widgets/public_bottom_nav.dart';
 
 /// Resultats publics anonymes des consultations.
 ///
-/// Affiche les sondages ouverts/cloturees rattachees a une commune.
+/// Affiche les sondages ouverts, clotures ou archives rattaches a une commune.
 /// Aucune donnee personnelle n'est exposee: seuls le nombre de votes par
 /// option, le total et la commune sont restitues.
 class PublicResultsPage extends StatefulWidget {
@@ -46,7 +46,7 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
         if (!matchById && !matchByName) return false;
       }
       if (_statusFilter == 'open' && poll.status != 'active') return false;
-      if (_statusFilter == 'closed' && poll.status != 'closed') return false;
+      if (_statusFilter == 'closed' && poll.status != 'closed' && poll.status != 'archived') return false;
       return true;
     }).toList()
       ..sort((left, right) => right.openDate.compareTo(left.openDate));
@@ -163,6 +163,9 @@ class _PollResultCard extends StatelessWidget {
     final theme = Theme.of(context);
     final totalVotes = poll.options.fold<int>(0, (sum, option) => sum + option.votes);
     final isClosed = poll.status == 'closed';
+    final isArchived = poll.status == 'archived';
+    final statusLabel = isArchived ? 'Archivee' : isClosed ? 'Cloturee' : 'Ouverte';
+    final statusColor = isArchived ? const Color(0xFFE2E8F0) : isClosed ? const Color(0xFFE5E7EB) : const Color(0xFFDCFCE7);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -176,8 +179,8 @@ class _PollResultCard extends StatelessWidget {
                 children: [
                   Expanded(child: Text(poll.projectTitle, style: theme.textTheme.titleLarge)),
                   Chip(
-                    label: Text(isClosed ? 'Cloturee' : 'Ouverte'),
-                    backgroundColor: isClosed ? const Color(0xFFE5E7EB) : const Color(0xFFDCFCE7),
+                    label: Text(statusLabel),
+                    backgroundColor: statusColor,
                   ),
                 ],
               ),

@@ -72,6 +72,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                     children: [
                       _StatCard(label: 'Consultations actives', value: _summary.activeCount.toString()),
                       _StatCard(label: 'Consultations cloturees', value: _summary.closedCount.toString()),
+                      _StatCard(label: 'Consultations archivees', value: _summary.archivedCount.toString()),
                       _StatCard(label: 'Codes citoyens actifs', value: _summary.totalValidatedCodes.toString()),
                       _StatCard(label: 'Votes enregistres', value: _summary.totalVotes.toString()),
                     ],

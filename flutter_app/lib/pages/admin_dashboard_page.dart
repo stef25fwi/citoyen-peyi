@@ -178,6 +178,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
     final activeCount = _polls.where((poll) => poll.status == 'active').length;
     final closedCount = _polls.where((poll) => poll.status == 'closed').length;
+    final archivedCount = _polls.where((poll) => poll.status == 'archived').length;
     final draftCount = _polls.where((poll) => poll.status == 'draft').length;
 
     return Scaffold(
@@ -286,6 +287,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     color: _DashboardTheme.accent,
                   ),
                   _DashboardStatCard(
+                    label: 'Archivees',
+                    value: '$archivedCount',
+                    icon: Icons.archive_rounded,
+                    color: const Color(0xFF64748B),
+                  ),
+                  _DashboardStatCard(
                     label: 'Brouillons',
                     value: '$draftCount',
                     icon: Icons.edit_document,
@@ -382,7 +389,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           _AnalyticsMetricCard(
                             label: 'Participation moyenne',
                             value: '${_analytics.averageParticipation.round()}%',
-                            subtitle: '${_analytics.activeCount} actifs, ${_analytics.closedCount} clos',
+                            subtitle: '${_analytics.activeCount} actifs, ${_analytics.completedCount} termines',
                           ),
                           _AnalyticsMetricCard(
                             label: 'Codes actives',
