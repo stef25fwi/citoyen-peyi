@@ -14,7 +14,7 @@ const TOKEN_TTL_MS = 30 * 60 * 1000;
 
 const jsonBase64Url = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
 const hashCode = (code) => crypto.createHash('sha256').update(normalizeCode(code)).digest('hex');
-const tokenSecret = () => env.voteAccessTokenSecret || env.superAdminKey || env.adminAccessKey || 'citoyen-peyi-dev-secret';
+const tokenSecret = () => env.voteAccessTokenSecret;
 
 const normalizeCode = (value) => String(value || '').trim().toUpperCase();
 

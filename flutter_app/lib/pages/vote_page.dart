@@ -15,12 +15,14 @@ class VotePage extends StatefulWidget {
   const VotePage({
     required this.token,
     this.pollId,
+    this.voteAccessService,
     super.key,
   });
 
   /// Code citoyen brut, URL QR ou token transmis dans l'URL `/vote/:token`.
   final String token;
   final String? pollId;
+  final VoteAccessService? voteAccessService;
 
   @override
   State<VotePage> createState() => _VotePageState();
@@ -35,6 +37,8 @@ class _VotePageState extends State<VotePage> {
   String? _errorMessage;
   String? _successReceipt;
 
+  VoteAccessService get _voteAccessService => widget.voteAccessService ?? VoteAccessService.instance;
+
   @override
   void initState() {
     super.initState();
@@ -48,7 +52,7 @@ class _VotePageState extends State<VotePage> {
     });
 
     try {
-      final result = await VoteAccessService.instance.validateCode(
+      final result = await _voteAccessService.validateCode(
         widget.token,
         pollId: widget.pollId,
       );
@@ -104,7 +108,7 @@ class _VotePageState extends State<VotePage> {
     });
 
     try {
-      final result = await VoteAccessService.instance.submitVote(
+      final result = await _voteAccessService.submitVote(
         accessToken: validation.accessToken,
         pollId: poll.pollId,
         optionId: optionId,

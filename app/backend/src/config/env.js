@@ -91,6 +91,10 @@ export const validateEnv = () => {
     );
   }
 
+  if (!env.voteAccessTokenSecret) {
+    errors.push('VOTE_ACCESS_TOKEN_SECRET est requis pour signer les tokens temporaires de vote.');
+  }
+
   if (env.googleApplicationCredentials && !fs.existsSync(env.googleApplicationCredentials)) {
     errors.push('GOOGLE_APPLICATION_CREDENTIALS pointe vers un fichier introuvable.');
   }

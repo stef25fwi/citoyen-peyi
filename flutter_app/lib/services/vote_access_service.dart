@@ -94,14 +94,16 @@ class VoteSubmitResult {
 }
 
 class VoteAccessService {
-  VoteAccessService._();
+  VoteAccessService({http.Client? client}) : _client = client ?? http.Client();
+
+  final http.Client _client;
 
   // Compatibilite temporaire uniquement. Le flux principal citoyen passe par
   // citizen_access_codes via CitizenAccessCodeService.
 
   static const _registrationStorageKey = 'registration_codes_v1';
   static const _registrationCollection = 'registrationCodes';
-  static final VoteAccessService instance = VoteAccessService._();
+  static final VoteAccessService instance = VoteAccessService();
   static final Random _random = Random();
 
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -113,7 +115,7 @@ class VoteAccessService {
     }
 
     try {
-      final response = await http.post(
+      final response = await _client.post(
         Uri.parse('${AppConfig.apiBaseUrl}/api/vote-access/validate'),
         headers: const {'Content-Type': 'application/json'},
         body: jsonEncode({
@@ -154,7 +156,7 @@ class VoteAccessService {
     required String optionId,
   }) async {
     try {
-      final response = await http.post(
+      final response = await _client.post(
         Uri.parse('${AppConfig.apiBaseUrl}/api/vote-access/submit'),
         headers: const {'Content-Type': 'application/json'},
         body: jsonEncode({

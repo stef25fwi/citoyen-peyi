@@ -55,6 +55,7 @@ Backend: http://localhost:4000
 Le backend lit ses secrets depuis l'environnement serveur uniquement. Ne jamais passer ces valeurs a Flutter.
 
 - `SUPER_ADMIN_KEY`: cle longue et aleatoire exigee dans le header `x-super-admin-key` pour les routes super administrateur.
+- `VOTE_ACCESS_TOKEN_SECRET`: secret dedie a la signature HMAC des `accessToken` citoyens temporaires. Obligatoire.
 - Firebase Admin, avec une des deux options suivantes:
 	- `GOOGLE_APPLICATION_CREDENTIALS`: chemin vers un fichier service account present sur le serveur.
 	- ou `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`.
@@ -75,6 +76,7 @@ CORS_ORIGIN=http://localhost:5173,http://localhost:8081,https://votre-domaine-fr
 API_BASE_URL=https://votre-backend-prod.example
 SUPER_ADMIN_KEY=change-me-long-random-secret
 ADMIN_ACCESS_KEY=ADMIN2026
+VOTE_ACCESS_TOKEN_SECRET=change-me-long-random-token-secret
 
 # Option 1
 GOOGLE_APPLICATION_CREDENTIALS=./secrets/firebase-admin.json
@@ -170,6 +172,47 @@ Configuration GitHub Pages requise:
 	- `VITE_FIREBASE_STORAGE_BUCKET`
 	- `VITE_FIREBASE_MESSAGING_SENDER_ID`
 	- `VITE_FIREBASE_APP_ID`
+
+Le workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) echoue desormais explicitement si `API_BASE_URL` n'est pas defini, afin d'eviter un build de production pointant vers `localhost`.
+
+## Firestore rules
+
+Le repo expose maintenant une configuration CLI minimale pour deployer les regles Firestore sans modification manuelle dans la console:
+
+```bash
+npm run deploy:firestore:rules -- --project VOTRE_PROJECT_ID
+```
+
+Le fichier racine [firebase.json](firebase.json) pointe vers [vote-libre-main/firestore.rules](vote-libre-main/firestore.rules).
+
+## Migration `registrationCodes` vers `citizen_access_codes`
+
+Une commande backend dediee est disponible pour migrer les anciens codes valides vers la collection officielle:
+
+```bash
+npm run migrate:registration-codes -- --dry-run
+npm run migrate:registration-codes
+```
+
+La migration:
+
+- cree les documents `citizen_access_codes/{ACCESS_CODE}` absents
+- calcule `codeHash`
+- renseigne `displayCodeMasked`, `createdByControllerId`, `createdByControllerName`, `lastUsedAt`
+- marque les documents legacy avec `migratedAt`, `migratedAccessCodeId`, `migratedToCollection`
+
+## Collection publique `public_news`
+
+La page `/news` lit la collection `public_news`. Schema minimal recommande par document:
+
+```json
+{
+	"title": "Consultation sur le front de mer",
+	"body": "Presentation du projet et calendrier de participation.",
+	"communeName": "Fort-de-France",
+	"publishedAt": "2026-05-10T10:00:00.000Z"
+}
+```
 
 Commandes utiles pour le projet React historique:
 

@@ -1,0 +1,5 @@
+{
+  "firestore": {
+    "rules": "vote-libre-main/firestore.rules"
+  }
+}

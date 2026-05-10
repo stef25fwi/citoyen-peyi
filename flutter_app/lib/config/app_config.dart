@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 class AppConfig {
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'http://localhost:4000',
   );
 
   static const String firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY', defaultValue: '');

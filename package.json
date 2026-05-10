@@ -15,8 +15,10 @@
     "build": "npm run build --workspace vote-libre-main",
     "build:dev": "npm run build:dev --workspace vote-libre-main",
     "start": "npm run start --workspace app/backend",
+    "migrate:registration-codes": "npm run migrate:registration-codes --workspace app/backend",
     "test": "npm run test --workspace vote-libre-main",
     "lint": "npm run lint --workspace vote-libre-main",
+    "deploy:firestore:rules": "npx firebase-tools deploy --only firestore:rules",
     "zip": "bash app/scripts/zip-app.sh",
     "extract:vote-libre": "bash app/scripts/extract-vote-libre.sh"
   }

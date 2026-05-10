@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../pages/admin_analytics_page.dart';
 import '../pages/admin_create_poll_page.dart';
 import '../pages/admin_dashboard_page.dart';
+import '../pages/admin_settings_page.dart';
 import '../pages/admin_login_page.dart';
 import '../pages/commune_controller_activity_page.dart';
 import '../pages/controller_citizen_access_page.dart';
@@ -84,14 +85,7 @@ class AppRouter {
       case '/admin/results':
         return _requireRoles(settings, const AdminAnalyticsPage(), const ['commune_admin']);
       case '/admin/settings':
-        return _requireRoles(
-          settings,
-          const PlaceholderPage(
-            title: 'Parametres de la commune',
-            subtitle: 'Configuration communale, capacite de participation et textes publics. TODO backend: parametres par commune.',
-          ),
-          const ['commune_admin'],
-        );
+        return _requireRoles(settings, const AdminSettingsPage(), const ['commune_admin']);
       case '/controleur/login':
         return _page(const ControllerLoginPage(), settings);
       case '/controleur':
