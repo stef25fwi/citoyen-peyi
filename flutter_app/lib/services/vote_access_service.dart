@@ -2,13 +2,80 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
 
+import '../config/app_config.dart';
 import '../models/poll_models.dart';
 import 'browser_storage_service.dart';
 import 'firestore_data_service.dart';
 
+class VoteAccessException implements Exception {
+  const VoteAccessException(this.message, {this.errorCode = 'UNKNOWN'});
+
+  final String message;
+  final String errorCode;
+
+  @override
+  String toString() => message;
+}
+
+class EligiblePollModel {
+  const EligiblePollModel({
+    required this.pollId,
+    required this.title,
+    required this.status,
+    required this.hasVoted,
+    this.description = '',
+    this.question = '',
+  });
+
+  final String pollId;
+  final String title;
+  final String status;
+  final bool hasVoted;
+  final String description;
+  final String question;
+
+  static EligiblePollModel fromJson(Map<String, dynamic> json) {
+    return EligiblePollModel(
+      pollId: json['pollId'] as String? ?? json['id'] as String? ?? '',
+      title: json['title'] as String? ?? json['projectTitle'] as String? ?? 'Consultation',
+      status: json['status'] as String? ?? 'open',
+      hasVoted: json['hasVoted'] as bool? ?? false,
+      description: json['description'] as String? ?? '',
+      question: json['question'] as String? ?? '',
+    );
+  }
+}
+
+class VoteAccessValidationResult {
+  const VoteAccessValidationResult({
+    required this.accessToken,
+    required this.accessCodeId,
+    required this.communeId,
+    required this.communeName,
+    required this.eligiblePolls,
+  });
+
+  final String accessToken;
+  final String accessCodeId;
+  final String communeId;
+  final String communeName;
+  final List<EligiblePollModel> eligiblePolls;
+}
+
+class VoteSubmitResult {
+  const VoteSubmitResult({required this.receiptId, required this.message});
+
+  final String receiptId;
+  final String message;
+}
+
 class VoteAccessService {
   VoteAccessService._();
+
+  // Compatibilite temporaire uniquement. Le flux principal citoyen passe par
+  // citizen_access_codes via CitizenAccessCodeService.
 
   static const _registrationStorageKey = 'registration_codes_v1';
   static const _registrationCollection = 'registrationCodes';
@@ -16,6 +83,84 @@ class VoteAccessService {
   static final Random _random = Random();
 
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+
+  Future<VoteAccessValidationResult> validateCode(String rawCode, {String? pollId}) async {
+    final code = parseCodeOrQrUrl(rawCode);
+    if (code == null || code.isEmpty) {
+      throw const VoteAccessException('Code citoyen requis.', errorCode: 'INVALID_CODE');
+    }
+
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/vote-access/validate'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'code': code,
+          if (pollId?.trim().isNotEmpty == true) 'pollId': pollId!.trim(),
+        }),
+      ).timeout(const Duration(seconds: 12));
+      final payload = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode < 200 || response.statusCode >= 300 || payload['ok'] != true) {
+        throw VoteAccessException(
+          payload['message'] as String? ?? 'Code inconnu, expire ou desactive.',
+          errorCode: payload['errorCode'] as String? ?? 'INVALID_CODE',
+        );
+      }
+      final eligiblePolls = (payload['eligiblePolls'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .map(EligiblePollModel.fromJson)
+          .where((poll) => poll.pollId.isNotEmpty)
+          .toList();
+
+      return VoteAccessValidationResult(
+        accessToken: payload['accessToken'] as String? ?? '',
+        accessCodeId: payload['accessCodeId'] as String? ?? '',
+        communeId: payload['communeId'] as String? ?? '',
+        communeName: payload['communeName'] as String? ?? '',
+        eligiblePolls: eligiblePolls,
+      );
+    } on VoteAccessException {
+      rethrow;
+    } catch (_) {
+      throw const VoteAccessException('Validation securisee indisponible. Reessayez plus tard.', errorCode: 'NETWORK_ERROR');
+    }
+  }
+
+  Future<VoteSubmitResult> submitVote({
+    required String accessToken,
+    required String pollId,
+    required String optionId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/api/vote-access/submit'),
+        headers: const {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'accessToken': accessToken,
+          'pollId': pollId,
+          'optionId': optionId,
+          'source': 'web',
+        }),
+      ).timeout(const Duration(seconds: 12));
+      final payload = jsonDecode(response.body) as Map<String, dynamic>;
+      if (response.statusCode < 200 || response.statusCode >= 300 || payload['ok'] != true) {
+        throw VoteAccessException(
+          payload['message'] as String? ?? 'Enregistrement du vote impossible.',
+          errorCode: payload['errorCode'] as String? ?? 'SUBMIT_FAILED',
+        );
+      }
+      return VoteSubmitResult(
+        receiptId: payload['receiptId'] as String? ?? '',
+        message: payload['message'] as String? ?? 'Votre vote est enregistre anonymement.',
+      );
+    } on VoteAccessException {
+      rethrow;
+    } catch (_) {
+      throw const VoteAccessException('Reseau indisponible. Votre vote n’a pas ete enregistre.', errorCode: 'NETWORK_ERROR');
+    }
+  }
+
+  String? parseCodeOrQrUrl(String rawValue) => resolveVoteAccessCode(rawValue);
 
   Future<void> _writeLocal(List<VoteAccessRecordModel> records) {
     return BrowserStorageService.instance.writeJsonList(

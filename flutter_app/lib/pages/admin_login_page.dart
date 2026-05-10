@@ -62,8 +62,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         SnackBar(
           content: Text(
             result.isFallback
-                ? 'Mode local actif. Acces administrateur ouvert sans echange backend.'
-                : 'Connexion administrateur securisee etablie.',
+                ? 'Mode local actif. Acces administrateur communal ouvert sans echange backend.'
+                : 'Connexion administrateur communal securisee etablie.',
           ),
         ),
       );
@@ -83,7 +83,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connexion administrateur impossible.')),
+        const SnackBar(content: Text('Connexion administrateur communal impossible.')),
       );
     } finally {
       if (mounted) {
@@ -114,7 +114,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           children: [
             Icon(Icons.settings_rounded, color: theme.colorScheme.primary),
             const SizedBox(width: 10),
-            const Text('Espace administrateur'),
+            const Text('Espace administrateur communal'),
           ],
         ),
       ),
@@ -144,13 +144,13 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                     ),
                     const SizedBox(height: 18),
                     Text(
-                      'Connexion administrateur',
+                      'Connexion administrateur communal',
                       style: theme.textTheme.headlineMedium?.copyWith(fontSize: 28),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 10),
                     Text(
-                      'Entrez votre cle d\'acces administrateur pour recevoir un jeton de confiance emis par le backend.',
+                      'Entrez votre cle d\'acces administrateur communal pour recevoir un jeton de confiance emis par le backend.',
                       style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
                       textAlign: TextAlign.center,
                     ),
@@ -167,7 +167,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         fontWeight: FontWeight.w600,
                       ),
                       decoration: InputDecoration(
-                        hintText: 'Cle administrateur',
+                        hintText: 'Cle administrateur communal',
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
                         contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
@@ -210,7 +210,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                     ),
                     const SizedBox(height: 14),
                     Text(
-                      'En mode configure, cette cle sera verifiee par le backend avant emission des claims admin.',
+                      'En mode configure, cette cle sera verifiee par le backend avant emission des claims admin communaux.',
                       style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF7A8796)),
                       textAlign: TextAlign.center,
                     ),

@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import '../models/poll_models.dart';
+import 'auth_session_store.dart';
 import 'browser_storage_service.dart';
 import 'firestore_data_service.dart';
 
@@ -15,6 +16,7 @@ class PollService {
     PollModel(
       id: 'poll-1',
       projectTitle: 'Reamenagement de la Place Centrale',
+      description: 'Consultation citoyenne de demonstration sur le projet principal du centre-ville.',
       question: 'Quelle option preferez-vous pour le reamenagement de la Place Centrale ?',
       options: [
         PollOptionModel(id: 'opt-1', label: 'Espace vert avec aires de jeux', votes: 47),
@@ -22,9 +24,15 @@ class PollService {
         PollOptionModel(id: 'opt-3', label: 'Parking souterrain et esplanade pietonne', votes: 28),
         PollOptionModel(id: 'opt-4', label: 'Zone mixte commerces et espaces verts', votes: 53),
       ],
+      targetPopulation: 'Habitants et usagers du centre-ville',
+      communeId: 'demo',
+      communeName: 'Commune demo',
       openDate: '2026-03-15',
       closeDate: '2026-04-15',
       status: 'active',
+      createdBy: 'fallback_admin',
+      createdAt: '2026-03-01T09:00:00.000',
+      updatedAt: '2026-03-01T09:00:00.000',
       totalVoters: 200,
       totalVoted: 160,
     ),
@@ -69,15 +77,22 @@ class PollService {
   }
 
   Future<List<PollModel>> loadPolls() async {
+    final session = AuthSessionStore.instance.currentSession;
+    final communeScope = (session?.isCommuneAdmin == true || session?.isController == true)
+        ? (session?.commune?.code ?? session?.commune?.name ?? '')
+        : '';
+
     final db = FirestoreDataService.instance;
     if (db == null) {
-      return _loadLocalPolls();
+      final polls = await _loadLocalPolls();
+      return _filterByCommuneScope(polls, communeScope);
     }
 
     try {
       final snapshot = await db.collection(_pollCollection).get();
       if (snapshot.docs.isEmpty) {
-        return _loadLocalPolls();
+        final polls = await _loadLocalPolls();
+        return _filterByCommuneScope(polls, communeScope);
       }
 
       final polls = snapshot.docs
@@ -85,9 +100,10 @@ class PollService {
           .toList()
         ..sort((left, right) => right.openDate.compareTo(left.openDate));
       await _writeLocalPolls(polls);
-      return polls;
+      return _filterByCommuneScope(polls, communeScope);
     } catch (_) {
-      return _loadLocalPolls();
+      final polls = await _loadLocalPolls();
+      return _filterByCommuneScope(polls, communeScope);
     }
   }
 
@@ -103,16 +119,21 @@ class PollService {
 
   Future<PollModel> createPoll({
     required String projectTitle,
+    String description = '',
     required String question,
     required List<String> options,
+    String targetPopulation = '',
     required String openDate,
     required String closeDate,
     required int totalVoters,
   }) async {
     final now = DateTime.now().microsecondsSinceEpoch;
+    final nowIso = DateTime.now().toIso8601String();
+    final session = AuthSessionStore.instance.currentSession;
     final poll = PollModel(
       id: 'poll-$now',
       projectTitle: projectTitle.trim(),
+      description: description.trim(),
       question: question.trim(),
       options: options
           .map((item) => item.trim())
@@ -126,9 +147,15 @@ class PollService {
                 votes: 0,
               ))
           .toList(),
+      targetPopulation: targetPopulation.trim(),
+      communeId: session?.commune?.code ?? '',
+      communeName: session?.commune?.name ?? '',
       openDate: openDate,
       closeDate: closeDate,
       status: _derivePollStatus(openDate, closeDate),
+      createdBy: session?.label ?? session?.id ?? 'commune_admin',
+      createdAt: nowIso,
+      updatedAt: nowIso,
       totalVoters: totalVoters,
       totalVoted: 0,
     );
@@ -182,5 +209,21 @@ class PollService {
     }
 
     return updatedPoll;
+  }
+
+  List<PollModel> _filterByCommuneScope(List<PollModel> polls, String communeScope) {
+    if (communeScope.isEmpty) {
+      return polls;
+    }
+
+    return polls.where((poll) {
+      if (poll.communeId.isNotEmpty) {
+        return poll.communeId == communeScope;
+      }
+      if (poll.communeName.isNotEmpty) {
+        return poll.communeName.toLowerCase() == communeScope.toLowerCase();
+      }
+      return true;
+    }).toList();
   }
 }

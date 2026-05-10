@@ -7,6 +7,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import 'auth_session_store.dart';
 import 'firebase_auth_service.dart';
+import 'firestore_data_service.dart';
 
 class SuperAdminAuthException implements Exception {
   const SuperAdminAuthException(this.message);
@@ -75,6 +76,7 @@ class SuperAdminService {
   static final SuperAdminService instance = SuperAdminService._();
 
   static const _profilesKey = 'super_admin_profiles_v1';
+  static const _profilesCollection = 'communeAdmins';
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
   String? _runtimeSuperAdminKey;
@@ -145,6 +147,20 @@ class SuperAdminService {
 
   /// Retourne la liste des profils admin créés localement.
   Future<List<AdminProfileModel>> loadProfiles() async {
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      try {
+        final snapshot = await db.collection(_profilesCollection).get();
+        final profiles = snapshot.docs.map((doc) => AdminProfileModel.fromJson({...doc.data(), 'id': doc.id})).whereType<AdminProfileModel>().toList();
+        if (profiles.isNotEmpty) {
+          await _saveProfiles(profiles);
+          return profiles;
+        }
+      } catch (_) {
+        // Fallback demo/local : SharedPreferences.
+      }
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_profilesKey);
     if (raw == null || raw.isEmpty) return [];
@@ -187,6 +203,14 @@ class SuperAdminService {
 
     profiles.add(profile);
     await _saveProfiles(profiles);
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      try {
+        await db.collection(_profilesCollection).doc(profile.id).set(profile.toJson());
+      } catch (_) {
+        // TODO backend: exposer un endpoint super_admin pour creation atomique des admins communaux.
+      }
+    }
     return profile;
   }
 
@@ -195,6 +219,14 @@ class SuperAdminService {
     final profiles = await loadProfiles();
     profiles.removeWhere((p) => p.id == id);
     await _saveProfiles(profiles);
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      try {
+        await db.collection(_profilesCollection).doc(id).delete();
+      } catch (_) {
+        // Suppression locale conservee si Firestore est indisponible.
+      }
+    }
   }
 
   Future<void> _saveProfiles(List<AdminProfileModel> profiles) async {

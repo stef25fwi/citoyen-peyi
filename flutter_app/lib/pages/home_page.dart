@@ -52,7 +52,7 @@ class HomePage extends StatelessWidget {
                                 borderRadius: BorderRadius.circular(999),
                               ),
                               child: const Text(
-                                'Plateforme de sondage anonyme',
+                                'Plateforme de consultation citoyenne anonyme',
                                 style: TextStyle(
                                   color: Colors.white,
                                   fontWeight: FontWeight.w600,
@@ -95,23 +95,31 @@ class HomePage extends StatelessWidget {
                                     backgroundColor: Colors.white,
                                     foregroundColor: const Color(0xFF0F6D8F),
                                   ),
-                                  child: const Text('Espace Admin'),
+                                  child: const Text('Administrateur communal'),
                                 ),
                                 OutlinedButton(
                                   onPressed: () => Navigator.of(context).pushNamed('/controleur/login'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.white,
                                   ),
-                                  child: const Text('Espace Controleur'),
+                                  child: const Text('Controleur / accueil'),
                                 ),
                                 OutlinedButton(
                                   onPressed: () => Navigator.of(context).pushNamed('/access'),
                                   style: OutlinedButton.styleFrom(
                                     foregroundColor: Colors.white,
                                   ),
-                                  child: const Text('Acceder avec un QR Code'),
+                                  child: const Text('Je participe avec mon code citoyen'),
                                 ),
                               ],
+                            ),
+                            const SizedBox(height: 12),
+                            TextButton(
+                              onPressed: () => Navigator.of(context).pushNamed('/super/login'),
+                              child: const Text(
+                                'Super administrateur plateforme',
+                                style: TextStyle(color: Colors.white),
+                              ),
                             ),
                           ],
                         ),
@@ -172,8 +180,8 @@ class HomePage extends StatelessWidget {
                               ),
                               FeatureCard(
                                 icon: Icons.qr_code_2_rounded,
-                                title: 'Acces par QR code',
-                                description: 'Chaque participant recoit un QR code unique et personnel.',
+                                title: 'Code citoyen unique',
+                                description: 'Chaque citoyen recoit un code anonyme utilisable en saisie ou via QR.',
                                 accent: Color(0xFFE58F2A),
                               ),
                               FeatureCard(
@@ -242,7 +250,7 @@ class HomePage extends StatelessWidget {
                   padding: EdgeInsets.symmetric(horizontal: 20, vertical: 28),
                   child: Column(
                     children: [
-                      Text('© 2026 VoteAnonyme - Plateforme de sondage confidentielle'),
+                      Text('© 2026 Citoyen Peyi - Plateforme de consultation citoyenne'),
                       SizedBox(height: 6),
                       Text('Mode demonstration - Aucune donnee reelle n\'est collectee'),
                     ],

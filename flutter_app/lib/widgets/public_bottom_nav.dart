@@ -11,7 +11,7 @@ class PublicBottomNav extends StatelessWidget {
   final PublicTab currentTab;
 
   void _handleTap(BuildContext context, int index) {
-    final routes = <String>['/', '/access', '/results', '/news', '/profile'];
+    final routes = <String>['/', '/access', '/results', '/news', '/citizen'];
     final targetRoute = routes[index];
     final currentRoute = ModalRoute.of(context)?.settings.name;
 
@@ -69,7 +69,7 @@ class PublicBottomNav extends StatelessWidget {
             NavigationDestination(
               icon: Icon(Icons.account_circle_outlined),
               selectedIcon: Icon(Icons.account_circle_rounded),
-              label: 'Profil / Acces',
+              label: 'Espace citoyen',
             ),
           ],
         ),

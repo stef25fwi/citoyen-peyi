@@ -55,6 +55,7 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
   bool _isSubmitting = false;
   List<PollModel> _polls = const [];
   List<VoteAccessRecordModel> _records = const [];
+  List<CitizenAccessCodeModel> _citizenCodes = const [];
   List<DuplicateCodeRequestModel> _duplicateRequests = const [];
   String? _selectedPollId;
   String? _selectedRecordId;
@@ -122,7 +123,8 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
 
     final session = AuthSessionStore.instance.currentSession;
     final polls = await PollService.instance.loadPolls();
-    final records = await VoteAccessService.instance.loadAllRecords();
+    final records = <VoteAccessRecordModel>[];
+    final citizenCodes = await CitizenAccessCodeService.instance.loadAccessCodesForCurrentController();
     final duplicateRequests = session?.isController == true
       ? await CitizenAccessCodeService.instance.getDuplicateRequestsForCurrentController(status: 'all')
       : const <DuplicateCodeRequestModel>[];
@@ -134,6 +136,7 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
     setState(() {
       _polls = polls;
       _records = records;
+      _citizenCodes = citizenCodes;
       _duplicateRequests = duplicateRequests;
       _selectedPollId ??= polls.isNotEmpty ? polls.first.id : null;
       _isLoading = false;
@@ -190,7 +193,11 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
         lastName: _citizenLastNameController.text,
         birthYear: _citizenBirthYearController.text,
         phoneSuffix: _citizenPhoneSuffixController.text,
+        identityDocumentChecked: _selectedIdDoc != null,
+        addressProofChecked: _selectedAddressDoc != null,
+        communeEligibilityChecked: _selectedAddressDoc != null,
         duplicateReason: _duplicateReason,
+        selectedPollId: _selectedPollId,
         controllerComment: _duplicateCommentController.text,
         session: AuthSessionStore.instance.currentSession,
       );
@@ -205,9 +212,13 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
               'Un acces existe deja pour cette personne. Une demande de verification a ete transmise au super administrateur.';
         }
       });
+      final citizenCodes = await CitizenAccessCodeService.instance.loadAccessCodesForCurrentController();
       final duplicateRequests = await CitizenAccessCodeService.instance.getDuplicateRequestsForCurrentController(status: 'all');
       if (mounted) {
-        setState(() => _duplicateRequests = duplicateRequests);
+        setState(() {
+          _citizenCodes = citizenCodes;
+          _duplicateRequests = duplicateRequests;
+        });
       }
     } on ArgumentError catch (error) {
       if (!mounted) return;
@@ -361,11 +372,11 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
     final availableRecords = filteredRecords.where((item) => item.status == 'available').toList();
     final selectedRecord = _records.where((item) => item.id == _selectedRecordId).firstOrNull;
     final stats = (
-      total: pollScopedRecords.length,
-      available: pollScopedRecords.where((item) => item.status == 'available').length,
-      validated: pollScopedRecords.where((item) => item.status == 'validated').length,
-      activated: pollScopedRecords.where((item) => item.activated).length,
-      voted: pollScopedRecords.where((item) => item.hasVoted).length,
+      total: _citizenCodes.length,
+      available: _citizenCodes.where((item) => item.status == 'active' && !item.usedForLogin).length,
+      validated: _citizenCodes.where((item) => item.status == 'active').length,
+      activated: _citizenCodes.where((item) => item.usedForLogin).length,
+      voted: _citizenCodes.where((item) => item.usedForLogin).length,
     );
 
     return Scaffold(
@@ -376,7 +387,7 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
           children: [
             Icon(Icons.verified_user_rounded, color: _ZipTheme.primary, size: 22),
             SizedBox(width: 8),
-            Text('Inscriptions'),
+            Text('Acces citoyen'),
           ],
         ),
       ),
@@ -402,28 +413,28 @@ class _RegistrationReviewPageState extends State<RegistrationReviewPage> {
                           _StatCard(
                             label: 'Codes',
                             value: '${stats.total}',
-                            subtitle: 'pour le sondage selectionne',
+                            subtitle: 'citoyens generes',
                             icon: Icons.tag_rounded,
                             color: _ZipTheme.primary,
                           ),
                           _StatCard(
                             label: 'Disponibles',
                             value: '${stats.available}',
-                            subtitle: 'en attente de verification',
+                            subtitle: 'actifs non utilises',
                             icon: Icons.schedule_rounded,
                             color: _ZipTheme.accent,
                           ),
                           _StatCard(
                             label: 'Valides',
                             value: '${stats.validated}',
-                            subtitle: 'QR diffusable',
+                            subtitle: 'codes citoyens actifs',
                             icon: Icons.check_circle_rounded,
                             color: _ZipTheme.success,
                           ),
                           _StatCard(
                             label: 'Votes',
                             value: '${stats.voted}',
-                            subtitle: '${stats.activated} codes actives',
+                            subtitle: '${stats.activated} codes utilises',
                             icon: Icons.how_to_vote_rounded,
                             color: _ZipTheme.warning,
                           ),
@@ -763,6 +774,7 @@ class _ControllerIdentityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final generatedCode = _extractGeneratedCode(lastMessage);
 
     return Container(
       constraints: const BoxConstraints(minWidth: 220, maxWidth: 340),
@@ -831,6 +843,53 @@ class _SectionTitle extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+class _ControllerStepper extends StatelessWidget {
+  const _ControllerStepper();
+
+  static const _steps = [
+    'Verification des pieces',
+    'Saisie des donnees minimales',
+    'Generation du code citoyen',
+    'Remise du code / QR',
+    'Doublon eventuel → demande superadmin',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _ZipTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Parcours de verification', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(height: 12),
+          for (var index = 0; index < _steps.length; index++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  CircleAvatar(
+                    radius: 13,
+                    backgroundColor: _ZipTheme.primary,
+                    child: Text('${index + 1}', style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w800)),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(_steps[index])),
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }
@@ -908,6 +967,7 @@ class _ValidationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const showLegacyRegistrationCodes = false;
     final citizenCodeFields = Listenable.merge([
       firstNameController,
       lastNameController,
@@ -933,7 +993,7 @@ class _ValidationCard extends StatelessWidget {
               initialValue: selectedPollId,
               decoration: const InputDecoration(
                 labelText: 'Sondage suivi',
-                helperText: 'Les tuiles Codes / Disponibles / Valides / Votes utilisent ce sondage.',
+                helperText: 'Sert au contexte controleur. Le code citoyen donne acces aux consultations publiques ouvertes.',
               ),
               items: polls
                   .map(
@@ -945,6 +1005,8 @@ class _ValidationCard extends StatelessWidget {
                   .toList(),
               onChanged: polls.isEmpty ? null : onPollChanged,
             ),
+            const SizedBox(height: 18),
+            const _ControllerStepper(),
             const SizedBox(height: 18),
             _CitizenCodeGeneratorCard(
               firstNameController: firstNameController,
@@ -960,57 +1022,59 @@ class _ValidationCard extends StatelessWidget {
             ),
             const SizedBox(height: 18),
             _ControllerDuplicateRequestsCard(requests: duplicateRequests),
-            const SizedBox(height: 18),
-            const Divider(),
-            const SizedBox(height: 18),
-            DropdownButtonFormField<String>(
-              initialValue: selectedRecordId,
-              decoration: const InputDecoration(labelText: 'Code a verifier'),
-              items: availableRecords
-                  .map(
-                    (record) => DropdownMenuItem<String>(
-                      value: record.id,
-                      child: Text(record.code),
-                    ),
-                  )
-                  .toList(),
-              onChanged: enabled ? onRecordChanged : null,
-            ),
-            const SizedBox(height: 18),
-            Text(
-              'L\'habitant doit presenter une piece d\'identite et un justificatif de domicile.',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: _ZipTheme.mutedForeground),
-            ),
-            const SizedBox(height: 16),
-            _DocumentChoiceGroup(
-              title: '1. Piece d\'identite',
-              icon: Icons.shield_outlined,
-              options: idDocumentTypes,
-              value: selectedIdDoc,
-              enabled: enabled,
-              onChanged: onIdDocChanged,
-              color: _ZipTheme.primary,
-            ),
-            const SizedBox(height: 12),
-            _DocumentChoiceGroup(
-              title: '2. Justificatif de domicile',
-              icon: Icons.tag_rounded,
-              options: addressDocumentTypes,
-              value: selectedAddressDoc,
-              enabled: enabled,
-              onChanged: onAddressDocChanged,
-              color: _ZipTheme.accent,
-            ),
-            const SizedBox(height: 16),
-            Align(
-              alignment: Alignment.centerRight,
-              child: _GradientActionButton(
-                onPressed: enabled && selectedRecordId != null && selectedIdDoc != null && selectedAddressDoc != null ? onValidate : null,
-                icon: Icons.qr_code_2_rounded,
-                label: 'Valider & Generer QR',
+            if (showLegacyRegistrationCodes) ...[
+              const SizedBox(height: 18),
+              const Divider(),
+              const SizedBox(height: 18),
+              DropdownButtonFormField<String>(
+                initialValue: selectedRecordId,
+                decoration: const InputDecoration(labelText: 'Code legacy a verifier'),
+                items: availableRecords
+                    .map(
+                      (record) => DropdownMenuItem<String>(
+                        value: record.id,
+                        child: Text(record.code),
+                      ),
+                    )
+                    .toList(),
+                onChanged: enabled ? onRecordChanged : null,
               ),
-            ),
-            if (selectedRecord?.qrPayload != null) ...[
+              const SizedBox(height: 18),
+              Text(
+                'Flux legacy masque en production : les nouveaux votes utilisent le code citoyen anonyme.',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: _ZipTheme.mutedForeground),
+              ),
+              const SizedBox(height: 16),
+              _DocumentChoiceGroup(
+                title: '1. Piece d\'identite',
+                icon: Icons.shield_outlined,
+                options: idDocumentTypes,
+                value: selectedIdDoc,
+                enabled: enabled,
+                onChanged: onIdDocChanged,
+                color: _ZipTheme.primary,
+              ),
+              const SizedBox(height: 12),
+              _DocumentChoiceGroup(
+                title: '2. Justificatif de domicile',
+                icon: Icons.tag_rounded,
+                options: addressDocumentTypes,
+                value: selectedAddressDoc,
+                enabled: enabled,
+                onChanged: onAddressDocChanged,
+                color: _ZipTheme.accent,
+              ),
+              const SizedBox(height: 16),
+              Align(
+                alignment: Alignment.centerRight,
+                child: _GradientActionButton(
+                  onPressed: enabled && selectedRecordId != null && selectedIdDoc != null && selectedAddressDoc != null ? onValidate : null,
+                  icon: Icons.qr_code_2_rounded,
+                  label: 'Valider & Generer QR legacy',
+                ),
+              ),
+            ],
+            if (showLegacyRegistrationCodes && selectedRecord?.qrPayload != null) ...[
               const SizedBox(height: 16),
               Container(
                 width: double.infinity,
@@ -1245,9 +1309,42 @@ class _CitizenCodeGeneratorCard extends StatelessWidget {
                 child: SelectableText(lastMessage!),
               ),
             ],
+            if (generatedCode != null) ...[
+              const SizedBox(height: 16),
+              Center(
+                child: Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: _ZipTheme.border),
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      QrImageView(
+                        data: generatedCode,
+                        size: 136,
+                        backgroundColor: Colors.white,
+                      ),
+                      const SizedBox(height: 8),
+                      SelectableText(generatedCode, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800)),
+                      const SizedBox(height: 4),
+                      Text('Code citoyen a remettre', style: theme.textTheme.bodySmall),
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ],
         ),
     );
+  }
+
+  String? _extractGeneratedCode(String? message) {
+    if (message == null) return null;
+    final match = RegExp(r'Code citoyen genere :\s*([A-Z0-9]{8})').firstMatch(message);
+    return match?.group(1);
   }
 }
 

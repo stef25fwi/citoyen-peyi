@@ -1,16 +1,18 @@
 import 'package:flutter/material.dart';
 
 import '../models/poll_models.dart';
+import '../services/citizen_public_access_service.dart';
 import '../services/poll_service.dart';
-import '../services/vote_access_service.dart';
 
 class VotePage extends StatefulWidget {
   const VotePage({
     required this.token,
+    this.pollId,
     super.key,
   });
 
   final String token;
+  final String? pollId;
 
   @override
   State<VotePage> createState() => _VotePageState();
@@ -19,10 +21,10 @@ class VotePage extends StatefulWidget {
 class _VotePageState extends State<VotePage> {
   bool _isLoading = true;
   bool _isSubmitting = false;
-  bool _submitted = false;
   String? _selectedOptionId;
   PollModel? _poll;
-  VoteAccessRecordModel? _accessRecord;
+  CitizenPublicAccessSession? _accessSession;
+  bool _alreadyVoted = false;
 
   @override
   void initState() {
@@ -35,27 +37,28 @@ class _VotePageState extends State<VotePage> {
       _isLoading = true;
     });
 
-    var accessRecord = await VoteAccessService.instance.findByCode(widget.token);
-    if (accessRecord != null && !accessRecord.activated && !accessRecord.hasVoted) {
-      await VoteAccessService.instance.markActivated(widget.token);
-      accessRecord = await VoteAccessService.instance.findByCode(widget.token);
-    }
-
-    final poll = accessRecord == null ? null : await PollService.instance.loadPollById(accessRecord.pollId);
+    final accessSession = await CitizenPublicAccessService.instance.openAccess(widget.token);
+    final loadedPoll = widget.pollId == null ? null : await PollService.instance.loadPollById(widget.pollId!);
+    final pollIsAccessible = accessSession?.openPolls.any((poll) => poll.id == widget.pollId) == true;
+    final poll = pollIsAccessible ? loadedPoll : null;
+    final alreadyVoted = widget.pollId == null
+        ? false
+        : await CitizenPublicAccessService.instance.hasVoted(accessCode: widget.token, pollId: widget.pollId!);
 
     if (!mounted) {
       return;
     }
 
     setState(() {
-      _accessRecord = accessRecord;
+      _accessSession = accessSession;
       _poll = poll;
+      _alreadyVoted = alreadyVoted;
       _isLoading = false;
     });
   }
 
   Future<void> _submitVote() async {
-    if (_selectedOptionId == null || _accessRecord == null || _poll == null || _isSubmitting) {
+    if (_selectedOptionId == null || _accessSession == null || _poll == null || _isSubmitting) {
       if (_selectedOptionId == null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Veuillez selectionner une option.')),
@@ -68,20 +71,19 @@ class _VotePageState extends State<VotePage> {
       _isSubmitting = true;
     });
 
-    await VoteAccessService.instance.markVoted(widget.token);
-    await PollService.instance.recordVote(_accessRecord!.pollId, _selectedOptionId!);
+    await PollService.instance.recordVote(_poll!.id, _selectedOptionId!);
+    await CitizenPublicAccessService.instance.markVoted(accessCode: _accessSession!.accessCode, pollId: _poll!.id);
 
     if (!mounted) {
       return;
     }
 
-    setState(() {
-      _submitted = true;
-      _isSubmitting = false;
-    });
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Vote enregistre avec succes.')),
+    Navigator.of(context).pushReplacementNamed(
+      '/confirmation',
+      arguments: {
+        'pollTitle': _poll!.projectTitle,
+        'communeName': _accessSession!.communeName,
+      },
     );
   }
 
@@ -96,18 +98,18 @@ class _VotePageState extends State<VotePage> {
       );
     }
 
-    if (_accessRecord == null || _poll == null) {
+    if (_accessSession == null || _poll == null) {
       return _VoteStateScaffold(
         child: _InfoCard(
-          title: 'Acces au sondage indisponible',
-          message: 'Ce code n\'existe pas, a expire, ou le sondage associe est introuvable.',
+          title: 'Acces a la consultation indisponible',
+          message: 'Ce code citoyen est invalide, remplace, ou la consultation demandee n\'est pas ouverte.',
           actionLabel: 'Retour',
           onPressed: () => Navigator.of(context).pushNamed('/access'),
         ),
       );
     }
 
-    if (_accessRecord!.hasVoted || _submitted) {
+    if (_alreadyVoted) {
       return _VoteStateScaffold(
         child: _InfoCard(
           title: 'Merci pour votre vote !',

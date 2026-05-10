@@ -36,12 +36,12 @@ class AdminAuthService {
 
     if (isLocalMode) {
       final session = AuthSession(
-        role: 'admin',
+        role: 'commune_admin',
         admin: true,
         controller: false,
         mode: 'fallback',
         adminScope: 'global',
-        label: 'Administrateur',
+        label: 'Administrateur communal',
       );
       await AuthSessionStore.instance.save(session);
       return const AdminSignInResult(isFallback: true);
@@ -57,12 +57,12 @@ class AdminAuthService {
     } catch (_) {
       // Réseau inaccessible → mode fallback
       final session = AuthSession(
-        role: 'admin',
+        role: 'commune_admin',
         admin: true,
         controller: false,
         mode: 'fallback',
         adminScope: 'global',
-        label: 'Administrateur',
+        label: 'Administrateur communal',
       );
       await AuthSessionStore.instance.save(session);
       return const AdminSignInResult(isFallback: true);
@@ -81,13 +81,13 @@ class AdminAuthService {
     }
 
     final session = AuthSession(
-      role: claims['role'] as String? ?? 'admin',
+      role: claims['role'] as String? ?? 'commune_admin',
       admin: claims['admin'] as bool? ?? true,
       controller: false,
       mode: 'secure',
       adminScope: claims['adminScope'] as String?,
       customToken: customToken,
-      label: 'Administrateur',
+      label: 'Administrateur communal',
     );
 
     await AuthSessionStore.instance.save(session);

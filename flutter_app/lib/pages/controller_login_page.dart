@@ -53,7 +53,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
           : 'Bienvenue, ${result.session.label ?? 'Controleur'} · $commune';
 
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
-      Navigator.of(context).pushReplacementNamed('/admin/inscriptions');
+      Navigator.of(context).pushReplacementNamed('/controleur');
     } on ControllerAuthException catch (error) {
       if (!mounted) {
         return;

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../models/poll_models.dart';
-import '../services/vote_access_service.dart';
+import '../services/citizen_public_access_service.dart';
 import '../widgets/public_bottom_nav.dart';
 
 class QrAccessPage extends StatefulWidget {
@@ -22,11 +21,11 @@ class _QrAccessPageState extends State<QrAccessPage> {
   }
 
   Future<void> _openAccess() async {
-    final resolved = resolveVoteAccessCode(_codeController.text);
-    if (resolved == null || resolved.isEmpty) {
+    final rawCode = _codeController.text.trim();
+    if (rawCode.isEmpty) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('QR code ou code invalide. Verifiez et reessayez.')),
+          const SnackBar(content: Text('Code citoyen requis.')),
         );
       }
       return;
@@ -36,7 +35,7 @@ class _QrAccessPageState extends State<QrAccessPage> {
       _isSubmitting = true;
     });
 
-    final record = await VoteAccessService.instance.findByCode(resolved);
+    final session = await CitizenPublicAccessService.instance.openAccess(rawCode);
     if (!mounted) {
       return;
     }
@@ -45,14 +44,17 @@ class _QrAccessPageState extends State<QrAccessPage> {
       _isSubmitting = false;
     });
 
-    if (record == null) {
+    if (session == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Code invalide. Verifiez votre QR code et reessayez.')),
+        const SnackBar(content: Text('Code inconnu, expire ou desactive. Contactez un agent d\'accueil si besoin.')),
       );
       return;
     }
 
-    Navigator.of(context).pushNamed('/vote/${record.code}');
+    Navigator.of(context).pushNamed(
+      '/citizen',
+      arguments: {'session': session},
+    );
   }
 
   @override
@@ -62,7 +64,7 @@ class _QrAccessPageState extends State<QrAccessPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FB),
       appBar: AppBar(
-        title: const Text('Acces au vote'),
+        title: const Text('Acces citoyen'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pushNamed('/'),
@@ -85,11 +87,17 @@ class _QrAccessPageState extends State<QrAccessPage> {
                   child: Icon(Icons.qr_code_2_rounded, size: 64, color: theme.colorScheme.primary),
                 ),
                 const SizedBox(height: 20),
-                Text('Accedez a votre vote', style: theme.textTheme.headlineMedium, textAlign: TextAlign.center),
+                Text('Accedez a votre espace citoyen', style: theme.textTheme.headlineMedium, textAlign: TextAlign.center),
                 const SizedBox(height: 10),
                 Text(
-                  'Collez le contenu du QR code, son URL, ou saisissez le code manuellement.',
+                  'Saisissez le code citoyen anonyme remis par le controleur ou scannez votre QR si vous en disposez deja.',
                   style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Le controleur verifie votre eligibilite sans enregistrer votre identite complete.',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 20),
@@ -105,7 +113,8 @@ class _QrAccessPageState extends State<QrAccessPage> {
                           maxLines: 2,
                           minLines: 1,
                           decoration: InputDecoration(
-                            hintText: 'Ex : VOTE-A1B2C3 ou https://.../vote/VOTE-A1B2C3',
+                            hintText: 'Ex : A1B2C3D4',
+                            labelText: 'Code citoyen anonyme',
                             filled: true,
                             fillColor: const Color(0xFFF8FAFC),
                             contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
@@ -125,7 +134,7 @@ class _QrAccessPageState extends State<QrAccessPage> {
                             icon: _isSubmitting
                                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
                                 : const Icon(Icons.arrow_forward_rounded),
-                            label: Text(_isSubmitting ? 'Verification...' : 'Acceder au vote'),
+                            label: Text(_isSubmitting ? 'Verification...' : 'Acceder a mon espace citoyen'),
                           ),
                         ),
                       ],

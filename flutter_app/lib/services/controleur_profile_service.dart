@@ -3,7 +3,9 @@ import 'dart:math';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Profil contrôleur stocké localement.
+import 'firestore_data_service.dart';
+
+/// Profil contrôleur persisté dans Firestore en production, SharedPreferences en fallback demo.
 class ControleurProfileModel {
   const ControleurProfileModel({
     required this.id,
@@ -69,10 +71,25 @@ class ControleurProfileService {
 
   // Même clé que ControllerAuthService pour compatibilité fallback
   static const _storageKey = 'controleur_codes_v1';
+  static const _collection = 'controleurCodes';
   static const _alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
 
   Future<List<ControleurProfileModel>> loadProfiles() async {
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      try {
+        final snapshot = await db.collection(_collection).get();
+        final profiles = snapshot.docs.map((doc) => ControleurProfileModel.fromJson({...doc.data(), 'id': doc.id})).whereType<ControleurProfileModel>().toList();
+        if (profiles.isNotEmpty) {
+          await _save(profiles);
+          return profiles;
+        }
+      } catch (_) {
+        // Fallback demo/local : SharedPreferences.
+      }
+    }
+
     final prefs = await SharedPreferences.getInstance();
     final raw = prefs.getString(_storageKey);
     if (raw == null || raw.isEmpty) return [];
@@ -110,6 +127,14 @@ class ControleurProfileService {
 
     profiles.add(profile);
     await _save(profiles);
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      try {
+        await db.collection(_collection).doc(profile.code).set(profile.toJson());
+      } catch (_) {
+        // TODO backend: endpoint commune_admin pour creation controleur avec droits limites a la commune.
+      }
+    }
     return profile;
   }
 
@@ -138,12 +163,24 @@ class ControleurProfileService {
     );
     profiles.add(profile);
     await _save(profiles);
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      try {
+        await db.collection(_collection).doc(profile.code).set(profile.toJson());
+      } catch (_) {}
+    }
   }
 
   Future<void> deleteProfile(String code) async {
     final profiles = await loadProfiles();
     profiles.removeWhere((p) => p.code == code);
     await _save(profiles);
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      try {
+        await db.collection(_collection).doc(code).delete();
+      } catch (_) {}
+    }
   }
 
   Future<void> _save(List<ControleurProfileModel> profiles) async {

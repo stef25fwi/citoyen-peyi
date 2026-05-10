@@ -42,44 +42,72 @@ class PollModel {
   const PollModel({
     required this.id,
     required this.projectTitle,
+    this.description = '',
     required this.question,
     required this.options,
+    this.targetPopulation = '',
+    this.communeId = '',
+    this.communeName = '',
     required this.openDate,
     required this.closeDate,
     required this.status,
+    this.createdBy = '',
+    this.createdAt = '',
+    this.updatedAt = '',
     required this.totalVoters,
     required this.totalVoted,
   });
 
   final String id;
   final String projectTitle;
+  final String description;
   final String question;
   final List<PollOptionModel> options;
+  final String targetPopulation;
+  final String communeId;
+  final String communeName;
   final String openDate;
   final String closeDate;
   final String status;
+  final String createdBy;
+  final String createdAt;
+  final String updatedAt;
   final int totalVoters;
   final int totalVoted;
 
   PollModel copyWith({
     String? id,
     String? projectTitle,
+    String? description,
     String? question,
     List<PollOptionModel>? options,
+    String? targetPopulation,
+    String? communeId,
+    String? communeName,
     String? openDate,
     String? closeDate,
     String? status,
+    String? createdBy,
+    String? createdAt,
+    String? updatedAt,
     int? totalVoters,
     int? totalVoted,
   }) {
     return PollModel(
       id: id ?? this.id,
       projectTitle: projectTitle ?? this.projectTitle,
+      description: description ?? this.description,
       question: question ?? this.question,
       options: options ?? this.options,
+      targetPopulation: targetPopulation ?? this.targetPopulation,
+      communeId: communeId ?? this.communeId,
+      communeName: communeName ?? this.communeName,
       openDate: openDate ?? this.openDate,
       closeDate: closeDate ?? this.closeDate,
       status: status ?? this.status,
+      createdBy: createdBy ?? this.createdBy,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
       totalVoters: totalVoters ?? this.totalVoters,
       totalVoted: totalVoted ?? this.totalVoted,
     );
@@ -88,11 +116,21 @@ class PollModel {
   Map<String, dynamic> toJson() => {
         'id': id,
         'projectTitle': projectTitle,
+        'title': projectTitle,
+        'description': description,
         'question': question,
         'options': options.map((item) => item.toJson()).toList(),
+        'targetPopulation': targetPopulation,
+        'communeId': communeId,
+        'communeName': communeName,
         'openDate': openDate,
+        'opensAt': openDate,
         'closeDate': closeDate,
+        'closesAt': closeDate,
         'status': status,
+        'createdBy': createdBy,
+        'createdAt': createdAt,
+        'updatedAt': updatedAt,
         'totalVoters': totalVoters,
         'totalVoted': totalVoted,
       };
@@ -104,12 +142,19 @@ class PollModel {
 
     return PollModel(
       id: json['id'] as String? ?? 'poll-1',
-      projectTitle: json['projectTitle'] as String? ?? 'Sondage sans titre',
+      projectTitle: json['projectTitle'] as String? ?? json['title'] as String? ?? 'Consultation sans titre',
+      description: json['description'] as String? ?? '',
       question: json['question'] as String? ?? '',
       options: rawOptions.asMap().entries.map((entry) => PollOptionModel.fromJson(entry.value, entry.key)).toList(),
-      openDate: json['openDate'] as String? ?? '',
-      closeDate: json['closeDate'] as String? ?? '',
+      targetPopulation: json['targetPopulation'] as String? ?? '',
+      communeId: json['communeId'] as String? ?? '',
+      communeName: json['communeName'] as String? ?? '',
+      openDate: json['openDate'] as String? ?? json['opensAt'] as String? ?? '',
+      closeDate: json['closeDate'] as String? ?? json['closesAt'] as String? ?? '',
       status: json['status'] as String? ?? 'draft',
+      createdBy: json['createdBy'] as String? ?? '',
+      createdAt: json['createdAt'] as String? ?? '',
+      updatedAt: json['updatedAt'] as String? ?? '',
       totalVoters: (json['totalVoters'] as num?)?.toInt() ?? 0,
       totalVoted: (json['totalVoted'] as num?)?.toInt() ?? 0,
     );
@@ -253,6 +298,11 @@ String? resolveVoteAccessCode(String rawValue) {
 
   final uri = Uri.tryParse(trimmed);
   if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+    final queryCode = uri.queryParameters['code'];
+    if (queryCode != null && queryCode.trim().isNotEmpty) {
+      return queryCode.trim().toUpperCase();
+    }
+
     final segments = uri.pathSegments;
     if (segments.length >= 2 && segments[segments.length - 2].toLowerCase() == 'vote') {
       return Uri.decodeComponent(segments.last).toUpperCase();

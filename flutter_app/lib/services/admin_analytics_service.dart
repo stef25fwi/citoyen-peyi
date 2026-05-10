@@ -1,6 +1,7 @@
 import '../models/poll_models.dart';
+import 'citizen_access_code_service.dart';
+import 'citizen_public_access_service.dart';
 import 'poll_service.dart';
-import 'vote_access_service.dart';
 
 class PollAccessStats {
   const PollAccessStats({
@@ -77,31 +78,28 @@ class AdminAnalyticsService {
 
   Future<AdminAnalyticsSummary> loadSummary() async {
     final polls = await PollService.instance.loadPolls();
+    final citizenCodes = await CitizenAccessCodeService.instance.loadAccessCodesForCurrentCommune();
+    final voteDates = await CitizenPublicAccessService.instance.loadVoteDatesForCurrentCommune();
     final accessStats = <PollAccessStats>[];
     final votesByDay = <String, int>{};
 
-    for (final poll in polls) {
-      final records = await VoteAccessService.instance.loadRecordsForPoll(poll.id);
-      final activated = records.where((item) => item.activated).length;
-      final voted = records.where((item) => item.hasVoted).length;
+    final activeCodes = citizenCodes.where((item) => item.status == 'active').length;
+    final usedCodes = citizenCodes.where((item) => item.usedForLogin).length;
+    if (citizenCodes.isNotEmpty) {
       accessStats.add(
         PollAccessStats(
-          pollId: poll.id,
-          pollName: poll.projectTitle,
-          total: records.length,
-          activated: activated,
-          voted: voted,
+          pollId: 'commune_access',
+          pollName: 'Acces citoyens commune',
+          total: activeCodes,
+          activated: usedCodes,
+          voted: polls.fold<int>(0, (sum, poll) => sum + poll.totalVoted),
         ),
       );
+    }
 
-      for (final record in records) {
-        if (record.votedAt == null) {
-          continue;
-        }
-
-        final key = record.votedAt!.split('T').first;
-        votesByDay[key] = (votesByDay[key] ?? 0) + 1;
-      }
+    for (final voteDate in voteDates) {
+      final key = voteDate.toIso8601String().split('T').first;
+      votesByDay[key] = (votesByDay[key] ?? 0) + 1;
     }
 
     final now = DateTime.now();

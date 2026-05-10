@@ -63,9 +63,9 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                         runSpacing: 12,
                         children: [
                           _KpiCard(label: 'Votes emis', value: '${_summary.totalVotes}', subtitle: 'sur ${_summary.totalVoters} inscrits'),
-                          _KpiCard(label: 'Participation moyenne', value: '${_summary.averageParticipation.round()}%', subtitle: 'sondages actifs et clos'),
-                          _KpiCard(label: 'Sondages actifs', value: '${_summary.activeCount}', subtitle: '${_summary.closedCount} clos, ${_summary.draftCount} brouillons'),
-                          _KpiCard(label: 'Codes valides', value: '${_summary.totalValidatedCodes}', subtitle: 'distribution en cours'),
+                          _KpiCard(label: 'Participation moyenne', value: '${_summary.averageParticipation.round()}%', subtitle: 'consultations actives et closes'),
+                          _KpiCard(label: 'Consultations actives', value: '${_summary.activeCount}', subtitle: '${_summary.closedCount} closes, ${_summary.draftCount} brouillons'),
+                          _KpiCard(label: 'Codes citoyens actifs', value: '${_summary.totalValidatedCodes}', subtitle: 'generes a l\'accueil communal'),
                         ],
                       ),
                       const SizedBox(height: 20),
@@ -81,10 +81,10 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        Text('Participation par sondage', style: Theme.of(context).textTheme.titleMedium),
+                                        Text('Participation par consultation', style: Theme.of(context).textTheme.titleMedium),
                                         const SizedBox(height: 4),
                                         Text(
-                                          'Graphique issu du tableau admin Flutter : taux calcule a partir des votants.',
+                                          'Taux calcule a partir des votes anonymes et de l\'objectif de participation.',
                                           style: Theme.of(context).textTheme.bodySmall,
                                         ),
                                       ],
@@ -95,7 +95,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                               ),
                               const SizedBox(height: 16),
                               if (polls.isEmpty)
-                                const Text('Aucun sondage disponible.')
+                                const Text('Aucune consultation disponible.')
                               else ...[
                                 _PollParticipationBarChart(polls: polls),
                                 const SizedBox(height: 18),
@@ -124,7 +124,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                               final legend = Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Repartition des sondages', style: Theme.of(context).textTheme.titleMedium),
+                                  Text('Repartition des consultations', style: Theme.of(context).textTheme.titleMedium),
                                   const SizedBox(height: 6),
                                   Text(
                                     'Vue rapide de l\'etat du parc de consultations.',
@@ -165,12 +165,12 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Text('Activation des acces', style: Theme.of(context).textTheme.titleMedium),
+                                    Text('Usage des acces citoyens', style: Theme.of(context).textTheme.titleMedium),
                                     const SizedBox(height: 6),
-                                    Text('Barres activees / votees par sondage.', style: Theme.of(context).textTheme.bodySmall),
+                                    Text('Synthese globale des codes citoyens actifs, utilises et des votes anonymes.', style: Theme.of(context).textTheme.bodySmall),
                                     const SizedBox(height: 16),
                                     if (accessStats.isEmpty)
-                                      const Text('Aucun code valide n\'a encore ete charge.')
+                                      const Text('Aucun code citoyen n\'a encore ete genere.')
                                     else ...[
                                       _AccessUsageBarChart(stats: accessStats),
                                       const SizedBox(height: 18),
@@ -602,11 +602,11 @@ class _AccessUsageRow extends StatelessWidget {
       children: [
         Text(stat.pollName, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
-        Text('Actives: ${stat.activated}/${stat.total} · Votes: ${stat.voted}/${stat.total}'),
+        Text('Codes utilises: ${stat.activated}/${stat.total} · Votes anonymes: ${stat.voted}'),
         const SizedBox(height: 8),
         LinearProgressIndicator(value: activationRate),
         const SizedBox(height: 8),
-        LinearProgressIndicator(value: voteRate, color: Theme.of(context).colorScheme.secondary),
+        LinearProgressIndicator(value: voteRate.clamp(0, 1), color: Theme.of(context).colorScheme.secondary),
       ],
     );
   }

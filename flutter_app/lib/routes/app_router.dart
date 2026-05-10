@@ -5,8 +5,12 @@ import '../pages/admin_create_poll_page.dart';
 import '../pages/admin_dashboard_page.dart';
 import '../pages/admin_login_page.dart';
 import '../pages/commune_controller_activity_page.dart';
+import '../pages/controller_citizen_access_page.dart';
 import '../pages/controller_login_page.dart';
+import '../pages/controller_dashboard_page.dart';
+import '../pages/controller_history_page.dart';
 import '../pages/controller_activity_dashboard_page.dart';
+import '../pages/citizen_dashboard_page.dart';
 import '../pages/duplicate_request_detail_page.dart';
 import '../pages/duplicate_request_list_page.dart';
 import '../pages/home_page.dart';
@@ -14,11 +18,12 @@ import '../pages/poll_detail_page.dart';
 import '../pages/placeholder_page.dart';
 import '../pages/public_info_page.dart';
 import '../pages/qr_access_page.dart';
-import '../pages/registration_review_page.dart';
 import '../pages/super_admin_dashboard_page.dart';
+import '../pages/vote_confirmation_page.dart';
 import '../pages/super_admin_login_page.dart';
 import '../pages/vote_page.dart';
 import '../services/auth_session_store.dart';
+import '../services/citizen_public_access_service.dart';
 import '../widgets/public_bottom_nav.dart';
 
 class AppRouter {
@@ -38,18 +43,98 @@ class AppRouter {
         return _requireRoles(settings, const DuplicateRequestListPage(), const ['super_admin']);
       case '/super/activity':
         return _requireRoles(settings, const ControllerActivityDashboardPage(), const ['super_admin']);
+      case '/super/controllers':
+        return _requireRoles(settings, const ControllerActivityDashboardPage(), const ['super_admin']);
+      case '/super/communes':
+        return _requireRoles(
+          settings,
+          const PlaceholderPage(
+            title: 'Communes',
+            subtitle: 'Gestion globale des communes rattachees a la plateforme. TODO backend: collection communes dediee.',
+          ),
+          const ['super_admin'],
+        );
+      case '/super/admins':
+        return _requireRoles(settings, const SuperAdminDashboardPage(), const ['super_admin']);
       case '/admin':
-        return _requireRoles(settings, const AdminDashboardPage(), const ['admin']);
+        return _requireRoles(settings, const AdminDashboardPage(), const ['commune_admin']);
       case '/admin/analytics':
-        return _requireRoles(settings, const AdminAnalyticsPage(), const ['admin']);
+        return _page(
+          const _LegacyRouteRedirectPage(
+            targetRoute: '/admin/results',
+            message: 'La page Analytics a ete remplacee par Resultats dans le parcours administrateur communal.',
+          ),
+          settings,
+        );
+      case '/admin/controllers':
+        return _requireRoles(
+          settings,
+          const AdminDashboardPage(initialSection: AdminDashboardSection.controllers),
+          const ['commune_admin'],
+        );
+      case '/admin/polls':
+        return _requireRoles(
+          settings,
+          const AdminDashboardPage(initialSection: AdminDashboardSection.polls),
+          const ['commune_admin'],
+        );
+      case '/admin/polls/create':
+        return _requireRoles(settings, const AdminCreatePollPage(), const ['commune_admin']);
+      case '/admin/results':
+        return _requireRoles(settings, const AdminAnalyticsPage(), const ['commune_admin']);
+      case '/admin/settings':
+        return _requireRoles(
+          settings,
+          const PlaceholderPage(
+            title: 'Parametres de la commune',
+            subtitle: 'Configuration communale, capacite de participation et textes publics. TODO backend: parametres par commune.',
+          ),
+          const ['commune_admin'],
+        );
       case '/controleur/login':
         return _page(const ControllerLoginPage(), settings);
+      case '/controleur':
+        return _requireRoles(settings, const ControllerDashboardPage(), const ['controller']);
+      case '/controleur/acces-citoyen':
+        return _requireRoles(settings, const ControllerCitizenAccessPage(), const ['controller']);
+      case '/controleur/historique':
+        return _requireRoles(settings, const ControllerHistoryPage(), const ['controller']);
       case '/admin/inscriptions':
-        return _requireRoles(settings, const RegistrationReviewPage(), const ['admin', 'controller']);
+        return _page(
+          const _LegacyRouteRedirectPage(
+            targetRoute: '/controleur/acces-citoyen',
+            message: 'Le parcours Inscriptions a ete deplace vers Acces citoyen dans l\'espace controleur.',
+          ),
+          settings,
+        );
       case '/admin/create':
-        return _requireRoles(settings, const AdminCreatePollPage(), const ['admin']);
+        return _page(
+          const _LegacyRouteRedirectPage(
+            targetRoute: '/admin/polls/create',
+            message: 'La creation de consultation est maintenant disponible dans le parcours administrateur communal.',
+          ),
+          settings,
+        );
       case '/access':
         return _page(const QrAccessPage(), settings);
+      case '/citizen':
+        return _page(
+          CitizenDashboardPage(initialSession: _readCitizenAccessSession(settings.arguments)),
+          settings,
+        );
+      case '/citizen/polls':
+        return _page(
+          CitizenDashboardPage(initialSession: _readCitizenAccessSession(settings.arguments)),
+          settings,
+        );
+      case '/confirmation':
+        return _page(
+          VoteConfirmationPage(
+            pollTitle: _readStringArgument(settings.arguments, 'pollTitle'),
+            communeName: _readStringArgument(settings.arguments, 'communeName'),
+          ),
+          settings,
+        );
       case '/results':
         return _page(
           const PublicInfoPage(
@@ -74,13 +159,9 @@ class AppRouter {
         );
       case '/profile':
         return _page(
-          const PublicInfoPage(
-            title: 'Profil / Acces',
-            description: 'Code citoyen, statut de participation, parametres, aide et CGU centralises dans un espace d\'acces unique.',
-            icon: Icons.account_circle_rounded,
-            currentTab: PublicTab.profile,
-            primaryActionLabel: 'Entrer mon code citoyen',
-            primaryRoute: '/access',
+          const _LegacyRouteRedirectPage(
+            targetRoute: '/citizen',
+            message: 'Le profil public a ete remplace par l\'espace citoyen accessible avec un code valide.',
           ),
           settings,
         );
@@ -112,12 +193,26 @@ class AppRouter {
           return _requireRoles(
             settings,
             PollDetailPage(pollId: uri.pathSegments[2]),
-            const ['admin'],
+            const ['commune_admin'],
+          );
+        }
+
+        if (uri.pathSegments.length == 4 &&
+            uri.pathSegments[0] == 'admin' &&
+            uri.pathSegments[1] == 'polls' &&
+            uri.pathSegments[3] == 'edit') {
+          return _requireRoles(
+            settings,
+            const PlaceholderPage(
+              title: 'Edition de consultation',
+              subtitle: 'TODO UI: edition complete des consultations communales.',
+            ),
+            const ['commune_admin'],
           );
         }
 
         if (uri.pathSegments.length == 2 && uri.pathSegments[0] == 'vote') {
-          return _page(VotePage(token: uri.pathSegments[1]), settings);
+          return _page(VotePage(token: uri.pathSegments[1], pollId: uri.queryParameters['poll']), settings);
         }
 
         return _placeholder(settings, 'Page introuvable', subtitle: uri.path);
@@ -155,7 +250,7 @@ class AppRouter {
       allowedRoles.contains('controller')
           ? const ControllerLoginPage()
           : const AdminLoginPage(
-              blockedMessage: 'Authentification administrateur requise pour acceder a cette page.',
+              blockedMessage: 'Authentification administrateur communal requise pour acceder a cette page.',
             ),
       settings,
     );
@@ -176,5 +271,73 @@ class AppRouter {
     }
 
     return false;
+  }
+
+  static CitizenPublicAccessSession? _readCitizenAccessSession(Object? arguments) {
+    if (arguments is Map<Object?, Object?>) {
+      final session = arguments['session'];
+      if (session is CitizenPublicAccessSession) {
+        return session;
+      }
+    }
+
+    return null;
+  }
+
+  static String? _readStringArgument(Object? arguments, String key) {
+    if (arguments is Map<Object?, Object?>) {
+      final value = arguments[key];
+      if (value is String && value.trim().isNotEmpty) {
+        return value.trim();
+      }
+    }
+
+    return null;
+  }
+}
+
+class _LegacyRouteRedirectPage extends StatefulWidget {
+  const _LegacyRouteRedirectPage({
+    required this.targetRoute,
+    required this.message,
+  });
+
+  final String targetRoute;
+  final String message;
+
+  @override
+  State<_LegacyRouteRedirectPage> createState() => _LegacyRouteRedirectPageState();
+}
+
+class _LegacyRouteRedirectPageState extends State<_LegacyRouteRedirectPage> {
+  bool _redirectScheduled = false;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_redirectScheduled) {
+      return;
+    }
+
+    _redirectScheduled = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(widget.message)),
+      );
+      Navigator.of(context).pushReplacementNamed(widget.targetRoute);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
   }
 }

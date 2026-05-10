@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../models/poll_models.dart';
+import '../services/citizen_access_code_service.dart';
 import '../services/poll_service.dart';
-import '../services/vote_access_service.dart';
 
 class PollDetailPage extends StatefulWidget {
   const PollDetailPage({
@@ -19,7 +19,7 @@ class PollDetailPage extends StatefulWidget {
 class _PollDetailPageState extends State<PollDetailPage> {
   bool _isLoading = true;
   PollModel? _poll;
-  List<VoteAccessRecordModel> _records = const [];
+  List<CitizenAccessCodeModel> _citizenCodes = const [];
 
   @override
   void initState() {
@@ -33,9 +33,9 @@ class _PollDetailPageState extends State<PollDetailPage> {
     });
 
     final poll = await PollService.instance.loadPollById(widget.pollId);
-    final records = poll == null
-        ? const <VoteAccessRecordModel>[]
-        : await VoteAccessService.instance.loadRecordsForPoll(poll.id);
+    final citizenCodes = poll == null
+      ? const <CitizenAccessCodeModel>[]
+      : await CitizenAccessCodeService.instance.loadAccessCodesForCurrentCommune();
 
     if (!mounted) {
       return;
@@ -43,7 +43,7 @@ class _PollDetailPageState extends State<PollDetailPage> {
 
     setState(() {
       _poll = poll;
-      _records = records;
+      _citizenCodes = citizenCodes;
       _isLoading = false;
     });
   }
@@ -79,9 +79,9 @@ class _PollDetailPageState extends State<PollDetailPage> {
                                 children: [
                                   _InfoCard(poll: poll),
                                   const SizedBox(height: 16),
-                                  _QrCodesCard(records: _records),
+                                  _CitizenAccessCard(codes: _citizenCodes, poll: poll),
                                   const SizedBox(height: 16),
-                                  _AuditCard(records: _records),
+                                  _VoteAnonymityCard(poll: poll),
                                 ],
                               );
 
@@ -317,121 +317,58 @@ class _InfoRow extends StatelessWidget {
   }
 }
 
-class _QrCodesCard extends StatelessWidget {
-  const _QrCodesCard({required this.records});
+class _CitizenAccessCard extends StatelessWidget {
+  const _CitizenAccessCard({required this.codes, required this.poll});
 
-  final List<VoteAccessRecordModel> records;
+  final List<CitizenAccessCodeModel> codes;
+  final PollModel poll;
 
   @override
   Widget build(BuildContext context) {
+    final activeCodes = codes.where((item) => item.status == 'active').length;
+    final usedCodes = codes.where((item) => item.usedForLogin).length;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Codes d\'acces (${records.length})', style: Theme.of(context).textTheme.titleMedium),
+            Text('Acces citoyens', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
-            if (records.isEmpty)
-              const Text('Aucun code n\'est encore associe a ce sondage.')
-            else
-              for (final record in records.take(6))
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 12),
-                  child: Container(
-                    padding: const EdgeInsets.all(14),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      color: const Color(0xFFF7F9FC),
-                      border: Border.all(color: const Color(0xFFD7E0EA)),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        SelectableText(record.code, style: Theme.of(context).textTheme.titleSmall?.copyWith(fontFamily: 'monospace')),
-                        const SizedBox(height: 6),
-                        Text(_statusForRecord(record)),
-                        const SizedBox(height: 6),
-                        SelectableText('/vote/${record.code}', style: Theme.of(context).textTheme.bodySmall),
-                      ],
-                    ),
-                  ),
-                ),
-            if (records.length > 6)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text('+${records.length - 6} autres codes'),
-              ),
+            Text('Les controleurs generent les codes citoyens a l\'accueil apres verification physique. Cette consultation n\'utilise pas de stock QR dedie.'),
+            const SizedBox(height: 16),
+            _InfoRow(label: 'Commune', value: poll.communeName.isEmpty ? 'Non renseignee' : poll.communeName),
+            _InfoRow(label: 'Codes citoyens actifs', value: '$activeCodes'),
+            _InfoRow(label: 'Codes deja utilises', value: '$usedCodes'),
+            _InfoRow(label: 'Votes anonymes enregistres', value: '${poll.totalVoted}'),
           ],
         ),
       ),
     );
   }
-
-  String _statusForRecord(VoteAccessRecordModel record) {
-    if (record.hasVoted) {
-      return 'Vote enregistre';
-    }
-    if (record.activated) {
-      return 'Code active';
-    }
-    return 'Code valide';
-  }
 }
 
-class _AuditCard extends StatelessWidget {
-  const _AuditCard({required this.records});
+class _VoteAnonymityCard extends StatelessWidget {
+  const _VoteAnonymityCard({required this.poll});
 
-  final List<VoteAccessRecordModel> records;
+  final PollModel poll;
 
   @override
   Widget build(BuildContext context) {
-    final entries = records
-        .where((item) => item.activatedAt != null || item.votedAt != null)
-        .expand((item) {
-          final nextEntries = <({String time, String label})>[];
-          if (item.votedAt != null) {
-            nextEntries.add((time: item.votedAt!, label: 'Vote anonyme enregistre'));
-          }
-          if (item.activatedAt != null) {
-            nextEntries.add((time: item.activatedAt!, label: 'Code ${item.code} active'));
-          }
-          return nextEntries;
-        })
-        .toList()
-      ..sort((left, right) => right.time.compareTo(left.time));
-
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Journal d\'audit', style: Theme.of(context).textTheme.titleMedium),
+            Text('Garantie d\'anonymat', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
-            const Text('Les acces et participations sont historises sans exposer le contenu des votes.'),
+            const Text('Le code citoyen ouvre l\'espace de vote sans relier l\'identite reelle au choix exprime.'),
             const SizedBox(height: 14),
-            if (entries.isEmpty)
-              const Text('Aucun evenement d\'audit pour le moment.')
-            else
-              for (final entry in entries.take(6))
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 86,
-                        child: Text(
-                          entry.time.split('T').join(' '),
-                          style: Theme.of(context).textTheme.bodySmall,
-                        ),
-                      ),
-                      const SizedBox(width: 10),
-                      Expanded(child: Text(entry.label)),
-                    ],
-                  ),
-                ),
+            _InfoRow(label: 'Consultation', value: poll.projectTitle),
+            _InfoRow(label: 'Question', value: poll.question),
+            _InfoRow(label: 'Rappel', value: 'Votre identite n\'est pas liee a votre choix.'),
           ],
         ),
       ),
@@ -457,9 +394,9 @@ class _EmptyPollState extends StatelessWidget {
               children: [
                 const Icon(Icons.poll_outlined, size: 42),
                 const SizedBox(height: 16),
-                Text('Sondage introuvable', style: Theme.of(context).textTheme.headlineSmall),
+                Text('Consultation introuvable', style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 10),
-                const Text('Le sondage demande n\'existe pas ou n\'est plus disponible.'),
+                const Text('La consultation demandee n\'existe pas ou n\'est plus disponible.'),
                 const SizedBox(height: 18),
                 FilledButton(
                   onPressed: onBack,

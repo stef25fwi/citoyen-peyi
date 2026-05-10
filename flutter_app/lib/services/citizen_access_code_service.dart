@@ -64,6 +64,11 @@ class CitizenAccessCodeModel {
     required this.status,
     required this.usedForLogin,
     required this.regenerationIndex,
+    required this.pollScope,
+    required this.eligiblePollIds,
+    required this.identityDocumentChecked,
+    required this.addressProofChecked,
+    required this.communeEligibilityChecked,
     this.regeneratedFromCode,
     this.approvedBySuperAdminId,
     this.approvedAt,
@@ -85,8 +90,51 @@ class CitizenAccessCodeModel {
   final bool usedForLogin;
   final String? regeneratedFromCode;
   final int regenerationIndex;
+  final String pollScope;
+  final List<String> eligiblePollIds;
+  final bool identityDocumentChecked;
+  final bool addressProofChecked;
+  final bool communeEligibilityChecked;
   final String? approvedBySuperAdminId;
   final String? approvedAt;
+
+  CitizenAccessCodeModel copyWith({
+    String? status,
+    bool? usedForLogin,
+    String? approvedBySuperAdminId,
+    String? approvedAt,
+    String? pollScope,
+    List<String>? eligiblePollIds,
+    bool? identityDocumentChecked,
+    bool? addressProofChecked,
+    bool? communeEligibilityChecked,
+  }) {
+    return CitizenAccessCodeModel(
+      accessCode: accessCode,
+      fingerprint: fingerprint,
+      sourceKeyMasked: sourceKeyMasked,
+      firstNameInitial: firstNameInitial,
+      lastNameInitial: lastNameInitial,
+      birthYear: birthYear,
+      phoneSuffix: phoneSuffix,
+      communeId: communeId,
+      communeName: communeName,
+      createdByControllerId: createdByControllerId,
+      createdByControllerName: createdByControllerName,
+      createdAt: createdAt,
+      status: status ?? this.status,
+      usedForLogin: usedForLogin ?? this.usedForLogin,
+      regeneratedFromCode: regeneratedFromCode,
+      regenerationIndex: regenerationIndex,
+      pollScope: pollScope ?? this.pollScope,
+      eligiblePollIds: eligiblePollIds ?? this.eligiblePollIds,
+      identityDocumentChecked: identityDocumentChecked ?? this.identityDocumentChecked,
+      addressProofChecked: addressProofChecked ?? this.addressProofChecked,
+      communeEligibilityChecked: communeEligibilityChecked ?? this.communeEligibilityChecked,
+      approvedBySuperAdminId: approvedBySuperAdminId ?? this.approvedBySuperAdminId,
+      approvedAt: approvedAt ?? this.approvedAt,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'accessCode': accessCode,
@@ -105,6 +153,11 @@ class CitizenAccessCodeModel {
         'usedForLogin': usedForLogin,
         'regeneratedFromCode': regeneratedFromCode,
         'regenerationIndex': regenerationIndex,
+        'pollScope': pollScope,
+        'eligiblePollIds': eligiblePollIds,
+        'identityDocumentChecked': identityDocumentChecked,
+        'addressProofChecked': addressProofChecked,
+        'communeEligibilityChecked': communeEligibilityChecked,
         'approvedBySuperAdminId': approvedBySuperAdminId,
         'approvedAt': approvedAt,
       };
@@ -116,6 +169,10 @@ class CitizenAccessCodeModel {
       };
 
   static CitizenAccessCodeModel fromJson(Map<String, dynamic> json) {
+    final metadata = json['metadata'] as Map<String, dynamic>? ?? const <String, dynamic>{};
+    final verification = metadata['verification'] as Map<String, dynamic>? ?? const <String, dynamic>{};
+    final rawEligiblePollIds = json['eligiblePollIds'] as List<dynamic>? ?? metadata['eligiblePollIds'] as List<dynamic>? ?? const [];
+
     return CitizenAccessCodeModel(
       accessCode: json['accessCode'] as String? ?? '',
       fingerprint: json['fingerprint'] as String? ?? '',
@@ -133,6 +190,11 @@ class CitizenAccessCodeModel {
       usedForLogin: json['usedForLogin'] as bool? ?? false,
       regeneratedFromCode: json['regeneratedFromCode'] as String?,
       regenerationIndex: (json['regenerationIndex'] as num?)?.toInt() ?? 0,
+      pollScope: json['pollScope'] as String? ?? metadata['pollScope'] as String? ?? 'all_open_polls',
+      eligiblePollIds: rawEligiblePollIds.map((item) => '$item').where((item) => item.isNotEmpty).toList(),
+      identityDocumentChecked: json['identityDocumentChecked'] as bool? ?? verification['hasIdentityDocument'] as bool? ?? false,
+      addressProofChecked: json['addressProofChecked'] as bool? ?? verification['hasResidenceProof'] as bool? ?? false,
+      communeEligibilityChecked: json['communeEligibilityChecked'] as bool? ?? verification['communeEligibilityChecked'] as bool? ?? false,
       approvedBySuperAdminId: json['approvedBySuperAdminId'] as String?,
       approvedAt: json['approvedAt'] == null ? null : _readDate(json['approvedAt']),
     );
@@ -522,17 +584,27 @@ class CitizenAccessCodeService {
     required String lastName,
     required String birthYear,
     required String phoneSuffix,
+    required bool identityDocumentChecked,
+    required bool addressProofChecked,
+    required bool communeEligibilityChecked,
     required DuplicateReason duplicateReason,
+    String? selectedPollId,
     String? controllerComment,
     AuthSession? session,
   }) async {
     final currentSession = session ?? AuthSessionStore.instance.currentSession;
+    final pollScope = selectedPollId?.trim().isNotEmpty == true ? 'single_poll' : 'all_open_polls';
+    final eligiblePollIds = selectedPollId?.trim().isNotEmpty == true ? <String>[selectedPollId!.trim()] : const <String>[];
     final backendResult = await _createCitizenAccessCodeOnBackend(
       firstName: firstName,
       lastName: lastName,
       birthYear: birthYear,
       phoneSuffix: phoneSuffix,
+      identityDocumentChecked: identityDocumentChecked,
+      addressProofChecked: addressProofChecked,
+      communeEligibilityChecked: communeEligibilityChecked,
       duplicateReason: duplicateReason,
+      selectedPollId: selectedPollId,
       controllerComment: controllerComment,
     );
     if (backendResult != null) {
@@ -562,7 +634,16 @@ class CitizenAccessCodeService {
         accessCode: existing.latestAccessCode,
         fingerprint: fingerprint,
         sourceKeyMasked: source.sourceKeyMasked,
-        metadata: {'duplicateRequestId': duplicateRequest.id},
+        metadata: {
+          'duplicateRequestId': duplicateRequest.id,
+          'pollScope': pollScope,
+          'eligiblePollIds': eligiblePollIds,
+          'verification': {
+            'identityDocumentChecked': identityDocumentChecked,
+            'addressProofChecked': addressProofChecked,
+            'communeEligibilityChecked': communeEligibilityChecked,
+          },
+        },
         session: currentSession,
       );
       await logControllerActivity(
@@ -570,7 +651,12 @@ class CitizenAccessCodeService {
         accessCode: existing.latestAccessCode,
         fingerprint: fingerprint,
         sourceKeyMasked: source.sourceKeyMasked,
-        metadata: {'duplicateRequestId': duplicateRequest.id, 'reason': duplicateReason.value},
+        metadata: {
+          'duplicateRequestId': duplicateRequest.id,
+          'reason': duplicateReason.value,
+          'pollScope': pollScope,
+          'eligiblePollIds': eligiblePollIds,
+        },
         session: currentSession,
       );
       return CitizenCodeCreationResult.duplicate(
@@ -597,6 +683,11 @@ class CitizenAccessCodeService {
       status: 'active',
       usedForLogin: false,
       regenerationIndex: 0,
+      pollScope: pollScope,
+      eligiblePollIds: eligiblePollIds,
+      identityDocumentChecked: identityDocumentChecked,
+      addressProofChecked: addressProofChecked,
+      communeEligibilityChecked: communeEligibilityChecked,
     );
     final fingerprintModel = CitizenFingerprintModel(
       fingerprint: fingerprint,
@@ -615,9 +706,150 @@ class CitizenAccessCodeService {
       accessCode: accessCode,
       fingerprint: fingerprint,
       sourceKeyMasked: source.sourceKeyMasked,
+      metadata: {
+        'pollScope': pollScope,
+        'eligiblePollIds': eligiblePollIds,
+        'verification': {
+          'identityDocumentChecked': identityDocumentChecked,
+          'addressProofChecked': addressProofChecked,
+          'communeEligibilityChecked': communeEligibilityChecked,
+        },
+      },
       session: currentSession,
     );
     return CitizenCodeCreationResult.created(model);
+  }
+
+  Future<CitizenAccessCodeModel?> findActiveAccessCode(String rawCode) async {
+    final normalizedCode = _normalizeAccessCode(rawCode);
+    if (normalizedCode.isEmpty) return null;
+
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      try {
+        final doc = await db.collection(_accessCollection).doc(normalizedCode).get();
+        if (!doc.exists || doc.data() == null) return null;
+        final access = CitizenAccessCodeModel.fromJson(doc.data()!);
+        return access.status == 'active' ? access : null;
+      } catch (_) {
+        // En production, cette lecture publique doit passer par un endpoint backend.
+        // Le fallback local ci-dessous conserve le mode demo fonctionnel.
+      }
+    }
+
+    final records = await BrowserStorageService.instance.readJsonList(_localAccessKey);
+    for (final record in records) {
+      final access = CitizenAccessCodeModel.fromJson(record);
+      if (access.accessCode.toUpperCase() == normalizedCode && access.status == 'active') {
+        return access;
+      }
+    }
+    return null;
+  }
+
+  Future<List<CitizenAccessCodeModel>> loadAccessCodes({
+    String? communeId,
+    String? controllerId,
+    int limit = 250,
+  }) async {
+    final db = FirestoreDataService.instance;
+    List<CitizenAccessCodeModel> records;
+
+    if (db != null) {
+      try {
+        Query<Map<String, dynamic>> query = db.collection(_accessCollection);
+        if (communeId?.isNotEmpty == true) {
+          query = query.where('communeId', isEqualTo: communeId);
+        }
+        if (controllerId?.isNotEmpty == true) {
+          query = query.where('createdByControllerId', isEqualTo: controllerId);
+        }
+        final snapshot = await query.orderBy('createdAt', descending: true).limit(limit).get();
+        records = snapshot.docs.map((doc) => CitizenAccessCodeModel.fromJson(doc.data())).toList();
+      } catch (_) {
+        records = await _loadLocalAccessCodes();
+      }
+    } else {
+      records = await _loadLocalAccessCodes();
+    }
+
+    return records.where((item) {
+      if (communeId?.isNotEmpty == true && item.communeId != communeId) {
+        return false;
+      }
+      if (controllerId?.isNotEmpty == true && item.createdByControllerId != controllerId) {
+        return false;
+      }
+      return true;
+    }).toList()
+      ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+  }
+
+  Future<List<CitizenAccessCodeModel>> loadAccessCodesForCurrentController() async {
+    final session = AuthSessionStore.instance.currentSession;
+    final controllerId = _sessionActorId(session);
+    final records = await loadAccessCodes(controllerId: controllerId, limit: 100);
+    return records.where((item) => item.createdByControllerId == controllerId || session?.mode == 'fallback').toList()
+      ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+  }
+
+  Future<List<CitizenAccessCodeModel>> loadAccessCodesForCurrentCommune() async {
+    final session = AuthSessionStore.instance.currentSession;
+    final communeId = _sessionCommuneId(session);
+    final db = FirestoreDataService.instance;
+    List<CitizenAccessCodeModel> records;
+
+    if (db != null) {
+      try {
+        Query<Map<String, dynamic>> query = db.collection(_accessCollection);
+        if (communeId.isNotEmpty && communeId != 'unknown-commune') {
+          query = query.where('communeId', isEqualTo: communeId);
+        }
+        final snapshot = await query.orderBy('createdAt', descending: true).limit(250).get();
+        records = snapshot.docs.map((doc) => CitizenAccessCodeModel.fromJson(doc.data())).toList();
+      } catch (_) {
+        records = await _loadLocalAccessCodes();
+      }
+    } else {
+      records = await _loadLocalAccessCodes();
+    }
+
+    if (communeId.isEmpty || communeId == 'unknown-commune' || session?.mode == 'fallback') {
+      return records..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+    }
+
+    return records.where((item) => item.communeId == communeId).toList()
+      ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+  }
+
+  Future<void> markAccessCodeUsedForPublicVote(String accessCode) async {
+    final normalizedCode = _normalizeAccessCode(accessCode);
+    if (normalizedCode.isEmpty) return;
+
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      try {
+        await db.collection(_accessCollection).doc(normalizedCode).set(
+          {'usedForLogin': true},
+          SetOptions(merge: true),
+        );
+        return;
+      } catch (_) {
+        // Le suivi public anonyme peut exiger un endpoint backend en production.
+      }
+    }
+
+    final records = await BrowserStorageService.instance.readJsonList(_localAccessKey);
+    final next = records.map((item) {
+      final access = CitizenAccessCodeModel.fromJson(item);
+      return access.accessCode.toUpperCase() == normalizedCode ? access.copyWith(usedForLogin: true).toJson() : item;
+    }).toList();
+    await BrowserStorageService.instance.writeJsonList(_localAccessKey, next);
+  }
+
+  Future<List<CitizenAccessCodeModel>> _loadLocalAccessCodes() async {
+    final records = await BrowserStorageService.instance.readJsonList(_localAccessKey);
+    return records.map((item) => CitizenAccessCodeModel.fromJson(item)).toList();
   }
 
   Future<DuplicateCodeRequestModel> createDuplicateRequest({
@@ -681,6 +913,9 @@ class CitizenAccessCodeService {
     final now = DateTime.now().toIso8601String();
     final nextIndex = fingerprint.regenerationCount + 1;
     final newCode = generateRegeneratedAccessCode(request.sourceKeyMasked, nextIndex);
+    final previousAccess = (await loadAccessCodes(communeId: request.communeId, limit: 250))
+      .where((item) => item.accessCode == fingerprint.latestAccessCode || item.accessCode == request.existingAccessCode)
+      .firstOrNull;
     final newAccess = CitizenAccessCodeModel(
       accessCode: newCode,
       fingerprint: request.fingerprint,
@@ -698,6 +933,11 @@ class CitizenAccessCodeService {
       usedForLogin: false,
       regeneratedFromCode: fingerprint.latestAccessCode,
       regenerationIndex: nextIndex,
+      pollScope: previousAccess?.pollScope ?? 'all_open_polls',
+      eligiblePollIds: previousAccess?.eligiblePollIds ?? const <String>[],
+      identityDocumentChecked: previousAccess?.identityDocumentChecked ?? false,
+      addressProofChecked: previousAccess?.addressProofChecked ?? false,
+      communeEligibilityChecked: previousAccess?.communeEligibilityChecked ?? false,
       approvedBySuperAdminId: reviewedBySuperAdminId ?? _sessionActorId(AuthSessionStore.instance.currentSession),
       approvedAt: now,
     );
@@ -1059,6 +1299,33 @@ class CitizenAccessCodeService {
     return keepLast ? digits.substring(digits.length - expectedLength) : digits.substring(0, expectedLength);
   }
 
+  String _normalizeAccessCode(String rawCode) {
+    final trimmed = rawCode.trim();
+    if (trimmed.isEmpty) return '';
+    if (trimmed.startsWith('{')) {
+      try {
+        final parsed = jsonDecode(trimmed) as Map<String, dynamic>;
+        final code = parsed['accessCode'] as String? ?? parsed['code'] as String?;
+        if (code != null && code.trim().isNotEmpty) return code.trim().toUpperCase();
+      } catch (_) {
+        return '';
+      }
+    }
+    final uri = Uri.tryParse(trimmed);
+    if (uri != null && (uri.scheme == 'http' || uri.scheme == 'https')) {
+      final queryCode = uri.queryParameters['code'];
+      if (queryCode != null && queryCode.trim().isNotEmpty) {
+        return queryCode.trim().toUpperCase();
+      }
+
+      final segments = uri.pathSegments;
+      if (segments.length >= 2 && segments[segments.length - 2].toLowerCase() == 'vote') {
+        return Uri.decodeComponent(segments.last).toUpperCase();
+      }
+    }
+    return trimmed.toUpperCase();
+  }
+
   String _sessionActorId(AuthSession? session) => session?.id ?? session?.code ?? 'unknown-controller';
 
   String _sessionActorName(AuthSession? session) => session?.label ?? 'Controleur';
@@ -1076,7 +1343,11 @@ class CitizenAccessCodeService {
     required String lastName,
     required String birthYear,
     required String phoneSuffix,
+    required bool identityDocumentChecked,
+    required bool addressProofChecked,
+    required bool communeEligibilityChecked,
     required DuplicateReason duplicateReason,
+    String? selectedPollId,
     String? controllerComment,
   }) async {
     final payload = await _authorizedBackendRequest(
@@ -1087,7 +1358,20 @@ class CitizenAccessCodeService {
         'lastName': lastName,
         'birthYear': birthYear,
         'phoneSuffix': phoneSuffix,
+        'citizenFingerprintInput': {
+          'firstNameInitial': firstName,
+          'lastNameInitial': lastName,
+          'birthYear': birthYear,
+          'phoneLastTwo': phoneSuffix,
+        },
         'duplicateReason': duplicateReason.value,
+        'consultationScope': selectedPollId?.trim().isNotEmpty == true ? 'single_poll' : 'all_open_polls',
+        'consultationIds': selectedPollId?.trim().isNotEmpty == true ? <String>[selectedPollId!.trim()] : const <String>[],
+        'verification': {
+          'hasIdentityDocument': identityDocumentChecked,
+          'hasResidenceProof': addressProofChecked,
+          'communeEligibilityChecked': communeEligibilityChecked,
+        },
         'controllerComment': controllerComment,
       },
     );

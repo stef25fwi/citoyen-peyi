@@ -239,6 +239,33 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                   style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
                 ),
                 const SizedBox(height: 16),
+                Wrap(
+                  spacing: 12,
+                  runSpacing: 12,
+                  children: [
+                    FilledButton.tonal(
+                      onPressed: () => Navigator.of(context).pushNamed('/super/communes'),
+                      child: const Text('Communes'),
+                    ),
+                    FilledButton.tonal(
+                      onPressed: () => Navigator.of(context).pushNamed('/super/admins'),
+                      child: const Text('Admins communaux'),
+                    ),
+                    FilledButton.tonal(
+                      onPressed: () => Navigator.of(context).pushNamed('/super/controllers'),
+                      child: const Text('Controleurs'),
+                    ),
+                    FilledButton.tonal(
+                      onPressed: () => Navigator.of(context).pushNamed('/super/duplicates'),
+                      child: const Text('Doublons'),
+                    ),
+                    FilledButton.tonal(
+                      onPressed: () => Navigator.of(context).pushNamed('/super/activity'),
+                      child: const Text('Activite'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
                 LayoutBuilder(
                   builder: (context, constraints) {
                     final pendingDuplicates = _duplicateRequests.where((item) => item.status == 'pending').length;

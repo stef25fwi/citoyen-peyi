@@ -12,7 +12,9 @@ class AdminCreatePollPage extends StatefulWidget {
 class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
+  final _descriptionController = TextEditingController();
   final _questionController = TextEditingController();
+  final _targetPopulationController = TextEditingController();
   final _voterCountController = TextEditingController(text: '50');
   final List<TextEditingController> _optionControllers = [
     TextEditingController(),
@@ -26,7 +28,9 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
   @override
   void dispose() {
     _titleController.dispose();
+    _descriptionController.dispose();
     _questionController.dispose();
+    _targetPopulationController.dispose();
     _voterCountController.dispose();
     for (final controller in _optionControllers) {
       controller.dispose();
@@ -112,8 +116,10 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     try {
       await PollService.instance.createPoll(
         projectTitle: _titleController.text,
+        description: _descriptionController.text,
         question: _questionController.text,
         options: _optionControllers.map((item) => item.text).toList(),
+        targetPopulation: _targetPopulationController.text,
         openDate: _formatDate(openDate),
         closeDate: _formatDate(closeDate ?? openDate),
         totalVoters: int.tryParse(_voterCountController.text.trim()) ?? 50,
@@ -124,7 +130,7 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Sondage cree avec succes.')),
+        const SnackBar(content: Text('Consultation creee avec succes.')),
       );
       Navigator.of(context).pushNamedAndRemoveUntil('/admin', (route) => route.settings.name == '/');
     } finally {
@@ -164,10 +170,18 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           TextFormField(
+            controller: _targetPopulationController,
+            decoration: const InputDecoration(
+              labelText: 'Population cible',
+              hintText: 'Ex : habitants majeurs de la commune',
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextFormField(
             controller: _voterCountController,
             keyboardType: TextInputType.number,
             decoration: const InputDecoration(
-              labelText: 'Nombre de QR codes a prevoir',
+              labelText: 'Objectif de participation',
             ),
             validator: (value) {
               final parsed = int.tryParse((value ?? '').trim());
@@ -179,7 +193,7 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            'Ce total sert de capacite initiale pour mesurer la participation et preparer la distribution des acces.',
+            'Ce total sert uniquement a mesurer la participation attendue. Aucun stock de QR code n\'est genere a cette etape.',
             style: theme.textTheme.bodyMedium,
           ),
         ],
@@ -193,7 +207,7 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Creer un sondage'),
+        title: const Text('Creer une consultation'),
       ),
       body: Center(
         child: ConstrainedBox(
@@ -223,16 +237,26 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
+                        controller: _descriptionController,
+                        decoration: const InputDecoration(
+                          labelText: 'Description',
+                          hintText: 'Contexte, objectifs et informations utiles pour les citoyens',
+                        ),
+                        minLines: 3,
+                        maxLines: 5,
+                      ),
+                      const SizedBox(height: 16),
+                      TextFormField(
                         controller: _questionController,
                         decoration: const InputDecoration(
-                          labelText: 'Question du sondage',
+                          labelText: 'Question de la consultation',
                           hintText: 'Ex : Quelle option preferez-vous ?',
                         ),
                         minLines: 2,
                         maxLines: 3,
                         validator: (value) {
                           if (value == null || value.trim().isEmpty) {
-                            return 'La question du sondage est obligatoire.';
+                            return 'La question de la consultation est obligatoire.';
                           }
                           return null;
                         },
@@ -332,7 +356,7 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.save_rounded),
-                      label: Text(_isSubmitting ? 'Creation...' : 'Creer le sondage'),
+                      label: Text(_isSubmitting ? 'Creation...' : 'Creer la consultation'),
                     ),
                   ],
                 ),

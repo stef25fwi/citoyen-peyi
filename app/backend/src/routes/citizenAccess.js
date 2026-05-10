@@ -107,6 +107,11 @@ const fingerprintFor = (sourceKeyMasked) => crypto
   .update(String(sourceKeyMasked).trim().toUpperCase())
   .digest('hex');
 
+const hashAccessCode = (accessCode) => crypto
+  .createHash('sha256')
+  .update(String(accessCode || '').trim().toUpperCase())
+  .digest('hex');
+
 const accessCodeFor = (sourceKeyMasked) => fingerprintFor(sourceKeyMasked).substring(0, 8).toUpperCase();
 
 const regeneratedCodeFor = (sourceKeyMasked, regenerationIndex) => crypto
@@ -194,17 +199,24 @@ const writeActivity = (transaction, db, payload) => {
 
 router.use(isConfigured, requireAuth);
 
-router.post('/codes', async (req, res) => {
+const createCitizenAccessCodeHandler = async (req, res) => {
   if (!isController(req.user)) {
     return res.status(403).json({ message: 'Generation reservee aux controleurs.' });
   }
 
   try {
-    const source = buildSource(req.body || {});
+    const input = req.body?.citizenFingerprintInput || req.body || {};
+    const source = buildSource({
+      firstName: input.firstNameInitial || input.firstName,
+      lastName: input.lastNameInitial || input.lastName,
+      birthYear: input.birthYear,
+      phoneSuffix: input.phoneLastTwo || input.phoneSuffix,
+    });
     const duplicateReason = duplicateReasons.has(req.body?.duplicateReason) ? req.body.duplicateReason : 'other';
     const controllerComment = typeof req.body?.controllerComment === 'string' && req.body.controllerComment.trim()
       ? req.body.controllerComment.trim().substring(0, 500)
       : null;
+    const verification = typeof req.body?.verification === 'object' && req.body.verification != null ? req.body.verification : {};
     const fingerprint = fingerprintFor(source.sourceKeyMasked);
     const accessCode = accessCodeFor(source.sourceKeyMasked);
     const controller = await loadControllerProfile(req.user);
@@ -262,6 +274,8 @@ router.post('/codes', async (req, res) => {
 
       const access = {
         accessCode,
+        codeHash: hashAccessCode(accessCode),
+        displayCodeMasked: `${accessCode.substring(0, 2)}••••${accessCode.substring(accessCode.length - 2)}`,
         fingerprint,
         sourceKeyMasked: source.sourceKeyMasked,
         firstNameInitial: source.firstNameInitial,
@@ -275,7 +289,19 @@ router.post('/codes', async (req, res) => {
         createdAt: FieldValue.serverTimestamp(),
         status: 'active',
         usedForLogin: false,
+        replacedByCodeId: null,
+        replacedAt: null,
+        lastUsedAt: null,
         regenerationIndex: 0,
+        metadata: {
+          verification: {
+            identityDocumentType: verification.identityDocumentType || null,
+            residenceProofType: verification.residenceProofType || null,
+            hasIdentityDocument: Boolean(verification.hasIdentityDocument),
+            hasResidenceProof: Boolean(verification.hasResidenceProof),
+            notes: typeof verification.notes === 'string' ? verification.notes.substring(0, 500) : null,
+          },
+        },
       };
       const fingerprintRecord = {
         fingerprint,
@@ -311,7 +337,10 @@ router.post('/codes', async (req, res) => {
     console.error('Generation de code citoyen impossible.', error);
     return res.status(error.status || 500).json({ message: error.message || 'Generation de code citoyen impossible.' });
   }
-});
+};
+
+router.post('/codes', createCitizenAccessCodeHandler);
+router.post('/create', createCitizenAccessCodeHandler);
 
 router.get('/duplicates', async (req, res) => {
   const privileged = isSuperAdmin(req.user);
@@ -371,6 +400,8 @@ router.post('/duplicates/:requestId/approve', requireSuperAdminKey, async (req, 
       const previousCode = fingerprint.latestAccessCode || request.existingAccessCode;
       const newAccess = {
         accessCode: newCode,
+        codeHash: hashAccessCode(newCode),
+        displayCodeMasked: `${newCode.substring(0, 2)}••••${newCode.substring(newCode.length - 2)}`,
         fingerprint: request.fingerprint,
         sourceKeyMasked: request.sourceKeyMasked,
         firstNameInitial: request.sourceKeyMasked.substring(0, 1),
@@ -384,6 +415,9 @@ router.post('/duplicates/:requestId/approve', requireSuperAdminKey, async (req, 
         createdAt: FieldValue.serverTimestamp(),
         status: 'active',
         usedForLogin: false,
+        replacedByCodeId: null,
+        replacedAt: null,
+        lastUsedAt: null,
         regeneratedFromCode: previousCode,
         regenerationIndex: nextIndex,
         approvedBySuperAdminId: req.user.uid,
@@ -405,7 +439,12 @@ router.post('/duplicates/:requestId/approve', requireSuperAdminKey, async (req, 
         regenerationCount: nextIndex,
       }, { merge: true });
       if (previousCode) {
-        transaction.set(db.collection(ACCESS_COLLECTION).doc(previousCode), { status: 'replaced', updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        transaction.set(db.collection(ACCESS_COLLECTION).doc(previousCode), {
+          status: 'replaced',
+          replacedByCodeId: newCode,
+          replacedAt: FieldValue.serverTimestamp(),
+          updatedAt: FieldValue.serverTimestamp(),
+        }, { merge: true });
       }
       transaction.set(requestRef, requestUpdate, { merge: true });
       writeActivity(transaction, db, {

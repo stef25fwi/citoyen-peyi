@@ -67,6 +67,7 @@ export const env = {
   corsOrigins: parseCorsOrigins(process.env.CORS_ORIGIN),
   superAdminKey: optional(process.env.SUPER_ADMIN_KEY),
   adminAccessKey: optional(process.env.ADMIN_ACCESS_KEY),
+  voteAccessTokenSecret: optional(process.env.VOTE_ACCESS_TOKEN_SECRET),
   googleApplicationCredentials: optional(process.env.GOOGLE_APPLICATION_CREDENTIALS),
   firebaseAdminProjectId: optional(process.env.FIREBASE_ADMIN_PROJECT_ID),
   firebaseAdminClientEmail: optional(process.env.FIREBASE_ADMIN_CLIENT_EMAIL),

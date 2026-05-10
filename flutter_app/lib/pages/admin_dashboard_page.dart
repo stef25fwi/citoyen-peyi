@@ -23,8 +23,15 @@ class _DashboardTheme {
   );
 }
 
+enum AdminDashboardSection { overview, polls, controllers }
+
 class AdminDashboardPage extends StatefulWidget {
-  const AdminDashboardPage({super.key});
+  const AdminDashboardPage({
+    this.initialSection = AdminDashboardSection.overview,
+    super.key,
+  });
+
+  final AdminDashboardSection initialSection;
 
   @override
   State<AdminDashboardPage> createState() => _AdminDashboardPageState();
@@ -160,6 +167,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final session = AuthSessionStore.instance.currentSession;
+    final showOverviewSection = widget.initialSection == AdminDashboardSection.overview;
+    final showPollsSection = widget.initialSection != AdminDashboardSection.controllers;
+    final showControllersSection = widget.initialSection != AdminDashboardSection.polls;
+    final pageTitle = switch (widget.initialSection) {
+      AdminDashboardSection.overview => 'Tableau de bord commune',
+      AdminDashboardSection.polls => 'Consultations communales',
+      AdminDashboardSection.controllers => 'Controleurs communaux',
+    };
 
     final activeCount = _polls.where((poll) => poll.status == 'active').length;
     final closedCount = _polls.where((poll) => poll.status == 'closed').length;
@@ -177,16 +192,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           children: [
             Icon(Icons.dashboard_rounded, color: _DashboardTheme.primary, size: 22),
             SizedBox(width: 8),
-            Text('Tableau de bord'),
+            Text('Tableau de bord commune'),
           ],
         ),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilledButton.icon(
-              onPressed: () => Navigator.of(context).pushNamed('/admin/create'),
+              onPressed: () => Navigator.of(context).pushNamed('/admin/polls/create'),
               icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Nouveau sondage'),
+              label: const Text('Nouvelle consultation'),
             ),
           ),
           TextButton(
@@ -210,12 +225,50 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
             child: ListView(
             padding: const EdgeInsets.all(20),
             children: [
+              Row(
+                children: [
+                  Icon(
+                    widget.initialSection == AdminDashboardSection.controllers
+                        ? Icons.groups_rounded
+                        : widget.initialSection == AdminDashboardSection.polls
+                            ? Icons.how_to_vote_rounded
+                            : Icons.dashboard_rounded,
+                    color: _DashboardTheme.primary,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(child: Text(pageTitle, style: theme.textTheme.headlineSmall)),
+                ],
+              ),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  ChoiceChip(
+                    label: const Text('Vue d\'ensemble'),
+                    selected: widget.initialSection == AdminDashboardSection.overview,
+                    onSelected: (_) => Navigator.of(context).pushNamed('/admin'),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Consultations'),
+                    selected: widget.initialSection == AdminDashboardSection.polls,
+                    onSelected: (_) => Navigator.of(context).pushNamed('/admin/polls'),
+                  ),
+                  ChoiceChip(
+                    label: const Text('Controleurs'),
+                    selected: widget.initialSection == AdminDashboardSection.controllers,
+                    onSelected: (_) => Navigator.of(context).pushNamed('/admin/controllers'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              if (showOverviewSection)
               Wrap(
                 spacing: 12,
                 runSpacing: 12,
                 children: [
                   _DashboardStatCard(
-                    label: 'Total sondages',
+                    label: 'Total consultations',
                     value: '${_polls.length}',
                     icon: Icons.how_to_vote_rounded,
                     color: _DashboardTheme.primary,
@@ -240,19 +293,19 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              if (showOverviewSection) const SizedBox(height: 16),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Session administrateur', style: theme.textTheme.titleLarge),
+                      Text('Session admin communal', style: theme.textTheme.titleLarge),
                       const SizedBox(height: 12),
                       Text(
                         session == null
                             ? 'Aucune session chargee.'
-                            : 'Role: ${session.role}\nScope: ${session.adminScope ?? 'global'}\nProfil: ${session.label ?? 'Administrateur'}\nMode: ${session.modeLabel}',
+                            : 'Role UX: commune_admin\nRole technique: ${session.role}\nCommune: ${session.commune?.name ?? 'mode global/fallback'}\nProfil: ${session.label ?? 'Administrateur communal'}\nMode: ${session.modeLabel}',
                         style: theme.textTheme.bodyLarge,
                       ),
                     ],
@@ -265,16 +318,20 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   final wide = constraints.maxWidth >= 720;
                   final actions = [
                     FilledButton(
-                      onPressed: () => Navigator.of(context).pushNamed('/admin/create'),
-                      child: const Text('Creer un sondage'),
+                      onPressed: () => Navigator.of(context).pushNamed('/admin/polls/create'),
+                      child: const Text('Creer une consultation'),
                     ),
                     FilledButton.tonal(
-                      onPressed: () => Navigator.of(context).pushNamed('/admin/inscriptions'),
-                      child: const Text('Inscriptions'),
+                      onPressed: () => Navigator.of(context).pushNamed('/admin/controllers'),
+                      child: const Text('Controleurs'),
                     ),
                     FilledButton.tonal(
-                      onPressed: () => Navigator.of(context).pushNamed('/admin/analytics'),
-                      child: const Text('Analytics'),
+                      onPressed: () => Navigator.of(context).pushNamed('/admin/settings'),
+                      child: const Text('Parametres'),
+                    ),
+                    FilledButton.tonal(
+                      onPressed: () => Navigator.of(context).pushNamed('/admin/results'),
+                      child: const Text('Resultats'),
                     ),
                   ];
 
@@ -294,6 +351,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 },
               ),
               const SizedBox(height: 16),
+              if (showOverviewSection)
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -306,7 +364,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             child: Text('Vue analytics', style: theme.textTheme.titleLarge),
                           ),
                           TextButton(
-                            onPressed: () => Navigator.of(context).pushNamed('/admin/analytics'),
+                            onPressed: () => Navigator.of(context).pushNamed('/admin/results'),
                             child: const Text('Voir le detail'),
                           ),
                         ],
@@ -334,7 +392,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           _AnalyticsMetricCard(
                             label: 'Votes traces',
                             value: '${_analytics.totalUsedCodes}',
-                            subtitle: 'sur les 7 derniers jours et sondages charges',
+                            subtitle: 'sur les 7 derniers jours et consultations chargees',
                           ),
                         ],
                       ),
@@ -383,7 +441,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Participation par sondage', style: theme.textTheme.titleMedium),
+                                  Text('Participation par consultation', style: theme.textTheme.titleMedium),
                                   const SizedBox(height: 14),
                                   for (final poll in _analytics.polls.take(3))
                                     Padding(
@@ -415,8 +473,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+                if (showOverviewSection) const SizedBox(height: 16),
               // ---------- Section Contrôleurs ----------
+                if (showControllersSection)
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -454,8 +513,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
-              // ---------- Sondages récents ----------
+              if (showControllersSection) const SizedBox(height: 16),
+              // ---------- Consultations récentes ----------
+              if (showPollsSection)
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -465,14 +525,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       Row(
                         children: [
                           Expanded(
-                            child: Text('Sondages récents', style: Theme.of(context).textTheme.titleLarge),
+                            child: Text('Consultations recentes', style: Theme.of(context).textTheme.titleLarge),
                           ),
                           if (_isLoading) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
                         ],
                       ),
                       const SizedBox(height: 16),
                       if (!_isLoading && _polls.isEmpty)
-                        const Text('Aucun sondage disponible pour le moment.')
+                        const Text('Aucune consultation disponible pour le moment.')
                       else
                         for (final poll in _polls.take(5))
                           Padding(
