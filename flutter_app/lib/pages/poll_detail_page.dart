@@ -18,6 +18,7 @@ class PollDetailPage extends StatefulWidget {
 
 class _PollDetailPageState extends State<PollDetailPage> {
   bool _isLoading = true;
+  bool _isStatusSubmitting = false;
   PollModel? _poll;
   List<CitizenAccessCodeModel> _citizenCodes = const [];
 
@@ -46,6 +47,92 @@ class _PollDetailPageState extends State<PollDetailPage> {
       _citizenCodes = citizenCodes;
       _isLoading = false;
     });
+  }
+
+  Future<void> _changeStatus({
+    required String actionLabel,
+    required Future<PollModel?> Function(String pollId) action,
+  }) async {
+    final poll = _poll;
+    if (poll == null || _isStatusSubmitting) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('$actionLabel la consultation ?'),
+        content: Text('Cette action sera appliquee a "${poll.projectTitle}".'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(actionLabel)),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() => _isStatusSubmitting = true);
+    try {
+      final updated = await action(poll.id);
+      if (!mounted) return;
+      if (updated == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Consultation introuvable.')),
+        );
+        return;
+      }
+      await _load();
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Consultation ${actionLabel.toLowerCase()}e.')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isStatusSubmitting = false);
+      }
+    }
+  }
+
+  Future<void> _deletePoll() async {
+    final poll = _poll;
+    if (poll == null || _isStatusSubmitting) {
+      return;
+    }
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Supprimer la consultation ?'),
+        content: Text('La consultation "${poll.projectTitle}" sera supprimee definitivement.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) {
+      return;
+    }
+
+    setState(() => _isStatusSubmitting = true);
+    try {
+      await PollService.instance.deletePoll(poll.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Consultation supprimee.')),
+      );
+      Navigator.of(context).pushReplacementNamed('/admin/polls');
+    } finally {
+      if (mounted) {
+        setState(() => _isStatusSubmitting = false);
+      }
+    }
   }
 
   @override
@@ -78,6 +165,30 @@ class _PollDetailPageState extends State<PollDetailPage> {
                         padding: const EdgeInsets.all(20),
                         children: [
                           _PollHeroCard(poll: poll),
+                          const SizedBox(height: 20),
+                          _PollActionsCard(
+                            poll: poll,
+                            isSubmitting: _isStatusSubmitting,
+                            onPublish: poll.status == 'draft'
+                                ? () => _changeStatus(
+                                      actionLabel: 'Publier',
+                                      action: PollService.instance.publishPoll,
+                                    )
+                                : null,
+                            onClose: poll.status == 'active'
+                                ? () => _changeStatus(
+                                      actionLabel: 'Cloturer',
+                                      action: PollService.instance.closePoll,
+                                    )
+                                : null,
+                            onArchive: poll.status != 'archived'
+                                ? () => _changeStatus(
+                                      actionLabel: 'Archiver',
+                                      action: PollService.instance.archivePoll,
+                                    )
+                                : null,
+                            onDelete: poll.totalVoted == 0 ? _deletePoll : null,
+                          ),
                           const SizedBox(height: 20),
                           LayoutBuilder(
                             builder: (context, constraints) {
@@ -179,9 +290,75 @@ class _PollHeroCard extends StatelessWidget {
         return 'En cours';
       case 'closed':
         return 'Termine';
+      case 'archived':
+        return 'Archive';
       default:
         return 'Brouillon';
     }
+  }
+}
+
+class _PollActionsCard extends StatelessWidget {
+  const _PollActionsCard({
+    required this.poll,
+    required this.isSubmitting,
+    required this.onPublish,
+    required this.onClose,
+    required this.onArchive,
+    required this.onDelete,
+  });
+
+  final PollModel poll;
+  final bool isSubmitting;
+  final VoidCallback? onPublish;
+  final VoidCallback? onClose;
+  final VoidCallback? onArchive;
+  final VoidCallback? onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Actions de gestion', style: Theme.of(context).textTheme.titleMedium),
+            const SizedBox(height: 10),
+            Text(
+              'Publiez, cloturez ou archivez la consultation selon son etat courant. La suppression n\'est autorisee que sans vote enregistre.',
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              children: [
+                FilledButton.icon(
+                  onPressed: isSubmitting ? null : onPublish,
+                  icon: const Icon(Icons.publish_rounded),
+                  label: const Text('Publier'),
+                ),
+                FilledButton.tonalIcon(
+                  onPressed: isSubmitting ? null : onClose,
+                  icon: const Icon(Icons.lock_clock_rounded),
+                  label: const Text('Cloturer'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: isSubmitting ? null : onArchive,
+                  icon: const Icon(Icons.archive_rounded),
+                  label: const Text('Archiver'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: isSubmitting ? null : onDelete,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  label: const Text('Supprimer'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 

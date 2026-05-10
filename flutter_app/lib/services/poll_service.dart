@@ -232,6 +232,61 @@ class PollService {
     return updated;
   }
 
+  Future<PollModel?> publishPoll(String pollId) async {
+    return _updatePollStatus(pollId, 'active');
+  }
+
+  Future<PollModel?> closePoll(String pollId) async {
+    return _updatePollStatus(pollId, 'closed');
+  }
+
+  Future<PollModel?> archivePoll(String pollId) async {
+    return _updatePollStatus(pollId, 'archived');
+  }
+
+  Future<void> deletePoll(String pollId) async {
+    final polls = await loadPolls();
+    final nextPolls = polls.where((poll) => poll.id != pollId).toList();
+    await _writeLocalPolls(nextPolls);
+
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      await db.collection(_pollCollection).doc(pollId).delete();
+    }
+  }
+
+  Future<PollModel?> _updatePollStatus(String pollId, String status) async {
+    final polls = await loadPolls();
+    PollModel? updated;
+    final nextPolls = polls.map((poll) {
+      if (poll.id != pollId) {
+        return poll;
+      }
+
+      updated = poll.copyWith(
+        status: status,
+        updatedAt: DateTime.now().toIso8601String(),
+      );
+      return updated!;
+    }).toList();
+
+    if (updated == null) {
+      return null;
+    }
+
+    await _writeLocalPolls(nextPolls);
+
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      await db.collection(_pollCollection).doc(updated!.id).set(
+        updated!.toJson(),
+        SetOptions(merge: true),
+      );
+    }
+
+    return updated;
+  }
+
   Future<PollModel?> recordVote(String pollId, String optionId) async {
     final polls = await loadPolls();
     PollModel? updatedPoll;
