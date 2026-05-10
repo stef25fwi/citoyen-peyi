@@ -92,6 +92,102 @@
         "clear": true
       },
       "detail": "Stage, commit puis pousse la migration Flutter vers main."
+    },
+    {
+      "label": "Backend verifier prerequis migration",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && pwd && command -v node && command -v npm && printenv | grep -E \"^(GOOGLE_APPLICATION_CREDENTIALS|FIREBASE_ADMIN_PROJECT_ID|FIREBASE_ADMIN_CLIENT_EMAIL|FIREBASE_ADMIN_PRIVATE_KEY|VOTE_ACCESS_TOKEN_SECRET|SUPER_ADMIN_KEY)=\" || true"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Verifie Node/NPM et les variables d'environnement utiles a la migration backend."
+    },
+    {
+      "label": "Backend migration citizen codes dry-run",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi/app/backend && npm run migrate:registration-codes -- --dry-run"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Execute la migration registrationCodes vers citizen_access_codes en mode dry-run."
+    },
+    {
+      "label": "Backend migration citizen codes",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi/app/backend && npm run migrate:registration-codes"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Execute la migration registrationCodes vers citizen_access_codes en base."
+    },
+    {
+      "label": "Backend installer dependances",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && npm install --workspace app/backend"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Installe les dependances npm du backend."
+    },
+    {
+      "label": "Backend tests",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi/app/backend && npm test"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Lance les tests Node du backend."
+    },
+    {
+      "label": "Flutter tests",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; cd /workspaces/citoyen-peyi/flutter_app && flutter test"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Lance les tests Flutter du port web."
     }
   ]
 }

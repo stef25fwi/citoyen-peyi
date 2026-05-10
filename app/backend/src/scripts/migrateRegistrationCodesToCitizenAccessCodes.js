@@ -1,4 +1,5 @@
 import crypto from 'crypto';
+import { pathToFileURL } from 'url';
 import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore';
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 
@@ -118,17 +119,27 @@ export async function migrateRegistrationCodesToCitizenAccessCodes({ db, dryRun 
   };
 }
 
-if (!isFirebaseAdminConfigured()) {
-  console.error('Firebase Admin n\'est pas configure. Migration impossible.');
-  process.exit(1);
+const isExecutedAsScript = process.argv[1]
+  ? import.meta.url === pathToFileURL(process.argv[1]).href
+  : false;
+
+async function runCli() {
+  if (!isFirebaseAdminConfigured()) {
+    console.error('Firebase Admin n\'est pas configure. Migration impossible.');
+    process.exit(1);
+  }
+
+  const dryRun = process.argv.includes('--dry-run');
+  const result = await migrateRegistrationCodesToCitizenAccessCodes({ dryRun });
+
+  if (result.scanned == 0) {
+    console.log('Aucun document registrationCodes a migrer.');
+    process.exit(0);
+  }
+
+  console.log(JSON.stringify(result, null, 2));
 }
 
-const dryRun = process.argv.includes('--dry-run');
-const result = await migrateRegistrationCodesToCitizenAccessCodes({ dryRun });
-
-if (result.scanned == 0) {
-  console.log('Aucun document registrationCodes a migrer.');
-  process.exit(0);
+if (isExecutedAsScript) {
+  await runCli();
 }
-
-console.log(JSON.stringify(result, null, 2));

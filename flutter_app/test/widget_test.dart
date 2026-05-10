@@ -7,7 +7,7 @@ void main() {
     await tester.pumpWidget(const CitoyenPeyiApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Plateforme de sondage anonyme'), findsOneWidget);
-    expect(find.text('Espace Admin'), findsOneWidget);
+    expect(find.text('Plateforme de consultation citoyenne anonyme'), findsOneWidget);
+    expect(find.text('Administrateur communal'), findsOneWidget);
   });
 }

@@ -66,14 +66,17 @@ void main() {
     await tester.tap(find.text('Option A'));
     await tester.pump();
 
-    final submitButton = find.widgetWithText(FilledButton, 'Confirmer mon vote');
-    await tester.tap(submitButton);
-    await tester.pump();
+    final submitButton = find.text('Confirmer mon vote');
     await tester.tap(submitButton);
     await tester.pump();
 
     expect(service.submitCalls, 1);
     expect(find.text('Enregistrement...'), findsOneWidget);
+
+    await tester.tap(find.text('Enregistrement...'));
+    await tester.pump();
+
+    expect(service.submitCalls, 1);
 
     submitCompleter.complete(const VoteSubmitResult(receiptId: 'receipt-1', message: 'OK'));
     await tester.pumpAndSettle();
@@ -83,7 +86,6 @@ void main() {
 Widget _buildTestApp({required VoteAccessService service, required String pollId}) {
   return MaterialApp(
     routes: {
-      '/': (_) => const Scaffold(body: Text('Home')),
       '/access': (_) => const Scaffold(body: Text('Access')),
       '/confirmation': (_) => const Scaffold(body: Text('Confirmation')), 
     },
