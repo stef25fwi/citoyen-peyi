@@ -35,6 +35,30 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
     _load();
   }
 
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Permet de pre-remplir les filtres depuis l'argument route
+    // ex: Navigator.pushNamed('/super/activity', arguments: {'controllerId': '...', 'communeId': '...'}).
+    final args = ModalRoute.of(context)?.settings.arguments;
+    if (args is Map) {
+      final initialController = args['controllerId'];
+      final initialCommune = args['communeId'];
+      var changed = false;
+      if (initialController is String && initialController.isNotEmpty && _controllerId != initialController) {
+        _controllerId = initialController;
+        changed = true;
+      }
+      if (initialCommune is String && initialCommune.isNotEmpty && _communeId != initialCommune) {
+        _communeId = initialCommune;
+        changed = true;
+      }
+      if (changed) {
+        _load();
+      }
+    }
+  }
+
   Future<void> _load() async {
     setState(() => _isLoading = true);
     final analytics = await CitizenAccessCodeService.instance.getControllerAnalytics(

@@ -131,6 +131,14 @@ const loadEligiblePolls = async (db, access, requestedPollId = '') => {
     const sameCommune = !access.communeId || !poll.communeId || poll.communeId === access.communeId;
     if (!sameCommune || !isPollOpen(poll)) continue;
     const voteDoc = await db.collection(POLL_VOTE_COLLECTION).doc(`${pollId}_${access.id}`).get();
+    const safeOptions = Array.isArray(poll.options)
+      ? poll.options
+          .filter((option) => option && (option.id || option.label))
+          .map((option) => ({
+            id: String(option.id || ''),
+            label: String(option.label || ''),
+          }))
+      : [];
     polls.push({
       pollId,
       title: poll.projectTitle || poll.title || 'Consultation',
@@ -138,6 +146,7 @@ const loadEligiblePolls = async (db, access, requestedPollId = '') => {
       question: poll.question || '',
       status: 'open',
       hasVoted: voteDoc.exists,
+      options: safeOptions,
     });
   }
   return polls;

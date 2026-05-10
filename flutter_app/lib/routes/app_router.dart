@@ -16,7 +16,8 @@ import '../pages/duplicate_request_list_page.dart';
 import '../pages/home_page.dart';
 import '../pages/poll_detail_page.dart';
 import '../pages/placeholder_page.dart';
-import '../pages/public_info_page.dart';
+import '../pages/public_news_page.dart';
+import '../pages/public_results_page.dart';
 import '../pages/qr_access_page.dart';
 import '../pages/super_admin_dashboard_page.dart';
 import '../pages/vote_confirmation_page.dart';
@@ -136,27 +137,9 @@ class AppRouter {
           settings,
         );
       case '/results':
-        return _page(
-          const PublicInfoPage(
-            title: 'Resultats',
-            description: 'Resultats anonymes, graphiques et transparence sur les consultations ouvertes et cloturees.',
-            icon: Icons.bar_chart_rounded,
-            currentTab: PublicTab.results,
-            primaryActionLabel: 'Acceder a mon vote',
-            primaryRoute: '/access',
-          ),
-          settings,
-        );
+        return _page(const PublicResultsPage(), settings);
       case '/news':
-        return _page(
-          const PublicInfoPage(
-            title: 'Actualites / Projets',
-            description: 'Informations de la commune, projets soumis a consultation et points de contexte avant participation.',
-            icon: Icons.newspaper_rounded,
-            currentTab: PublicTab.news,
-          ),
-          settings,
-        );
+        return _page(const PublicNewsPage(), settings);
       case '/profile':
         return _page(
           const _LegacyRouteRedirectPage(

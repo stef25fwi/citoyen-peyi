@@ -1,9 +1,16 @@
 import 'package:flutter/material.dart';
 
-import '../models/poll_models.dart';
-import '../services/citizen_public_access_service.dart';
-import '../services/poll_service.dart';
+import '../services/vote_access_service.dart';
 
+/// Page de vote citoyen.
+///
+/// Tout le parcours s'appuie sur le backend transactionnel:
+///   POST /api/vote-access/validate -> recupere accessToken + sondages eligibles
+///   POST /api/vote-access/submit   -> enregistre le vote en transaction Firestore
+///
+/// Le client n'incremente plus de compteur localement et ne marque plus le code
+/// comme "vote" en deux appels separes: le backend garantit l'atomicite et
+/// empeche le double vote (poll_votes/{pollId}_{accessCodeId}).
 class VotePage extends StatefulWidget {
   const VotePage({
     required this.token,
@@ -11,6 +18,7 @@ class VotePage extends StatefulWidget {
     super.key,
   });
 
+  /// Code citoyen brut, URL QR ou token transmis dans l'URL `/vote/:token`.
   final String token;
   final String? pollId;
 
@@ -22,44 +30,67 @@ class _VotePageState extends State<VotePage> {
   bool _isLoading = true;
   bool _isSubmitting = false;
   String? _selectedOptionId;
-  PollModel? _poll;
-  CitizenPublicAccessSession? _accessSession;
-  bool _alreadyVoted = false;
+  VoteAccessValidationResult? _validation;
+  EligiblePollModel? _activePoll;
+  String? _errorMessage;
+  String? _successReceipt;
 
   @override
   void initState() {
     super.initState();
-    _load();
+    _validate();
   }
 
-  Future<void> _load() async {
+  Future<void> _validate() async {
     setState(() {
       _isLoading = true;
+      _errorMessage = null;
     });
 
-    final accessSession = await CitizenPublicAccessService.instance.openAccess(widget.token);
-    final loadedPoll = widget.pollId == null ? null : await PollService.instance.loadPollById(widget.pollId!);
-    final pollIsAccessible = accessSession?.openPolls.any((poll) => poll.id == widget.pollId) == true;
-    final poll = pollIsAccessible ? loadedPoll : null;
-    final alreadyVoted = widget.pollId == null
-        ? false
-        : await CitizenPublicAccessService.instance.hasVoted(accessCode: widget.token, pollId: widget.pollId!);
+    try {
+      final result = await VoteAccessService.instance.validateCode(
+        widget.token,
+        pollId: widget.pollId,
+      );
+      EligiblePollModel? poll;
+      if (widget.pollId != null && widget.pollId!.isNotEmpty) {
+        for (final candidate in result.eligiblePolls) {
+          if (candidate.pollId == widget.pollId) {
+            poll = candidate;
+            break;
+          }
+        }
+      } else if (result.eligiblePolls.length == 1) {
+        poll = result.eligiblePolls.first;
+      }
 
-    if (!mounted) {
-      return;
+      if (!mounted) return;
+      setState(() {
+        _validation = result;
+        _activePoll = poll;
+        _isLoading = false;
+      });
+    } on VoteAccessException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.message;
+        _isLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Validation du code impossible. Reessayez plus tard.';
+        _isLoading = false;
+      });
     }
-
-    setState(() {
-      _accessSession = accessSession;
-      _poll = poll;
-      _alreadyVoted = alreadyVoted;
-      _isLoading = false;
-    });
   }
 
   Future<void> _submitVote() async {
-    if (_selectedOptionId == null || _accessSession == null || _poll == null || _isSubmitting) {
-      if (_selectedOptionId == null && mounted) {
+    final validation = _validation;
+    final poll = _activePoll;
+    final optionId = _selectedOptionId;
+    if (_isSubmitting || validation == null || poll == null || optionId == null) {
+      if (optionId == null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Veuillez selectionner une option.')),
         );
@@ -69,59 +100,117 @@ class _VotePageState extends State<VotePage> {
 
     setState(() {
       _isSubmitting = true;
+      _errorMessage = null;
     });
 
-    await PollService.instance.recordVote(_poll!.id, _selectedOptionId!);
-    await CitizenPublicAccessService.instance.markVoted(accessCode: _accessSession!.accessCode, pollId: _poll!.id);
-
-    if (!mounted) {
-      return;
+    try {
+      final result = await VoteAccessService.instance.submitVote(
+        accessToken: validation.accessToken,
+        pollId: poll.pollId,
+        optionId: optionId,
+      );
+      if (!mounted) return;
+      setState(() {
+        _successReceipt = result.receiptId;
+        _isSubmitting = false;
+      });
+      Navigator.of(context).pushReplacementNamed(
+        '/confirmation',
+        arguments: {
+          'pollTitle': poll.title,
+          'communeName': validation.communeName,
+        },
+      );
+    } on VoteAccessException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = error.message;
+        _isSubmitting = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _errorMessage = 'Reseau indisponible. Votre vote n\'a pas ete enregistre.';
+        _isSubmitting = false;
+      });
     }
-
-    Navigator.of(context).pushReplacementNamed(
-      '/confirmation',
-      arguments: {
-        'pollTitle': _poll!.projectTitle,
-        'communeName': _accessSession!.communeName,
-      },
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return _VoteStateScaffold(
+      return const _VoteStateScaffold(
         child: _InfoCard(
-          title: 'Chargement de votre acces',
-          message: 'Verification securisee du code en cours.',
+          title: 'Verification securisee',
+          message: 'Validation de votre code citoyen par le serveur en cours...',
         ),
       );
     }
 
-    if (_accessSession == null || _poll == null) {
+    if (_errorMessage != null && _validation == null) {
       return _VoteStateScaffold(
         child: _InfoCard(
           title: 'Acces a la consultation indisponible',
-          message: 'Ce code citoyen est invalide, remplace, ou la consultation demandee n\'est pas ouverte.',
+          message: _errorMessage!,
           actionLabel: 'Retour',
-          onPressed: () => Navigator.of(context).pushNamed('/access'),
+          onPressed: () => Navigator.of(context).pushReplacementNamed('/access'),
         ),
       );
     }
 
-    if (_alreadyVoted) {
+    final validation = _validation!;
+    final polls = validation.eligiblePolls;
+
+    if (_activePoll == null) {
+      if (polls.isEmpty) {
+        return _VoteStateScaffold(
+          child: _InfoCard(
+            title: 'Aucune consultation ouverte',
+            message: 'Aucune consultation n\'est ouverte pour votre commune actuellement.',
+            actionLabel: 'Retour a l\'accueil',
+            onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
+          ),
+        );
+      }
+
+      return _VoteStateScaffold(
+        child: _PollPicker(
+          polls: polls,
+          communeName: validation.communeName,
+          onSelected: (poll) {
+            if (poll.hasVoted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Vous avez deja vote pour cette consultation.')),
+              );
+              return;
+            }
+            setState(() {
+              _activePoll = poll;
+              _selectedOptionId = null;
+              _errorMessage = null;
+            });
+          },
+        ),
+      );
+    }
+
+    final poll = _activePoll!;
+    if (poll.hasVoted) {
       return _VoteStateScaffold(
         child: _InfoCard(
-          title: 'Merci pour votre vote !',
-          message: 'Votre vote a ete enregistre de maniere anonyme. Aucune trace ne relie votre identite a votre choix.',
+          title: 'Merci pour votre vote',
+          message: 'Votre vote a deja ete enregistre de maniere anonyme. Aucune trace ne relie votre identite a votre choix.',
           actionLabel: 'Retour a l\'accueil',
-          onPressed: () => Navigator.of(context).pushNamed('/'),
+          onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
           icon: Icons.verified_rounded,
         ),
       );
     }
 
-    final poll = _poll!;
+    return _buildVotingScaffold(poll);
+  }
+
+  Widget _buildVotingScaffold(EligiblePollModel poll) {
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -145,12 +234,14 @@ class _VotePageState extends State<VotePage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.of(context).pushNamed('/'),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => Navigator.of(context).pushReplacementNamed('/'),
                     icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    poll.projectTitle,
+                    poll.title,
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: Colors.white.withValues(alpha: 0.72),
                       letterSpacing: 0.4,
@@ -158,9 +249,16 @@ class _VotePageState extends State<VotePage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    poll.question,
+                    poll.question.isNotEmpty ? poll.question : 'Choisissez votre option',
                     style: theme.textTheme.headlineMedium?.copyWith(color: Colors.white),
                   ),
+                  if (poll.description.isNotEmpty) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      poll.description,
+                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                    ),
+                  ],
                 ],
               ),
             ),
@@ -180,71 +278,26 @@ class _VotePageState extends State<VotePage> {
                   ),
                 ),
                 const SizedBox(height: 16),
-                ...poll.options.map((option) {
-                  final selected = _selectedOptionId == option.id;
-
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(22),
-                      onTap: () {
-                        setState(() {
-                          _selectedOptionId = option.id;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 180),
-                        padding: const EdgeInsets.all(18),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: selected ? const Color(0xFF0F6D8F) : const Color(0xFFD9E3EE),
-                            width: selected ? 2 : 1,
-                          ),
-                          boxShadow: selected
-                              ? const [
-                                  BoxShadow(
-                                    color: Color(0x220F6D8F),
-                                    blurRadius: 22,
-                                    offset: Offset(0, 10),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                color: selected ? const Color(0xFF0F6D8F) : Colors.transparent,
-                                border: Border.all(
-                                  color: selected ? const Color(0xFF0F6D8F) : const Color(0xFF9AA9B8),
-                                  width: 2,
-                                ),
-                              ),
-                              child: selected
-                                  ? const Icon(Icons.check_rounded, size: 18, color: Colors.white)
-                                  : null,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Text(
-                                option.label,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: selected ? const Color(0xFF0F172A) : const Color(0xFF475569),
-                                ),
-                              ),
-                            ),
-                          ],
+                _PollOptions(
+                  poll: poll,
+                  selectedOptionId: _selectedOptionId,
+                  enabled: !_isSubmitting,
+                  onChanged: (value) => setState(() => _selectedOptionId = value),
+                ),
+                if (_errorMessage != null)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 16),
+                    child: Card(
+                      color: const Color(0xFFFFEBEB),
+                      child: Padding(
+                        padding: const EdgeInsets.all(14),
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(color: Color(0xFFB42318)),
                         ),
                       ),
                     ),
-                  );
-                }),
+                  ),
               ],
             ),
           ),
@@ -260,7 +313,9 @@ class _VotePageState extends State<VotePage> {
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
-                  onPressed: _isSubmitting ? null : _submitVote,
+                  onPressed: _isSubmitting || _selectedOptionId == null
+                      ? null
+                      : _submitVote,
                   icon: _isSubmitting
                       ? const SizedBox(
                           width: 18,
@@ -276,8 +331,162 @@ class _VotePageState extends State<VotePage> {
                 'En soumettant, votre vote sera definitif et anonymise.',
                 textAlign: TextAlign.center,
               ),
+              if (_successReceipt != null) ...[
+                const SizedBox(height: 6),
+                Text('Recu: $_successReceipt', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+              ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PollOptions extends StatelessWidget {
+  const _PollOptions({
+    required this.poll,
+    required this.selectedOptionId,
+    required this.enabled,
+    required this.onChanged,
+  });
+
+  final EligiblePollModel poll;
+  final String? selectedOptionId;
+  final bool enabled;
+  final ValueChanged<String> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final options = poll.options;
+    if (options.isEmpty) {
+      return const Card(
+        child: Padding(
+          padding: EdgeInsets.all(18),
+          child: Text(
+            'Cette consultation ne propose pas encore d\'options. Reessayez plus tard.',
+            textAlign: TextAlign.center,
+          ),
+        ),
+      );
+    }
+
+    final theme = Theme.of(context);
+    return Column(
+      children: [
+        for (final option in options)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(22),
+              onTap: enabled ? () => onChanged(option.id) : null,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: selectedOptionId == option.id
+                        ? const Color(0xFF0F6D8F)
+                        : const Color(0xFFD9E3EE),
+                    width: selectedOptionId == option.id ? 2 : 1,
+                  ),
+                  boxShadow: selectedOptionId == option.id
+                      ? const [
+                          BoxShadow(
+                            color: Color(0x220F6D8F),
+                            blurRadius: 22,
+                            offset: Offset(0, 10),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: selectedOptionId == option.id
+                            ? const Color(0xFF0F6D8F)
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: selectedOptionId == option.id
+                              ? const Color(0xFF0F6D8F)
+                              : const Color(0xFF9AA9B8),
+                          width: 2,
+                        ),
+                      ),
+                      child: selectedOptionId == option.id
+                          ? const Icon(Icons.check_rounded, size: 18, color: Colors.white)
+                          : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        option.label,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: selectedOptionId == option.id
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFF475569),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _PollPicker extends StatelessWidget {
+  const _PollPicker({
+    required this.polls,
+    required this.communeName,
+    required this.onSelected,
+  });
+
+  final List<EligiblePollModel> polls;
+  final String communeName;
+  final ValueChanged<EligiblePollModel> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text('Choisissez une consultation', style: theme.textTheme.headlineSmall),
+            const SizedBox(height: 6),
+            Text('Commune: $communeName', style: theme.textTheme.bodyMedium),
+            const SizedBox(height: 16),
+            for (final poll in polls)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: ListTile(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(18),
+                    side: const BorderSide(color: Color(0xFFD7E0EA)),
+                  ),
+                  title: Text(poll.title),
+                  subtitle: Text(poll.question.isEmpty ? 'Consultation ouverte' : poll.question),
+                  trailing: poll.hasVoted
+                      ? const Chip(label: Text('Deja vote'))
+                      : const Icon(Icons.arrow_forward_rounded),
+                  onTap: () => onSelected(poll),
+                ),
+              ),
+          ],
         ),
       ),
     );

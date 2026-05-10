@@ -19,6 +19,20 @@ class VoteAccessException implements Exception {
   String toString() => message;
 }
 
+class EligiblePollOption {
+  const EligiblePollOption({required this.id, required this.label});
+
+  final String id;
+  final String label;
+
+  static EligiblePollOption fromJson(Map<String, dynamic> json) {
+    return EligiblePollOption(
+      id: (json['id'] as String? ?? '').trim(),
+      label: (json['label'] as String? ?? '').trim(),
+    );
+  }
+}
+
 class EligiblePollModel {
   const EligiblePollModel({
     required this.pollId,
@@ -27,6 +41,7 @@ class EligiblePollModel {
     required this.hasVoted,
     this.description = '',
     this.question = '',
+    this.options = const [],
   });
 
   final String pollId;
@@ -35,8 +50,10 @@ class EligiblePollModel {
   final bool hasVoted;
   final String description;
   final String question;
+  final List<EligiblePollOption> options;
 
   static EligiblePollModel fromJson(Map<String, dynamic> json) {
+    final rawOptions = json['options'] as List<dynamic>? ?? const [];
     return EligiblePollModel(
       pollId: json['pollId'] as String? ?? json['id'] as String? ?? '',
       title: json['title'] as String? ?? json['projectTitle'] as String? ?? 'Consultation',
@@ -44,6 +61,11 @@ class EligiblePollModel {
       hasVoted: json['hasVoted'] as bool? ?? false,
       description: json['description'] as String? ?? '',
       question: json['question'] as String? ?? '',
+      options: rawOptions
+          .whereType<Map<String, dynamic>>()
+          .map(EligiblePollOption.fromJson)
+          .where((option) => option.id.isNotEmpty)
+          .toList(growable: false),
     );
   }
 }

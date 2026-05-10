@@ -1,0 +1,176 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
+
+import '../services/firestore_data_service.dart';
+import '../widgets/public_bottom_nav.dart';
+
+/// Page actualites / projets de la commune.
+///
+/// Lit la collection Firestore `public_news` (champs: title, body, communeName,
+/// publishedAt, link). Si la collection est vide ou indisponible, un empty
+/// state honnete est affiche.
+class PublicNewsPage extends StatefulWidget {
+  const PublicNewsPage({super.key});
+
+  @override
+  State<PublicNewsPage> createState() => _PublicNewsPageState();
+}
+
+class _PublicNewsPageState extends State<PublicNewsPage> {
+  bool _isLoading = true;
+  List<_NewsItem> _items = const [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() => _isLoading = true);
+    final db = FirestoreDataService.instance;
+    List<_NewsItem> items = const [];
+    if (db != null) {
+      try {
+        final snapshot = await db
+            .collection('public_news')
+            .orderBy('publishedAt', descending: true)
+            .limit(50)
+            .get();
+        items = snapshot.docs.map((doc) => _NewsItem.fromMap(doc.data())).toList();
+      } catch (_) {
+        items = const [];
+      }
+    }
+    if (!mounted) return;
+    setState(() {
+      _items = items;
+      _isLoading = false;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF6F8FB),
+      appBar: AppBar(title: const Text('Actualites / Projets')),
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 760),
+          child: RefreshIndicator(
+            onRefresh: _load,
+            child: ListView(
+              padding: const EdgeInsets.all(20),
+              children: [
+                Text(
+                  'Actualites de la plateforme',
+                  style: theme.textTheme.headlineMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Informations communales et projets soumis a consultation.',
+                  style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                if (_isLoading)
+                  const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
+                else if (_items.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.newspaper_rounded, size: 42, color: Color(0xFF5A6573)),
+                          const SizedBox(height: 12),
+                          Text('Aucune actualite pour le moment', style: theme.textTheme.titleLarge),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Les communes peuvent publier ici leurs actualites et projets soumis a consultation. Revenez bientot.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  for (final item in _items) _NewsCard(item: item),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar: const PublicBottomNav(currentTab: PublicTab.news),
+    );
+  }
+}
+
+class _NewsCard extends StatelessWidget {
+  const _NewsCard({required this.item});
+
+  final _NewsItem item;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (item.communeName.isNotEmpty)
+                Text(item.communeName.toUpperCase(),
+                    style: theme.textTheme.labelSmall?.copyWith(color: const Color(0xFF5A6573))),
+              const SizedBox(height: 4),
+              Text(item.title, style: theme.textTheme.titleLarge),
+              if (item.publishedAt.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(item.publishedAt, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573))),
+              ],
+              if (item.body.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(item.body, style: theme.textTheme.bodyLarge),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NewsItem {
+  const _NewsItem({
+    required this.title,
+    required this.body,
+    required this.communeName,
+    required this.publishedAt,
+  });
+
+  final String title;
+  final String body;
+  final String communeName;
+  final String publishedAt;
+
+  factory _NewsItem.fromMap(Map<String, dynamic> data) {
+    final published = data['publishedAt'];
+    String publishedIso = '';
+    if (published is Timestamp) {
+      publishedIso = published.toDate().toIso8601String().split('T').first;
+    } else if (published is String) {
+      publishedIso = published;
+    }
+    return _NewsItem(
+      title: (data['title'] as String? ?? '').trim(),
+      body: (data['body'] as String? ?? data['content'] as String? ?? '').trim(),
+      communeName: (data['communeName'] as String? ?? '').trim(),
+      publishedAt: publishedIso,
+    );
+  }
+}

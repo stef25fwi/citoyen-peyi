@@ -212,6 +212,28 @@ service cloud.firestore {
       allow delete: if false;
     }
 
+    // Vote anonyme: cle de doc {pollId}_{accessCodeId}.
+    // Aucun acces client. Lecture/ecriture exclusivement via le backend
+    // (Firebase Admin SDK contourne ces regles) afin de garantir la
+    // transactionnalite et l'anonymat des votes.
+    match /poll_votes/{voteId} {
+      allow read, write: if false;
+    }
+
+    // Cache public d'horodatage des votes pour le tableau de bord citoyen.
+    // Le backend reste la source de verite (poll_votes). Le client n'ecrit pas.
+    match /citizen_poll_access/{document=**} {
+      allow read: if isAdminCommune() || isSuperAdmin();
+      allow write: if false;
+    }
+
+    // Actualites publiques publiees par les administrateurs communaux.
+    // Lecture libre (anonymisee), ecriture limitee aux admins.
+    match /public_news/{newsId} {
+      allow read: if true;
+      allow write: if isAdmin() || isAdminCommune();
+    }
+
     match /{document=**} {
       allow read, write: if false;
     }
