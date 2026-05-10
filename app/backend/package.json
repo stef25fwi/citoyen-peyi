@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
-    "migrate:registration-codes": "node src/scripts/migrateRegistrationCodesToCitizenAccessCodes.js"
+    "migrate:registration-codes": "node src/scripts/migrateRegistrationCodesToCitizenAccessCodes.js",
+    "test": "node --test"
   },
   "dependencies": {
     "cors": "^2.8.5",

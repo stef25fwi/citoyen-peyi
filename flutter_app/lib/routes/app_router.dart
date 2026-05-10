@@ -20,6 +20,7 @@ import '../pages/placeholder_page.dart';
 import '../pages/public_news_page.dart';
 import '../pages/public_results_page.dart';
 import '../pages/qr_access_page.dart';
+import '../pages/super_admin_communes_page.dart';
 import '../pages/super_admin_dashboard_page.dart';
 import '../pages/vote_confirmation_page.dart';
 import '../pages/super_admin_login_page.dart';
@@ -48,14 +49,7 @@ class AppRouter {
       case '/super/controllers':
         return _requireRoles(settings, const ControllerActivityDashboardPage(), const ['super_admin']);
       case '/super/communes':
-        return _requireRoles(
-          settings,
-          const PlaceholderPage(
-            title: 'Communes',
-            subtitle: 'Gestion globale des communes rattachees a la plateforme. TODO backend: collection communes dediee.',
-          ),
-          const ['super_admin'],
-        );
+        return _requireRoles(settings, const SuperAdminCommunesPage(), const ['super_admin']);
       case '/super/admins':
         return _requireRoles(settings, const SuperAdminDashboardPage(), const ['super_admin']);
       case '/admin':

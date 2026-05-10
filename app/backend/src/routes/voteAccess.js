@@ -7,16 +7,14 @@ import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/fireb
 const router = express.Router();
 
 const ACCESS_COLLECTION = 'citizen_access_codes';
-const LEGACY_COLLECTION = 'registrationCodes';
 const POLL_COLLECTION = 'polls';
 const POLL_VOTE_COLLECTION = 'poll_votes';
 const TOKEN_TTL_MS = 30 * 60 * 1000;
 
-const jsonBase64Url = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
-const hashCode = (code) => crypto.createHash('sha256').update(normalizeCode(code)).digest('hex');
+export const jsonBase64Url = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
+export const normalizeCode = (value) => String(value || '').trim().toUpperCase();
+export const hashCode = (code) => crypto.createHash('sha256').update(normalizeCode(code)).digest('hex');
 const tokenSecret = () => env.voteAccessTokenSecret;
-
-const normalizeCode = (value) => String(value || '').trim().toUpperCase();
 
 const toIso = (value) => {
   if (!value) return '';
@@ -39,13 +37,13 @@ const isConfigured = (_req, res, next) => {
   return next();
 };
 
-const signAccessToken = (payload) => {
+export const signAccessToken = (payload) => {
   const body = jsonBase64Url({ ...payload, exp: Date.now() + TOKEN_TTL_MS });
   const signature = crypto.createHmac('sha256', tokenSecret()).update(body).digest('base64url');
   return `${body}.${signature}`;
 };
 
-const verifyAccessToken = (token) => {
+export const verifyAccessToken = (token) => {
   const [body, signature] = String(token || '').split('.');
   if (!body || !signature) return null;
   const expected = crypto.createHmac('sha256', tokenSecret()).update(body).digest('base64url');
@@ -56,7 +54,7 @@ const verifyAccessToken = (token) => {
   return payload;
 };
 
-const isPollOpen = (poll) => {
+export const isPollOpen = (poll) => {
   const status = String(poll.status || '').toLowerCase();
   if (!['active', 'open'].includes(status)) return false;
   const now = new Date();
@@ -67,7 +65,7 @@ const isPollOpen = (poll) => {
   return true;
 };
 
-const optionBelongsToPoll = (poll, optionId) => Array.isArray(poll.options)
+export const optionBelongsToPoll = (poll, optionId) => Array.isArray(poll.options)
   && poll.options.some((option) => String(option.id || '') === optionId);
 
 const normalizeAccessDoc = (doc) => {
@@ -97,24 +95,6 @@ const findAccessCode = async (db, code) => {
 
   const byAccessCode = await db.collection(ACCESS_COLLECTION).where('accessCode', '==', normalized).limit(1).get();
   if (!byAccessCode.empty) return normalizeAccessDoc(byAccessCode.docs[0]);
-
-  // TODO migration: migrer registrationCodes vers citizen_access_codes cote backend, puis supprimer cette compatibilite.
-  const legacy = await db.collection(LEGACY_COLLECTION).where('code', '==', normalized).limit(1).get();
-  if (!legacy.empty) {
-    const doc = legacy.docs[0];
-    const data = doc.data() || {};
-    if (data.status !== 'validated') return null;
-    return {
-      id: `legacy_${doc.id}`,
-      codeHash,
-      communeId: data.communeId || '',
-      communeName: data.communeName || '',
-      status: 'active',
-      createdAt: toIso(data.createdAt),
-      lastUsedAt: null,
-      data: { ...data, legacyRegistrationCodeId: doc.id },
-    };
-  }
 
   return null;
 };
