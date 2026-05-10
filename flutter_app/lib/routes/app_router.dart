@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../pages/admin_analytics_page.dart';
 import '../pages/admin_create_poll_page.dart';
 import '../pages/admin_dashboard_page.dart';
+import '../pages/admin_edit_poll_page.dart';
 import '../pages/admin_settings_page.dart';
 import '../pages/admin_login_page.dart';
 import '../pages/commune_controller_activity_page.dart';
@@ -174,10 +175,7 @@ class AppRouter {
             uri.pathSegments[3] == 'edit') {
           return _requireRoles(
             settings,
-            const PlaceholderPage(
-              title: 'Edition de consultation',
-              subtitle: 'TODO UI: edition complete des consultations communales.',
-            ),
+            AdminEditPollPage(pollId: uri.pathSegments[2]),
             const ['commune_admin'],
           );
         }

@@ -55,6 +55,15 @@ class _PollDetailPageState extends State<PollDetailPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text(poll?.projectTitle ?? 'Detail du sondage'),
+        actions: poll == null
+            ? null
+            : [
+                TextButton.icon(
+                  onPressed: () => Navigator.of(context).pushNamed('/admin/polls/${poll.id}/edit'),
+                  icon: const Icon(Icons.edit_rounded),
+                  label: const Text('Modifier'),
+                ),
+              ],
       ),
       body: Center(
         child: ConstrainedBox(

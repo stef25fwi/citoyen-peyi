@@ -175,6 +175,63 @@ class PollService {
     return poll;
   }
 
+  Future<PollModel?> updatePoll({
+    required String pollId,
+    required String projectTitle,
+    String description = '',
+    required String question,
+    required List<String> options,
+    String targetPopulation = '',
+    required String openDate,
+    required String closeDate,
+    required int totalVoters,
+  }) async {
+    final polls = await loadPolls();
+    final existing = polls.where((poll) => poll.id == pollId).firstOrNull;
+    if (existing == null) {
+      return null;
+    }
+
+    final trimmedOptions = options.map((item) => item.trim()).where((item) => item.isNotEmpty).toList();
+    final canEditOptions = existing.totalVoted == 0;
+    final updatedOptions = canEditOptions
+        ? trimmedOptions.asMap().entries.map((entry) {
+            final previous = entry.key < existing.options.length ? existing.options[entry.key] : null;
+            return PollOptionModel(
+              id: previous?.id ?? 'opt-${existing.id}-${entry.key + 1}',
+              label: entry.value,
+              votes: previous?.votes ?? 0,
+            );
+          }).toList()
+        : existing.options;
+
+    final updated = existing.copyWith(
+      projectTitle: projectTitle.trim(),
+      description: description.trim(),
+      question: question.trim(),
+      options: updatedOptions,
+      targetPopulation: targetPopulation.trim(),
+      openDate: openDate,
+      closeDate: closeDate,
+      status: existing.status == 'archived' ? 'archived' : _derivePollStatus(openDate, closeDate),
+      updatedAt: DateTime.now().toIso8601String(),
+      totalVoters: totalVoters,
+    );
+
+    final nextPolls = polls.map((poll) => poll.id == pollId ? updated : poll).toList();
+    await _writeLocalPolls(nextPolls);
+
+    final db = FirestoreDataService.instance;
+    if (db != null) {
+      await db.collection(_pollCollection).doc(updated.id).set(
+        updated.toJson(),
+        SetOptions(merge: true),
+      );
+    }
+
+    return updated;
+  }
+
   Future<PollModel?> recordVote(String pollId, String optionId) async {
     final polls = await loadPolls();
     PollModel? updatedPoll;
