@@ -1,3 +1,6 @@
+import 'dart:typed_data';
+import 'dart:ui' as ui;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -6,6 +9,7 @@ import '../models/poll_models.dart';
 import '../services/auth_session_store.dart';
 import '../services/citizen_access_code_service.dart';
 import '../services/poll_service.dart';
+import '../services/qr_download_service.dart';
 
 class ControllerCitizenAccessPage extends StatefulWidget {
   const ControllerCitizenAccessPage({super.key});
@@ -163,10 +167,61 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _notifyPrintTodo() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Impression navigateur a brancher cote web.')),
+  Future<void> _downloadLastGeneratedQr() async {
+    final createdCode = _lastResult?.accessCode;
+    if (createdCode == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Aucun code citoyen genere a telecharger.')),
+      );
+      return;
+    }
+
+    try {
+      final bytes = await _buildQrPngBytes(createdCode.accessCode);
+      await QrDownloadService.instance.downloadPng(
+        bytes: bytes,
+        fileName: 'code-citoyen-${createdCode.accessCode.toLowerCase()}.png',
+      );
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('QR telecharge pour ${createdCode.accessCode}.')),
+      );
+    } on UnsupportedError catch (error) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message ?? 'Telechargement indisponible sur cette plateforme.')),
+      );
+    } catch (_) {
+      if (!mounted) {
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Impossible de generer le fichier PNG du QR.')),
+      );
+    }
+  }
+
+  Future<Uint8List> _buildQrPngBytes(String data) async {
+    final painter = QrPainter(
+      data: data,
+      version: QrVersions.auto,
+      gapless: true,
+      color: const Color(0xFF111827),
+      emptyColor: Colors.white,
     );
+    final imageData = await painter.toImageData(1200, format: ui.ImageByteFormat.png);
+    if (imageData == null) {
+      throw StateError('QR PNG vide');
+    }
+
+    return imageData.buffer.asUint8List();
   }
 
   @override
@@ -427,7 +482,7 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                           message: _lastMessage!,
                           result: _lastResult,
                           onCopy: (value) => _copy(value, 'Code citoyen copie dans le presse-papiers.'),
-                          onPrint: _notifyPrintTodo,
+                          onDownload: _downloadLastGeneratedQr,
                         ),
                       ],
                       const SizedBox(height: 16),
@@ -538,13 +593,13 @@ class _ResultCard extends StatelessWidget {
     required this.message,
     required this.result,
     required this.onCopy,
-    required this.onPrint,
+    required this.onDownload,
   });
 
   final String message;
   final CitizenCodeCreationResult? result;
   final ValueChanged<String> onCopy;
-  final VoidCallback onPrint;
+  final VoidCallback onDownload;
 
   @override
   Widget build(BuildContext context) {
@@ -604,9 +659,9 @@ class _ResultCard extends StatelessWidget {
                           label: const Text('Copier'),
                         ),
                         FilledButton.tonalIcon(
-                          onPressed: onPrint,
-                          icon: const Icon(Icons.print_rounded),
-                          label: const Text('Imprimer'),
+                          onPressed: onDownload,
+                          icon: const Icon(Icons.download_rounded),
+                          label: const Text('Telecharger PNG'),
                         ),
                       ],
                     ),

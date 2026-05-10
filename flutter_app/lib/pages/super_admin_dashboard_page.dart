@@ -12,8 +12,15 @@ import '../services/super_admin_service.dart';
 import '../widgets/super_admin_controller_activity_tile.dart';
 import '../widgets/super_admin_duplicate_tile.dart';
 
+enum SuperAdminDashboardSection { overview, admins }
+
 class SuperAdminDashboardPage extends StatefulWidget {
-  const SuperAdminDashboardPage({super.key});
+  const SuperAdminDashboardPage({
+    super.key,
+    this.initialSection = SuperAdminDashboardSection.overview,
+  });
+
+  final SuperAdminDashboardSection initialSection;
 
   @override
   State<SuperAdminDashboardPage> createState() => _SuperAdminDashboardPageState();
@@ -155,10 +162,12 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final session = AuthSessionStore.instance.currentSession;
+    final showOverviewSection = widget.initialSection == SuperAdminDashboardSection.overview;
+    final pageTitle = showOverviewSection ? 'Super Administration' : 'Admins communaux';
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Super Administration'),
+        title: Text(pageTitle),
         titleTextStyle: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF0F6D8F)),
         leading: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF0F6D8F)),
         leadingWidth: 56,
@@ -214,6 +223,24 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                     ),
                   ),
                 ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Vue d\'ensemble'),
+                      selected: widget.initialSection == SuperAdminDashboardSection.overview,
+                      onSelected: (_) => Navigator.of(context).pushNamed('/super'),
+                    ),
+                    ChoiceChip(
+                      label: const Text('Admins communaux'),
+                      selected: widget.initialSection == SuperAdminDashboardSection.admins,
+                      onSelected: (_) => Navigator.of(context).pushNamed('/super/admins'),
+                    ),
+                  ],
+                ),
+                if (showOverviewSection) ...[
                 const SizedBox(height: 24),
                 Row(
                   children: [
@@ -297,6 +324,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                   },
                 ),
                 const SizedBox(height: 24),
+                ],
                 Row(
                   children: [
                     Text(

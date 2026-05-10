@@ -52,7 +52,11 @@ class AppRouter {
       case '/super/communes':
         return _requireRoles(settings, const SuperAdminCommunesPage(), const ['super_admin']);
       case '/super/admins':
-        return _requireRoles(settings, const SuperAdminDashboardPage(), const ['super_admin']);
+        return _requireRoles(
+          settings,
+          const SuperAdminDashboardPage(initialSection: SuperAdminDashboardSection.admins),
+          const ['super_admin'],
+        );
       case '/admin':
         return _requireRoles(settings, const AdminDashboardPage(), const ['commune_admin']);
       case '/admin/analytics':
