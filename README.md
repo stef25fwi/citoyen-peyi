@@ -71,21 +71,28 @@ Le backend refuse de demarrer si `SUPER_ADMIN_KEY` ou Firebase Admin ne sont pas
 Copier [app/backend/.env.example](app/backend/.env.example) vers un fichier `.env` local non commite, puis remplacer les placeholders.
 
 ```env
+NODE_ENV=production
 PORT=4000
-CORS_ORIGIN=http://localhost:5173,http://localhost:8081,https://votre-domaine-frontend.example
+CORS_ORIGIN=https://votre-domaine-frontend.example
 API_BASE_URL=https://votre-backend-prod.example
-SUPER_ADMIN_KEY=change-me-long-random-secret
-ADMIN_ACCESS_KEY=ADMIN2026
-VOTE_ACCESS_TOKEN_SECRET=change-me-long-random-token-secret
+
+# Long random strings. NEVER commit, NEVER reuse across environments.
+SUPER_ADMIN_KEY=<48+ char random>
+ADMIN_ACCESS_KEY=<48+ char random>
+VOTE_ACCESS_TOKEN_SECRET=<64+ char random>
 
 # Option 1
-GOOGLE_APPLICATION_CREDENTIALS=./secrets/firebase-admin.json
+GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/firebase-admin.json
 
 # Option 2
 FIREBASE_ADMIN_PROJECT_ID=votre-project-id
 FIREBASE_ADMIN_CLIENT_EMAIL=firebase-adminsdk-xxx@votre-project-id.iam.gserviceaccount.com
 FIREBASE_ADMIN_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"
 ```
+
+En production, `NODE_ENV=production` est obligatoire. Le backend refuse de
+demarrer si `CORS_ORIGIN` n'est pas defini explicitement (le defaut localhost
+n'est utilise qu'en developpement).
 
 Les fichiers `.env`, `.env.*`, `secrets/`, `firebase-admin.json` et `service-account*.json` sont exclus de Git.
 

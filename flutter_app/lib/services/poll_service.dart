@@ -12,42 +12,11 @@ class PollService {
   static const _pollCollection = 'polls';
   static final PollService instance = PollService._();
 
-  static const List<PollModel> _fallbackPolls = [
-    PollModel(
-      id: 'poll-1',
-      projectTitle: 'Reamenagement de la Place Centrale',
-      description: 'Consultation citoyenne de demonstration sur le projet principal du centre-ville.',
-      question: 'Quelle option preferez-vous pour le reamenagement de la Place Centrale ?',
-      options: [
-        PollOptionModel(id: 'opt-1', label: 'Espace vert avec aires de jeux', votes: 47),
-        PollOptionModel(id: 'opt-2', label: 'Marche couvert et terrasses', votes: 32),
-        PollOptionModel(id: 'opt-3', label: 'Parking souterrain et esplanade pietonne', votes: 28),
-        PollOptionModel(id: 'opt-4', label: 'Zone mixte commerces et espaces verts', votes: 53),
-      ],
-      targetPopulation: 'Habitants et usagers du centre-ville',
-      communeId: 'demo',
-      communeName: 'Commune demo',
-      openDate: '2026-03-15',
-      closeDate: '2026-04-15',
-      status: 'active',
-      createdBy: 'fallback_admin',
-      createdAt: '2026-03-01T09:00:00.000',
-      updatedAt: '2026-03-01T09:00:00.000',
-      totalVoters: 200,
-      totalVoted: 160,
-    ),
-  ];
-
   List<PollModel> _readLocalPolls(List<dynamic> records) {
-    if (records.isEmpty) {
-      return _fallbackPolls;
-    }
-
-    final polls = records
+    return records
         .whereType<Map<String, dynamic>>()
         .map(PollModel.fromJson)
         .toList();
-    return polls.isEmpty ? _fallbackPolls : polls;
   }
 
   Future<List<PollModel>> _loadLocalPolls() async {
