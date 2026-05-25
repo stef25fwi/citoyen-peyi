@@ -10,14 +10,12 @@ Application de vote anonyme avec une architecture complete:
 
 ## Structure
 
-app/
-- frontend/
-- backend/
-- shared/
-- scripts/
-
-.github/
-- workflows/
+- `app/backend/`: API Node/Express (production)
+- `app/scripts/`: utilitaires (zip, extraction archive)
+- `flutter_app/`: application Flutter Web (production)
+- `vote-libre-main/`: legacy React conserve pour reference / Firestore rules
+- `tests/firestore-rules/`: tests unitaires des regles Firestore (emulateur)
+- `.github/workflows/`: CI + deploiement Cloud Run / Firestore / Pages
 
 ## Prerequis
 
@@ -34,7 +32,6 @@ app/
 2. Dupliquer les variables d'environnement:
 
 	cp .env.example .env
-	cp app/frontend/.env.example app/frontend/.env
 
 3. Lancer le backend Node:
 

@@ -75,7 +75,6 @@ class SuperAdminService {
   static final SuperAdminService instance = SuperAdminService._();
 
   static const _profilesKey = 'super_admin_profiles_v1';
-  static const _profilesCollection = 'communeAdmins';
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
   String? _runtimeSuperAdminKey;
@@ -296,18 +295,10 @@ class SuperAdminService {
     );
   }
 
-  String _generateAccessKey() {
-    final part1 = _randomSegment(8);
-    final part2 = _randomSegment(4);
-    return 'ADM-$part1-$part2';
-  }
-
-  String _generateId() => _randomSegment(16).toLowerCase();
-
-  String _randomSegment(int length) => List.generate(
-        length,
+  String _generateId() => List.generate(
+        16,
         (_) => _codeAlphabet[_random.nextInt(_codeAlphabet.length)],
-      ).join();
+      ).join().toLowerCase();
 
   String _readError(String body) {
     try {
