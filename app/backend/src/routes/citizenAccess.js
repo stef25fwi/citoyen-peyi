@@ -340,7 +340,6 @@ const createCitizenAccessCodeHandler = async (req, res) => {
 };
 
 router.post('/codes', createCitizenAccessCodeHandler);
-router.post('/create', createCitizenAccessCodeHandler);
 
 router.get('/duplicates', async (req, res) => {
   const privileged = isSuperAdmin(req.user);
@@ -511,6 +510,34 @@ router.post('/duplicates/:requestId/reject', requireSuperAdminKey, async (req, r
   } catch (error) {
     console.error('Refus de regeneration impossible.', error);
     return res.status(500).json({ message: 'Refus de regeneration impossible.' });
+  }
+});
+
+router.post('/codes/:accessCode/revoke', requireSuperAdminKey, async (req, res) => {
+  if (!isSuperAdmin(req.user)) {
+    return res.status(403).json({ message: 'Reserve au super administrateur.' });
+  }
+  const accessCode = String(req.params.accessCode || '').trim().toUpperCase();
+  if (!accessCode) {
+    return res.status(400).json({ message: 'Code citoyen requis.' });
+  }
+  const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().substring(0, 500) : '';
+  try {
+    const db = getFirebaseAdminDb();
+    const ref = db.collection(ACCESS_COLLECTION).doc(accessCode);
+    const doc = await ref.get();
+    if (!doc.exists) return res.status(404).json({ message: 'Code introuvable.' });
+    await ref.set({
+      status: 'revoked',
+      revokedAt: FieldValue.serverTimestamp(),
+      revokedBy: req.user.uid,
+      revokedReason: reason,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return res.json({ ok: true });
+  } catch (error) {
+    console.error('Revocation du code citoyen impossible.', error);
+    return res.status(500).json({ message: 'Revocation impossible.' });
   }
 });
 

@@ -41,12 +41,14 @@ const defaultCorsOrigins = [
 
 const optional = (value) => (typeof value === 'string' && value.trim().length > 0 ? value.trim() : '');
 
-const parseCorsOrigins = (value) => {
+const parseCorsOrigins = (value, { nodeEnv } = {}) => {
   const configured = String(value || '')
     .split(',')
     .map((origin) => origin.trim())
     .filter(Boolean);
-  return configured.length > 0 ? configured : defaultCorsOrigins;
+  if (configured.length > 0) return configured;
+  if (nodeEnv === 'production') return [];
+  return defaultCorsOrigins;
 };
 
 const hasGoogleApplicationCredentials = () => {
@@ -60,11 +62,15 @@ const hasExplicitFirebaseAdminCredentials = () => Boolean(
   && optional(process.env.FIREBASE_ADMIN_PRIVATE_KEY),
 );
 
+const nodeEnv = optional(process.env.NODE_ENV) || 'development';
+
 export const env = {
-  nodeEnv: optional(process.env.NODE_ENV) || 'development',
+  nodeEnv,
+  isProduction: nodeEnv === 'production',
   port: Number(process.env.PORT || 4000),
   apiBaseUrl: optional(process.env.API_BASE_URL),
-  corsOrigins: parseCorsOrigins(process.env.CORS_ORIGIN),
+  corsOrigins: parseCorsOrigins(process.env.CORS_ORIGIN, { nodeEnv }),
+  logLevel: optional(process.env.LOG_LEVEL) || (nodeEnv === 'production' ? 'info' : 'debug'),
   superAdminKey: optional(process.env.SUPER_ADMIN_KEY),
   adminAccessKey: optional(process.env.ADMIN_ACCESS_KEY),
   voteAccessTokenSecret: optional(process.env.VOTE_ACCESS_TOKEN_SECRET),
@@ -85,6 +91,10 @@ export const validateEnv = () => {
     errors.push('SUPER_ADMIN_KEY est requis pour proteger les routes super administrateur.');
   }
 
+  if (env.isProduction && env.superAdminKey.length < 32) {
+    errors.push('SUPER_ADMIN_KEY doit faire au moins 32 caracteres en production.');
+  }
+
   if (!isFirebaseAdminConfigured()) {
     errors.push(
       'Firebase Admin doit etre configure avec GOOGLE_APPLICATION_CREDENTIALS pointant vers un fichier existant, ou avec FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL et FIREBASE_ADMIN_PRIVATE_KEY.',
@@ -93,6 +103,21 @@ export const validateEnv = () => {
 
   if (!env.voteAccessTokenSecret) {
     errors.push('VOTE_ACCESS_TOKEN_SECRET est requis pour signer les tokens temporaires de vote.');
+  }
+
+  if (env.isProduction && env.voteAccessTokenSecret.length < 32) {
+    errors.push('VOTE_ACCESS_TOKEN_SECRET doit faire au moins 32 caracteres en production.');
+  }
+
+  if (env.isProduction && env.corsOrigins.length === 0) {
+    errors.push('CORS_ORIGIN doit etre defini explicitement en production (au moins un domaine HTTPS).');
+  }
+
+  if (env.isProduction) {
+    const insecureOrigins = env.corsOrigins.filter((origin) => /^http:\/\/(localhost|127\.|0\.0\.0\.0)/i.test(origin));
+    if (insecureOrigins.length > 0) {
+      errors.push(`CORS_ORIGIN contient des origines de developpement en production: ${insecureOrigins.join(', ')}`);
+    }
   }
 
   if (env.googleApplicationCredentials && !fs.existsSync(env.googleApplicationCredentials)) {
