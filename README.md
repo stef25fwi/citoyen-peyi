@@ -168,7 +168,9 @@ Consultation en ligne via GitHub Pages:
 
 Configuration GitHub Pages requise:
 
-- Variable de repository: `API_BASE_URL`
+- Variables de repository:
+	- `API_BASE_URL`
+	- `RECAPTCHA_SITE_KEY` (optionnel: surcharge la cle publique embarquee dans `AppConfig`)
 - Secrets de repository:
 	- `VITE_FIREBASE_API_KEY`
 	- `VITE_FIREBASE_AUTH_DOMAIN`
@@ -176,6 +178,19 @@ Configuration GitHub Pages requise:
 	- `VITE_FIREBASE_STORAGE_BUCKET`
 	- `VITE_FIREBASE_MESSAGING_SENDER_ID`
 	- `VITE_FIREBASE_APP_ID`
+
+### Firebase App Check (reCAPTCHA v3)
+
+La cle site reCAPTCHA est publique (elle ne fonctionne que sur les domaines
+declares dans la console reCAPTCHA). Domaines a enregistrer:
+
+- `stef25fwi.github.io` (GitHub Pages, environnement actuel)
+- `localhost` et `127.0.0.1` (dev local)
+- Domaine personnalise eventuel (ex `app.citoyen-peyi.mq`) une fois mappe
+
+Cote Firebase Console > App Check, lier la cle, garder `Unenforced` tant que
+les tests prod ne sont pas verts, puis passer en `Enforced` sur Firestore
+et Authentication.
 
 Le workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) echoue desormais explicitement si `API_BASE_URL` n'est pas defini, afin d'eviter un build de production pointant vers `localhost`.
 

@@ -39,3 +39,7 @@
 - [ ] Rate-limit observe (10 reqs/min sur `/api/auth/*` provoquent un 429).
 - [ ] Logs ne contiennent jamais `accessKey`, `Authorization`, `x-super-admin-key` (redacted par pino).
 - [ ] Scan ZAP baseline lance contre l'API et le frontend.
+- [ ] App Check active sur Firebase: cle reCAPTCHA v3 enregistree avec
+      `stef25fwi.github.io`, `localhost`, `127.0.0.1` et le domaine prod custom.
+- [ ] App Check enforcement = `Enforced` pour Firestore et Authentication
+      apres validation prod (sinon laisser `Unenforced`).
