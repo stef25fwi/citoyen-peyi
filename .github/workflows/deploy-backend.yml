@@ -1,0 +1,60 @@
+name: Deploy backend (Cloud Run)
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'app/backend/**'
+      - '.github/workflows/deploy-backend.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    if: ${{ vars.GCP_PROJECT_ID != '' }}
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Configure docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build image
+        working-directory: app/backend
+        run: |
+          IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/citoyen-peyi/backend:${{ github.sha }}"
+          docker build -t "$IMAGE" .
+          docker push "$IMAGE"
+          echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy citoyen-peyi-api \
+            --image="$IMAGE" \
+            --region="${{ vars.GCP_REGION }}" \
+            --platform=managed \
+            --allow-unauthenticated \
+            --service-account="${{ secrets.GCP_RUNTIME_SERVICE_ACCOUNT }}" \
+            --set-env-vars=NODE_ENV=production,CORS_ORIGIN=${{ vars.CORS_ORIGIN }},API_BASE_URL=${{ vars.API_BASE_URL }},LOG_LEVEL=info \
+            --set-secrets=SUPER_ADMIN_KEY=SUPER_ADMIN_KEY:latest,ADMIN_ACCESS_KEY=ADMIN_ACCESS_KEY:latest,VOTE_ACCESS_TOKEN_SECRET=VOTE_ACCESS_TOKEN_SECRET:latest \
+            --max-instances=5 \
+            --concurrency=80 \
+            --cpu=1 \
+            --memory=512Mi
