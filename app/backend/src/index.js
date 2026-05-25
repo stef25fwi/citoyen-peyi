@@ -1,18 +1,59 @@
 import express from 'express';
 import cors from 'cors';
-import voteRoutes from './routes/votes.js';
+import helmet from 'helmet';
 import authRoutes from './routes/auth.js';
 import citizenAccessRoutes from './routes/citizenAccess.js';
 import voteAccessRoutes from './routes/voteAccess.js';
+import pollRoutes from './routes/polls.js';
+import newsRoutes from './routes/news.js';
+import adminRoutes from './routes/admins.js';
+import controllerRoutes from './routes/controllers.js';
 import { env, isFirebaseAdminConfigured, isSuperAdminConfigured, validateEnv } from './config/env.js';
+import { logger, httpLogger } from './services/logger.js';
+import { errorHandler, notFoundHandler, registerProcessHandlers } from './middlewares/errorHandler.js';
+import { authRateLimiter, voteAccessRateLimiter, writeRateLimiter } from './middlewares/rateLimit.js';
+import { getFirebaseAdminDb } from './services/firebaseAdmin.js';
 
 validateEnv();
+registerProcessHandlers();
 
 const app = express();
-const port = env.port;
+app.disable('x-powered-by');
+app.set('trust proxy', 1);
 
-app.use(cors({ origin: env.corsOrigins }));
-app.use(express.json());
+app.use(httpLogger);
+app.use(helmet());
+app.use(cors({
+  origin: env.corsOrigins,
+  methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-super-admin-key'],
+  maxAge: 86400,
+}));
+app.use(express.json({ limit: '100kb' }));
+
+app.get('/api/health/live', (_req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
+});
+
+app.get('/api/health/ready', async (_req, res) => {
+  const checks = {
+    superAdminConfigured: isSuperAdminConfigured(),
+    firebaseAdminConfigured: isFirebaseAdminConfigured(),
+    firestoreReachable: false,
+  };
+
+  if (checks.firebaseAdminConfigured) {
+    try {
+      await getFirebaseAdminDb().listCollections();
+      checks.firestoreReachable = true;
+    } catch (error) {
+      logger.warn({ err: error }, 'firestore_ready_check_failed');
+    }
+  }
+
+  const ok = Object.values(checks).every(Boolean);
+  res.status(ok ? 200 : 503).json({ ok, checks, time: new Date().toISOString() });
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({
@@ -24,11 +65,29 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-app.use('/api/auth', authRoutes);
-app.use('/api/votes', voteRoutes);
-app.use('/api/citizen-access', citizenAccessRoutes);
-app.use('/api/vote-access', voteAccessRoutes);
+app.use('/api/auth', authRateLimiter, authRoutes);
+app.use('/api/citizen-access', writeRateLimiter, citizenAccessRoutes);
+app.use('/api/vote-access', voteAccessRateLimiter, voteAccessRoutes);
+app.use('/api/polls', writeRateLimiter, pollRoutes);
+app.use('/api/news', writeRateLimiter, newsRoutes);
+app.use('/api/admins', writeRateLimiter, adminRoutes);
+app.use('/api/controllers', writeRateLimiter, controllerRoutes);
 
-app.listen(port, () => {
-  console.log(`API en ecoute sur le port ${port}`);
+app.use(notFoundHandler);
+app.use(errorHandler);
+
+const server = app.listen(env.port, () => {
+  logger.info({ port: env.port, env: env.nodeEnv }, 'api_listening');
 });
+
+const shutdown = (signal) => {
+  logger.info({ signal }, 'shutdown_requested');
+  server.close(() => {
+    logger.info('http_server_closed');
+    process.exit(0);
+  });
+  setTimeout(() => process.exit(1), 10000).unref();
+};
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

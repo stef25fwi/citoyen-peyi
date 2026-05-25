@@ -5,7 +5,6 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import 'auth_session_store.dart';
-import 'browser_storage_service.dart';
 import 'firebase_auth_service.dart';
 
 class ControllerAuthException implements Exception {
@@ -15,19 +14,14 @@ class ControllerAuthException implements Exception {
 }
 
 class ControllerSignInResult {
-  const ControllerSignInResult({
-    required this.session,
-    required this.isFallback,
-  });
+  const ControllerSignInResult({required this.session});
 
   final AuthSession session;
-  final bool isFallback;
 }
 
 class ControllerAuthService {
   ControllerAuthService._();
 
-  static const _codesStorageKey = 'controleur_codes_v1';
   static final ControllerAuthService instance = ControllerAuthService._();
 
   Future<ControllerSignInResult> signInWithCode(String code) async {
@@ -36,34 +30,21 @@ class ControllerAuthService {
       throw const ControllerAuthException('Le code controleur est requis.');
     }
 
-    final isLocalMode = AppConfig.apiBaseUrl.isEmpty ||
-        AppConfig.apiBaseUrl.contains('localhost') ||
-        AppConfig.apiBaseUrl.contains('127.0.0.1');
-
-    if (isLocalMode) {
-      final fallbackSession = await _loadFallbackSession(normalizedCode);
-      if (fallbackSession == null) {
-        throw const ControllerAuthException('Code invalide. Demandez un code a un administrateur.');
-      }
-      await AuthSessionStore.instance.save(fallbackSession);
-      return ControllerSignInResult(session: fallbackSession, isFallback: true);
+    if (AppConfig.apiBaseUrl.trim().isEmpty) {
+      throw const ControllerAuthException('Backend non configure (API_BASE_URL manquant).');
     }
 
     late http.Response response;
     try {
-      response = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/api/auth/controller/exchange'),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({'code': normalizedCode}),
-      ).timeout(const Duration(seconds: 10));
+      response = await http
+          .post(
+            Uri.parse('${AppConfig.apiBaseUrl}/api/auth/controller/exchange'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'code': normalizedCode}),
+          )
+          .timeout(const Duration(seconds: 10));
     } catch (_) {
-      // Réseau inaccessible → mode fallback
-      final fallbackSession = await _loadFallbackSession(normalizedCode);
-      if (fallbackSession == null) {
-        throw const ControllerAuthException('Code invalide. Demandez un code a un administrateur.');
-      }
-      await AuthSessionStore.instance.save(fallbackSession);
-      return ControllerSignInResult(session: fallbackSession, isFallback: true);
+      throw const ControllerAuthException('Backend injoignable. Reessayez plus tard.');
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -75,9 +56,11 @@ class ControllerAuthService {
     final claims = payload['claims'] as Map<String, dynamic>? ?? const <String, dynamic>{};
     final customToken = payload['customToken'] as String?;
 
-    if (customToken != null && customToken.isNotEmpty) {
-      await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+    if (customToken == null || customToken.isEmpty) {
+      throw const ControllerAuthException('Reponse backend invalide (customToken manquant).');
     }
+
+    await FirebaseAuthService.instance.signInWithCustomToken(customToken);
 
     final session = AuthSession(
       role: claims['role'] as String? ?? 'controller',
@@ -92,43 +75,7 @@ class ControllerAuthService {
     );
 
     await AuthSessionStore.instance.save(session);
-    return ControllerSignInResult(session: session, isFallback: false);
-  }
-
-  Future<AuthSession?> _loadFallbackSession(String normalizedCode) async {
-    final codes = await BrowserStorageService.instance.readJsonList(_codesStorageKey);
-    final now = DateTime.now().toIso8601String();
-    AuthSession? session;
-
-    final nextCodes = codes.map((item) {
-      final itemCode = (item['code'] as String? ?? '').trim().toUpperCase();
-      if (itemCode != normalizedCode) {
-        return item;
-      }
-
-      session = AuthSession(
-        role: 'controller',
-        admin: false,
-        controller: true,
-        mode: 'fallback',
-        id: item['id'] as String?,
-        code: item['code'] as String? ?? normalizedCode,
-        label: item['label'] as String? ?? 'Controleur',
-        commune: AuthSessionCommune.fromJson(item['commune']),
-      );
-
-      return {
-        ...item,
-        'usedAt': item['usedAt'] ?? now,
-      };
-    }).toList();
-
-    if (session == null) {
-      return null;
-    }
-
-    await BrowserStorageService.instance.writeJsonList(_codesStorageKey, nextCodes);
-    return session;
+    return ControllerSignInResult(session: session);
   }
 
   String _readErrorMessage(String responseBody) {

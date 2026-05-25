@@ -156,29 +156,38 @@ service cloud.firestore {
     }
 
     match /adminProfiles/{document=**} {
-      allow read: if isAdmin();
-      allow write: if isAdmin() && isAdminProfileShape();
+      allow read: if isSuperAdmin();
+      allow write: if false;
     }
 
+    // communeAdmins is fully backend-managed. Clients never read the
+    // hashed access keys, never create or rotate admin profiles, only
+    // the Admin SDK does.
+    match /communeAdmins/{adminId} {
+      allow read, write: if false;
+    }
+
+    // polls: public read, but writes are reserved to the Admin SDK so
+    // the backend can scope updates to the right commune and audit
+    // them. The previous "anonymous voter update" rule is gone because
+    // votes now flow only through /api/vote-access/submit.
     match /polls/{document=**} {
       allow read: if true;
-      allow write: if isPollShape() && (
-        isAdmin() ||
-        (isAnonymousSession() && pollVoterUpdate())
-      );
+      allow write: if false;
     }
 
+    // registrationCodes is the legacy citizen access pipeline. Migrate
+    // documents into citizen_access_codes via the backend migration
+    // script, then keep this rule denying everything client-side.
     match /registrationCodes/{document=**} {
-      allow read: if isController();
-      allow write: if isRegistrationCodeShape() && (
-        isController() ||
-        (isAnonymousSession() && registrationCodeVoterUpdate())
-      );
+      allow read, write: if false;
     }
 
+    // controleurCodes: only the Admin SDK manages controller codes.
+    // Reads need to be restricted because the document holds the raw
+    // controller code that grants access to the controller dashboard.
     match /controleurCodes/{document=**} {
-      allow read: if isSignedIn();
-      allow write: if isAdmin() && isControleurCodeShape();
+      allow read, write: if false;
     }
 
     match /controleurActivities/{document=**} {
@@ -228,10 +237,10 @@ service cloud.firestore {
     }
 
     // Actualites publiques publiees par les administrateurs communaux.
-    // Lecture libre (anonymisee), ecriture limitee aux admins.
+    // Lecture libre, ecriture exclusivement via /api/news (Admin SDK).
     match /public_news/{newsId} {
       allow read: if true;
-      allow write: if isAdmin() || isAdminCommune();
+      allow write: if false;
     }
 
     match /{document=**} {

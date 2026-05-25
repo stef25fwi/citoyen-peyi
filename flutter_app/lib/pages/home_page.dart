@@ -251,8 +251,6 @@ class HomePage extends StatelessWidget {
                   child: Column(
                     children: [
                       Text('© 2026 Citoyen Peyi - Plateforme de consultation citoyenne'),
-                      SizedBox(height: 6),
-                      Text('Mode demonstration - Aucune donnee reelle n\'est collectee'),
                     ],
                   ),
                 ),

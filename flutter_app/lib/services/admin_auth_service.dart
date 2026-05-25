@@ -14,9 +14,9 @@ class AdminAuthException implements Exception {
 }
 
 class AdminSignInResult {
-  const AdminSignInResult({required this.isFallback});
+  const AdminSignInResult({required this.session});
 
-  final bool isFallback;
+  final AuthSession session;
 }
 
 class AdminAuthService {
@@ -30,42 +30,21 @@ class AdminAuthService {
       throw const AdminAuthException('Cle administrateur requise.');
     }
 
-    final isLocalMode = AppConfig.apiBaseUrl.isEmpty ||
-        AppConfig.apiBaseUrl.contains('localhost') ||
-        AppConfig.apiBaseUrl.contains('127.0.0.1');
-
-    if (isLocalMode) {
-      final session = AuthSession(
-        role: 'commune_admin',
-        admin: true,
-        controller: false,
-        mode: 'fallback',
-        adminScope: 'global',
-        label: 'Administrateur communal',
-      );
-      await AuthSessionStore.instance.save(session);
-      return const AdminSignInResult(isFallback: true);
+    if (AppConfig.apiBaseUrl.trim().isEmpty) {
+      throw const AdminAuthException('Backend non configure (API_BASE_URL manquant).');
     }
 
     late http.Response response;
     try {
-      response = await http.post(
-        Uri.parse('${AppConfig.apiBaseUrl}/api/auth/admin/exchange'),
-        headers: const {'Content-Type': 'application/json'},
-        body: jsonEncode({'accessKey': trimmed}),
-      ).timeout(const Duration(seconds: 10));
+      response = await http
+          .post(
+            Uri.parse('${AppConfig.apiBaseUrl}/api/auth/admin/exchange'),
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({'accessKey': trimmed}),
+          )
+          .timeout(const Duration(seconds: 10));
     } catch (_) {
-      // Réseau inaccessible → mode fallback
-      final session = AuthSession(
-        role: 'commune_admin',
-        admin: true,
-        controller: false,
-        mode: 'fallback',
-        adminScope: 'global',
-        label: 'Administrateur communal',
-      );
-      await AuthSessionStore.instance.save(session);
-      return const AdminSignInResult(isFallback: true);
+      throw const AdminAuthException('Backend injoignable. Reessayez plus tard.');
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -74,11 +53,14 @@ class AdminAuthService {
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
     final claims = payload['claims'] as Map<String, dynamic>? ?? const <String, dynamic>{};
+    final profile = payload['profile'] as Map<String, dynamic>? ?? const <String, dynamic>{};
     final customToken = payload['customToken'] as String?;
 
-    if (customToken != null && customToken.isNotEmpty) {
-      await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+    if (customToken == null || customToken.isEmpty) {
+      throw const AdminAuthException('Reponse backend invalide (customToken manquant).');
     }
+
+    await FirebaseAuthService.instance.signInWithCustomToken(customToken);
 
     final session = AuthSession(
       role: claims['role'] as String? ?? 'commune_admin',
@@ -87,11 +69,18 @@ class AdminAuthService {
       mode: 'secure',
       adminScope: claims['adminScope'] as String?,
       customToken: customToken,
-      label: 'Administrateur communal',
+      id: profile['id'] as String?,
+      label: profile['label'] as String? ?? 'Administrateur communal',
+      commune: profile['communeName'] is String && (profile['communeName'] as String).isNotEmpty
+          ? AuthSessionCommune(
+              name: profile['communeName'] as String,
+              code: profile['communeId'] as String?,
+            )
+          : null,
     );
 
     await AuthSessionStore.instance.save(session);
-    return const AdminSignInResult(isFallback: false);
+    return AdminSignInResult(session: session);
   }
 
   String _readErrorMessage(String responseBody) {

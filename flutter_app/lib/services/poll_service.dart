@@ -1,9 +1,21 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:http/http.dart' as http;
+
+import '../config/app_config.dart';
 import '../models/poll_models.dart';
 import 'auth_session_store.dart';
 import 'browser_storage_service.dart';
+import 'firebase_auth_service.dart';
 import 'firestore_data_service.dart';
+
+class PollServiceException implements Exception {
+  const PollServiceException(this.message);
+  final String message;
+  @override
+  String toString() => message;
+}
 
 class PollService {
   PollService._();
@@ -12,49 +24,6 @@ class PollService {
   static const _pollCollection = 'polls';
   static final PollService instance = PollService._();
 
-  static const List<PollModel> _fallbackPolls = [
-    PollModel(
-      id: 'poll-1',
-      projectTitle: 'Reamenagement de la Place Centrale',
-      description: 'Consultation citoyenne de demonstration sur le projet principal du centre-ville.',
-      question: 'Quelle option preferez-vous pour le reamenagement de la Place Centrale ?',
-      options: [
-        PollOptionModel(id: 'opt-1', label: 'Espace vert avec aires de jeux', votes: 47),
-        PollOptionModel(id: 'opt-2', label: 'Marche couvert et terrasses', votes: 32),
-        PollOptionModel(id: 'opt-3', label: 'Parking souterrain et esplanade pietonne', votes: 28),
-        PollOptionModel(id: 'opt-4', label: 'Zone mixte commerces et espaces verts', votes: 53),
-      ],
-      targetPopulation: 'Habitants et usagers du centre-ville',
-      communeId: 'demo',
-      communeName: 'Commune demo',
-      openDate: '2026-03-15',
-      closeDate: '2026-04-15',
-      status: 'active',
-      createdBy: 'fallback_admin',
-      createdAt: '2026-03-01T09:00:00.000',
-      updatedAt: '2026-03-01T09:00:00.000',
-      totalVoters: 200,
-      totalVoted: 160,
-    ),
-  ];
-
-  List<PollModel> _readLocalPolls(List<dynamic> records) {
-    if (records.isEmpty) {
-      return _fallbackPolls;
-    }
-
-    final polls = records
-        .whereType<Map<String, dynamic>>()
-        .map(PollModel.fromJson)
-        .toList();
-    return polls.isEmpty ? _fallbackPolls : polls;
-  }
-
-  Future<List<PollModel>> _loadLocalPolls() async {
-    final records = await BrowserStorageService.instance.readJsonList(_pollStorageKey);
-    return _readLocalPolls(records);
-  }
-
   Future<void> _writeLocalPolls(List<PollModel> polls) {
     return BrowserStorageService.instance.writeJsonList(
       _pollStorageKey,
@@ -62,18 +31,12 @@ class PollService {
     );
   }
 
-  String _derivePollStatus(String openDate, String closeDate) {
-    final today = DateTime.now().toIso8601String().split('T').first;
-
-    if (closeDate.isNotEmpty && closeDate.compareTo(today) < 0) {
-      return 'closed';
-    }
-
-    if (openDate.isEmpty || openDate.compareTo(today) > 0) {
-      return 'draft';
-    }
-
-    return 'active';
+  Future<List<PollModel>> _loadLocalPolls() async {
+    final records = await BrowserStorageService.instance.readJsonList(_pollStorageKey);
+    return records
+        .whereType<Map<String, dynamic>>()
+        .map(PollModel.fromJson)
+        .toList();
   }
 
   Future<List<PollModel>> loadPolls() async {
@@ -127,52 +90,25 @@ class PollService {
     required String closeDate,
     required int totalVoters,
   }) async {
-    final now = DateTime.now().microsecondsSinceEpoch;
-    final nowIso = DateTime.now().toIso8601String();
     final session = AuthSessionStore.instance.currentSession;
-    final poll = PollModel(
-      id: 'poll-$now',
-      projectTitle: projectTitle.trim(),
-      description: description.trim(),
-      question: question.trim(),
-      options: options
-          .map((item) => item.trim())
-          .where((item) => item.isNotEmpty)
-          .toList()
-          .asMap()
-          .entries
-          .map((entry) => PollOptionModel(
-                id: 'opt-$now-${entry.key + 1}',
-                label: entry.value,
-                votes: 0,
-              ))
+    final response = await _post('/api/polls', {
+      'projectTitle': projectTitle.trim(),
+      'description': description.trim(),
+      'question': question.trim(),
+      'options': options
+          .map((label) => label.trim())
+          .where((label) => label.isNotEmpty)
+          .map((label) => {'label': label})
           .toList(),
-      targetPopulation: targetPopulation.trim(),
-      communeId: session?.commune?.code ?? '',
-      communeName: session?.commune?.name ?? '',
-      openDate: openDate,
-      closeDate: closeDate,
-      status: _derivePollStatus(openDate, closeDate),
-      createdBy: session?.label ?? session?.id ?? 'commune_admin',
-      createdAt: nowIso,
-      updatedAt: nowIso,
-      totalVoters: totalVoters,
-      totalVoted: 0,
-    );
-
-    final polls = await loadPolls();
-    final nextPolls = [poll, ...polls];
-    await _writeLocalPolls(nextPolls);
-
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      await db.collection(_pollCollection).doc(poll.id).set(
-        poll.toJson(),
-        SetOptions(merge: true),
-      );
-    }
-
-    return poll;
+      'targetPopulation': targetPopulation.trim(),
+      'openDate': openDate,
+      'closeDate': closeDate,
+      'totalVoters': totalVoters,
+      'communeId': session?.commune?.code,
+      'communeName': session?.commune?.name,
+    });
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
+    return PollModel.fromJson(payload['poll'] as Map<String, dynamic>);
   }
 
   Future<PollModel?> updatePoll({
@@ -188,139 +124,86 @@ class PollService {
   }) async {
     final polls = await loadPolls();
     final existing = polls.where((poll) => poll.id == pollId).firstOrNull;
-    if (existing == null) {
-      return null;
-    }
-
-    final trimmedOptions = options.map((item) => item.trim()).where((item) => item.isNotEmpty).toList();
+    if (existing == null) return null;
     final canEditOptions = existing.totalVoted == 0;
-    final updatedOptions = canEditOptions
-        ? trimmedOptions.asMap().entries.map((entry) {
-            final previous = entry.key < existing.options.length ? existing.options[entry.key] : null;
-            return PollOptionModel(
-              id: previous?.id ?? 'opt-${existing.id}-${entry.key + 1}',
-              label: entry.value,
-              votes: previous?.votes ?? 0,
-            );
-          }).toList()
-        : existing.options;
-
-    final updated = existing.copyWith(
-      projectTitle: projectTitle.trim(),
-      description: description.trim(),
-      question: question.trim(),
-      options: updatedOptions,
-      targetPopulation: targetPopulation.trim(),
-      openDate: openDate,
-      closeDate: closeDate,
-      status: existing.status == 'archived' ? 'archived' : _derivePollStatus(openDate, closeDate),
-      updatedAt: DateTime.now().toIso8601String(),
-      totalVoters: totalVoters,
-    );
-
-    final nextPolls = polls.map((poll) => poll.id == pollId ? updated : poll).toList();
-    await _writeLocalPolls(nextPolls);
-
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      await db.collection(_pollCollection).doc(updated.id).set(
-        updated.toJson(),
-        SetOptions(merge: true),
-      );
-    }
-
-    return updated;
+    await _patch('/api/polls/$pollId', {
+      'projectTitle': projectTitle.trim(),
+      'description': description.trim(),
+      'question': question.trim(),
+      'targetPopulation': targetPopulation.trim(),
+      'openDate': openDate,
+      'closeDate': closeDate,
+      'totalVoters': totalVoters,
+      if (canEditOptions)
+        'options': options
+            .map((label) => label.trim())
+            .where((label) => label.isNotEmpty)
+            .map((label) => {'label': label})
+            .toList(),
+    });
+    return loadPollById(pollId);
   }
 
   Future<PollModel?> publishPoll(String pollId) async {
-    return _updatePollStatus(pollId, 'active');
+    await _post('/api/polls/$pollId/publish', const <String, dynamic>{});
+    return loadPollById(pollId);
   }
 
   Future<PollModel?> closePoll(String pollId) async {
-    return _updatePollStatus(pollId, 'closed');
+    await _post('/api/polls/$pollId/close', const <String, dynamic>{});
+    return loadPollById(pollId);
   }
 
   Future<PollModel?> archivePoll(String pollId) async {
-    return _updatePollStatus(pollId, 'archived');
+    await _post('/api/polls/$pollId/archive', const <String, dynamic>{});
+    return loadPollById(pollId);
   }
 
   Future<void> deletePoll(String pollId) async {
-    final polls = await loadPolls();
-    final nextPolls = polls.where((poll) => poll.id != pollId).toList();
-    await _writeLocalPolls(nextPolls);
-
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      await db.collection(_pollCollection).doc(pollId).delete();
-    }
+    await _delete('/api/polls/$pollId');
   }
 
-  Future<PollModel?> _updatePollStatus(String pollId, String status) async {
-    final polls = await loadPolls();
-    PollModel? updated;
-    final nextPolls = polls.map((poll) {
-      if (poll.id != pollId) {
-        return poll;
+  Future<http.Response> _post(String path, Object body) => _request('POST', path, body: body);
+  Future<http.Response> _patch(String path, Object body) => _request('PATCH', path, body: body);
+  Future<http.Response> _delete(String path) => _request('DELETE', path);
+
+  Future<http.Response> _request(String method, String path, {Object? body}) async {
+    final token = await FirebaseAuthService.instance.currentIdToken();
+    if (token == null || token.isEmpty) {
+      throw const PollServiceException('Session Firebase manquante, reconnectez-vous.');
+    }
+    final uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
+    final headers = {
+      'Authorization': 'Bearer $token',
+      if (body != null) 'Content-Type': 'application/json',
+    };
+    late http.Response response;
+    try {
+      switch (method) {
+        case 'POST':
+          response = await http.post(uri, headers: headers, body: jsonEncode(body ?? const {})).timeout(const Duration(seconds: 12));
+          break;
+        case 'PATCH':
+          response = await http.patch(uri, headers: headers, body: jsonEncode(body ?? const {})).timeout(const Duration(seconds: 12));
+          break;
+        case 'DELETE':
+          response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 10));
+          break;
+        default:
+          throw PollServiceException('Methode HTTP non supportee: $method');
       }
-
-      updated = poll.copyWith(
-        status: status,
-        updatedAt: DateTime.now().toIso8601String(),
-      );
-      return updated!;
-    }).toList();
-
-    if (updated == null) {
-      return null;
+    } catch (error) {
+      if (error is PollServiceException) rethrow;
+      throw const PollServiceException('Backend injoignable. Reessayez plus tard.');
     }
-
-    await _writeLocalPolls(nextPolls);
-
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      await db.collection(_pollCollection).doc(updated!.id).set(
-        updated!.toJson(),
-        SetOptions(merge: true),
-      );
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      String message = 'Operation impossible.';
+      try {
+        message = (jsonDecode(response.body) as Map<String, dynamic>)['message'] as String? ?? message;
+      } catch (_) {}
+      throw PollServiceException(message);
     }
-
-    return updated;
-  }
-
-  Future<PollModel?> recordVote(String pollId, String optionId) async {
-    final polls = await loadPolls();
-    PollModel? updatedPoll;
-
-    final nextPolls = polls.map((poll) {
-      if (poll.id != pollId) {
-        return poll;
-      }
-
-      updatedPoll = poll.copyWith(
-        options: poll.options.map((option) {
-          if (option.id != optionId) {
-            return option;
-          }
-
-          return option.copyWith(votes: option.votes + 1);
-        }).toList(),
-        totalVoted: poll.totalVoted + 1,
-      );
-
-      return updatedPoll!;
-    }).toList();
-
-    await _writeLocalPolls(nextPolls);
-
-    final db = FirestoreDataService.instance;
-    if (db != null && updatedPoll != null) {
-      await db.collection(_pollCollection).doc(updatedPoll!.id).set(
-        updatedPoll!.toJson(),
-        SetOptions(merge: true),
-      );
-    }
-
-    return updatedPoll;
+    return response;
   }
 
   List<PollModel> _filterByCommuneScope(List<PollModel> polls, String communeScope) {

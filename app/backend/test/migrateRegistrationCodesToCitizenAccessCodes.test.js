@@ -115,3 +115,82 @@ test('migrateRegistrationCodesToCitizenAccessCodes reports ignored, skipped and 
   assert.equal(result.skipped, 0);
   assert.ok(writes.length >= 2);
 });
+
+test('migrateRegistrationCodesToCitizenAccessCodes paginates across multiple batches', async () => {
+  // 3 batches of 2 docs each to exercise the cursor advancement that the
+  // earlier .docs.last bug silently broke (every batch returned the same
+  // page indefinitely).
+  const batches = [
+    [
+      { id: 'b1-1', data: () => ({ code: 'AA000001', status: 'validated' }), ref: { id: 'b1-1' } },
+      { id: 'b1-2', data: () => ({ code: 'AA000002', status: 'validated' }), ref: { id: 'b1-2' } },
+    ],
+    [
+      { id: 'b2-1', data: () => ({ code: 'AA000003', status: 'validated' }), ref: { id: 'b2-1' } },
+      { id: 'b2-2', data: () => ({ code: 'AA000004', status: 'validated' }), ref: { id: 'b2-2' } },
+    ],
+    [
+      { id: 'b3-1', data: () => ({ code: 'AA000005', status: 'validated' }), ref: { id: 'b3-1' } },
+    ],
+  ];
+
+  const accessCollection = new Map();
+  const accessCollectionApi = {
+    doc(id) {
+      return {
+        id,
+        get: async () => ({ exists: accessCollection.has(id) }),
+      };
+    },
+  };
+
+  let batchIndex = 0;
+  let lastSeenCursor = null;
+  const db = {
+    batch() {
+      const ops = [];
+      return {
+        set(ref, data) { ops.push({ ref, data }); },
+        async commit() {
+          for (const op of ops) {
+            if (op.ref?.id) accessCollection.set(op.ref.id, op.data);
+          }
+        },
+      };
+    },
+    collection(name) {
+      if (name === 'registrationCodes') {
+        return {
+          orderBy() {
+            return {
+              limit() {
+                const query = {
+                  startAfter(cursor) {
+                    lastSeenCursor = cursor;
+                    return query;
+                  },
+                  async get() {
+                    const docs = batches[batchIndex] || [];
+                    batchIndex += 1;
+                    if (docs.length === 0) return { empty: true, docs: [] };
+                    return { empty: false, docs };
+                  },
+                };
+                return query;
+              },
+            };
+          },
+        };
+      }
+      if (name === 'citizen_access_codes') return accessCollectionApi;
+      return { doc: (id) => ({ id }) };
+    },
+  };
+
+  const result = await migrationModule.migrateRegistrationCodesToCitizenAccessCodes({ db, dryRun: false });
+
+  assert.equal(result.scanned, 5);
+  assert.equal(result.migrated, 5);
+  // The cursor must have advanced through every batch (would stay null if .last bug regressed).
+  assert.ok(lastSeenCursor !== null && lastSeenCursor.id?.startsWith('b'));
+});

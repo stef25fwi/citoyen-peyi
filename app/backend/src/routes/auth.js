@@ -1,3 +1,4 @@
+import crypto from 'crypto';
 import express from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
 import { env } from '../config/env.js';
@@ -7,6 +8,14 @@ import { getFirebaseAdminAuth, getFirebaseAdminDb, isFirebaseAdminConfigured } f
 const router = express.Router();
 
 const normalizeCode = (value) => value.trim().toUpperCase();
+const hashAccessKey = (key) => crypto.createHash('sha256').update(String(key || '')).digest('hex');
+
+const safeEquals = (left, right) => {
+  const leftBuffer = Buffer.from(String(left || ''), 'utf8');
+  const rightBuffer = Buffer.from(String(right || ''), 'utf8');
+  if (leftBuffer.length !== rightBuffer.length) return false;
+  return crypto.timingSafeEqual(leftBuffer, rightBuffer);
+};
 
 const loadControleurRecordByCode = async (code) => {
   const db = getFirebaseAdminDb();
@@ -54,12 +63,14 @@ router.post('/controller/exchange', async (req, res) => {
     }
 
     const auth = getFirebaseAdminAuth();
-    const customToken = await auth.createCustomToken(`controller:${record.id}`, {
+    const claims = {
       role: 'controller',
       controller: true,
       controleurCodeId: record.id,
       communeCode: record.commune?.code || '',
-    });
+      communeId: record.commune?.code || record.commune?.name || '',
+    };
+    const customToken = await auth.createCustomToken(`controller:${record.id}`, claims);
 
     return res.json({
       customToken,
@@ -69,12 +80,7 @@ router.post('/controller/exchange', async (req, res) => {
         label: record.label || 'Controleur',
         commune: record.commune ?? null,
       },
-      claims: {
-        role: 'controller',
-        controller: true,
-        controleurCodeId: record.id,
-        communeCode: record.commune?.code || '',
-      },
+      claims,
     });
   } catch (error) {
     console.error('Echange de code controleur impossible.', error);
@@ -89,32 +95,51 @@ router.post('/admin/exchange', async (req, res) => {
     });
   }
 
-  const expectedAccessKey = env.adminAccessKey;
   const providedAccessKey = typeof req.body?.accessKey === 'string' ? req.body.accessKey.trim() : '';
-
-  if (!expectedAccessKey) {
-    return res.status(503).json({ message: 'ADMIN_ACCESS_KEY est absent sur le backend.' });
-  }
-
-  if (!providedAccessKey || providedAccessKey !== expectedAccessKey) {
-    return res.status(401).json({ message: 'Cle administrateur invalide.' });
+  if (!providedAccessKey) {
+    return res.status(400).json({ message: 'Cle administrateur requise.' });
   }
 
   try {
+    const db = getFirebaseAdminDb();
+    const accessKeyHash = hashAccessKey(providedAccessKey);
+    const snapshot = await db.collection('communeAdmins').where('accessKeyHash', '==', accessKeyHash).limit(1).get();
+
+    let adminId = '';
+    let communeId = '';
+    let communeName = '';
+    let label = 'Administrateur communal';
+    let adminScope = 'commune';
+
+    if (!snapshot.empty) {
+      const doc = snapshot.docs[0];
+      const data = doc.data() || {};
+      adminId = doc.id;
+      communeId = data.communeCode || data.communeName || '';
+      communeName = data.communeName || '';
+      label = data.label || label;
+      await doc.ref.set({ lastUsedAt: FieldValue.serverTimestamp() }, { merge: true });
+    } else if (env.adminAccessKey && safeEquals(providedAccessKey, env.adminAccessKey)) {
+      adminId = 'bootstrap';
+      adminScope = 'bootstrap';
+    } else {
+      return res.status(401).json({ message: 'Cle administrateur invalide.' });
+    }
+
     const auth = getFirebaseAdminAuth();
-    const customToken = await auth.createCustomToken('admin:default', {
-      role: 'admin',
+    const claims = {
+      role: 'commune_admin',
       admin: true,
-      adminScope: 'global',
-    });
+      adminScope,
+      communeId,
+      communeCode: communeId,
+    };
+    const customToken = await auth.createCustomToken(`admin:${adminId}`, claims);
 
     return res.json({
       customToken,
-      claims: {
-        role: 'admin',
-        admin: true,
-        adminScope: 'global',
-      },
+      profile: { id: adminId, label, communeId, communeName },
+      claims,
     });
   } catch (error) {
     console.error('Emission du token administrateur impossible.', error);

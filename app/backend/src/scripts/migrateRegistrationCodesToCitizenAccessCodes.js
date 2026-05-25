@@ -102,7 +102,7 @@ export async function migrateRegistrationCodesToCitizenAccessCodes({ db, dryRun 
       }
     }
 
-    cursor = snapshot.docs.last;
+    cursor = snapshot.docs[snapshot.docs.length - 1];
   }
 
   if (!dryRun && pendingWrites > 0) {

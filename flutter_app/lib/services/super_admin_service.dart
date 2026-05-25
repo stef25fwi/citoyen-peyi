@@ -7,7 +7,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../config/app_config.dart';
 import 'auth_session_store.dart';
 import 'firebase_auth_service.dart';
-import 'firestore_data_service.dart';
 
 class SuperAdminAuthException implements Exception {
   const SuperAdminAuthException(this.message);
@@ -76,7 +75,6 @@ class SuperAdminService {
   static final SuperAdminService instance = SuperAdminService._();
 
   static const _profilesKey = 'super_admin_profiles_v1';
-  static const _profilesCollection = 'communeAdmins';
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
   String? _runtimeSuperAdminKey;
@@ -95,31 +93,25 @@ class SuperAdminService {
       throw const SuperAdminAuthException('Cle super admin requise.');
     }
 
-    final isLocalMode = AppConfig.apiBaseUrl.isEmpty ||
-        AppConfig.apiBaseUrl.contains('localhost') ||
-        AppConfig.apiBaseUrl.contains('127.0.0.1');
-
-    if (isLocalMode) {
-      _runtimeSuperAdminKey = trimmed;
-      await AuthSessionStore.instance.save(AuthSession(
-        role: 'super_admin',
-        admin: true,
-        controller: false,
-        mode: 'fallback',
-        adminScope: 'global',
-        label: 'Super Administrateur',
-      ));
-      return;
+    if (AppConfig.apiBaseUrl.trim().isEmpty) {
+      throw const SuperAdminAuthException('Backend non configure (API_BASE_URL manquant).');
     }
 
-    final response = await http.post(
-      Uri.parse('${AppConfig.apiBaseUrl}/api/auth/super/exchange'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-super-admin-key': trimmed,
-      },
-      body: jsonEncode(const <String, dynamic>{}),
-    );
+    late http.Response response;
+    try {
+      response = await http
+          .post(
+            Uri.parse('${AppConfig.apiBaseUrl}/api/auth/super/exchange'),
+            headers: {
+              'Content-Type': 'application/json',
+              'x-super-admin-key': trimmed,
+            },
+            body: jsonEncode(const <String, dynamic>{}),
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (_) {
+      throw const SuperAdminAuthException('Backend injoignable. Reessayez plus tard.');
+    }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw SuperAdminAuthException(_readError(response.body));
@@ -128,9 +120,11 @@ class SuperAdminService {
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
     final customToken = payload['customToken'] as String?;
 
-    if (customToken != null && customToken.isNotEmpty) {
-      await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+    if (customToken == null || customToken.isEmpty) {
+      throw const SuperAdminAuthException('Reponse backend invalide (customToken manquant).');
     }
+
+    await FirebaseAuthService.instance.signInWithCustomToken(customToken);
 
     _runtimeSuperAdminKey = trimmed;
 
@@ -145,20 +139,42 @@ class SuperAdminService {
     ));
   }
 
-  /// Retourne la liste des profils admin créés localement.
+  /// Retourne la liste des profils admin via le backend (preferred) ou via
+  /// le cache local en lecture seule.
   Future<List<AdminProfileModel>> loadProfiles() async {
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      try {
-        final snapshot = await db.collection(_profilesCollection).get();
-        final profiles = snapshot.docs.map((doc) => AdminProfileModel.fromJson({...doc.data(), 'id': doc.id})).whereType<AdminProfileModel>().toList();
-        if (profiles.isNotEmpty) {
-          await _saveProfiles(profiles);
-          return profiles;
+    try {
+      final superKey = _runtimeSuperAdminKey;
+      final token = await FirebaseAuthService.instance.currentIdToken();
+      if (superKey != null && superKey.isNotEmpty && token != null) {
+        final response = await http
+            .get(
+              Uri.parse('${AppConfig.apiBaseUrl}/api/admins'),
+              headers: {
+                'Authorization': 'Bearer $token',
+                'x-super-admin-key': superKey,
+              },
+            )
+            .timeout(const Duration(seconds: 10));
+        if (response.statusCode >= 200 && response.statusCode < 300) {
+          final payload = jsonDecode(response.body) as Map<String, dynamic>;
+          final list = (payload['admins'] as List<dynamic>? ?? const [])
+              .whereType<Map<String, dynamic>>()
+              .map((item) => AdminProfileModel(
+                    id: item['id'] as String? ?? '',
+                    label: item['label'] as String? ?? '',
+                    communeName: item['communeName'] as String? ?? '',
+                    communeCode: item['communeCode'] as String?,
+                    codePostal: item['codePostal'] as String?,
+                    accessKey: '',
+                    createdAt: item['createdAt']?.toString() ?? DateTime.now().toIso8601String(),
+                  ))
+              .where((profile) => profile.id.isNotEmpty)
+              .toList();
+          return list;
         }
-      } catch (_) {
-        // Fallback demo/local : SharedPreferences.
       }
+    } catch (_) {
+      // Tomber vers le cache local.
     }
 
     final prefs = await SharedPreferences.getInstance();
@@ -175,7 +191,8 @@ class SuperAdminService {
     }
   }
 
-  /// Crée un profil admin rattaché à une commune et génère une clé d'accès.
+  /// Crée un profil admin rattaché à une commune via l'API backend (la clé
+  /// d'accès est généree côté serveur et n'est retournee qu'une seule fois).
   Future<AdminProfileModel> createAdminProfile({
     required String label,
     required String communeName,
@@ -189,43 +206,84 @@ class SuperAdminService {
       throw const SuperAdminAuthException('Le nom de la commune est requis.');
     }
 
-    final profiles = await loadProfiles();
+    final response = await _authorizedPost('/api/admins', {
+      'label': label.trim(),
+      'communeName': communeName.trim(),
+      'communeCode': communeCode?.trim(),
+      'codePostal': codePostal?.trim(),
+    });
 
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
     final profile = AdminProfileModel(
-      id: _generateId(),
-      label: label.trim(),
-      communeName: communeName.trim(),
-      communeCode: communeCode?.trim().isEmpty == true ? null : communeCode?.trim(),
-      codePostal: codePostal?.trim().isEmpty == true ? null : codePostal?.trim(),
-      accessKey: _generateAccessKey(),
+      id: payload['id'] as String? ?? _generateId(),
+      label: payload['label'] as String? ?? label.trim(),
+      communeName: payload['communeName'] as String? ?? communeName.trim(),
+      communeCode: payload['communeCode'] as String?,
+      codePostal: payload['codePostal'] as String?,
+      accessKey: payload['accessKey'] as String? ?? '',
       createdAt: DateTime.now().toIso8601String(),
     );
 
+    final profiles = await loadProfiles();
     profiles.add(profile);
     await _saveProfiles(profiles);
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      try {
-        await db.collection(_profilesCollection).doc(profile.id).set(profile.toJson());
-      } catch (_) {
-        // TODO backend: exposer un endpoint super_admin pour creation atomique des admins communaux.
-      }
-    }
     return profile;
   }
 
-  /// Supprime un profil admin par ID.
+  /// Supprime un profil admin par ID via l'API backend.
   Future<void> deleteProfile(String id) async {
+    await _authorizedDelete('/api/admins/$id');
     final profiles = await loadProfiles();
     profiles.removeWhere((p) => p.id == id);
     await _saveProfiles(profiles);
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      try {
-        await db.collection(_profilesCollection).doc(id).delete();
-      } catch (_) {
-        // Suppression locale conservee si Firestore est indisponible.
-      }
+  }
+
+  Future<http.Response> _authorizedPost(String path, Object body) async {
+    final superKey = _runtimeSuperAdminKey;
+    if (superKey == null || superKey.isEmpty) {
+      throw const SuperAdminAuthException('Session super admin expiree, reconnectez-vous.');
+    }
+    final token = await FirebaseAuthService.instance.currentIdToken();
+    if (token == null) {
+      throw const SuperAdminAuthException('Session Firebase manquante, reconnectez-vous.');
+    }
+    final response = await http
+        .post(
+          Uri.parse('${AppConfig.apiBaseUrl}$path'),
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer $token',
+            'x-super-admin-key': superKey,
+          },
+          body: jsonEncode(body),
+        )
+        .timeout(const Duration(seconds: 12));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw SuperAdminAuthException(_readError(response.body));
+    }
+    return response;
+  }
+
+  Future<void> _authorizedDelete(String path) async {
+    final superKey = _runtimeSuperAdminKey;
+    if (superKey == null || superKey.isEmpty) {
+      throw const SuperAdminAuthException('Session super admin expiree, reconnectez-vous.');
+    }
+    final token = await FirebaseAuthService.instance.currentIdToken();
+    if (token == null) {
+      throw const SuperAdminAuthException('Session Firebase manquante, reconnectez-vous.');
+    }
+    final response = await http
+        .delete(
+          Uri.parse('${AppConfig.apiBaseUrl}$path'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'x-super-admin-key': superKey,
+          },
+        )
+        .timeout(const Duration(seconds: 12));
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw SuperAdminAuthException(_readError(response.body));
     }
   }
 
@@ -237,18 +295,10 @@ class SuperAdminService {
     );
   }
 
-  String _generateAccessKey() {
-    final part1 = _randomSegment(8);
-    final part2 = _randomSegment(4);
-    return 'ADM-$part1-$part2';
-  }
-
-  String _generateId() => _randomSegment(16).toLowerCase();
-
-  String _randomSegment(int length) => List.generate(
-        length,
+  String _generateId() => List.generate(
+        16,
         (_) => _codeAlphabet[_random.nextInt(_codeAlphabet.length)],
-      ).join();
+      ).join().toLowerCase();
 
   String _readError(String body) {
     try {
