@@ -1,11 +1,11 @@
 import 'dart:convert';
-import 'dart:math';
 
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:http/http.dart' as http;
 
-import 'firestore_data_service.dart';
+import '../config/app_config.dart';
+import 'firebase_auth_service.dart';
 
-/// Profil contrôleur persisté dans Firestore en production, SharedPreferences en fallback demo.
+/// Profil contrôleur géré côté backend uniquement.
 class ControleurProfileModel {
   const ControleurProfileModel({
     required this.id,
@@ -46,7 +46,6 @@ class ControleurProfileModel {
     if (raw is! Map<String, dynamic>) return null;
     final code = raw['code'] as String?;
     final label = raw['label'] as String?;
-    final createdAt = raw['createdAt'] as String?;
     if (code == null || label == null) return null;
 
     final commune = raw['commune'] as Map<String, dynamic>?;
@@ -58,10 +57,17 @@ class ControleurProfileModel {
       communeName: commune?['name'] as String? ?? '',
       communeCode: commune?['code'] as String?,
       codePostal: commune?['codePostal'] as String?,
-      createdAt: createdAt ?? DateTime.now().toIso8601String(),
-      usedAt: raw['usedAt'] as String?,
+      createdAt: raw['createdAt']?.toString() ?? DateTime.now().toIso8601String(),
+      usedAt: raw['usedAt']?.toString(),
     );
   }
+}
+
+class ControleurProfileException implements Exception {
+  const ControleurProfileException(this.message);
+  final String message;
+  @override
+  String toString() => message;
 }
 
 class ControleurProfileService {
@@ -69,39 +75,13 @@ class ControleurProfileService {
 
   static final ControleurProfileService instance = ControleurProfileService._();
 
-  // Même clé que ControllerAuthService pour compatibilité fallback
-  static const _storageKey = 'controleur_codes_v1';
-  static const _collection = 'controleurCodes';
-  static const _alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-  static final _random = Random.secure();
-
   Future<List<ControleurProfileModel>> loadProfiles() async {
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      try {
-        final snapshot = await db.collection(_collection).get();
-        final profiles = snapshot.docs.map((doc) => ControleurProfileModel.fromJson({...doc.data(), 'id': doc.id})).whereType<ControleurProfileModel>().toList();
-        if (profiles.isNotEmpty) {
-          await _save(profiles);
-          return profiles;
-        }
-      } catch (_) {
-        // Fallback demo/local : SharedPreferences.
-      }
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final raw = prefs.getString(_storageKey);
-    if (raw == null || raw.isEmpty) return [];
-    try {
-      final list = jsonDecode(raw) as List<dynamic>;
-      return list
-          .map(ControleurProfileModel.fromJson)
-          .whereType<ControleurProfileModel>()
-          .toList();
-    } catch (_) {
-      return [];
-    }
+    final response = await _authorizedRequest('GET', '/api/controllers');
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
+    return (payload['controllers'] as List<dynamic>? ?? const [])
+        .map(ControleurProfileModel.fromJson)
+        .whereType<ControleurProfileModel>()
+        .toList();
   }
 
   Future<ControleurProfileModel> createProfile({
@@ -110,89 +90,64 @@ class ControleurProfileService {
     String? communeCode,
     String? codePostal,
   }) async {
-    if (label.trim().isEmpty) throw Exception('Le libelle est requis.');
-    if (communeName.trim().isEmpty) throw Exception('La commune est requise.');
+    if (label.trim().isEmpty) throw const ControleurProfileException('Le libelle est requis.');
+    if (communeName.trim().isEmpty) throw const ControleurProfileException('La commune est requise.');
 
-    final profiles = await loadProfiles();
+    final response = await _authorizedRequest('POST', '/api/controllers', body: {
+      'label': label.trim(),
+      'communeName': communeName.trim(),
+      if (communeCode != null && communeCode.trim().isNotEmpty) 'communeCode': communeCode.trim(),
+      if (codePostal != null && codePostal.trim().isNotEmpty) 'codePostal': codePostal.trim(),
+    });
 
-    final profile = ControleurProfileModel(
-      id: _segment(12).toLowerCase(),
-      code: 'CTRL-${_segment(8)}',
-      label: label.trim(),
-      communeName: communeName.trim(),
-      communeCode: communeCode?.trim().isEmpty == true ? null : communeCode?.trim(),
-      codePostal: codePostal?.trim().isEmpty == true ? null : codePostal?.trim(),
-      createdAt: DateTime.now().toIso8601String(),
-    );
-
-    profiles.add(profile);
-    await _save(profiles);
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      try {
-        await db.collection(_collection).doc(profile.code).set(profile.toJson());
-      } catch (_) {
-        // TODO backend: endpoint commune_admin pour creation controleur avec droits limites a la commune.
-      }
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
+    final controller = ControleurProfileModel.fromJson(payload['controller']);
+    if (controller == null) {
+      throw const ControleurProfileException('Reponse backend invalide.');
     }
-    return profile;
-  }
-
-  /// Insère un profil avec un code fixe si ce code n'existe pas encore.
-  Future<void> seedCode({
-    required String code,
-    required String label,
-    required String communeName,
-    String? communeCode,
-    String? codePostal,
-  }) async {
-    final profiles = await loadProfiles();
-    final alreadyExists = profiles.any(
-      (p) => p.code.toUpperCase() == code.toUpperCase(),
-    );
-    if (alreadyExists) return;
-
-    final profile = ControleurProfileModel(
-      id: code.toLowerCase(),
-      code: code,
-      label: label,
-      communeName: communeName,
-      communeCode: communeCode,
-      codePostal: codePostal,
-      createdAt: DateTime.now().toIso8601String(),
-    );
-    profiles.add(profile);
-    await _save(profiles);
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      try {
-        await db.collection(_collection).doc(profile.code).set(profile.toJson());
-      } catch (_) {}
-    }
+    return controller;
   }
 
   Future<void> deleteProfile(String code) async {
-    final profiles = await loadProfiles();
-    profiles.removeWhere((p) => p.code == code);
-    await _save(profiles);
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      try {
-        await db.collection(_collection).doc(code).delete();
-      } catch (_) {}
+    await _authorizedRequest('DELETE', '/api/controllers/$code');
+  }
+
+  Future<http.Response> _authorizedRequest(String method, String path, {Object? body}) async {
+    final token = await FirebaseAuthService.instance.currentIdToken();
+    if (token == null || token.isEmpty) {
+      throw const ControleurProfileException('Session Firebase manquante, reconnectez-vous.');
     }
+    final uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
+    final headers = {
+      'Authorization': 'Bearer $token',
+      if (body != null) 'Content-Type': 'application/json',
+    };
+    late http.Response response;
+    try {
+      switch (method) {
+        case 'GET':
+          response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+          break;
+        case 'POST':
+          response = await http.post(uri, headers: headers, body: jsonEncode(body ?? const {})).timeout(const Duration(seconds: 12));
+          break;
+        case 'DELETE':
+          response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 10));
+          break;
+        default:
+          throw ControleurProfileException('Methode HTTP non supportee: $method');
+      }
+    } catch (error) {
+      if (error is ControleurProfileException) rethrow;
+      throw const ControleurProfileException('Backend injoignable. Reessayez plus tard.');
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      String message = 'Operation impossible.';
+      try {
+        message = (jsonDecode(response.body) as Map<String, dynamic>)['message'] as String? ?? message;
+      } catch (_) {}
+      throw ControleurProfileException(message);
+    }
+    return response;
   }
-
-  Future<void> _save(List<ControleurProfileModel> profiles) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(
-      _storageKey,
-      jsonEncode(profiles.map((p) => p.toJson()).toList()),
-    );
-  }
-
-  String _segment(int length) => List.generate(
-        length,
-        (_) => _alphabet[_random.nextInt(_alphabet.length)],
-      ).join();
 }
