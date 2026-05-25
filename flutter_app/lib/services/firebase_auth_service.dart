@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
@@ -21,6 +22,19 @@ class FirebaseAuthService {
 
     if (Firebase.apps.isEmpty) {
       await Firebase.initializeApp(options: AppConfig.firebaseOptions);
+    }
+
+    if (AppConfig.isAppCheckConfigured) {
+      try {
+        await FirebaseAppCheck.instance.activate(
+          webProvider: ReCaptchaV3Provider(AppConfig.recaptchaSiteKey),
+        );
+        await FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
+      } catch (_) {
+        // Si le navigateur bloque reCAPTCHA, on continue sans App Check.
+        // L'enforcement cote console determinera si Firestore/Auth refusent
+        // les appels non attestes.
+      }
     }
 
     _initialized = true;

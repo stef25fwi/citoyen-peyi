@@ -13,6 +13,17 @@ class AppConfig {
   static const String firebaseMessagingSenderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '');
   static const String firebaseAppId = String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '');
 
+  // reCAPTCHA v3 site key used by Firebase App Check on web. The key is
+  // public by design (it is embedded in every page that calls grecaptcha)
+  // and only works on the domains registered on the key in the Google
+  // reCAPTCHA admin console.
+  static const String recaptchaSiteKey = String.fromEnvironment(
+    'RECAPTCHA_SITE_KEY',
+    defaultValue: '6Ld3bPwsAAAAAAEvMDCNit9U9UhGhnSCd6CKzYfv',
+  );
+
+  static bool get isAppCheckConfigured => recaptchaSiteKey.trim().isNotEmpty;
+
   static bool get isFirebaseConfigured => [
         firebaseApiKey,
         firebaseAuthDomain,
