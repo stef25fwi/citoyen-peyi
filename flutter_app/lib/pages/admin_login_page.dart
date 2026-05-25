@@ -52,19 +52,15 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
     });
 
     try {
-      final result = await AdminAuthService.instance.signInWithAccessKey(accessKey);
+      await AdminAuthService.instance.signInWithAccessKey(accessKey);
 
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            result.isFallback
-                ? 'Mode local actif. Acces administrateur communal ouvert sans echange backend.'
-                : 'Connexion administrateur communal securisee etablie.',
-          ),
+        const SnackBar(
+          content: Text('Connexion administrateur communal securisee etablie.'),
         ),
       );
 
