@@ -142,15 +142,22 @@ class PollModel {
 
     return PollModel(
       id: json['id'] as String? ?? 'poll-1',
-      projectTitle: json['projectTitle'] as String? ?? json['title'] as String? ?? 'Consultation sans titre',
+      projectTitle: json['projectTitle'] as String? ??
+          json['title'] as String? ??
+          'Consultation sans titre',
       description: json['description'] as String? ?? '',
       question: json['question'] as String? ?? '',
-      options: rawOptions.asMap().entries.map((entry) => PollOptionModel.fromJson(entry.value, entry.key)).toList(),
+      options: rawOptions
+          .asMap()
+          .entries
+          .map((entry) => PollOptionModel.fromJson(entry.value, entry.key))
+          .toList(),
       targetPopulation: json['targetPopulation'] as String? ?? '',
       communeId: json['communeId'] as String? ?? '',
       communeName: json['communeName'] as String? ?? '',
       openDate: json['openDate'] as String? ?? json['opensAt'] as String? ?? '',
-      closeDate: json['closeDate'] as String? ?? json['closesAt'] as String? ?? '',
+      closeDate:
+          json['closeDate'] as String? ?? json['closesAt'] as String? ?? '',
       status: json['status'] as String? ?? 'draft',
       createdBy: json['createdBy'] as String? ?? '',
       createdAt: json['createdAt'] as String? ?? '',
@@ -218,7 +225,7 @@ class VoteAccessRecordModel {
       code: code ?? this.code,
       pollId: pollId ?? this.pollId,
       createdAt: createdAt ?? this.createdAt,
-      activated: activatedAt != null || this.activated,
+      activated: activatedAt != null || activated,
       hasVoted: votedAt != null || hasVoted,
       activatedAt: activatedAt ?? this.activatedAt,
       votedAt: votedAt ?? this.votedAt,
@@ -228,8 +235,10 @@ class VoteAccessRecordModel {
       status: status ?? this.status,
       documentType: documentType ?? this.documentType,
       validatedAt: validatedAt ?? this.validatedAt,
-      verifiedByControleurCode: verifiedByControleurCode ?? this.verifiedByControleurCode,
-      verifiedByControleurLabel: verifiedByControleurLabel ?? this.verifiedByControleurLabel,
+      verifiedByControleurCode:
+          verifiedByControleurCode ?? this.verifiedByControleurCode,
+      verifiedByControleurLabel:
+          verifiedByControleurLabel ?? this.verifiedByControleurLabel,
     );
   }
 
@@ -258,10 +267,12 @@ class VoteAccessRecordModel {
     }
 
     return VoteAccessRecordModel(
-      id: json['id'] as String? ?? 'reg-${DateTime.now().millisecondsSinceEpoch}',
+      id: json['id'] as String? ??
+          'reg-${DateTime.now().millisecondsSinceEpoch}',
       code: code,
       pollId: json['pollId'] as String? ?? 'poll-1',
-      createdAt: json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
+      createdAt:
+          json['createdAt'] as String? ?? DateTime.now().toIso8601String(),
       activated: (json['activatedAt'] as String?) != null,
       hasVoted: (json['votedAt'] as String?) != null,
       activatedAt: json['activatedAt'] as String?,
@@ -304,7 +315,8 @@ String? resolveVoteAccessCode(String rawValue) {
     }
 
     final segments = uri.pathSegments;
-    if (segments.length >= 2 && segments[segments.length - 2].toLowerCase() == 'vote') {
+    if (segments.length >= 2 &&
+        segments[segments.length - 2].toLowerCase() == 'vote') {
       return Uri.decodeComponent(segments.last).toUpperCase();
     }
   }

@@ -38,7 +38,7 @@ class PublicBottomNav extends StatelessWidget {
       ),
       child: NavigationBarTheme(
         data: const NavigationBarThemeData(
-          overlayColor: MaterialStatePropertyAll<Color>(Colors.transparent),
+          overlayColor: WidgetStatePropertyAll<Color>(Colors.transparent),
         ),
         child: NavigationBar(
           height: 78,

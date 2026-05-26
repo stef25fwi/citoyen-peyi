@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -15,10 +14,12 @@ class ControllerCitizenAccessPage extends StatefulWidget {
   const ControllerCitizenAccessPage({super.key});
 
   @override
-  State<ControllerCitizenAccessPage> createState() => _ControllerCitizenAccessPageState();
+  State<ControllerCitizenAccessPage> createState() =>
+      _ControllerCitizenAccessPageState();
 }
 
-class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPage> {
+class _ControllerCitizenAccessPageState
+    extends State<ControllerCitizenAccessPage> {
   static const _allOpenPollsValue = '__all_open_polls__';
 
   final TextEditingController _firstInitialController = TextEditingController();
@@ -61,7 +62,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
     final polls = await PollService.instance.loadPolls();
     final results = await Future.wait([
       CitizenAccessCodeService.instance.loadAccessCodesForCurrentController(),
-      CitizenAccessCodeService.instance.getDuplicateRequestsForCurrentController(status: 'all'),
+      CitizenAccessCodeService.instance
+          .getDuplicateRequestsForCurrentController(status: 'all'),
     ]);
     if (!mounted) {
       return;
@@ -78,7 +80,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
   bool _isOpenPoll(PollModel poll) {
     final today = DateTime.now().toIso8601String().split('T').first;
     final opened = poll.openDate.isEmpty || poll.openDate.compareTo(today) <= 0;
-    final notClosed = poll.closeDate.isEmpty || poll.closeDate.compareTo(today) >= 0;
+    final notClosed =
+        poll.closeDate.isEmpty || poll.closeDate.compareTo(today) >= 0;
     return poll.status == 'active' && opened && notClosed;
   }
 
@@ -98,7 +101,9 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
 
     if (!isValid) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Completez la verification physique et les donnees minimales autorisees.')),
+        const SnackBar(
+            content: Text(
+                'Completez la verification physique et les donnees minimales autorisees.')),
       );
       return;
     }
@@ -110,7 +115,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
     });
 
     try {
-      final result = await CitizenAccessCodeService.instance.createCitizenAccessCode(
+      final result =
+          await CitizenAccessCodeService.instance.createCitizenAccessCode(
         firstName: firstInitial,
         lastName: lastInitial,
         birthYear: birthYear,
@@ -119,7 +125,9 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
         addressProofChecked: _addressChecked,
         communeEligibilityChecked: _residencyChecked,
         duplicateReason: _duplicateReason,
-        selectedPollId: _selectedPollScope == _allOpenPollsValue ? null : _selectedPollScope,
+        selectedPollId: _selectedPollScope == _allOpenPollsValue
+            ? null
+            : _selectedPollScope,
         controllerComment: _commentController.text,
         session: AuthSessionStore.instance.currentSession,
       );
@@ -135,7 +143,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
           _lastMessage = 'Code citoyen genere avec succes.';
           _commentController.clear();
         } else {
-          _lastMessage = 'Un acces existe deja pour cette empreinte. La demande de regeneration est en attente de validation super administrateur.';
+          _lastMessage =
+              'Un acces existe deja pour cette empreinte. La demande de regeneration est en attente de validation super administrateur.';
         }
       });
     } on ArgumentError catch (error) {
@@ -143,7 +152,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
         return;
       }
       setState(() {
-        _lastMessage = error.message?.toString() ?? 'Informations minimales invalides.';
+        _lastMessage =
+            error.message?.toString() ?? 'Informations minimales invalides.';
       });
     } catch (_) {
       if (!mounted) {
@@ -164,14 +174,16 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
     if (!mounted) {
       return;
     }
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   Future<void> _downloadLastGeneratedQr() async {
     final createdCode = _lastResult?.accessCode;
     if (createdCode == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Aucun code citoyen genere a telecharger.')),
+        const SnackBar(
+            content: Text('Aucun code citoyen genere a telecharger.')),
       );
       return;
     }
@@ -187,7 +199,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('QR telecharge pour ${createdCode.accessCode}.')),
+        SnackBar(
+            content: Text('QR telecharge pour ${createdCode.accessCode}.')),
       );
     } on UnsupportedError catch (error) {
       if (!mounted) {
@@ -195,7 +208,9 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.message ?? 'Telechargement indisponible sur cette plateforme.')),
+        SnackBar(
+            content: Text(error.message ??
+                'Telechargement indisponible sur cette plateforme.')),
       );
     } catch (_) {
       if (!mounted) {
@@ -203,7 +218,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossible de generer le fichier PNG du QR.')),
+        const SnackBar(
+            content: Text('Impossible de generer le fichier PNG du QR.')),
       );
     }
   }
@@ -213,10 +229,17 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
       data: data,
       version: QrVersions.auto,
       gapless: true,
-      color: const Color(0xFF111827),
-      emptyColor: Colors.white,
+      eyeStyle: const QrEyeStyle(
+        eyeShape: QrEyeShape.square,
+        color: Color(0xFF111827),
+      ),
+      dataModuleStyle: const QrDataModuleStyle(
+        dataModuleShape: QrDataModuleShape.square,
+        color: Color(0xFF111827),
+      ),
     );
-    final imageData = await painter.toImageData(1200, format: ui.ImageByteFormat.png);
+    final imageData =
+        await painter.toImageData(1200, format: ui.ImageByteFormat.png);
     if (imageData == null) {
       throw StateError('QR PNG vide');
     }
@@ -230,8 +253,10 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
     final session = AuthSessionStore.instance.currentSession;
     final communeName = session?.commune?.name ?? 'Commune non rattachee';
     final today = DateTime.now().toIso8601String().split('T').first;
-    final generatedToday = _codes.where((item) => item.createdAt.startsWith(today)).length;
-    final pendingRequests = _duplicateRequests.where((item) => item.status == 'pending').length;
+    final generatedToday =
+        _codes.where((item) => item.createdAt.startsWith(today)).length;
+    final pendingRequests =
+        _duplicateRequests.where((item) => item.status == 'pending').length;
     final activeCodes = _codes.where((item) => item.status == 'active').length;
 
     return Scaffold(
@@ -239,7 +264,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
         title: const Text('Acces citoyen'),
         actions: [
           TextButton.icon(
-            onPressed: () => Navigator.of(context).pushNamed('/controleur/historique'),
+            onPressed: () =>
+                Navigator.of(context).pushNamed('/controleur/historique'),
             icon: const Icon(Icons.history_rounded),
             label: const Text('Historique'),
           ),
@@ -261,7 +287,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Controleur / agent d\'accueil', style: theme.textTheme.headlineSmall),
+                              Text('Controleur / agent d\'accueil',
+                                  style: theme.textTheme.headlineSmall),
                               const SizedBox(height: 10),
                               Text(
                                 'Commune de rattachement : $communeName\nLe controleur verifie l\'eligibilite sans enregistrer l\'identite complete.',
@@ -272,9 +299,18 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                                 spacing: 12,
                                 runSpacing: 12,
                                 children: [
-                                  _MetricCard(label: 'Codes generes aujourd\'hui', value: '$generatedToday', icon: Icons.vpn_key_rounded),
-                                  _MetricCard(label: 'Codes actifs', value: '$activeCodes', icon: Icons.verified_rounded),
-                                  _MetricCard(label: 'Doublons en attente', value: '$pendingRequests', icon: Icons.content_copy_rounded),
+                                  _MetricCard(
+                                      label: 'Codes generes aujourd\'hui',
+                                      value: '$generatedToday',
+                                      icon: Icons.vpn_key_rounded),
+                                  _MetricCard(
+                                      label: 'Codes actifs',
+                                      value: '$activeCodes',
+                                      icon: Icons.verified_rounded),
+                                  _MetricCard(
+                                      label: 'Doublons en attente',
+                                      value: '$pendingRequests',
+                                      icon: Icons.content_copy_rounded),
                                 ],
                               ),
                             ],
@@ -288,14 +324,33 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Workflow de verification', style: theme.textTheme.titleLarge),
+                              Text('Workflow de verification',
+                                  style: theme.textTheme.titleLarge),
                               const SizedBox(height: 12),
-                              const _StepLine(index: 1, text: 'Commune determinee automatiquement depuis le profil controleur'),
-                              const _StepLine(index: 2, text: 'Selection facultative d\'une consultation active ou de toutes les consultations ouvertes'),
-                              const _StepLine(index: 3, text: 'Verification physique de la piece, du justificatif et du rattachement communal'),
-                              const _StepLine(index: 4, text: 'Saisie des donnees minimales uniquement: initiales, annee de naissance, 2 chiffres du telephone'),
-                              const _StepLine(index: 5, text: 'Generation d\'une empreinte anonyme et du code citoyen'),
-                              const _StepLine(index: 6, text: 'En cas de doublon, demande de regeneration transmise au super administrateur'),
+                              const _StepLine(
+                                  index: 1,
+                                  text:
+                                      'Commune determinee automatiquement depuis le profil controleur'),
+                              const _StepLine(
+                                  index: 2,
+                                  text:
+                                      'Selection facultative d\'une consultation active ou de toutes les consultations ouvertes'),
+                              const _StepLine(
+                                  index: 3,
+                                  text:
+                                      'Verification physique de la piece, du justificatif et du rattachement communal'),
+                              const _StepLine(
+                                  index: 4,
+                                  text:
+                                      'Saisie des donnees minimales uniquement: initiales, annee de naissance, 2 chiffres du telephone'),
+                              const _StepLine(
+                                  index: 5,
+                                  text:
+                                      'Generation d\'une empreinte anonyme et du code citoyen'),
+                              const _StepLine(
+                                  index: 6,
+                                  text:
+                                      'En cas de doublon, demande de regeneration transmise au super administrateur'),
                             ],
                           ),
                         ),
@@ -307,7 +362,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Generer un acces citoyen', style: theme.textTheme.titleLarge),
+                              Text('Generer un acces citoyen',
+                                  style: theme.textTheme.titleLarge),
                               const SizedBox(height: 8),
                               Text(
                                 'Votre code citoyen vous permet d\'acceder aux consultations ouvertes de votre commune.',
@@ -326,12 +382,14 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                                 initialValue: _selectedPollScope,
                                 decoration: const InputDecoration(
                                   labelText: 'Consultations ouvertes',
-                                  helperText: 'Le code citoyen donne acces a toutes les consultations ouvertes si vous laissez l\'option par defaut.',
+                                  helperText:
+                                      'Le code citoyen donne acces a toutes les consultations ouvertes si vous laissez l\'option par defaut.',
                                 ),
                                 items: [
                                   const DropdownMenuItem<String>(
                                     value: _allOpenPollsValue,
-                                    child: Text('Toutes les consultations ouvertes de la commune'),
+                                    child: Text(
+                                        'Toutes les consultations ouvertes de la commune'),
                                   ),
                                   for (final poll in _openPolls)
                                     DropdownMenuItem<String>(
@@ -339,26 +397,34 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                                       child: Text(poll.projectTitle),
                                     ),
                                 ],
-                                onChanged: (value) => setState(() => _selectedPollScope = value ?? _allOpenPollsValue),
+                                onChanged: (value) => setState(() =>
+                                    _selectedPollScope =
+                                        value ?? _allOpenPollsValue),
                               ),
                               const SizedBox(height: 16),
                               CheckboxListTile(
                                 value: _identityChecked,
-                                onChanged: (value) => setState(() => _identityChecked = value ?? false),
+                                onChanged: (value) => setState(
+                                    () => _identityChecked = value ?? false),
                                 title: const Text('Piece d\'identite verifiee'),
                                 contentPadding: EdgeInsets.zero,
                               ),
                               CheckboxListTile(
                                 value: _addressChecked,
-                                onChanged: (value) => setState(() => _addressChecked = value ?? false),
-                                title: const Text('Justificatif de domicile verifie'),
+                                onChanged: (value) => setState(
+                                    () => _addressChecked = value ?? false),
+                                title: const Text(
+                                    'Justificatif de domicile verifie'),
                                 contentPadding: EdgeInsets.zero,
                               ),
                               CheckboxListTile(
                                 value: _residencyChecked,
-                                onChanged: (value) => setState(() => _residencyChecked = value ?? false),
-                                title: const Text('Residence ou rattachement communal confirme'),
-                                subtitle: const Text('Aucune copie de document n\'est conservee dans ce workflow.'),
+                                onChanged: (value) => setState(
+                                    () => _residencyChecked = value ?? false),
+                                title: const Text(
+                                    'Residence ou rattachement communal confirme'),
+                                subtitle: const Text(
+                                    'Aucune copie de document n\'est conservee dans ce workflow.'),
                                 contentPadding: EdgeInsets.zero,
                               ),
                               const SizedBox(height: 16),
@@ -368,9 +434,13 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                                   final fields = [
                                     TextField(
                                       controller: _firstInitialController,
-                                      textCapitalization: TextCapitalization.characters,
+                                      textCapitalization:
+                                          TextCapitalization.characters,
                                       maxLength: 1,
-                                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]'))],
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.allow(
+                                            RegExp(r'[a-zA-Z]'))
+                                      ],
                                       decoration: const InputDecoration(
                                         labelText: 'Premiere lettre du prenom',
                                         counterText: '',
@@ -379,9 +449,13 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                                     ),
                                     TextField(
                                       controller: _lastInitialController,
-                                      textCapitalization: TextCapitalization.characters,
+                                      textCapitalization:
+                                          TextCapitalization.characters,
                                       maxLength: 1,
-                                      inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[a-zA-Z]'))],
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.allow(
+                                            RegExp(r'[a-zA-Z]'))
+                                      ],
                                       decoration: const InputDecoration(
                                         labelText: 'Premiere lettre du nom',
                                         counterText: '',
@@ -392,7 +466,9 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                                       controller: _birthYearController,
                                       keyboardType: TextInputType.number,
                                       maxLength: 4,
-                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly
+                                      ],
                                       decoration: const InputDecoration(
                                         labelText: 'Annee de naissance',
                                         counterText: '',
@@ -403,9 +479,12 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                                       controller: _phoneSuffixController,
                                       keyboardType: TextInputType.number,
                                       maxLength: 2,
-                                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                                      inputFormatters: [
+                                        FilteringTextInputFormatter.digitsOnly
+                                      ],
                                       decoration: const InputDecoration(
-                                        labelText: '2 derniers chiffres du telephone',
+                                        labelText:
+                                            '2 derniers chiffres du telephone',
                                         counterText: '',
                                       ),
                                       onChanged: (_) => setState(() {}),
@@ -415,9 +494,12 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                                   if (!wide) {
                                     return Column(
                                       children: [
-                                        for (var index = 0; index < fields.length; index++) ...[
+                                        for (var index = 0;
+                                            index < fields.length;
+                                            index++) ...[
                                           fields[index],
-                                          if (index != fields.length - 1) const SizedBox(height: 12),
+                                          if (index != fields.length - 1)
+                                            const SizedBox(height: 12),
                                         ],
                                       ],
                                     );
@@ -425,9 +507,17 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
 
                                   return Column(
                                     children: [
-                                      Row(children: [Expanded(child: fields[0]), const SizedBox(width: 12), Expanded(child: fields[1])]),
+                                      Row(children: [
+                                        Expanded(child: fields[0]),
+                                        const SizedBox(width: 12),
+                                        Expanded(child: fields[1])
+                                      ]),
                                       const SizedBox(height: 12),
-                                      Row(children: [Expanded(child: fields[2]), const SizedBox(width: 12), Expanded(child: fields[3])]),
+                                      Row(children: [
+                                        Expanded(child: fields[2]),
+                                        const SizedBox(width: 12),
+                                        Expanded(child: fields[3])
+                                      ]),
                                     ],
                                   );
                                 },
@@ -436,10 +526,14 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                               DropdownButtonFormField<DuplicateReason>(
                                 initialValue: _duplicateReason,
                                 decoration: const InputDecoration(
-                                  labelText: 'Motif a utiliser si un doublon est detecte',
+                                  labelText:
+                                      'Motif a utiliser si un doublon est detecte',
                                 ),
                                 items: DuplicateReason.values
-                                    .map((reason) => DropdownMenuItem<DuplicateReason>(value: reason, child: Text(reason.label)))
+                                    .map((reason) =>
+                                        DropdownMenuItem<DuplicateReason>(
+                                            value: reason,
+                                            child: Text(reason.label)))
                                     .toList(),
                                 onChanged: (value) {
                                   if (value != null) {
@@ -462,9 +556,15 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                                 child: FilledButton.icon(
                                   onPressed: _isSubmitting ? null : _submit,
                                   icon: _isSubmitting
-                                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                                      ? const SizedBox(
+                                          width: 18,
+                                          height: 18,
+                                          child: CircularProgressIndicator(
+                                              strokeWidth: 2))
                                       : const Icon(Icons.qr_code_2_rounded),
-                                  label: Text(_isSubmitting ? 'Generation en cours...' : 'Generer un code citoyen'),
+                                  label: Text(_isSubmitting
+                                      ? 'Generation en cours...'
+                                      : 'Generer un code citoyen'),
                                 ),
                               ),
                               const SizedBox(height: 8),
@@ -481,7 +581,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                         _ResultCard(
                           message: _lastMessage!,
                           result: _lastResult,
-                          onCopy: (value) => _copy(value, 'Code citoyen copie dans le presse-papiers.'),
+                          onCopy: (value) => _copy(value,
+                              'Code citoyen copie dans le presse-papiers.'),
                           onDownload: _downloadLastGeneratedQr,
                         ),
                       ],
@@ -494,16 +595,21 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
                             children: [
                               Row(
                                 children: [
-                                  Expanded(child: Text('Codes recemment generes', style: theme.textTheme.titleLarge)),
+                                  Expanded(
+                                      child: Text('Codes recemment generes',
+                                          style: theme.textTheme.titleLarge)),
                                   TextButton(
-                                    onPressed: () => Navigator.of(context).pushNamed('/controleur/historique'),
-                                    child: const Text('Voir tout l\'historique'),
+                                    onPressed: () => Navigator.of(context)
+                                        .pushNamed('/controleur/historique'),
+                                    child:
+                                        const Text('Voir tout l\'historique'),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 8),
                               if (_codes.isEmpty)
-                                const Text('Aucun code citoyen n\'a encore ete genere.')
+                                const Text(
+                                    'Aucun code citoyen n\'a encore ete genere.')
                               else
                                 for (final code in _codes.take(6))
                                   Padding(
@@ -524,7 +630,8 @@ class _ControllerCitizenAccessPageState extends State<ControllerCitizenAccessPag
 }
 
 class _MetricCard extends StatelessWidget {
-  const _MetricCard({required this.label, required this.value, required this.icon});
+  const _MetricCard(
+      {required this.label, required this.value, required this.icon});
 
   final String label;
   final String value;
@@ -553,7 +660,8 @@ class _MetricCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(value, style: Theme.of(context).textTheme.headlineSmall),
+                    Text(value,
+                        style: Theme.of(context).textTheme.headlineSmall),
                     Text(label),
                   ],
                 ),
@@ -579,7 +687,9 @@ class _StepLine extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          CircleAvatar(radius: 13, child: Text('$index', style: const TextStyle(fontSize: 12))),
+          CircleAvatar(
+              radius: 13,
+              child: Text('$index', style: const TextStyle(fontSize: 12))),
           const SizedBox(width: 10),
           Expanded(child: Text(text)),
         ],
@@ -634,11 +744,17 @@ class _ResultCard extends StatelessWidget {
                       ),
                       child: Column(
                         children: [
-                          QrImageView(data: createdCode.accessCode, size: 150, backgroundColor: Colors.white),
+                          QrImageView(
+                              data: createdCode.accessCode,
+                              size: 150,
+                              backgroundColor: Colors.white),
                           const SizedBox(height: 10),
                           SelectableText(
                             createdCode.accessCode,
-                            style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800),
+                            style: Theme.of(context)
+                                .textTheme
+                                .headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                           const SizedBox(height: 6),
                           Text(
@@ -682,7 +798,8 @@ class _ResultCard extends StatelessWidget {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Statut: En attente de validation', style: Theme.of(context).textTheme.titleMedium),
+                      Text('Statut: En attente de validation',
+                          style: Theme.of(context).textTheme.titleMedium),
                       const SizedBox(height: 8),
                       Text('Demande: ${duplicateRequest.id}'),
                       Text('Commune: ${duplicateRequest.communeName}'),
@@ -706,8 +823,10 @@ class _RecentCodeTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final usedLabel = code.usedForLogin ? 'Utilise pour le vote' : 'Non utilise';
-    final statusColor = code.usedForLogin ? const Color(0xFF2E7D32) : const Color(0xFF0F6D8F);
+    final usedLabel =
+        code.usedForLogin ? 'Utilise pour le vote' : 'Non utilise';
+    final statusColor =
+        code.usedForLogin ? const Color(0xFF2E7D32) : const Color(0xFF0F6D8F);
 
     return DecoratedBox(
       decoration: BoxDecoration(

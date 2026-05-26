@@ -689,12 +689,15 @@ class CitizenAccessCodeService {
     List<DuplicateCodeRequestModel> requests;
     if (db != null) {
       Query<Map<String, dynamic>> query = db.collection(_duplicateCollection);
-      if (communeId?.isNotEmpty == true)
+      if (communeId?.isNotEmpty == true) {
         query = query.where('communeId', isEqualTo: communeId);
-      if (controllerId?.isNotEmpty == true)
+      }
+      if (controllerId?.isNotEmpty == true) {
         query = query.where('requestedByControllerId', isEqualTo: controllerId);
-      if (status?.isNotEmpty == true && status != 'all')
+      }
+      if (status?.isNotEmpty == true && status != 'all') {
         query = query.where('status', isEqualTo: status);
+      }
       final snapshot =
           await query.orderBy('requestedAt', descending: true).limit(200).get();
       requests = snapshot.docs
@@ -706,13 +709,18 @@ class CitizenAccessCodeService {
     }
 
     return requests.where((item) {
-      if (communeId?.isNotEmpty == true && item.communeId != communeId)
+      if (communeId?.isNotEmpty == true && item.communeId != communeId) {
         return false;
+      }
       if (controllerId?.isNotEmpty == true &&
-          item.requestedByControllerId != controllerId) return false;
+          item.requestedByControllerId != controllerId) {
+        return false;
+      }
       if (status?.isNotEmpty == true &&
           status != 'all' &&
-          item.status != status) return false;
+          item.status != status) {
+        return false;
+      }
       return true;
     }).toList()
       ..sort((left, right) => right.requestedAt.compareTo(left.requestedAt));
@@ -815,12 +823,16 @@ class CitizenAccessCodeService {
   ) {
     return logs.where((log) {
       final created = DateTime.tryParse(log.createdAt);
-      if (created == null) return false;
-      if (filters.startDate != null && created.isBefore(filters.startDate!))
+      if (created == null) {
         return false;
+      }
+      if (filters.startDate != null && created.isBefore(filters.startDate!)) {
+        return false;
+      }
       if (filters.endDate != null &&
-          created.isAfter(filters.endDate!.add(const Duration(days: 1))))
+          created.isAfter(filters.endDate!.add(const Duration(days: 1)))) {
         return false;
+      }
       return true;
     }).toList();
   }
@@ -833,8 +845,9 @@ class CitizenAccessCodeService {
         final parsed = jsonDecode(trimmed) as Map<String, dynamic>;
         final code =
             parsed['accessCode'] as String? ?? parsed['code'] as String?;
-        if (code != null && code.trim().isNotEmpty)
+        if (code != null && code.trim().isNotEmpty) {
           return code.trim().toUpperCase();
+        }
       } catch (_) {
         return '';
       }

@@ -99,10 +99,12 @@ class ControleurProfileService {
     String? communeCode,
     String? codePostal,
   }) async {
-    if (label.trim().isEmpty)
+    if (label.trim().isEmpty) {
       throw const ControleurProfileException('Le libellé est requis.');
-    if (communeName.trim().isEmpty)
+    }
+    if (communeName.trim().isEmpty) {
       throw const ControleurProfileException('La commune est requise.');
+    }
 
     final response =
         await _authorizedRequest('POST', '/api/controllers', body: {
@@ -158,7 +160,7 @@ class ControleurProfileService {
           break;
         default:
           throw ControleurProfileException(
-                  'Méthode HTTP non supportée: $method');
+              'Méthode HTTP non supportée: $method');
       }
     } catch (error) {
       if (error is ControleurProfileException) rethrow;

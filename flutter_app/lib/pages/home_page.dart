@@ -30,10 +30,12 @@ class ResponsiveHomeLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 600)
+        if (constraints.maxWidth < 600) {
           return const _HomeScaffold(layout: _HomeLayout.mobile);
-        if (constraints.maxWidth < 1024)
+        }
+        if (constraints.maxWidth < 1024) {
           return const _HomeScaffold(layout: _HomeLayout.tablet);
+        }
         return const _HomeScaffold(layout: _HomeLayout.desktop);
       },
     );
