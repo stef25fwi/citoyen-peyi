@@ -1,6 +1,5 @@
 import 'dart:convert';
 
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
@@ -32,7 +31,8 @@ class PollService {
   }
 
   Future<List<PollModel>> _loadLocalPolls() async {
-    final records = await BrowserStorageService.instance.readJsonList(_pollStorageKey);
+    final records =
+        await BrowserStorageService.instance.readJsonList(_pollStorageKey);
     return records
         .whereType<Map<String, dynamic>>()
         .map(PollModel.fromJson)
@@ -41,9 +41,10 @@ class PollService {
 
   Future<List<PollModel>> loadPolls() async {
     final session = AuthSessionStore.instance.currentSession;
-    final communeScope = (session?.isCommuneAdmin == true || session?.isController == true)
-        ? (session?.commune?.code ?? session?.commune?.name ?? '')
-        : '';
+    final communeScope =
+        (session?.isCommuneAdmin == true || session?.isController == true)
+            ? (session?.commune?.code ?? session?.commune?.name ?? '')
+            : '';
 
     final db = FirestoreDataService.instance;
     if (db == null) {
@@ -163,14 +164,18 @@ class PollService {
     await _delete('/api/polls/$pollId');
   }
 
-  Future<http.Response> _post(String path, Object body) => _request('POST', path, body: body);
-  Future<http.Response> _patch(String path, Object body) => _request('PATCH', path, body: body);
+  Future<http.Response> _post(String path, Object body) =>
+      _request('POST', path, body: body);
+  Future<http.Response> _patch(String path, Object body) =>
+      _request('PATCH', path, body: body);
   Future<http.Response> _delete(String path) => _request('DELETE', path);
 
-  Future<http.Response> _request(String method, String path, {Object? body}) async {
+  Future<http.Response> _request(String method, String path,
+      {Object? body}) async {
     final token = await FirebaseAuthService.instance.currentIdToken();
     if (token == null || token.isEmpty) {
-      throw const PollServiceException('Session Firebase manquante, reconnectez-vous.');
+      throw const PollServiceException(
+          'Session Firebase manquante, reconnectez-vous.');
     }
     final uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
     final headers = {
@@ -181,32 +186,42 @@ class PollService {
     try {
       switch (method) {
         case 'POST':
-          response = await http.post(uri, headers: headers, body: jsonEncode(body ?? const {})).timeout(const Duration(seconds: 12));
+          response = await http
+              .post(uri, headers: headers, body: jsonEncode(body ?? const {}))
+              .timeout(const Duration(seconds: 12));
           break;
         case 'PATCH':
-          response = await http.patch(uri, headers: headers, body: jsonEncode(body ?? const {})).timeout(const Duration(seconds: 12));
+          response = await http
+              .patch(uri, headers: headers, body: jsonEncode(body ?? const {}))
+              .timeout(const Duration(seconds: 12));
           break;
         case 'DELETE':
-          response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 10));
+          response = await http
+              .delete(uri, headers: headers)
+              .timeout(const Duration(seconds: 10));
           break;
         default:
           throw PollServiceException('Methode HTTP non supportee: $method');
       }
     } catch (error) {
       if (error is PollServiceException) rethrow;
-      throw const PollServiceException('Backend injoignable. Reessayez plus tard.');
+      throw const PollServiceException(
+          'Backend injoignable. Reessayez plus tard.');
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       String message = 'Operation impossible.';
       try {
-        message = (jsonDecode(response.body) as Map<String, dynamic>)['message'] as String? ?? message;
+        message = (jsonDecode(response.body) as Map<String, dynamic>)['message']
+                as String? ??
+            message;
       } catch (_) {}
       throw PollServiceException(message);
     }
     return response;
   }
 
-  List<PollModel> _filterByCommuneScope(List<PollModel> polls, String communeScope) {
+  List<PollModel> _filterByCommuneScope(
+      List<PollModel> polls, String communeScope) {
     if (communeScope.isEmpty) {
       return polls;
     }

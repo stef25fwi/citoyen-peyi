@@ -4,7 +4,6 @@ import '../services/controller_auth_service.dart';
 
 class _ControllerLoginTheme {
   static const background = Color(0xFFF6F7F9);
-  static const foreground = Color(0xFF0F172A);
   static const mutedForeground = Color(0xFF64748B);
   static const border = Color(0xFFE5E7EB);
   static const primary = Color(0xFF0D73F2);
@@ -42,7 +41,8 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
     });
 
     try {
-      final result = await ControllerAuthService.instance.signInWithCode(_codeController.text);
+      final result = await ControllerAuthService.instance
+          .signInWithCode(_codeController.text);
       if (!mounted) {
         return;
       }
@@ -52,14 +52,16 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
           ? 'Bienvenue, ${result.session.label ?? 'Controleur'}'
           : 'Bienvenue, ${result.session.label ?? 'Controleur'} · $commune';
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pushReplacementNamed('/controleur');
     } on ControllerAuthException catch (error) {
       if (!mounted) {
         return;
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.message)));
     } finally {
       if (mounted) {
         setState(() {
@@ -78,7 +80,8 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.assignment_turned_in_rounded, color: _ControllerLoginTheme.primary, size: 22),
+            Icon(Icons.assignment_turned_in_rounded,
+                color: _ControllerLoginTheme.primary, size: 22),
             SizedBox(width: 8),
             Text('Espace controleur'),
           ],
@@ -103,17 +106,23 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                       width: 72,
                       height: 72,
                       decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                        color:
+                            theme.colorScheme.primary.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(18),
                       ),
-                      child: const Icon(Icons.key_rounded, size: 34, color: _ControllerLoginTheme.primary),
+                      child: const Icon(Icons.key_rounded,
+                          size: 34, color: _ControllerLoginTheme.primary),
                     ),
                     const SizedBox(height: 18),
-                    Text('Connexion controleur', style: theme.textTheme.headlineMedium?.copyWith(fontSize: 28), textAlign: TextAlign.center),
+                    Text('Connexion controleur',
+                        style: theme.textTheme.headlineMedium
+                            ?.copyWith(fontSize: 28),
+                        textAlign: TextAlign.center),
                     const SizedBox(height: 10),
                     Text(
                       'Entrez le code fourni par un administrateur pour acceder a l\'interface de controle des pieces.',
-                      style: theme.textTheme.bodyLarge?.copyWith(color: _ControllerLoginTheme.mutedForeground),
+                      style: theme.textTheme.bodyLarge?.copyWith(
+                          color: _ControllerLoginTheme.mutedForeground),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
@@ -123,24 +132,31 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                       autofocus: true,
                       maxLength: 20,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(fontSize: 18, letterSpacing: 1, fontWeight: FontWeight.w600),
+                      style: const TextStyle(
+                          fontSize: 18,
+                          letterSpacing: 1,
+                          fontWeight: FontWeight.w600),
                       decoration: InputDecoration(
                         counterText: '',
                         hintText: 'Ex : CTRL-A1B2C3D4',
                         filled: true,
                         fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 18),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(18),
-                          borderSide: const BorderSide(color: _ControllerLoginTheme.border),
+                          borderSide: const BorderSide(
+                              color: _ControllerLoginTheme.border),
                         ),
                       ),
                       onChanged: (value) {
                         final upper = value.toUpperCase();
                         if (upper != value) {
-                          _codeController.value = _codeController.value.copyWith(
+                          _codeController.value =
+                              _codeController.value.copyWith(
                             text: upper,
-                            selection: TextSelection.collapsed(offset: upper.length),
+                            selection:
+                                TextSelection.collapsed(offset: upper.length),
                           );
                         }
                         setState(() {});
@@ -151,9 +167,14 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                     SizedBox(
                       width: double.infinity,
                       child: _LoginGradientButton(
-                        onPressed: _isSubmitting || _codeController.text.trim().isEmpty ? null : _submit,
+                        onPressed:
+                            _isSubmitting || _codeController.text.trim().isEmpty
+                                ? null
+                                : _submit,
                         isLoading: _isSubmitting,
-                        label: _isSubmitting ? 'Connexion en cours...' : 'Acceder a mon profil',
+                        label: _isSubmitting
+                            ? 'Connexion en cours...'
+                            : 'Acceder a mon profil',
                       ),
                     ),
                   ],
@@ -197,21 +218,33 @@ class _LoginGradientButton extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (isLoading)
-              const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+              const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white))
             else ...[
               Text(
                 label,
                 style: TextStyle(
-                  color: enabled ? Colors.white : _ControllerLoginTheme.mutedForeground,
+                  color: enabled
+                      ? Colors.white
+                      : _ControllerLoginTheme.mutedForeground,
                   fontWeight: FontWeight.w800,
                 ),
               ),
               const SizedBox(width: 8),
-              Icon(Icons.arrow_forward_rounded, color: enabled ? Colors.white : _ControllerLoginTheme.mutedForeground, size: 18),
+              Icon(Icons.arrow_forward_rounded,
+                  color: enabled
+                      ? Colors.white
+                      : _ControllerLoginTheme.mutedForeground,
+                  size: 18),
             ],
             if (isLoading) ...[
               const SizedBox(width: 10),
-              Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+              Text(label,
+                  style: const TextStyle(
+                      color: Colors.white, fontWeight: FontWeight.w800)),
             ],
           ],
         ),

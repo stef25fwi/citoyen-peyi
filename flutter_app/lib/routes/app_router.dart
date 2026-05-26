@@ -28,7 +28,6 @@ import '../pages/super_admin_login_page.dart';
 import '../pages/vote_page.dart';
 import '../services/auth_session_store.dart';
 import '../services/citizen_public_access_service.dart';
-import '../widgets/public_bottom_nav.dart';
 
 class AppRouter {
   static Route<dynamic> onGenerateRoute(RouteSettings settings) {
@@ -36,41 +35,55 @@ class AppRouter {
 
     switch (uri.path) {
       case '/':
+      case '/accueil':
         return _page(const HomePage(), settings);
+      case '/admin-communal':
+        return _page(const AdminLoginPage(), settings);
       case '/admin/login':
         return _page(const AdminLoginPage(), settings);
+      case '/super-admin':
+        return _page(const SuperAdminLoginPage(), settings);
       case '/super/login':
         return _page(const SuperAdminLoginPage(), settings);
       case '/super':
-        return _requireRoles(settings, const SuperAdminDashboardPage(), const ['super_admin']);
+        return _requireRoles(
+            settings, const SuperAdminDashboardPage(), const ['super_admin']);
       case '/super/duplicates':
-        return _requireRoles(settings, const DuplicateRequestListPage(), const ['super_admin']);
+        return _requireRoles(
+            settings, const DuplicateRequestListPage(), const ['super_admin']);
       case '/super/activity':
-        return _requireRoles(settings, const ControllerActivityDashboardPage(), const ['super_admin']);
+        return _requireRoles(settings, const ControllerActivityDashboardPage(),
+            const ['super_admin']);
       case '/super/controllers':
-        return _requireRoles(settings, const ControllerActivityDashboardPage(), const ['super_admin']);
+        return _requireRoles(settings, const ControllerActivityDashboardPage(),
+            const ['super_admin']);
       case '/super/communes':
-        return _requireRoles(settings, const SuperAdminCommunesPage(), const ['super_admin']);
+        return _requireRoles(
+            settings, const SuperAdminCommunesPage(), const ['super_admin']);
       case '/super/admins':
         return _requireRoles(
           settings,
-          const SuperAdminDashboardPage(initialSection: SuperAdminDashboardSection.admins),
+          const SuperAdminDashboardPage(
+              initialSection: SuperAdminDashboardSection.admins),
           const ['super_admin'],
         );
       case '/admin':
-        return _requireRoles(settings, const AdminDashboardPage(), const ['commune_admin']);
+        return _requireRoles(
+            settings, const AdminDashboardPage(), const ['commune_admin']);
       case '/admin/analytics':
         return _page(
           const _LegacyRouteRedirectPage(
             targetRoute: '/admin/results',
-            message: 'La page Analytics a ete remplacee par Resultats dans le parcours administrateur communal.',
+            message:
+                'La page Analytics a ete remplacee par Resultats dans le parcours administrateur communal.',
           ),
           settings,
         );
       case '/admin/controllers':
         return _requireRoles(
           settings,
-          const AdminDashboardPage(initialSection: AdminDashboardSection.controllers),
+          const AdminDashboardPage(
+              initialSection: AdminDashboardSection.controllers),
           const ['commune_admin'],
         );
       case '/admin/polls':
@@ -80,24 +93,33 @@ class AppRouter {
           const ['commune_admin'],
         );
       case '/admin/polls/create':
-        return _requireRoles(settings, const AdminCreatePollPage(), const ['commune_admin']);
+        return _requireRoles(
+            settings, const AdminCreatePollPage(), const ['commune_admin']);
       case '/admin/results':
-        return _requireRoles(settings, const AdminAnalyticsPage(), const ['commune_admin']);
+        return _requireRoles(
+            settings, const AdminAnalyticsPage(), const ['commune_admin']);
       case '/admin/settings':
-        return _requireRoles(settings, const AdminSettingsPage(), const ['commune_admin']);
+        return _requireRoles(
+            settings, const AdminSettingsPage(), const ['commune_admin']);
       case '/controleur/login':
         return _page(const ControllerLoginPage(), settings);
+      case '/controleur-accueil':
+        return _page(const ControllerLoginPage(), settings);
       case '/controleur':
-        return _requireRoles(settings, const ControllerDashboardPage(), const ['controller']);
+        return _requireRoles(
+            settings, const ControllerDashboardPage(), const ['controller']);
       case '/controleur/acces-citoyen':
-        return _requireRoles(settings, const ControllerCitizenAccessPage(), const ['controller']);
+        return _requireRoles(settings, const ControllerCitizenAccessPage(),
+            const ['controller']);
       case '/controleur/historique':
-        return _requireRoles(settings, const ControllerHistoryPage(), const ['controller']);
+        return _requireRoles(
+            settings, const ControllerHistoryPage(), const ['controller']);
       case '/admin/inscriptions':
         return _page(
           const _LegacyRouteRedirectPage(
             targetRoute: '/controleur/acces-citoyen',
-            message: 'Le parcours Inscriptions a ete deplace vers Acces citoyen dans l\'espace controleur.',
+            message:
+                'Le parcours Inscriptions a ete deplace vers Acces citoyen dans l\'espace controleur.',
           ),
           settings,
         );
@@ -105,20 +127,26 @@ class AppRouter {
         return _page(
           const _LegacyRouteRedirectPage(
             targetRoute: '/admin/polls/create',
-            message: 'La creation de consultation est maintenant disponible dans le parcours administrateur communal.',
+            message:
+                'La creation de consultation est maintenant disponible dans le parcours administrateur communal.',
           ),
           settings,
         );
       case '/access':
+      case '/avis':
+      case '/participer':
+      case '/espace-citoyen':
         return _page(const QrAccessPage(), settings);
       case '/citizen':
         return _page(
-          CitizenDashboardPage(initialSession: _readCitizenAccessSession(settings.arguments)),
+          CitizenDashboardPage(
+              initialSession: _readCitizenAccessSession(settings.arguments)),
           settings,
         );
       case '/citizen/polls':
         return _page(
-          CitizenDashboardPage(initialSession: _readCitizenAccessSession(settings.arguments)),
+          CitizenDashboardPage(
+              initialSession: _readCitizenAccessSession(settings.arguments)),
           settings,
         );
       case '/confirmation':
@@ -130,14 +158,17 @@ class AppRouter {
           settings,
         );
       case '/results':
+      case '/resultats':
         return _page(const PublicResultsPage(), settings);
       case '/news':
+      case '/actualites':
         return _page(const PublicNewsPage(), settings);
       case '/profile':
         return _page(
           const _LegacyRouteRedirectPage(
             targetRoute: '/citizen',
-            message: 'Le profil public a ete remplace par l\'espace citoyen accessible avec un code valide.',
+            message:
+                'Le profil public a ete remplace par l\'espace citoyen accessible avec un code valide.',
           ),
           settings,
         );
@@ -185,7 +216,11 @@ class AppRouter {
         }
 
         if (uri.pathSegments.length == 2 && uri.pathSegments[0] == 'vote') {
-          return _page(VotePage(token: uri.pathSegments[1], pollId: uri.queryParameters['poll']), settings);
+          return _page(
+              VotePage(
+                  token: uri.pathSegments[1],
+                  pollId: uri.queryParameters['poll']),
+              settings);
         }
 
         return _placeholder(settings, 'Page introuvable', subtitle: uri.path);
@@ -211,7 +246,8 @@ class AppRouter {
     Widget child,
     List<String> allowedRoles,
   ) {
-    if (AuthSessionStore.instance.currentSession?.hasAnyRole(allowedRoles) == true) {
+    if (AuthSessionStore.instance.currentSession?.hasAnyRole(allowedRoles) ==
+        true) {
       return _page(child, settings);
     }
 
@@ -223,7 +259,8 @@ class AppRouter {
       allowedRoles.contains('controller')
           ? const ControllerLoginPage()
           : const AdminLoginPage(
-              blockedMessage: 'Authentification administrateur communal requise pour acceder a cette page.',
+              blockedMessage:
+                  'Authentification administrateur communal requise pour acceder a cette page.',
             ),
       settings,
     );
@@ -246,7 +283,8 @@ class AppRouter {
     return false;
   }
 
-  static CitizenPublicAccessSession? _readCitizenAccessSession(Object? arguments) {
+  static CitizenPublicAccessSession? _readCitizenAccessSession(
+      Object? arguments) {
     if (arguments is Map<Object?, Object?>) {
       final session = arguments['session'];
       if (session is CitizenPublicAccessSession) {
@@ -279,7 +317,8 @@ class _LegacyRouteRedirectPage extends StatefulWidget {
   final String message;
 
   @override
-  State<_LegacyRouteRedirectPage> createState() => _LegacyRouteRedirectPageState();
+  State<_LegacyRouteRedirectPage> createState() =>
+      _LegacyRouteRedirectPageState();
 }
 
 class _LegacyRouteRedirectPageState extends State<_LegacyRouteRedirectPage> {

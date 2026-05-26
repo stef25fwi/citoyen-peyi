@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/super_admin_service.dart';
-import '../services/auth_session_store.dart';
 
 class SuperAdminLoginPage extends StatefulWidget {
   const SuperAdminLoginPage({super.key});
@@ -33,11 +32,13 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
       Navigator.of(context).pushReplacementNamed('/super');
     } on SuperAdminAuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connexion super administrateur impossible.')),
+        const SnackBar(
+            content: Text('Connexion super administrateur impossible.')),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -62,7 +63,8 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
         titleSpacing: 0,
         title: Row(
           children: [
-            Icon(Icons.admin_panel_settings_rounded, color: theme.colorScheme.primary),
+            Icon(Icons.admin_panel_settings_rounded,
+                color: theme.colorScheme.primary),
             const SizedBox(width: 10),
             const Text('Espace Super Administrateur'),
           ],
@@ -95,13 +97,15 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                     const SizedBox(height: 18),
                     Text(
                       'Connexion Super Admin',
-                      style: theme.textTheme.headlineMedium?.copyWith(fontSize: 26),
+                      style: theme.textTheme.headlineMedium
+                          ?.copyWith(fontSize: 26),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 10),
                     Text(
                       'Ce profil peut creer des comptes administrateurs rattaches a une commune et generer leurs cles de connexion.',
-                      style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
+                      style: theme.textTheme.bodyLarge
+                          ?.copyWith(color: const Color(0xFF5A6573)),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
@@ -120,21 +124,27 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                         hintText: 'Cle super administrateur',
                         filled: true,
                         fillColor: const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 18, vertical: 18),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(18),
-                          borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
+                          borderSide:
+                              const BorderSide(color: Color(0xFFD7E0EA)),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(18),
-                          borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
+                          borderSide:
+                              const BorderSide(color: Color(0xFFD7E0EA)),
                         ),
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(18),
-                          borderSide: const BorderSide(color: Color(0xFF6B21A8), width: 1.6),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF6B21A8), width: 1.6),
                         ),
                         suffixIcon: IconButton(
-                          icon: Icon(_obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined),
+                          icon: Icon(_obscure
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined),
                           onPressed: () => setState(() => _obscure = !_obscure),
                         ),
                       ),
@@ -155,16 +165,20 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                             ? const SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white),
                               )
                             : const Icon(Icons.arrow_forward_rounded),
-                        label: Text(_isSubmitting ? 'Connexion...' : 'Acceder au panneau super admin'),
+                        label: Text(_isSubmitting
+                            ? 'Connexion...'
+                            : 'Acceder au panneau super admin'),
                       ),
                     ),
                     const SizedBox(height: 14),
                     Text(
                       'La cle super administrateur est verifiee par le backend et n\'est jamais compilee dans Flutter.',
-                      style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF7A8796)),
+                      style: theme.textTheme.bodySmall
+                          ?.copyWith(color: const Color(0xFF7A8796)),
                       textAlign: TextAlign.center,
                     ),
                   ],

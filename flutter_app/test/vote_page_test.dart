@@ -33,7 +33,8 @@ void main() {
     expect(find.textContaining('deja ete enregistre'), findsOneWidget);
   });
 
-  testWidgets('VotePage prevents double submission while request is pending', (tester) async {
+  testWidgets('VotePage prevents double submission while request is pending',
+      (tester) async {
     final submitCompleter = Completer<VoteSubmitResult>();
     final service = _FakeVoteAccessService(
       validationResult: VoteAccessValidationResult(
@@ -78,16 +79,18 @@ void main() {
 
     expect(service.submitCalls, 1);
 
-    submitCompleter.complete(const VoteSubmitResult(receiptId: 'receipt-1', message: 'OK'));
+    submitCompleter.complete(
+        const VoteSubmitResult(receiptId: 'receipt-1', message: 'OK'));
     await tester.pumpAndSettle();
   });
 }
 
-Widget _buildTestApp({required VoteAccessService service, required String pollId}) {
+Widget _buildTestApp(
+    {required VoteAccessService service, required String pollId}) {
   return MaterialApp(
     routes: {
       '/access': (_) => const Scaffold(body: Text('Access')),
-      '/confirmation': (_) => const Scaffold(body: Text('Confirmation')), 
+      '/confirmation': (_) => const Scaffold(body: Text('Confirmation')),
     },
     home: VotePage(
       token: 'AB12CD34',
@@ -100,12 +103,10 @@ Widget _buildTestApp({required VoteAccessService service, required String pollId
 class _FakeVoteAccessService extends VoteAccessService {
   _FakeVoteAccessService({
     this.validationResult,
-    this.validationError,
     this.onSubmit,
   }) : super();
 
   final VoteAccessValidationResult? validationResult;
-  final VoteAccessException? validationError;
   final Future<VoteSubmitResult> Function({
     required String accessToken,
     required String pollId,
@@ -115,10 +116,8 @@ class _FakeVoteAccessService extends VoteAccessService {
   int submitCalls = 0;
 
   @override
-  Future<VoteAccessValidationResult> validateCode(String rawCode, {String? pollId}) async {
-    if (validationError != null) {
-      throw validationError!;
-    }
+  Future<VoteAccessValidationResult> validateCode(String rawCode,
+      {String? pollId}) async {
     return validationResult!;
   }
 
@@ -130,8 +129,10 @@ class _FakeVoteAccessService extends VoteAccessService {
   }) {
     submitCalls += 1;
     if (onSubmit != null) {
-      return onSubmit!(accessToken: accessToken, pollId: pollId, optionId: optionId);
+      return onSubmit!(
+          accessToken: accessToken, pollId: pollId, optionId: optionId);
     }
-    return Future.value(const VoteSubmitResult(receiptId: 'receipt-1', message: 'OK'));
+    return Future.value(
+        const VoteSubmitResult(receiptId: 'receipt-1', message: 'OK'));
   }
 }

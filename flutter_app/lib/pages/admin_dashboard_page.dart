@@ -16,11 +16,6 @@ class _DashboardTheme {
   static const accent = Color(0xFF20B69C);
   static const success = Color(0xFF2BA66A);
   static const warning = Color(0xFFF59E0B);
-  static const gradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF0D73F2), Color(0xFF4F70F5)],
-  );
 }
 
 enum AdminDashboardSection { overview, polls, controllers }
@@ -74,9 +69,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Supprimer ce controleur ?'),
-        content: Text('Le code "${profile.code}" sera definitivement supprime.'),
+        content:
+            Text('Le code "${profile.code}" sera definitivement supprime.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
@@ -107,7 +105,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF2B9F82), size: 40),
+        icon: const Icon(Icons.check_circle_rounded,
+            color: Color(0xFF2B9F82), size: 40),
         title: const Text('Controleur cree'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
@@ -139,12 +138,15 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy_rounded, color: Color(0xFF0F6D8F)),
+                    icon: const Icon(Icons.copy_rounded,
+                        color: Color(0xFF0F6D8F)),
                     tooltip: 'Copier',
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: profile.code));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Code copie dans le presse-papiers.')),
+                        const SnackBar(
+                            content:
+                                Text('Code copie dans le presse-papiers.')),
                       );
                     },
                   ),
@@ -167,9 +169,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final session = AuthSessionStore.instance.currentSession;
-    final showOverviewSection = widget.initialSection == AdminDashboardSection.overview;
-    final showPollsSection = widget.initialSection != AdminDashboardSection.controllers;
-    final showControllersSection = widget.initialSection != AdminDashboardSection.polls;
+    final showOverviewSection =
+        widget.initialSection == AdminDashboardSection.overview;
+    final showPollsSection =
+        widget.initialSection != AdminDashboardSection.controllers;
+    final showControllersSection =
+        widget.initialSection != AdminDashboardSection.polls;
     final pageTitle = switch (widget.initialSection) {
       AdminDashboardSection.overview => 'Tableau de bord commune',
       AdminDashboardSection.polls => 'Consultations communales',
@@ -178,7 +183,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
 
     final activeCount = _polls.where((poll) => poll.status == 'active').length;
     final closedCount = _polls.where((poll) => poll.status == 'closed').length;
-    final archivedCount = _polls.where((poll) => poll.status == 'archived').length;
+    final archivedCount =
+        _polls.where((poll) => poll.status == 'archived').length;
     final draftCount = _polls.where((poll) => poll.status == 'draft').length;
 
     return Scaffold(
@@ -191,7 +197,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         title: const Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.dashboard_rounded, color: _DashboardTheme.primary, size: 22),
+            Icon(Icons.dashboard_rounded,
+                color: _DashboardTheme.primary, size: 22),
             SizedBox(width: 8),
             Text('Tableau de bord commune'),
           ],
@@ -200,7 +207,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: FilledButton.icon(
-              onPressed: () => Navigator.of(context).pushNamed('/admin/polls/create'),
+              onPressed: () =>
+                  Navigator.of(context).pushNamed('/admin/polls/create'),
               icon: const Icon(Icons.add_rounded, size: 18),
               label: const Text('Nouvelle consultation'),
             ),
@@ -224,362 +232,422 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           child: RefreshIndicator(
             onRefresh: _load,
             child: ListView(
-            padding: const EdgeInsets.all(20),
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    widget.initialSection == AdminDashboardSection.controllers
-                        ? Icons.groups_rounded
-                        : widget.initialSection == AdminDashboardSection.polls
-                            ? Icons.how_to_vote_rounded
-                            : Icons.dashboard_rounded,
-                    color: _DashboardTheme.primary,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(pageTitle, style: theme.textTheme.headlineSmall)),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Wrap(
-                spacing: 10,
-                runSpacing: 10,
-                children: [
-                  ChoiceChip(
-                    label: const Text('Vue d\'ensemble'),
-                    selected: widget.initialSection == AdminDashboardSection.overview,
-                    onSelected: (_) => Navigator.of(context).pushNamed('/admin'),
-                  ),
-                  ChoiceChip(
-                    label: const Text('Consultations'),
-                    selected: widget.initialSection == AdminDashboardSection.polls,
-                    onSelected: (_) => Navigator.of(context).pushNamed('/admin/polls'),
-                  ),
-                  ChoiceChip(
-                    label: const Text('Controleurs'),
-                    selected: widget.initialSection == AdminDashboardSection.controllers,
-                    onSelected: (_) => Navigator.of(context).pushNamed('/admin/controllers'),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              if (showOverviewSection)
-              Wrap(
-                spacing: 12,
-                runSpacing: 12,
-                children: [
-                  _DashboardStatCard(
-                    label: 'Total consultations',
-                    value: '${_polls.length}',
-                    icon: Icons.how_to_vote_rounded,
-                    color: _DashboardTheme.primary,
-                  ),
-                  _DashboardStatCard(
-                    label: 'En cours',
-                    value: '$activeCount',
-                    icon: Icons.bar_chart_rounded,
-                    color: _DashboardTheme.success,
-                  ),
-                  _DashboardStatCard(
-                    label: 'Termines',
-                    value: '$closedCount',
-                    icon: Icons.dashboard_rounded,
-                    color: _DashboardTheme.accent,
-                  ),
-                  _DashboardStatCard(
-                    label: 'Archivees',
-                    value: '$archivedCount',
-                    icon: Icons.archive_rounded,
-                    color: const Color(0xFF64748B),
-                  ),
-                  _DashboardStatCard(
-                    label: 'Brouillons',
-                    value: '$draftCount',
-                    icon: Icons.edit_document,
-                    color: _DashboardTheme.warning,
-                  ),
-                ],
-              ),
-              if (showOverviewSection) const SizedBox(height: 16),
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Session admin communal', style: theme.textTheme.titleLarge),
-                      const SizedBox(height: 12),
-                      Text(
-                        session == null
-                            ? 'Aucune session chargee.'
-                            : 'Role UX: commune_admin\nRole technique: ${session.role}\nCommune: ${session.commune?.name ?? 'mode global/fallback'}\nProfil: ${session.label ?? 'Administrateur communal'}\nMode: ${session.modeLabel}',
-                        style: theme.textTheme.bodyLarge,
-                      ),
-                    ],
-                  ),
+              padding: const EdgeInsets.all(20),
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      widget.initialSection == AdminDashboardSection.controllers
+                          ? Icons.groups_rounded
+                          : widget.initialSection == AdminDashboardSection.polls
+                              ? Icons.how_to_vote_rounded
+                              : Icons.dashboard_rounded,
+                      color: _DashboardTheme.primary,
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                        child: Text(pageTitle,
+                            style: theme.textTheme.headlineSmall)),
+                  ],
                 ),
-              ),
-              const SizedBox(height: 16),
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  final wide = constraints.maxWidth >= 720;
-                  final actions = [
-                    FilledButton(
-                      onPressed: () => Navigator.of(context).pushNamed('/admin/polls/create'),
-                      child: const Text('Creer une consultation'),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    ChoiceChip(
+                      label: const Text('Vue d\'ensemble'),
+                      selected: widget.initialSection ==
+                          AdminDashboardSection.overview,
+                      onSelected: (_) =>
+                          Navigator.of(context).pushNamed('/admin'),
                     ),
-                    FilledButton.tonal(
-                      onPressed: () => Navigator.of(context).pushNamed('/admin/controllers'),
-                      child: const Text('Controleurs'),
+                    ChoiceChip(
+                      label: const Text('Consultations'),
+                      selected:
+                          widget.initialSection == AdminDashboardSection.polls,
+                      onSelected: (_) =>
+                          Navigator.of(context).pushNamed('/admin/polls'),
                     ),
-                    FilledButton.tonal(
-                      onPressed: () => Navigator.of(context).pushNamed('/admin/settings'),
-                      child: const Text('Parametres'),
+                    ChoiceChip(
+                      label: const Text('Controleurs'),
+                      selected: widget.initialSection ==
+                          AdminDashboardSection.controllers,
+                      onSelected: (_) =>
+                          Navigator.of(context).pushNamed('/admin/controllers'),
                     ),
-                    FilledButton.tonal(
-                      onPressed: () => Navigator.of(context).pushNamed('/admin/results'),
-                      child: const Text('Resultats'),
-                    ),
-                  ];
-
-                  if (wide) {
-                    return Wrap(spacing: 12, runSpacing: 12, children: actions);
-                  }
-
-                  return Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                  ],
+                ),
+                const SizedBox(height: 16),
+                if (showOverviewSection)
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
                     children: [
-                      for (var index = 0; index < actions.length; index++) ...[
-                        actions[index],
-                        if (index != actions.length - 1) const SizedBox(height: 12),
-                      ],
-                    ],
-                  );
-                },
-              ),
-              const SizedBox(height: 16),
-              if (showOverviewSection)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text('Vue analytics', style: theme.textTheme.titleLarge),
-                          ),
-                          TextButton(
-                            onPressed: () => Navigator.of(context).pushNamed('/admin/results'),
-                            child: const Text('Voir le detail'),
-                          ),
-                        ],
+                      _DashboardStatCard(
+                        label: 'Total consultations',
+                        value: '${_polls.length}',
+                        icon: Icons.how_to_vote_rounded,
+                        color: _DashboardTheme.primary,
                       ),
-                      const SizedBox(height: 16),
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          _AnalyticsMetricCard(
-                            label: 'Votes emis',
-                            value: '${_analytics.totalVotes}',
-                            subtitle: 'sur ${_analytics.totalVoters} inscrits',
-                          ),
-                          _AnalyticsMetricCard(
-                            label: 'Participation moyenne',
-                            value: '${_analytics.averageParticipation.round()}%',
-                            subtitle: '${_analytics.activeCount} actifs, ${_analytics.completedCount} termines',
-                          ),
-                          _AnalyticsMetricCard(
-                            label: 'Codes actives',
-                            value: '${_analytics.totalActivatedCodes}',
-                            subtitle: 'sur ${_analytics.totalValidatedCodes} valides',
-                          ),
-                          _AnalyticsMetricCard(
-                            label: 'Votes traces',
-                            value: '${_analytics.totalUsedCodes}',
-                            subtitle: 'sur les 7 derniers jours et consultations chargees',
-                          ),
-                        ],
+                      _DashboardStatCard(
+                        label: 'En cours',
+                        value: '$activeCount',
+                        icon: Icons.bar_chart_rounded,
+                        color: _DashboardTheme.success,
                       ),
-                      const SizedBox(height: 16),
-                      if (!_isLoading && _analytics.polls.isEmpty)
-                        Text(
-                          'Aucune donnee analytics disponible pour le moment.',
-                          style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
-                        )
-                      else
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final wide = constraints.maxWidth >= 760;
-                            final maxDailyVotes = _analytics.dailyVotes.fold<int>(
-                              0,
-                              (maxValue, item) => item.votes > maxValue ? item.votes : maxValue,
-                            );
-                            final trend = Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: const Color(0xFFD7E0EA)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Votes sur 7 jours', style: theme.textTheme.titleMedium),
-                                  const SizedBox(height: 14),
-                                  for (final daily in _analytics.dailyVotes)
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 12),
-                                      child: _CompactDailyVotesRow(
-                                        daily: daily,
-                                        maxVotes: maxDailyVotes,
-                                      ),
-                                    ),
-                                ],
-                              ),
-                            );
-                            final participation = Container(
-                              padding: const EdgeInsets.all(16),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(18),
-                                border: Border.all(color: const Color(0xFFD7E0EA)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text('Participation par consultation', style: theme.textTheme.titleMedium),
-                                  const SizedBox(height: 14),
-                                  for (final poll in _analytics.polls.take(3))
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 14),
-                                      child: _CompactPollParticipationRow(poll: poll),
-                                    ),
-                                ],
-                              ),
-                            );
-
-                            if (wide) {
-                              return Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(child: trend),
-                                  const SizedBox(width: 16),
-                                  Expanded(child: participation),
-                                ],
-                              );
-                            }
-
-                            return Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [trend, const SizedBox(height: 16), participation],
-                            );
-                          },
-                        ),
+                      _DashboardStatCard(
+                        label: 'Termines',
+                        value: '$closedCount',
+                        icon: Icons.dashboard_rounded,
+                        color: _DashboardTheme.accent,
+                      ),
+                      _DashboardStatCard(
+                        label: 'Archivees',
+                        value: '$archivedCount',
+                        icon: Icons.archive_rounded,
+                        color: const Color(0xFF64748B),
+                      ),
+                      _DashboardStatCard(
+                        label: 'Brouillons',
+                        value: '$draftCount',
+                        icon: Icons.edit_document,
+                        color: _DashboardTheme.warning,
+                      ),
                     ],
                   ),
-                ),
-              ),
                 if (showOverviewSection) const SizedBox(height: 16),
-              // ---------- Section Contrôleurs ----------
-                if (showControllersSection)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: Text('Controleurs', style: theme.textTheme.titleLarge),
-                          ),
-                          Chip(label: Text('${_controleurs.length}')),
-                          const SizedBox(width: 8),
-                          FilledButton.icon(
-                            onPressed: _openCreateControleurDialog,
-                            icon: const Icon(Icons.person_add_rounded, size: 18),
-                            label: const Text('Nouveau'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      if (_controleurs.isEmpty)
+                Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Session admin communal',
+                            style: theme.textTheme.titleLarge),
+                        const SizedBox(height: 12),
                         Text(
-                          'Aucun controleur cree. Utilisez le bouton "Nouveau" pour en creer un.',
-                          style: theme.textTheme.bodyMedium
-                              ?.copyWith(color: const Color(0xFF5A6573)),
-                        )
-                      else
-                        for (final ctrl in _controleurs)
-                          _ControleurRow(
-                            profile: ctrl,
-                            onDelete: () => _deleteControleur(ctrl),
-                          ),
-                    ],
+                          session == null
+                              ? 'Aucune session chargee.'
+                              : 'Role UX: commune_admin\nRole technique: ${session.role}\nCommune: ${session.commune?.name ?? 'mode global/fallback'}\nProfil: ${session.label ?? 'Administrateur communal'}\nMode: ${session.modeLabel}',
+                          style: theme.textTheme.bodyLarge,
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              if (showControllersSection) const SizedBox(height: 16),
-              // ---------- Consultations récentes ----------
-              if (showPollsSection)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
+                const SizedBox(height: 16),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 720;
+                    final actions = [
+                      FilledButton(
+                        onPressed: () => Navigator.of(context)
+                            .pushNamed('/admin/polls/create'),
+                        child: const Text('Creer une consultation'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () => Navigator.of(context)
+                            .pushNamed('/admin/controllers'),
+                        child: const Text('Controleurs'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/admin/settings'),
+                        child: const Text('Parametres'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/admin/results'),
+                        child: const Text('Resultats'),
+                      ),
+                    ];
+
+                    if (wide) {
+                      return Wrap(
+                          spacing: 12, runSpacing: 12, children: actions);
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        for (var index = 0;
+                            index < actions.length;
+                            index++) ...[
+                          actions[index],
+                          if (index != actions.length - 1)
+                            const SizedBox(height: 12),
+                        ],
+                      ],
+                    );
+                  },
+                ),
+                const SizedBox(height: 16),
+                if (showOverviewSection)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Text('Consultations recentes', style: Theme.of(context).textTheme.titleLarge),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text('Vue analytics',
+                                    style: theme.textTheme.titleLarge),
+                              ),
+                              TextButton(
+                                onPressed: () => Navigator.of(context)
+                                    .pushNamed('/admin/results'),
+                                child: const Text('Voir le detail'),
+                              ),
+                            ],
                           ),
-                          if (_isLoading) const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2)),
+                          const SizedBox(height: 16),
+                          Wrap(
+                            spacing: 12,
+                            runSpacing: 12,
+                            children: [
+                              _AnalyticsMetricCard(
+                                label: 'Votes emis',
+                                value: '${_analytics.totalVotes}',
+                                subtitle:
+                                    'sur ${_analytics.totalVoters} inscrits',
+                              ),
+                              _AnalyticsMetricCard(
+                                label: 'Participation moyenne',
+                                value:
+                                    '${_analytics.averageParticipation.round()}%',
+                                subtitle:
+                                    '${_analytics.activeCount} actifs, ${_analytics.completedCount} termines',
+                              ),
+                              _AnalyticsMetricCard(
+                                label: 'Codes actives',
+                                value: '${_analytics.totalActivatedCodes}',
+                                subtitle:
+                                    'sur ${_analytics.totalValidatedCodes} valides',
+                              ),
+                              _AnalyticsMetricCard(
+                                label: 'Votes traces',
+                                value: '${_analytics.totalUsedCodes}',
+                                subtitle:
+                                    'sur les 7 derniers jours et consultations chargees',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          if (!_isLoading && _analytics.polls.isEmpty)
+                            Text(
+                              'Aucune donnee analytics disponible pour le moment.',
+                              style: theme.textTheme.bodyMedium
+                                  ?.copyWith(color: const Color(0xFF5A6573)),
+                            )
+                          else
+                            LayoutBuilder(
+                              builder: (context, constraints) {
+                                final wide = constraints.maxWidth >= 760;
+                                final maxDailyVotes =
+                                    _analytics.dailyVotes.fold<int>(
+                                  0,
+                                  (maxValue, item) => item.votes > maxValue
+                                      ? item.votes
+                                      : maxValue,
+                                );
+                                final trend = Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                        color: const Color(0xFFD7E0EA)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Votes sur 7 jours',
+                                          style: theme.textTheme.titleMedium),
+                                      const SizedBox(height: 14),
+                                      for (final daily in _analytics.dailyVotes)
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 12),
+                                          child: _CompactDailyVotesRow(
+                                            daily: daily,
+                                            maxVotes: maxDailyVotes,
+                                          ),
+                                        ),
+                                    ],
+                                  ),
+                                );
+                                final participation = Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                        color: const Color(0xFFD7E0EA)),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Text('Participation par consultation',
+                                          style: theme.textTheme.titleMedium),
+                                      const SizedBox(height: 14),
+                                      for (final poll
+                                          in _analytics.polls.take(3))
+                                        Padding(
+                                          padding:
+                                              const EdgeInsets.only(bottom: 14),
+                                          child: _CompactPollParticipationRow(
+                                              poll: poll),
+                                        ),
+                                    ],
+                                  ),
+                                );
+
+                                if (wide) {
+                                  return Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Expanded(child: trend),
+                                      const SizedBox(width: 16),
+                                      Expanded(child: participation),
+                                    ],
+                                  );
+                                }
+
+                                return Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    trend,
+                                    const SizedBox(height: 16),
+                                    participation
+                                  ],
+                                );
+                              },
+                            ),
                         ],
                       ),
-                      const SizedBox(height: 16),
-                      if (!_isLoading && _polls.isEmpty)
-                        const Text('Aucune consultation disponible pour le moment.')
-                      else
-                        for (final poll in _polls.take(5))
-                          Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(16),
-                              onTap: () => Navigator.of(context).pushNamed('/admin/poll/${poll.id}'),
-                              child: Container(
-                                padding: const EdgeInsets.all(16),
-                                decoration: BoxDecoration(
+                    ),
+                  ),
+                if (showOverviewSection) const SizedBox(height: 16),
+                // ---------- Section Contrôleurs ----------
+                if (showControllersSection)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text('Controleurs',
+                                    style: theme.textTheme.titleLarge),
+                              ),
+                              Chip(label: Text('${_controleurs.length}')),
+                              const SizedBox(width: 8),
+                              FilledButton.icon(
+                                onPressed: _openCreateControleurDialog,
+                                icon: const Icon(Icons.person_add_rounded,
+                                    size: 18),
+                                label: const Text('Nouveau'),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (_controleurs.isEmpty)
+                            Text(
+                              'Aucun controleur cree. Utilisez le bouton "Nouveau" pour en creer un.',
+                              style: theme.textTheme.bodyMedium
+                                  ?.copyWith(color: const Color(0xFF5A6573)),
+                            )
+                          else
+                            for (final ctrl in _controleurs)
+                              _ControleurRow(
+                                profile: ctrl,
+                                onDelete: () => _deleteControleur(ctrl),
+                              ),
+                        ],
+                      ),
+                    ),
+                  ),
+                if (showControllersSection) const SizedBox(height: 16),
+                // ---------- Consultations récentes ----------
+                if (showPollsSection)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Text('Consultations recentes',
+                                    style:
+                                        Theme.of(context).textTheme.titleLarge),
+                              ),
+                              if (_isLoading)
+                                const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2)),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          if (!_isLoading && _polls.isEmpty)
+                            const Text(
+                                'Aucune consultation disponible pour le moment.')
+                          else
+                            for (final poll in _polls.take(5))
+                              Padding(
+                                padding: const EdgeInsets.only(bottom: 12),
+                                child: InkWell(
                                   borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(color: const Color(0xFFD7E0EA)),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Text(poll.projectTitle, style: theme.textTheme.titleMedium),
-                                          const SizedBox(height: 4),
-                                          Text(
-                                            '${poll.totalVoted}/${poll.totalVoters} votants · ${poll.status}',
-                                            style: theme.textTheme.bodyMedium,
-                                          ),
-                                        ],
-                                      ),
+                                  onTap: () => Navigator.of(context)
+                                      .pushNamed('/admin/poll/${poll.id}'),
+                                  child: Container(
+                                    padding: const EdgeInsets.all(16),
+                                    decoration: BoxDecoration(
+                                      borderRadius: BorderRadius.circular(16),
+                                      border: Border.all(
+                                          color: const Color(0xFFD7E0EA)),
                                     ),
-                                    const SizedBox(width: 12),
-                                    const Icon(Icons.chevron_right_rounded),
-                                  ],
+                                    child: Row(
+                                      children: [
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Text(poll.projectTitle,
+                                                  style: theme
+                                                      .textTheme.titleMedium),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                '${poll.totalVoted}/${poll.totalVoters} votants · ${poll.status}',
+                                                style:
+                                                    theme.textTheme.bodyMedium,
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                        const SizedBox(width: 12),
+                                        const Icon(Icons.chevron_right_rounded),
+                                      ],
+                                    ),
+                                  ),
                                 ),
                               ),
-                            ),
-                          ),
-                    ],
+                        ],
+                      ),
+                    ),
                   ),
-                ),
-              ),
-            ],
+              ],
             ),
           ),
         ),
@@ -627,8 +695,16 @@ class _DashboardStatCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(value, style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontSize: 26)),
-                    Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: _DashboardTheme.mutedForeground)),
+                    Text(value,
+                        style: Theme.of(context)
+                            .textTheme
+                            .headlineMedium
+                            ?.copyWith(fontSize: 26)),
+                    Text(label,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodySmall
+                            ?.copyWith(color: _DashboardTheme.mutedForeground)),
                   ],
                 ),
               ),
@@ -714,14 +790,17 @@ class _CompactPollParticipationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rate = poll.totalVoters == 0 ? 0.0 : poll.totalVoted / poll.totalVoters;
+    final rate =
+        poll.totalVoters == 0 ? 0.0 : poll.totalVoted / poll.totalVoters;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Expanded(child: Text(poll.projectTitle, style: Theme.of(context).textTheme.titleSmall)),
+            Expanded(
+                child: Text(poll.projectTitle,
+                    style: Theme.of(context).textTheme.titleSmall)),
             Text('${(rate * 100).round()}%'),
           ],
         ),
@@ -771,7 +850,8 @@ class _ControleurRowState extends State<_ControleurRow> {
               color: _DashboardTheme.accent.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(10),
             ),
-            child: const Icon(Icons.key_rounded, size: 18, color: _DashboardTheme.accent),
+            child: const Icon(Icons.key_rounded,
+                size: 18, color: _DashboardTheme.accent),
           ),
           const SizedBox(width: 12),
           Expanded(
