@@ -5,7 +5,7 @@ on:
     branches:
       - main
     paths:
-      - 'vote-libre-main/firestore.rules'
+      - 'firestore.rules'
       - 'firebase.json'
       - '.github/workflows/deploy-firestore-rules.yml'
   workflow_dispatch:

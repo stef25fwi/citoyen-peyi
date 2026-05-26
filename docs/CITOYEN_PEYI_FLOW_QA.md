@@ -20,7 +20,7 @@ avant un deploiement de production.
   - `controleurCodes` (codes controleurs)
   - `poll_votes` (vote unique par {pollId}_{accessCodeId}, ecriture backend uniquement)
   - `public_news` (actualites communales)
-- Regles Firestore deployees depuis `vote-libre-main/firestore.rules`.
+- Regles Firestore deployees depuis `firestore.rules`.
 
 ## Flow super administrateur
 

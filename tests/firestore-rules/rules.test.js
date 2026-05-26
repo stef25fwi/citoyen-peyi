@@ -7,7 +7,7 @@ import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebas
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const RULES_PATH = path.resolve(__dirname, '../../vote-libre-main/firestore.rules');
+const RULES_PATH = path.resolve(__dirname, '../../firestore.rules');
 
 let env;
 
@@ -51,7 +51,7 @@ test('citizen_access_codes is fully closed to clients', async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
     await setDoc(doc(ctx.firestore(), 'citizen_access_codes/ABCD1234'), { accessCode: 'ABCD1234' });
   });
-  await assertSucceeds(getDoc(doc(superDb, 'citizen_access_codes/ABCD1234')));
+  await assertFails(getDoc(doc(superDb, 'citizen_access_codes/ABCD1234')));
   await assertFails(getDoc(doc(anonDb(), 'citizen_access_codes/ABCD1234')));
 });
 

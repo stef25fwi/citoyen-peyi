@@ -4,16 +4,15 @@ Application de vote anonyme avec une architecture complete:
 
 - backend Node.js + Express
 - application Flutter Web publiee sur GitHub Pages
-- source React historique conservee pour reference dans [vote-libre-main](vote-libre-main)
 - workflow CI GitHub Actions
 - script pour generer un ZIP complet du projet
 
 ## Structure
 
 - `app/backend/`: API Node/Express (production)
-- `app/scripts/`: utilitaires (zip, extraction archive)
+- `app/scripts/`: utilitaires (zip)
 - `flutter_app/`: application Flutter Web (production)
-- `vote-libre-main/`: legacy React conserve pour reference / Firestore rules
+- `firestore.rules`: regles Firestore deployees en production
 - `tests/firestore-rules/`: tests unitaires des regles Firestore (emulateur)
 - `.github/workflows/`: CI + deploiement Cloud Run / Firestore / Pages
 
@@ -27,7 +26,7 @@ Application de vote anonyme avec une architecture complete:
 
 1. Installer les dependances:
 
-	npm install
+	npm run install:all
 
 2. Dupliquer les variables d'environnement:
 
@@ -35,7 +34,7 @@ Application de vote anonyme avec une architecture complete:
 
 3. Lancer le backend Node:
 
-	npm run dev
+	npm run dev:backend
 
 Backend: http://localhost:4000
 
@@ -138,7 +137,7 @@ flutter build web --release \
 
 npm run build
 
-Pour la version Flutter GitHub Pages:
+La commande construit la version Flutter GitHub Pages. Equivalent manuel:
 
 	cd flutter_app
 	flutter build web --release --base-href /citoyen-peyi/
@@ -150,16 +149,6 @@ npm run zip
 Le fichier genere est:
 
 app-release.zip
-
-## Recuperer les donnees depuis vote-libre-main 2.zip
-
-Si l'archive est a la racine du projet, lance:
-
-npm run extract:vote-libre
-
-## Projet extrait: vote-libre-main
-
-Le contenu recupere depuis l'archive est disponible dans [vote-libre-main](vote-libre-main).
 
 Consultation en ligne via GitHub Pages:
 
@@ -202,7 +191,7 @@ Le repo expose maintenant une configuration CLI minimale pour deployer les regle
 npm run deploy:firestore:rules -- --project VOTRE_PROJECT_ID
 ```
 
-Le fichier racine [firebase.json](firebase.json) pointe vers [vote-libre-main/firestore.rules](vote-libre-main/firestore.rules).
+Le fichier racine [firebase.json](firebase.json) pointe vers [firestore.rules](firestore.rules).
 
 ## Migration `registrationCodes` vers `citizen_access_codes`
 
@@ -233,15 +222,8 @@ La page `/news` lit la collection `public_news`. Schema minimal recommande par d
 }
 ```
 
-Commandes utiles pour le projet React historique:
-
-- Installer les dependances: npm run install:vote-libre
-- Lancer en dev: npm run dev:vote-libre
-- Build: npm run build:vote-libre
-- Tests: npm run test:vote-libre
-
 ## Clarification structure
 
 - [app](app): backend et structure minimale initiale
 - [flutter_app](flutter_app): application Flutter Web courante, cible de GitHub Pages
-- [vote-libre-main](vote-libre-main): application React conservee comme reference de migration
+- [firestore.rules](firestore.rules): regles Firestore production

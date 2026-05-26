@@ -13,12 +13,16 @@
         "panel": "dedicated",
         "clear": true
       },
-      "detail": "Lance le frontend Vite sur le port 8080 pour un apercu local."
+      "detail": "Lance l'application Flutter Web sur le port 8081 pour un apercu local."
     },
     {
       "label": "Apercu build GitHub Pages",
       "type": "shell",
-      "command": "GITHUB_ACTIONS=true npm run build --workspace vote-libre-main && npm run preview --workspace vote-libre-main -- --host 0.0.0.0 --port 4173",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "npm run build && python3 -m http.server 4173 --bind 0.0.0.0 --directory flutter_app/build/web"
+      ],
       "problemMatcher": [],
       "isBackground": true,
       "presentation": {
@@ -26,7 +30,7 @@
         "panel": "dedicated",
         "clear": true
       },
-      "detail": "Construit puis sert la version utilisee par GitHub Pages sur le port 4173."
+      "detail": "Construit puis sert la version Flutter Web utilisee par GitHub Pages sur le port 4173."
     },
     {
       "label": "Flutter generer web",
@@ -78,12 +82,12 @@
       "detail": "Construit la version Flutter Web de production pour GitHub Pages."
     },
     {
-      "label": "Git publier migration Flutter",
+      "label": "Git publier full Flutter",
       "type": "shell",
       "command": "bash",
       "args": [
         "-lc",
-        "cd /workspaces/citoyen-peyi && git add -A && git commit -m \"feat: migrate app to Flutter web pages\" && git push origin main"
+        "cd /workspaces/citoyen-peyi && git add -A && git commit -m \"chore: make app fully Flutter\" && git checkout main && git merge --ff-only fix/ui-ux-security-hardening && git push origin main"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -91,7 +95,7 @@
         "panel": "dedicated",
         "clear": true
       },
-      "detail": "Stage, commit puis pousse la migration Flutter vers main."
+      "detail": "Stage, commit, fast-forward main puis pousse la migration full Flutter."
     },
     {
       "label": "Backend verifier prerequis migration",
@@ -188,6 +192,38 @@
         "clear": true
       },
       "detail": "Lance les tests Flutter du port web."
+    },
+    {
+      "label": "Flutter analyze",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; cd /workspaces/citoyen-peyi/flutter_app && flutter analyze"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Analyse statique Flutter du port web."
+    },
+    {
+      "label": "Firestore rules tests",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi/tests/firestore-rules && npm install --no-package-lock && npx --yes firebase-tools@13 emulators:exec --only firestore --project demo-citoyen-peyi \"npm test\"; status=$?; rm -rf node_modules; exit $status"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Lance les tests unitaires des regles Firestore via emulateur."
     }
   ]
 }

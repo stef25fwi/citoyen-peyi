@@ -4,23 +4,23 @@
   "version": "1.0.0",
   "description": "Application de vote anonyme — Citoyen Peyi",
   "workspaces": [
-    "vote-libre-main",
     "app/backend"
   ],
   "scripts": {
-    "install:all": "npm install --prefix vote-libre-main && npm install --prefix app/backend",
-    "dev": "npm run dev --workspace app/backend & npm run dev --workspace vote-libre-main -- --host",
-    "dev:frontend": "npm run dev --workspace vote-libre-main -- --host",
+    "install:all": "npm install --prefix app/backend && bash -lc 'export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter pub get'",
+    "dev": "npm run dev:backend & npm run dev:frontend",
+    "dev:frontend": "bash -lc 'export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter run -d web-server --web-hostname 0.0.0.0 --web-port=8081 --dart-define=API_BASE_URL=${API_BASE_URL:-http://localhost:4000} --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}'",
+    "dev:flutter": "npm run dev:frontend",
     "dev:backend": "npm run dev --workspace app/backend",
-    "build": "npm run build --workspace vote-libre-main",
-    "build:dev": "npm run build:dev --workspace vote-libre-main",
+    "build": "bash -lc 'export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter build web --release --base-href /citoyen-peyi/ --dart-define=API_BASE_URL=${API_BASE_URL:-http://localhost:4000} --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}'",
+    "build:flutter": "npm run build",
     "start": "npm run start --workspace app/backend",
     "migrate:registration-codes": "npm run migrate:registration-codes --workspace app/backend",
     "test:backend": "npm run test --workspace app/backend",
-    "test": "npm run test --workspace vote-libre-main",
-    "lint": "npm run lint --workspace vote-libre-main",
+    "test:flutter": "bash -lc 'export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter test'",
+    "test": "npm run test:flutter",
+    "lint": "bash -lc 'export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter analyze'",
     "deploy:firestore:rules": "npx firebase-tools deploy --only firestore:rules",
-    "zip": "bash app/scripts/zip-app.sh",
-    "extract:vote-libre": "bash app/scripts/extract-vote-libre.sh"
+    "zip": "bash app/scripts/zip-app.sh"
   }
 }
