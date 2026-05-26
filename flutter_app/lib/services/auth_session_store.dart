@@ -43,10 +43,9 @@ class AuthSession {
     required this.admin,
     required this.controller,
     required this.mode,
+    this.sessionCreatedAt,
     this.adminScope,
-    this.customToken,
     this.id,
-    this.code,
     this.label,
     this.commune,
   });
@@ -55,10 +54,9 @@ class AuthSession {
   final bool admin;
   final bool controller;
   final String mode;
+  final String? sessionCreatedAt;
   final String? adminScope;
-  final String? customToken;
   final String? id;
-  final String? code;
   final String? label;
   final AuthSessionCommune? commune;
 
@@ -84,10 +82,9 @@ class AuthSession {
         'admin': admin,
         'controller': controller,
         'mode': mode,
+        'sessionCreatedAt': sessionCreatedAt ?? DateTime.now().toIso8601String(),
         'adminScope': adminScope,
-        'customToken': customToken,
         'id': id,
-        'code': code,
         'label': label,
         'commune': commune?.toJson(),
       };
@@ -98,10 +95,9 @@ class AuthSession {
       admin: json['admin'] as bool? ?? false,
       controller: json['controller'] as bool? ?? false,
       mode: json['mode'] as String? ?? 'fallback',
+      sessionCreatedAt: json['sessionCreatedAt'] as String?,
       adminScope: json['adminScope'] as String?,
-      customToken: json['customToken'] as String?,
       id: json['id'] as String?,
-      code: json['code'] as String?,
       label: json['label'] as String?,
       commune: AuthSessionCommune.fromJson(json['commune']),
     );
@@ -145,8 +141,16 @@ class AuthSessionStore {
   }
 
   Future<void> clear() async {
+    await clearSensitiveSessionData();
+  }
+
+  Future<void> clearSensitiveSessionData() async {
     _preferences ??= await SharedPreferences.getInstance();
     _currentSession = null;
     await _preferences?.remove(_storageKey);
+    await _preferences?.remove('citizen_access_codes_v1');
+    await _preferences?.remove('citizen_fingerprints_v1');
+    await _preferences?.remove('duplicate_code_requests_v1');
+    await _preferences?.remove('controller_activity_logs_v1');
   }
 }

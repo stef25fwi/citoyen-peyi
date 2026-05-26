@@ -1,21 +1,21 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import 'auth_session_store.dart';
-import 'browser_storage_service.dart';
 import 'firestore_data_service.dart';
 import 'super_admin_service.dart';
 
 enum DuplicateReason {
   lostCode('lost_code', 'Code perdu'),
   unreadableCode('unreadable_code', 'Code illisible'),
-  citizenClaimsNoAccess('citizen_claims_no_access', 'La personne affirme ne jamais avoir recu son code'),
-  newCitizenCodeCreation('new_citizen_code_creation', 'Nouvelle creation de code citoyen'),
+  citizenClaimsNoAccess('citizen_claims_no_access',
+      'La personne affirme ne jamais avoir reçu son code'),
+  newCitizenCodeCreation(
+      'new_citizen_code_creation', 'Nouvelle création de code citoyen'),
   controllerError('controller_error', 'Erreur de saisie'),
   other('other', 'Autre');
 
@@ -32,31 +32,9 @@ enum DuplicateReason {
   }
 }
 
-class CitizenSourceKeyData {
-  const CitizenSourceKeyData({
-    required this.sourceKeyMasked,
-    required this.firstNameInitial,
-    required this.lastNameInitial,
-    required this.birthYear,
-    required this.phoneSuffix,
-  });
-
-  final String sourceKeyMasked;
-  final String firstNameInitial;
-  final String lastNameInitial;
-  final String birthYear;
-  final String phoneSuffix;
-}
-
 class CitizenAccessCodeModel {
   const CitizenAccessCodeModel({
     required this.accessCode,
-    required this.fingerprint,
-    required this.sourceKeyMasked,
-    required this.firstNameInitial,
-    required this.lastNameInitial,
-    required this.birthYear,
-    required this.phoneSuffix,
     required this.communeId,
     required this.communeName,
     required this.createdByControllerId,
@@ -76,12 +54,6 @@ class CitizenAccessCodeModel {
   });
 
   final String accessCode;
-  final String fingerprint;
-  final String sourceKeyMasked;
-  final String firstNameInitial;
-  final String lastNameInitial;
-  final String birthYear;
-  final String phoneSuffix;
   final String communeId;
   final String communeName;
   final String createdByControllerId;
@@ -112,12 +84,6 @@ class CitizenAccessCodeModel {
   }) {
     return CitizenAccessCodeModel(
       accessCode: accessCode,
-      fingerprint: fingerprint,
-      sourceKeyMasked: sourceKeyMasked,
-      firstNameInitial: firstNameInitial,
-      lastNameInitial: lastNameInitial,
-      birthYear: birthYear,
-      phoneSuffix: phoneSuffix,
       communeId: communeId,
       communeName: communeName,
       createdByControllerId: createdByControllerId,
@@ -129,22 +95,19 @@ class CitizenAccessCodeModel {
       regenerationIndex: regenerationIndex,
       pollScope: pollScope ?? this.pollScope,
       eligiblePollIds: eligiblePollIds ?? this.eligiblePollIds,
-      identityDocumentChecked: identityDocumentChecked ?? this.identityDocumentChecked,
+      identityDocumentChecked:
+          identityDocumentChecked ?? this.identityDocumentChecked,
       addressProofChecked: addressProofChecked ?? this.addressProofChecked,
-      communeEligibilityChecked: communeEligibilityChecked ?? this.communeEligibilityChecked,
-      approvedBySuperAdminId: approvedBySuperAdminId ?? this.approvedBySuperAdminId,
+      communeEligibilityChecked:
+          communeEligibilityChecked ?? this.communeEligibilityChecked,
+      approvedBySuperAdminId:
+          approvedBySuperAdminId ?? this.approvedBySuperAdminId,
       approvedAt: approvedAt ?? this.approvedAt,
     );
   }
 
   Map<String, dynamic> toJson() => {
-        'accessCode': accessCode,
-        'fingerprint': fingerprint,
-        'sourceKeyMasked': sourceKeyMasked,
-        'firstNameInitial': firstNameInitial,
-        'lastNameInitial': lastNameInitial,
-        'birthYear': birthYear,
-        'phoneSuffix': phoneSuffix,
+        'displayCodeMasked': accessCode,
         'communeId': communeId,
         'communeName': communeName,
         'createdByControllerId': createdByControllerId,
@@ -152,7 +115,6 @@ class CitizenAccessCodeModel {
         'createdAt': createdAt,
         'status': status,
         'usedForLogin': usedForLogin,
-        'regeneratedFromCode': regeneratedFromCode,
         'regenerationIndex': regenerationIndex,
         'pollScope': pollScope,
         'eligiblePollIds': eligiblePollIds,
@@ -164,24 +126,37 @@ class CitizenAccessCodeModel {
       };
 
   Map<String, dynamic> toFirestore() => {
-        ...toJson(),
+        'communeId': communeId,
+        'communeName': communeName,
+        'createdByControllerId': createdByControllerId,
+        'createdByControllerName': createdByControllerName,
         'createdAt': Timestamp.fromDate(DateTime.parse(createdAt)),
-        if (approvedAt != null) 'approvedAt': Timestamp.fromDate(DateTime.parse(approvedAt!)),
+        'status': status,
+        'usedForLogin': usedForLogin,
+        'regenerationIndex': regenerationIndex,
+        'pollScope': pollScope,
+        'eligiblePollIds': eligiblePollIds,
+        'identityDocumentChecked': identityDocumentChecked,
+        'addressProofChecked': addressProofChecked,
+        'communeEligibilityChecked': communeEligibilityChecked,
+        'approvedBySuperAdminId': approvedBySuperAdminId,
+        if (approvedAt != null)
+          'approvedAt': Timestamp.fromDate(DateTime.parse(approvedAt!)),
       };
 
   static CitizenAccessCodeModel fromJson(Map<String, dynamic> json) {
-    final metadata = json['metadata'] as Map<String, dynamic>? ?? const <String, dynamic>{};
-    final verification = metadata['verification'] as Map<String, dynamic>? ?? const <String, dynamic>{};
-    final rawEligiblePollIds = json['eligiblePollIds'] as List<dynamic>? ?? metadata['eligiblePollIds'] as List<dynamic>? ?? const [];
+    final metadata =
+        json['metadata'] as Map<String, dynamic>? ?? const <String, dynamic>{};
+    final verification = metadata['verification'] as Map<String, dynamic>? ??
+        const <String, dynamic>{};
+    final rawEligiblePollIds = json['eligiblePollIds'] as List<dynamic>? ??
+        metadata['eligiblePollIds'] as List<dynamic>? ??
+        const [];
 
     return CitizenAccessCodeModel(
-      accessCode: json['accessCode'] as String? ?? '',
-      fingerprint: json['fingerprint'] as String? ?? '',
-      sourceKeyMasked: json['sourceKeyMasked'] as String? ?? '',
-      firstNameInitial: json['firstNameInitial'] as String? ?? '',
-      lastNameInitial: json['lastNameInitial'] as String? ?? '',
-      birthYear: json['birthYear'] as String? ?? '',
-      phoneSuffix: json['phoneSuffix'] as String? ?? '',
+      accessCode: json['accessCode'] as String? ??
+          json['displayCodeMasked'] as String? ??
+          '',
       communeId: json['communeId'] as String? ?? '',
       communeName: json['communeName'] as String? ?? '',
       createdByControllerId: json['createdByControllerId'] as String? ?? '',
@@ -191,65 +166,25 @@ class CitizenAccessCodeModel {
       usedForLogin: json['usedForLogin'] as bool? ?? false,
       regeneratedFromCode: json['regeneratedFromCode'] as String?,
       regenerationIndex: (json['regenerationIndex'] as num?)?.toInt() ?? 0,
-      pollScope: json['pollScope'] as String? ?? metadata['pollScope'] as String? ?? 'all_open_polls',
-      eligiblePollIds: rawEligiblePollIds.map((item) => '$item').where((item) => item.isNotEmpty).toList(),
-      identityDocumentChecked: json['identityDocumentChecked'] as bool? ?? verification['hasIdentityDocument'] as bool? ?? false,
-      addressProofChecked: json['addressProofChecked'] as bool? ?? verification['hasResidenceProof'] as bool? ?? false,
-      communeEligibilityChecked: json['communeEligibilityChecked'] as bool? ?? verification['communeEligibilityChecked'] as bool? ?? false,
+      pollScope: json['pollScope'] as String? ??
+          metadata['pollScope'] as String? ??
+          'all_open_polls',
+      eligiblePollIds: rawEligiblePollIds
+          .map((item) => '$item')
+          .where((item) => item.isNotEmpty)
+          .toList(),
+      identityDocumentChecked: json['identityDocumentChecked'] as bool? ??
+          verification['hasIdentityDocument'] as bool? ??
+          false,
+      addressProofChecked: json['addressProofChecked'] as bool? ??
+          verification['hasResidenceProof'] as bool? ??
+          false,
+      communeEligibilityChecked: json['communeEligibilityChecked'] as bool? ??
+          verification['communeEligibilityChecked'] as bool? ??
+          false,
       approvedBySuperAdminId: json['approvedBySuperAdminId'] as String?,
-      approvedAt: json['approvedAt'] == null ? null : _readDate(json['approvedAt']),
-    );
-  }
-}
-
-class CitizenFingerprintModel {
-  const CitizenFingerprintModel({
-    required this.fingerprint,
-    required this.sourceKeyMasked,
-    required this.firstAccessCode,
-    required this.latestAccessCode,
-    required this.communeId,
-    required this.createdAt,
-    required this.updatedAt,
-    required this.regenerationCount,
-  });
-
-  final String fingerprint;
-  final String sourceKeyMasked;
-  final String firstAccessCode;
-  final String latestAccessCode;
-  final String communeId;
-  final String createdAt;
-  final String updatedAt;
-  final int regenerationCount;
-
-  Map<String, dynamic> toJson() => {
-        'fingerprint': fingerprint,
-        'sourceKeyMasked': sourceKeyMasked,
-        'firstAccessCode': firstAccessCode,
-        'latestAccessCode': latestAccessCode,
-        'communeId': communeId,
-        'createdAt': createdAt,
-        'updatedAt': updatedAt,
-        'regenerationCount': regenerationCount,
-      };
-
-  Map<String, dynamic> toFirestore() => {
-        ...toJson(),
-        'createdAt': Timestamp.fromDate(DateTime.parse(createdAt)),
-        'updatedAt': Timestamp.fromDate(DateTime.parse(updatedAt)),
-      };
-
-  static CitizenFingerprintModel fromJson(Map<String, dynamic> json) {
-    return CitizenFingerprintModel(
-      fingerprint: json['fingerprint'] as String? ?? '',
-      sourceKeyMasked: json['sourceKeyMasked'] as String? ?? '',
-      firstAccessCode: json['firstAccessCode'] as String? ?? '',
-      latestAccessCode: json['latestAccessCode'] as String? ?? '',
-      communeId: json['communeId'] as String? ?? '',
-      createdAt: _readDate(json['createdAt']),
-      updatedAt: _readDate(json['updatedAt']),
-      regenerationCount: (json['regenerationCount'] as num?)?.toInt() ?? 0,
+      approvedAt:
+          json['approvedAt'] == null ? null : _readDate(json['approvedAt']),
     );
   }
 }
@@ -257,9 +192,6 @@ class CitizenFingerprintModel {
 class DuplicateCodeRequestModel {
   const DuplicateCodeRequestModel({
     required this.id,
-    required this.fingerprint,
-    required this.sourceKeyMasked,
-    required this.existingAccessCode,
     required this.requestedByControllerId,
     required this.requestedByControllerName,
     required this.communeId,
@@ -271,13 +203,9 @@ class DuplicateCodeRequestModel {
     this.reviewedBySuperAdminId,
     this.reviewedAt,
     this.rejectionReason,
-    this.newAccessCode,
   });
 
   final String id;
-  final String fingerprint;
-  final String sourceKeyMasked;
-  final String existingAccessCode;
   final String requestedByControllerId;
   final String requestedByControllerName;
   final String communeId;
@@ -289,13 +217,9 @@ class DuplicateCodeRequestModel {
   final String? reviewedBySuperAdminId;
   final String? reviewedAt;
   final String? rejectionReason;
-  final String? newAccessCode;
 
   Map<String, dynamic> toJson() => {
         'id': id,
-        'fingerprint': fingerprint,
-        'sourceKeyMasked': sourceKeyMasked,
-        'existingAccessCode': existingAccessCode,
         'requestedByControllerId': requestedByControllerId,
         'requestedByControllerName': requestedByControllerName,
         'communeId': communeId,
@@ -307,13 +231,22 @@ class DuplicateCodeRequestModel {
         'reviewedBySuperAdminId': reviewedBySuperAdminId,
         'reviewedAt': reviewedAt,
         'rejectionReason': rejectionReason,
-        'newAccessCode': newAccessCode,
       };
 
   Map<String, dynamic> toFirestore() => {
-        ...toJson(),
+        'id': id,
+        'requestedByControllerId': requestedByControllerId,
+        'requestedByControllerName': requestedByControllerName,
+        'communeId': communeId,
+        'communeName': communeName,
         'requestedAt': Timestamp.fromDate(DateTime.parse(requestedAt)),
-        if (reviewedAt != null) 'reviewedAt': Timestamp.fromDate(DateTime.parse(reviewedAt!)),
+        'status': status,
+        'duplicateReason': duplicateReason.value,
+        'controllerComment': controllerComment,
+        'reviewedBySuperAdminId': reviewedBySuperAdminId,
+        if (reviewedAt != null)
+          'reviewedAt': Timestamp.fromDate(DateTime.parse(reviewedAt!)),
+        'rejectionReason': rejectionReason,
       };
 
   DuplicateCodeRequestModel copyWith({
@@ -321,13 +254,9 @@ class DuplicateCodeRequestModel {
     String? reviewedBySuperAdminId,
     String? reviewedAt,
     String? rejectionReason,
-    String? newAccessCode,
   }) {
     return DuplicateCodeRequestModel(
       id: id,
-      fingerprint: fingerprint,
-      sourceKeyMasked: sourceKeyMasked,
-      existingAccessCode: existingAccessCode,
       requestedByControllerId: requestedByControllerId,
       requestedByControllerName: requestedByControllerName,
       communeId: communeId,
@@ -336,31 +265,31 @@ class DuplicateCodeRequestModel {
       status: status ?? this.status,
       duplicateReason: duplicateReason,
       controllerComment: controllerComment,
-      reviewedBySuperAdminId: reviewedBySuperAdminId ?? this.reviewedBySuperAdminId,
+      reviewedBySuperAdminId:
+          reviewedBySuperAdminId ?? this.reviewedBySuperAdminId,
       reviewedAt: reviewedAt ?? this.reviewedAt,
       rejectionReason: rejectionReason ?? this.rejectionReason,
-      newAccessCode: newAccessCode ?? this.newAccessCode,
     );
   }
 
-  static DuplicateCodeRequestModel fromJson(Map<String, dynamic> json, {String? id}) {
+  static DuplicateCodeRequestModel fromJson(Map<String, dynamic> json,
+      {String? id}) {
     return DuplicateCodeRequestModel(
       id: id ?? json['id'] as String? ?? '',
-      fingerprint: json['fingerprint'] as String? ?? '',
-      sourceKeyMasked: json['sourceKeyMasked'] as String? ?? '',
-      existingAccessCode: json['existingAccessCode'] as String? ?? '',
       requestedByControllerId: json['requestedByControllerId'] as String? ?? '',
-      requestedByControllerName: json['requestedByControllerName'] as String? ?? '',
+      requestedByControllerName:
+          json['requestedByControllerName'] as String? ?? '',
       communeId: json['communeId'] as String? ?? '',
       communeName: json['communeName'] as String? ?? '',
       requestedAt: _readDate(json['requestedAt']),
       status: json['status'] as String? ?? 'pending',
-      duplicateReason: DuplicateReason.fromValue(json['duplicateReason'] as String?),
+      duplicateReason:
+          DuplicateReason.fromValue(json['duplicateReason'] as String?),
       controllerComment: json['controllerComment'] as String?,
       reviewedBySuperAdminId: json['reviewedBySuperAdminId'] as String?,
-      reviewedAt: json['reviewedAt'] == null ? null : _readDate(json['reviewedAt']),
+      reviewedAt:
+          json['reviewedAt'] == null ? null : _readDate(json['reviewedAt']),
       rejectionReason: json['rejectionReason'] as String?,
-      newAccessCode: json['newAccessCode'] as String?,
     );
   }
 }
@@ -374,9 +303,6 @@ class ControllerActivityLogModel {
     required this.controllerName,
     required this.actionType,
     required this.createdAt,
-    this.accessCode,
-    this.fingerprint,
-    this.sourceKeyMasked,
     this.metadata = const <String, dynamic>{},
   });
 
@@ -386,9 +312,6 @@ class ControllerActivityLogModel {
   final String controllerId;
   final String controllerName;
   final String actionType;
-  final String? accessCode;
-  final String? fingerprint;
-  final String? sourceKeyMasked;
   final String createdAt;
   final Map<String, dynamic> metadata;
 
@@ -399,19 +322,23 @@ class ControllerActivityLogModel {
         'controllerId': controllerId,
         'controllerName': controllerName,
         'actionType': actionType,
-        'accessCode': accessCode,
-        'fingerprint': fingerprint,
-        'sourceKeyMasked': sourceKeyMasked,
         'createdAt': createdAt,
         'metadata': metadata,
       };
 
   Map<String, dynamic> toFirestore() => {
-        ...toJson(),
+        'id': id,
+        'communeId': communeId,
+        'communeName': communeName,
+        'controllerId': controllerId,
+        'controllerName': controllerName,
+        'actionType': actionType,
         'createdAt': Timestamp.fromDate(DateTime.parse(createdAt)),
+        'metadata': metadata,
       };
 
-  static ControllerActivityLogModel fromJson(Map<String, dynamic> json, {String? id}) {
+  static ControllerActivityLogModel fromJson(Map<String, dynamic> json,
+      {String? id}) {
     return ControllerActivityLogModel(
       id: id ?? json['id'] as String? ?? '',
       communeId: json['communeId'] as String? ?? '',
@@ -419,11 +346,9 @@ class ControllerActivityLogModel {
       controllerId: json['controllerId'] as String? ?? '',
       controllerName: json['controllerName'] as String? ?? '',
       actionType: json['actionType'] as String? ?? '',
-      accessCode: json['accessCode'] as String?,
-      fingerprint: json['fingerprint'] as String?,
-      sourceKeyMasked: json['sourceKeyMasked'] as String?,
       createdAt: _readDate(json['createdAt']),
-      metadata: (json['metadata'] as Map<String, dynamic>?) ?? const <String, dynamic>{},
+      metadata: (json['metadata'] as Map<String, dynamic>?) ??
+          const <String, dynamic>{},
     );
   }
 }
@@ -431,16 +356,16 @@ class ControllerActivityLogModel {
 class CitizenCodeCreationResult {
   const CitizenCodeCreationResult.created(this.accessCode)
       : duplicateRequest = null,
-        existingAccessCode = null;
+        hasDuplicateRequest = false;
 
   const CitizenCodeCreationResult.duplicate({
     required this.duplicateRequest,
-    required this.existingAccessCode,
-  }) : accessCode = null;
+  })  : accessCode = null,
+        hasDuplicateRequest = true;
 
   final CitizenAccessCodeModel? accessCode;
   final DuplicateCodeRequestModel? duplicateRequest;
-  final String? existingAccessCode;
+  final bool hasDuplicateRequest;
 
   bool get created => accessCode != null;
 }
@@ -515,70 +440,8 @@ class CitizenAccessCodeService {
   static final CitizenAccessCodeService instance = CitizenAccessCodeService._();
 
   static const _accessCollection = 'citizen_access_codes';
-  static const _fingerprintCollection = 'citizen_fingerprints';
   static const _duplicateCollection = 'duplicate_code_requests';
   static const _activityCollection = 'controller_activity_logs';
-
-  static const _localAccessKey = 'citizen_access_codes_v1';
-  static const _localFingerprintKey = 'citizen_fingerprints_v1';
-  static const _localDuplicateKey = 'duplicate_code_requests_v1';
-  static const _localActivityKey = 'controller_activity_logs_v1';
-
-  CitizenSourceKeyData generateCitizenSourceKey({
-    required String firstName,
-    required String lastName,
-    required String birthYear,
-    required String phoneSuffix,
-  }) {
-    final firstInitial = _normalizeInitial(firstName);
-    final lastInitial = _normalizeInitial(lastName);
-    final year = _normalizeDigits(birthYear, expectedLength: 4);
-    final suffix = _normalizeDigits(phoneSuffix, expectedLength: 2, keepLast: true);
-
-    if (firstInitial.isEmpty || lastInitial.isEmpty || year.length != 4 || suffix.length != 2) {
-      throw ArgumentError('Informations minimales invalides.');
-    }
-
-    return CitizenSourceKeyData(
-      sourceKeyMasked: '$firstInitial$lastInitial$year$suffix',
-      firstNameInitial: firstInitial,
-      lastNameInitial: lastInitial,
-      birthYear: year,
-      phoneSuffix: suffix,
-    );
-  }
-
-  String generateCitizenFingerprint(String sourceKeyMasked) {
-    return sha256.convert(utf8.encode(sourceKeyMasked.trim().toUpperCase())).toString();
-  }
-
-  String generateCitizenAccessCode(String sourceKeyMasked) {
-    return generateCitizenFingerprint(sourceKeyMasked).substring(0, 8).toUpperCase();
-  }
-
-  String generateRegeneratedAccessCode(String sourceKeyMasked, int regenerationIndex) {
-    final seed = '${sourceKeyMasked.trim().toUpperCase()}-REGEN-$regenerationIndex';
-    return sha256.convert(utf8.encode(seed)).toString().substring(0, 8).toUpperCase();
-  }
-
-  Future<CitizenFingerprintModel?> checkDuplicateByFingerprint(String fingerprint) async {
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      final doc = await db.collection(_fingerprintCollection).doc(fingerprint).get();
-      if (!doc.exists || doc.data() == null) {
-        return null;
-      }
-      return CitizenFingerprintModel.fromJson(doc.data()!);
-    }
-
-    final records = await BrowserStorageService.instance.readJsonList(_localFingerprintKey);
-    for (final record in records) {
-      if (record['fingerprint'] == fingerprint) {
-        return CitizenFingerprintModel.fromJson(record);
-      }
-    }
-    return null;
-  }
 
   Future<CitizenCodeCreationResult> createCitizenAccessCode({
     required String firstName,
@@ -593,9 +456,6 @@ class CitizenAccessCodeService {
     String? controllerComment,
     AuthSession? session,
   }) async {
-    final currentSession = session ?? AuthSessionStore.instance.currentSession;
-    final pollScope = selectedPollId?.trim().isNotEmpty == true ? 'single_poll' : 'all_open_polls';
-    final eligiblePollIds = selectedPollId?.trim().isNotEmpty == true ? <String>[selectedPollId!.trim()] : const <String>[];
     final backendResult = await _createCitizenAccessCodeOnBackend(
       firstName: firstName,
       lastName: lastName,
@@ -612,139 +472,13 @@ class CitizenAccessCodeService {
       return backendResult;
     }
 
-    final source = generateCitizenSourceKey(
-      firstName: firstName,
-      lastName: lastName,
-      birthYear: birthYear,
-      phoneSuffix: phoneSuffix,
-    );
-    final fingerprint = generateCitizenFingerprint(source.sourceKeyMasked);
-    final existing = await checkDuplicateByFingerprint(fingerprint);
-
-    if (existing != null) {
-      final duplicateRequest = await createDuplicateRequest(
-        fingerprint: fingerprint,
-        sourceKeyMasked: source.sourceKeyMasked,
-        existingAccessCode: existing.latestAccessCode,
-        duplicateReason: duplicateReason,
-        controllerComment: controllerComment,
-        session: currentSession,
-      );
-      await logControllerActivity(
-        actionType: 'duplicate_detected',
-        accessCode: existing.latestAccessCode,
-        fingerprint: fingerprint,
-        sourceKeyMasked: source.sourceKeyMasked,
-        metadata: {
-          'duplicateRequestId': duplicateRequest.id,
-          'pollScope': pollScope,
-          'eligiblePollIds': eligiblePollIds,
-          'verification': {
-            'identityDocumentChecked': identityDocumentChecked,
-            'addressProofChecked': addressProofChecked,
-            'communeEligibilityChecked': communeEligibilityChecked,
-          },
-        },
-        session: currentSession,
-      );
-      await logControllerActivity(
-        actionType: 'duplicate_request_created',
-        accessCode: existing.latestAccessCode,
-        fingerprint: fingerprint,
-        sourceKeyMasked: source.sourceKeyMasked,
-        metadata: {
-          'duplicateRequestId': duplicateRequest.id,
-          'reason': duplicateReason.value,
-          'pollScope': pollScope,
-          'eligiblePollIds': eligiblePollIds,
-        },
-        session: currentSession,
-      );
-      return CitizenCodeCreationResult.duplicate(
-        duplicateRequest: duplicateRequest,
-        existingAccessCode: existing.latestAccessCode,
-      );
-    }
-
-    final now = DateTime.now().toIso8601String();
-    final accessCode = generateCitizenAccessCode(source.sourceKeyMasked);
-    final model = CitizenAccessCodeModel(
-      accessCode: accessCode,
-      fingerprint: fingerprint,
-      sourceKeyMasked: source.sourceKeyMasked,
-      firstNameInitial: source.firstNameInitial,
-      lastNameInitial: source.lastNameInitial,
-      birthYear: source.birthYear,
-      phoneSuffix: source.phoneSuffix,
-      communeId: _sessionCommuneId(currentSession),
-      communeName: _sessionCommuneName(currentSession),
-      createdByControllerId: _sessionActorId(currentSession),
-      createdByControllerName: _sessionActorName(currentSession),
-      createdAt: now,
-      status: 'active',
-      usedForLogin: false,
-      regenerationIndex: 0,
-      pollScope: pollScope,
-      eligiblePollIds: eligiblePollIds,
-      identityDocumentChecked: identityDocumentChecked,
-      addressProofChecked: addressProofChecked,
-      communeEligibilityChecked: communeEligibilityChecked,
-    );
-    final fingerprintModel = CitizenFingerprintModel(
-      fingerprint: fingerprint,
-      sourceKeyMasked: source.sourceKeyMasked,
-      firstAccessCode: accessCode,
-      latestAccessCode: accessCode,
-      communeId: model.communeId,
-      createdAt: now,
-      updatedAt: now,
-      regenerationCount: 0,
-    );
-
-    await _saveAccessAndFingerprint(model, fingerprintModel);
-    await logControllerActivity(
-      actionType: 'code_created',
-      accessCode: accessCode,
-      fingerprint: fingerprint,
-      sourceKeyMasked: source.sourceKeyMasked,
-      metadata: {
-        'pollScope': pollScope,
-        'eligiblePollIds': eligiblePollIds,
-        'verification': {
-          'identityDocumentChecked': identityDocumentChecked,
-          'addressProofChecked': addressProofChecked,
-          'communeEligibilityChecked': communeEligibilityChecked,
-        },
-      },
-      session: currentSession,
-    );
-    return CitizenCodeCreationResult.created(model);
+    throw StateError(
+        'Validation de sécurité indisponible. Réessayez plus tard.');
   }
 
   Future<CitizenAccessCodeModel?> findActiveAccessCode(String rawCode) async {
     final normalizedCode = _normalizeAccessCode(rawCode);
     if (normalizedCode.isEmpty) return null;
-
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      try {
-        final doc = await db.collection(_accessCollection).doc(normalizedCode).get();
-        if (!doc.exists || doc.data() == null) return null;
-        final access = CitizenAccessCodeModel.fromJson(doc.data()!);
-        return access.status == 'active' ? access : null;
-      } catch (_) {
-        // En production, cette lecture publique doit passer par un endpoint backend.
-        // Le fallback local ci-dessous conserve le mode demo fonctionnel.
-      }
-    }
-
-    final records = await BrowserStorageService.instance.readJsonList(_localAccessKey);
-    for (final record in records) {
-      final access = CitizenAccessCodeModel.fromJson(record);
-      if (access.accessCode.toUpperCase() == normalizedCode && access.status == 'active') {
-        return access;
-      }
-    }
     return null;
   }
 
@@ -765,20 +499,26 @@ class CitizenAccessCodeService {
         if (controllerId?.isNotEmpty == true) {
           query = query.where('createdByControllerId', isEqualTo: controllerId);
         }
-        final snapshot = await query.orderBy('createdAt', descending: true).limit(limit).get();
-        records = snapshot.docs.map((doc) => CitizenAccessCodeModel.fromJson(doc.data())).toList();
+        final snapshot = await query
+            .orderBy('createdAt', descending: true)
+            .limit(limit)
+            .get();
+        records = snapshot.docs
+            .map((doc) => CitizenAccessCodeModel.fromJson(doc.data()))
+            .toList();
       } catch (_) {
-        records = await _loadLocalAccessCodes();
+        records = <CitizenAccessCodeModel>[];
       }
     } else {
-      records = await _loadLocalAccessCodes();
+      records = <CitizenAccessCodeModel>[];
     }
 
     return records.where((item) {
       if (communeId?.isNotEmpty == true && item.communeId != communeId) {
         return false;
       }
-      if (controllerId?.isNotEmpty == true && item.createdByControllerId != controllerId) {
+      if (controllerId?.isNotEmpty == true &&
+          item.createdByControllerId != controllerId) {
         return false;
       }
       return true;
@@ -786,15 +526,22 @@ class CitizenAccessCodeService {
       ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
   }
 
-  Future<List<CitizenAccessCodeModel>> loadAccessCodesForCurrentController() async {
+  Future<List<CitizenAccessCodeModel>>
+      loadAccessCodesForCurrentController() async {
     final session = AuthSessionStore.instance.currentSession;
     final controllerId = _sessionActorId(session);
-    final records = await loadAccessCodes(controllerId: controllerId, limit: 100);
-    return records.where((item) => item.createdByControllerId == controllerId || session?.mode == 'fallback').toList()
+    final records =
+        await loadAccessCodes(controllerId: controllerId, limit: 100);
+    return records
+        .where((item) =>
+            item.createdByControllerId == controllerId ||
+            session?.mode == 'fallback')
+        .toList()
       ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
   }
 
-  Future<List<CitizenAccessCodeModel>> loadAccessCodesForCurrentCommune() async {
+  Future<List<CitizenAccessCodeModel>>
+      loadAccessCodesForCurrentCommune() async {
     final session = AuthSessionStore.instance.currentSession;
     final communeId = _sessionCommuneId(session);
     final db = FirestoreDataService.instance;
@@ -806,17 +553,23 @@ class CitizenAccessCodeService {
         if (communeId.isNotEmpty && communeId != 'unknown-commune') {
           query = query.where('communeId', isEqualTo: communeId);
         }
-        final snapshot = await query.orderBy('createdAt', descending: true).limit(250).get();
-        records = snapshot.docs.map((doc) => CitizenAccessCodeModel.fromJson(doc.data())).toList();
+        final snapshot =
+            await query.orderBy('createdAt', descending: true).limit(250).get();
+        records = snapshot.docs
+            .map((doc) => CitizenAccessCodeModel.fromJson(doc.data()))
+            .toList();
       } catch (_) {
-        records = await _loadLocalAccessCodes();
+        records = <CitizenAccessCodeModel>[];
       }
     } else {
-      records = await _loadLocalAccessCodes();
+      records = <CitizenAccessCodeModel>[];
     }
 
-    if (communeId.isEmpty || communeId == 'unknown-commune' || session?.mode == 'fallback') {
-      return records..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+    if (communeId.isEmpty ||
+        communeId == 'unknown-commune' ||
+        session?.mode == 'fallback') {
+      return records
+        ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
     }
 
     return records.where((item) => item.communeId == communeId).toList()
@@ -826,67 +579,16 @@ class CitizenAccessCodeService {
   Future<void> markAccessCodeUsedForPublicVote(String accessCode) async {
     final normalizedCode = _normalizeAccessCode(accessCode);
     if (normalizedCode.isEmpty) return;
-
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      try {
-        await db.collection(_accessCollection).doc(normalizedCode).set(
-          {'usedForLogin': true},
-          SetOptions(merge: true),
-        );
-        return;
-      } catch (_) {
-        // Le suivi public anonyme peut exiger un endpoint backend en production.
-      }
-    }
-
-    final records = await BrowserStorageService.instance.readJsonList(_localAccessKey);
-    final next = records.map((item) {
-      final access = CitizenAccessCodeModel.fromJson(item);
-      return access.accessCode.toUpperCase() == normalizedCode ? access.copyWith(usedForLogin: true).toJson() : item;
-    }).toList();
-    await BrowserStorageService.instance.writeJsonList(_localAccessKey, next);
-  }
-
-  Future<List<CitizenAccessCodeModel>> _loadLocalAccessCodes() async {
-    final records = await BrowserStorageService.instance.readJsonList(_localAccessKey);
-    return records.map((item) => CitizenAccessCodeModel.fromJson(item)).toList();
+    return;
   }
 
   Future<DuplicateCodeRequestModel> createDuplicateRequest({
-    required String fingerprint,
-    required String sourceKeyMasked,
-    required String existingAccessCode,
     required DuplicateReason duplicateReason,
     String? controllerComment,
     AuthSession? session,
   }) async {
-    final currentSession = session ?? AuthSessionStore.instance.currentSession;
-    final now = DateTime.now().toIso8601String();
-    final request = DuplicateCodeRequestModel(
-      id: 'dup-${DateTime.now().microsecondsSinceEpoch}',
-      fingerprint: fingerprint,
-      sourceKeyMasked: sourceKeyMasked,
-      existingAccessCode: existingAccessCode,
-      requestedByControllerId: _sessionActorId(currentSession),
-      requestedByControllerName: _sessionActorName(currentSession),
-      communeId: _sessionCommuneId(currentSession),
-      communeName: _sessionCommuneName(currentSession),
-      requestedAt: now,
-      status: 'pending',
-      duplicateReason: duplicateReason,
-      controllerComment: controllerComment?.trim().isEmpty == true ? null : controllerComment?.trim(),
-    );
-
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      final ref = await db.collection(_duplicateCollection).add(request.toFirestore());
-      return DuplicateCodeRequestModel.fromJson({...request.toJson(), 'id': ref.id}, id: ref.id);
-    }
-
-    final records = await BrowserStorageService.instance.readJsonList(_localDuplicateKey);
-    await BrowserStorageService.instance.writeJsonList(_localDuplicateKey, [request.toJson(), ...records]);
-    return request;
+    throw StateError(
+        'Validation de sécurité indisponible. Réessayez plus tard.');
   }
 
   Future<DuplicateCodeRequestModel?> approveDuplicateRequest({
@@ -900,81 +602,8 @@ class CitizenAccessCodeService {
     if (backendRequest != null) {
       return backendRequest;
     }
-
-    final request = await _loadDuplicateRequest(requestId);
-    if (request == null || request.status != 'pending') {
-      return request;
-    }
-
-    final fingerprint = await checkDuplicateByFingerprint(request.fingerprint);
-    if (fingerprint == null) {
-      return null;
-    }
-
-    final now = DateTime.now().toIso8601String();
-    final nextIndex = fingerprint.regenerationCount + 1;
-    final newCode = generateRegeneratedAccessCode(request.sourceKeyMasked, nextIndex);
-    final previousAccess = (await loadAccessCodes(communeId: request.communeId, limit: 250))
-      .where((item) => item.accessCode == fingerprint.latestAccessCode || item.accessCode == request.existingAccessCode)
-      .firstOrNull;
-    final newAccess = CitizenAccessCodeModel(
-      accessCode: newCode,
-      fingerprint: request.fingerprint,
-      sourceKeyMasked: request.sourceKeyMasked,
-      firstNameInitial: request.sourceKeyMasked.substring(0, 1),
-      lastNameInitial: request.sourceKeyMasked.substring(1, 2),
-      birthYear: request.sourceKeyMasked.substring(2, 6),
-      phoneSuffix: request.sourceKeyMasked.substring(6),
-      communeId: request.communeId,
-      communeName: request.communeName,
-      createdByControllerId: request.requestedByControllerId,
-      createdByControllerName: request.requestedByControllerName,
-      createdAt: now,
-      status: 'active',
-      usedForLogin: false,
-      regeneratedFromCode: fingerprint.latestAccessCode,
-      regenerationIndex: nextIndex,
-      pollScope: previousAccess?.pollScope ?? 'all_open_polls',
-      eligiblePollIds: previousAccess?.eligiblePollIds ?? const <String>[],
-      identityDocumentChecked: previousAccess?.identityDocumentChecked ?? false,
-      addressProofChecked: previousAccess?.addressProofChecked ?? false,
-      communeEligibilityChecked: previousAccess?.communeEligibilityChecked ?? false,
-      approvedBySuperAdminId: reviewedBySuperAdminId ?? _sessionActorId(AuthSessionStore.instance.currentSession),
-      approvedAt: now,
-    );
-    final updatedFingerprint = CitizenFingerprintModel(
-      fingerprint: fingerprint.fingerprint,
-      sourceKeyMasked: fingerprint.sourceKeyMasked,
-      firstAccessCode: fingerprint.firstAccessCode,
-      latestAccessCode: newCode,
-      communeId: fingerprint.communeId,
-      createdAt: fingerprint.createdAt,
-      updatedAt: now,
-      regenerationCount: nextIndex,
-    );
-    final updatedRequest = request.copyWith(
-      status: 'approved',
-      reviewedBySuperAdminId: reviewedBySuperAdminId ?? _sessionActorId(AuthSessionStore.instance.currentSession),
-      reviewedAt: now,
-      newAccessCode: newCode,
-    );
-
-    await _approveDuplicatePersist(
-      request: updatedRequest,
-      previousCode: fingerprint.latestAccessCode,
-      newAccess: newAccess,
-      fingerprint: updatedFingerprint,
-    );
-    await logControllerActivity(
-      actionType: 'regeneration_approved',
-      accessCode: newCode,
-      fingerprint: request.fingerprint,
-      sourceKeyMasked: request.sourceKeyMasked,
-      metadata: {'duplicateRequestId': requestId, 'previousCode': fingerprint.latestAccessCode},
-      actorOverride: (id: request.requestedByControllerId, name: request.requestedByControllerName),
-      communeOverride: (id: request.communeId, name: request.communeName),
-    );
-    return updatedRequest;
+    throw StateError(
+        'Validation de sécurité indisponible. Réessayez plus tard.');
   }
 
   Future<DuplicateCodeRequestModel?> rejectDuplicateRequest({
@@ -990,72 +619,28 @@ class CitizenAccessCodeService {
     if (backendRequest != null) {
       return backendRequest;
     }
-
-    final request = await _loadDuplicateRequest(requestId);
-    if (request == null) {
-      return null;
-    }
-    final updated = request.copyWith(
-      status: 'rejected',
-      reviewedBySuperAdminId: reviewedBySuperAdminId ?? _sessionActorId(AuthSessionStore.instance.currentSession),
-      reviewedAt: DateTime.now().toIso8601String(),
-      rejectionReason: rejectionReason.trim(),
-    );
-
-    await _saveDuplicateRequest(updated);
-    await logControllerActivity(
-      actionType: 'regeneration_rejected',
-      accessCode: request.existingAccessCode,
-      fingerprint: request.fingerprint,
-      sourceKeyMasked: request.sourceKeyMasked,
-      metadata: {'duplicateRequestId': requestId, 'reason': rejectionReason.trim()},
-      actorOverride: (id: request.requestedByControllerId, name: request.requestedByControllerName),
-      communeOverride: (id: request.communeId, name: request.communeName),
-    );
-    return updated;
+    throw StateError(
+        'Validation de sécurité indisponible. Réessayez plus tard.');
   }
 
   Future<void> logControllerActivity({
     required String actionType,
-    String? accessCode,
-    String? fingerprint,
-    String? sourceKeyMasked,
     Map<String, dynamic> metadata = const <String, dynamic>{},
     AuthSession? session,
     ({String id, String name})? actorOverride,
     ({String id, String name})? communeOverride,
   }) async {
-    final currentSession = session ?? AuthSessionStore.instance.currentSession;
-    final log = ControllerActivityLogModel(
-      id: 'log-${DateTime.now().microsecondsSinceEpoch}',
-      communeId: communeOverride?.id ?? _sessionCommuneId(currentSession),
-      communeName: communeOverride?.name ?? _sessionCommuneName(currentSession),
-      controllerId: actorOverride?.id ?? _sessionActorId(currentSession),
-      controllerName: actorOverride?.name ?? _sessionActorName(currentSession),
-      actionType: actionType,
-      accessCode: accessCode,
-      fingerprint: fingerprint,
-      sourceKeyMasked: sourceKeyMasked,
-      createdAt: DateTime.now().toIso8601String(),
-      metadata: metadata,
-    );
-
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      await db.collection(_activityCollection).add(log.toFirestore());
-      return;
-    }
-
-    final records = await BrowserStorageService.instance.readJsonList(_localActivityKey);
-    await BrowserStorageService.instance.writeJsonList(_localActivityKey, [log.toJson(), ...records]);
+    return;
   }
 
   Future<List<ControllerActivityLogModel>> getControllerActivityLogs({
     ControllerActivityFilters filters = const ControllerActivityFilters(),
   }) async {
-    final backendLogs = await _getControllerActivityLogsFromBackend(filters: filters);
+    final backendLogs =
+        await _getControllerActivityLogsFromBackend(filters: filters);
     if (backendLogs != null) {
-      return _applyDateFilters(backendLogs, filters)..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+      return _applyDateFilters(backendLogs, filters)
+        ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
     }
 
     final db = FirestoreDataService.instance;
@@ -1072,14 +657,18 @@ class CitizenAccessCodeService {
       if (filters.actionType?.isNotEmpty == true) {
         query = query.where('actionType', isEqualTo: filters.actionType);
       }
-      final snapshot = await query.orderBy('createdAt', descending: true).limit(250).get();
-      logs = snapshot.docs.map((doc) => ControllerActivityLogModel.fromJson(doc.data(), id: doc.id)).toList();
+      final snapshot =
+          await query.orderBy('createdAt', descending: true).limit(250).get();
+      logs = snapshot.docs
+          .map((doc) =>
+              ControllerActivityLogModel.fromJson(doc.data(), id: doc.id))
+          .toList();
     } else {
-      final records = await BrowserStorageService.instance.readJsonList(_localActivityKey);
-      logs = records.map((item) => ControllerActivityLogModel.fromJson(item)).toList();
+      logs = <ControllerActivityLogModel>[];
     }
 
-    return _applyDateFilters(logs, filters)..sort((left, right) => right.createdAt.compareTo(left.createdAt));
+    return _applyDateFilters(logs, filters)
+      ..sort((left, right) => right.createdAt.compareTo(left.createdAt));
   }
 
   Future<List<DuplicateCodeRequestModel>> getDuplicateRequestsForSuperAdmin({
@@ -1100,26 +689,37 @@ class CitizenAccessCodeService {
     List<DuplicateCodeRequestModel> requests;
     if (db != null) {
       Query<Map<String, dynamic>> query = db.collection(_duplicateCollection);
-      if (communeId?.isNotEmpty == true) query = query.where('communeId', isEqualTo: communeId);
-      if (controllerId?.isNotEmpty == true) query = query.where('requestedByControllerId', isEqualTo: controllerId);
-      if (status?.isNotEmpty == true && status != 'all') query = query.where('status', isEqualTo: status);
-      final snapshot = await query.orderBy('requestedAt', descending: true).limit(200).get();
-      requests = snapshot.docs.map((doc) => DuplicateCodeRequestModel.fromJson(doc.data(), id: doc.id)).toList();
+      if (communeId?.isNotEmpty == true)
+        query = query.where('communeId', isEqualTo: communeId);
+      if (controllerId?.isNotEmpty == true)
+        query = query.where('requestedByControllerId', isEqualTo: controllerId);
+      if (status?.isNotEmpty == true && status != 'all')
+        query = query.where('status', isEqualTo: status);
+      final snapshot =
+          await query.orderBy('requestedAt', descending: true).limit(200).get();
+      requests = snapshot.docs
+          .map((doc) =>
+              DuplicateCodeRequestModel.fromJson(doc.data(), id: doc.id))
+          .toList();
     } else {
-      final records = await BrowserStorageService.instance.readJsonList(_localDuplicateKey);
-      requests = records.map((item) => DuplicateCodeRequestModel.fromJson(item)).toList();
+      requests = <DuplicateCodeRequestModel>[];
     }
 
     return requests.where((item) {
-      if (communeId?.isNotEmpty == true && item.communeId != communeId) return false;
-      if (controllerId?.isNotEmpty == true && item.requestedByControllerId != controllerId) return false;
-      if (status?.isNotEmpty == true && status != 'all' && item.status != status) return false;
+      if (communeId?.isNotEmpty == true && item.communeId != communeId)
+        return false;
+      if (controllerId?.isNotEmpty == true &&
+          item.requestedByControllerId != controllerId) return false;
+      if (status?.isNotEmpty == true &&
+          status != 'all' &&
+          item.status != status) return false;
       return true;
     }).toList()
       ..sort((left, right) => right.requestedAt.compareTo(left.requestedAt));
   }
 
-  Future<List<DuplicateCodeRequestModel>> getDuplicateRequestsForCurrentController({
+  Future<List<DuplicateCodeRequestModel>>
+      getDuplicateRequestsForCurrentController({
     String? status,
   }) {
     final session = AuthSessionStore.instance.currentSession;
@@ -1140,10 +740,19 @@ class CitizenAccessCodeService {
     final result = <CommuneAnalyticsModel>[];
     for (final entry in byCommune.entries) {
       final communeLogs = entry.value;
-      final codeCount = communeLogs.where((item) => item.actionType == 'code_created').length;
-      final duplicateCount = communeLogs.where((item) => item.actionType == 'duplicate_detected').length;
-      final pendingCount = duplicates.where((item) => item.communeId == entry.key && item.status == 'pending').length;
-      final controllers = communeLogs.map((item) => item.controllerId).where((item) => item.isNotEmpty).toSet();
+      final codeCount =
+          communeLogs.where((item) => item.actionType == 'code_created').length;
+      final duplicateCount = communeLogs
+          .where((item) => item.actionType == 'duplicate_detected')
+          .length;
+      final pendingCount = duplicates
+          .where(
+              (item) => item.communeId == entry.key && item.status == 'pending')
+          .length;
+      final controllers = communeLogs
+          .map((item) => item.controllerId)
+          .where((item) => item.isNotEmpty)
+          .toSet();
       result.add(
         CommuneAnalyticsModel(
           communeId: entry.key,
@@ -1152,12 +761,16 @@ class CitizenAccessCodeService {
           codesGenerated: codeCount,
           duplicatesDetected: duplicateCount,
           pendingRequests: pendingCount,
-          duplicateRate: codeCount + duplicateCount == 0 ? 0 : duplicateCount / (codeCount + duplicateCount),
-          lastCodeGeneratedAt: communeLogs.isEmpty ? null : communeLogs.first.createdAt,
+          duplicateRate: codeCount + duplicateCount == 0
+              ? 0
+              : duplicateCount / (codeCount + duplicateCount),
+          lastCodeGeneratedAt:
+              communeLogs.isEmpty ? null : communeLogs.first.createdAt,
         ),
       );
     }
-    return result..sort((left, right) => left.communeName.compareTo(right.communeName));
+    return result
+      ..sort((left, right) => left.communeName.compareTo(right.communeName));
   }
 
   Future<ControllerActivityAnalytics> getControllerAnalytics({
@@ -1169,109 +782,30 @@ class CitizenAccessCodeService {
     for (final log in logs) {
       final day = log.createdAt.split('T').first;
       byDay[day] = (byDay[day] ?? 0) + 1;
-      byController[log.controllerName] = (byController[log.controllerName] ?? 0) + 1;
+      byController[log.controllerName] =
+          (byController[log.controllerName] ?? 0) + 1;
     }
 
     return ControllerActivityAnalytics(
       logs: logs,
-      totalCodesGenerated: logs.where((item) => item.actionType == 'code_created').length,
-      duplicatesDetected: logs.where((item) => item.actionType == 'duplicate_detected').length,
-      regenerationRequests: logs.where((item) => item.actionType == 'duplicate_request_created').length,
-      regenerationsApproved: logs.where((item) => item.actionType == 'regeneration_approved').length,
-      regenerationsRejected: logs.where((item) => item.actionType == 'regeneration_rejected').length,
-      loginCodesUsed: logs.where((item) => item.actionType == 'login_code_used').length,
+      totalCodesGenerated:
+          logs.where((item) => item.actionType == 'code_created').length,
+      duplicatesDetected:
+          logs.where((item) => item.actionType == 'duplicate_detected').length,
+      regenerationRequests: logs
+          .where((item) => item.actionType == 'duplicate_request_created')
+          .length,
+      regenerationsApproved: logs
+          .where((item) => item.actionType == 'regeneration_approved')
+          .length,
+      regenerationsRejected: logs
+          .where((item) => item.actionType == 'regeneration_rejected')
+          .length,
+      loginCodesUsed:
+          logs.where((item) => item.actionType == 'login_code_used').length,
       activityByDay: byDay,
       activityByController: byController,
       lastActivity: logs.isEmpty ? null : logs.first,
-    );
-  }
-
-  Future<void> _saveAccessAndFingerprint(
-    CitizenAccessCodeModel access,
-    CitizenFingerprintModel fingerprint,
-  ) async {
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      await db.runTransaction((transaction) async {
-        final fingerprintRef = db.collection(_fingerprintCollection).doc(fingerprint.fingerprint);
-        final existing = await transaction.get(fingerprintRef);
-        if (existing.exists) {
-          throw StateError('Un code existe deja pour cette empreinte.');
-        }
-        transaction.set(db.collection(_accessCollection).doc(access.accessCode), access.toFirestore());
-        transaction.set(fingerprintRef, fingerprint.toFirestore());
-      });
-      return;
-    }
-
-    final accessRecords = await BrowserStorageService.instance.readJsonList(_localAccessKey);
-    final fingerprintRecords = await BrowserStorageService.instance.readJsonList(_localFingerprintKey);
-    if (fingerprintRecords.any((item) => item['fingerprint'] == fingerprint.fingerprint)) {
-      throw StateError('Un code existe deja pour cette empreinte.');
-    }
-    await BrowserStorageService.instance.writeJsonList(_localAccessKey, [access.toJson(), ...accessRecords]);
-    await BrowserStorageService.instance.writeJsonList(_localFingerprintKey, [fingerprint.toJson(), ...fingerprintRecords]);
-  }
-
-  Future<DuplicateCodeRequestModel?> _loadDuplicateRequest(String requestId) async {
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      final doc = await db.collection(_duplicateCollection).doc(requestId).get();
-      if (!doc.exists || doc.data() == null) return null;
-      return DuplicateCodeRequestModel.fromJson(doc.data()!, id: doc.id);
-    }
-    final records = await BrowserStorageService.instance.readJsonList(_localDuplicateKey);
-    for (final item in records) {
-      if (item['id'] == requestId) return DuplicateCodeRequestModel.fromJson(item);
-    }
-    return null;
-  }
-
-  Future<void> _saveDuplicateRequest(DuplicateCodeRequestModel request) async {
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      await db.collection(_duplicateCollection).doc(request.id).set(request.toFirestore(), SetOptions(merge: true));
-      return;
-    }
-    final records = await BrowserStorageService.instance.readJsonList(_localDuplicateKey);
-    final next = records.map((item) => item['id'] == request.id ? request.toJson() : item).toList();
-    await BrowserStorageService.instance.writeJsonList(_localDuplicateKey, next);
-  }
-
-  Future<void> _approveDuplicatePersist({
-    required DuplicateCodeRequestModel request,
-    required String previousCode,
-    required CitizenAccessCodeModel newAccess,
-    required CitizenFingerprintModel fingerprint,
-  }) async {
-    final db = FirestoreDataService.instance;
-    if (db != null) {
-      final batch = db.batch();
-      batch.set(db.collection(_duplicateCollection).doc(request.id), request.toFirestore(), SetOptions(merge: true));
-      batch.set(db.collection(_accessCollection).doc(newAccess.accessCode), newAccess.toFirestore());
-      batch.set(db.collection(_fingerprintCollection).doc(fingerprint.fingerprint), fingerprint.toFirestore(), SetOptions(merge: true));
-      batch.set(db.collection(_accessCollection).doc(previousCode), {'status': 'replaced'}, SetOptions(merge: true));
-      await batch.commit();
-      return;
-    }
-
-    final requests = await BrowserStorageService.instance.readJsonList(_localDuplicateKey);
-    final access = await BrowserStorageService.instance.readJsonList(_localAccessKey);
-    final fingerprints = await BrowserStorageService.instance.readJsonList(_localFingerprintKey);
-    await BrowserStorageService.instance.writeJsonList(
-      _localDuplicateKey,
-      requests.map((item) => item['id'] == request.id ? request.toJson() : item).toList(),
-    );
-    await BrowserStorageService.instance.writeJsonList(
-      _localAccessKey,
-      [
-        newAccess.toJson(),
-        ...access.map((item) => item['accessCode'] == previousCode ? {...item, 'status': 'replaced'} : item),
-      ],
-    );
-    await BrowserStorageService.instance.writeJsonList(
-      _localFingerprintKey,
-      fingerprints.map((item) => item['fingerprint'] == fingerprint.fingerprint ? fingerprint.toJson() : item).toList(),
     );
   }
 
@@ -1282,22 +816,13 @@ class CitizenAccessCodeService {
     return logs.where((log) {
       final created = DateTime.tryParse(log.createdAt);
       if (created == null) return false;
-      if (filters.startDate != null && created.isBefore(filters.startDate!)) return false;
-      if (filters.endDate != null && created.isAfter(filters.endDate!.add(const Duration(days: 1)))) return false;
+      if (filters.startDate != null && created.isBefore(filters.startDate!))
+        return false;
+      if (filters.endDate != null &&
+          created.isAfter(filters.endDate!.add(const Duration(days: 1))))
+        return false;
       return true;
     }).toList();
-  }
-
-  String _normalizeInitial(String value) {
-    final trimmed = value.trim().toUpperCase();
-    if (trimmed.isEmpty) return '';
-    return String.fromCharCode(trimmed.runes.first);
-  }
-
-  String _normalizeDigits(String value, {required int expectedLength, bool keepLast = false}) {
-    final digits = value.replaceAll(RegExp(r'\D'), '');
-    if (digits.length < expectedLength) return digits;
-    return keepLast ? digits.substring(digits.length - expectedLength) : digits.substring(0, expectedLength);
   }
 
   String _normalizeAccessCode(String rawCode) {
@@ -1306,8 +831,10 @@ class CitizenAccessCodeService {
     if (trimmed.startsWith('{')) {
       try {
         final parsed = jsonDecode(trimmed) as Map<String, dynamic>;
-        final code = parsed['accessCode'] as String? ?? parsed['code'] as String?;
-        if (code != null && code.trim().isNotEmpty) return code.trim().toUpperCase();
+        final code =
+            parsed['accessCode'] as String? ?? parsed['code'] as String?;
+        if (code != null && code.trim().isNotEmpty)
+          return code.trim().toUpperCase();
       } catch (_) {
         return '';
       }
@@ -1320,22 +847,22 @@ class CitizenAccessCodeService {
       }
 
       final segments = uri.pathSegments;
-      if (segments.length >= 2 && segments[segments.length - 2].toLowerCase() == 'vote') {
+      if (segments.length >= 2 &&
+          segments[segments.length - 2].toLowerCase() == 'vote') {
         return Uri.decodeComponent(segments.last).toUpperCase();
       }
     }
     return trimmed.toUpperCase();
   }
 
-  String _sessionActorId(AuthSession? session) => session?.id ?? session?.code ?? 'unknown-controller';
+  String _sessionActorId(AuthSession? session) =>
+      session?.id ?? 'unknown-controller';
 
-  String _sessionActorName(AuthSession? session) => session?.label ?? 'Controleur';
+  String _sessionCommuneId(AuthSession? session) =>
+      session?.commune?.code ?? session?.commune?.name ?? 'unknown-commune';
 
-  String _sessionCommuneId(AuthSession? session) => session?.commune?.code ?? session?.commune?.name ?? 'unknown-commune';
-
-  String _sessionCommuneName(AuthSession? session) => session?.commune?.name ?? 'Commune non renseignee';
-
-  bool get _secureBackendMode => AppConfig.apiBaseUrl.isNotEmpty &&
+  bool get _secureBackendMode =>
+      AppConfig.apiBaseUrl.isNotEmpty &&
       !AppConfig.apiBaseUrl.contains('localhost') &&
       !AppConfig.apiBaseUrl.contains('127.0.0.1');
 
@@ -1366,8 +893,12 @@ class CitizenAccessCodeService {
           'phoneLastTwo': phoneSuffix,
         },
         'duplicateReason': duplicateReason.value,
-        'consultationScope': selectedPollId?.trim().isNotEmpty == true ? 'single_poll' : 'all_open_polls',
-        'consultationIds': selectedPollId?.trim().isNotEmpty == true ? <String>[selectedPollId!.trim()] : const <String>[],
+        'consultationScope': selectedPollId?.trim().isNotEmpty == true
+            ? 'single_poll'
+            : 'all_open_polls',
+        'consultationIds': selectedPollId?.trim().isNotEmpty == true
+            ? <String>[selectedPollId!.trim()]
+            : const <String>[],
         'verification': {
           'hasIdentityDocument': identityDocumentChecked,
           'hasResidenceProof': addressProofChecked,
@@ -1380,14 +911,17 @@ class CitizenAccessCodeService {
 
     final status = payload['status'] as String?;
     if (status == 'created') {
-      final access = CitizenAccessCodeModel.fromJson(payload['accessCode'] as Map<String, dynamic>? ?? const <String, dynamic>{});
+      final access = CitizenAccessCodeModel.fromJson(
+          payload['accessCode'] as Map<String, dynamic>? ??
+              const <String, dynamic>{});
       return CitizenCodeCreationResult.created(access);
     }
     if (status == 'duplicate_request_created') {
-      final request = DuplicateCodeRequestModel.fromJson(payload['duplicateRequest'] as Map<String, dynamic>? ?? const <String, dynamic>{});
+      final request = DuplicateCodeRequestModel.fromJson(
+          payload['duplicateRequest'] as Map<String, dynamic>? ??
+              const <String, dynamic>{});
       return CitizenCodeCreationResult.duplicate(
         duplicateRequest: request,
-        existingAccessCode: request.existingAccessCode,
       );
     }
     return null;
@@ -1400,11 +934,17 @@ class CitizenAccessCodeService {
   }) async {
     final payload = await _authorizedBackendRequest(
       method: 'POST',
-      path: '/api/citizen-access/duplicates/$requestId/${approve ? 'approve' : 'reject'}',
-      body: approve ? const <String, dynamic>{} : {'rejectionReason': rejectionReason},
+      path:
+          '/api/citizen-access/duplicates/$requestId/${approve ? 'approve' : 'reject'}',
+      body: approve
+          ? const <String, dynamic>{}
+          : {'rejectionReason': rejectionReason},
     );
     if (payload == null) return null;
-    return DuplicateCodeRequestModel.fromJson(payload['request'] as Map<String, dynamic>? ?? const <String, dynamic>{}, id: requestId);
+    return DuplicateCodeRequestModel.fromJson(
+        payload['request'] as Map<String, dynamic>? ??
+            const <String, dynamic>{},
+        id: requestId);
   }
 
   Future<List<DuplicateCodeRequestModel>?> _getDuplicateRequestsFromBackend({
@@ -1425,30 +965,38 @@ class CitizenAccessCodeService {
     final records = payload['requests'] as List<dynamic>? ?? const [];
     return records
         .whereType<Map<String, dynamic>>()
-        .map((item) => DuplicateCodeRequestModel.fromJson(item, id: item['id'] as String?))
+        .map((item) =>
+            DuplicateCodeRequestModel.fromJson(item, id: item['id'] as String?))
         .toList()
       ..sort((left, right) => right.requestedAt.compareTo(left.requestedAt));
   }
 
-  Future<List<ControllerActivityLogModel>?> _getControllerActivityLogsFromBackend({
+  Future<List<ControllerActivityLogModel>?>
+      _getControllerActivityLogsFromBackend({
     required ControllerActivityFilters filters,
   }) async {
     final payload = await _authorizedBackendRequest(
       method: 'GET',
       path: '/api/citizen-access/activity',
       query: {
-        if (filters.communeId?.isNotEmpty == true) 'communeId': filters.communeId!,
-        if (filters.controllerId?.isNotEmpty == true) 'controllerId': filters.controllerId!,
-        if (filters.actionType?.isNotEmpty == true) 'actionType': filters.actionType!,
-        if (filters.startDate != null) 'startDate': filters.startDate!.toIso8601String(),
-        if (filters.endDate != null) 'endDate': filters.endDate!.toIso8601String(),
+        if (filters.communeId?.isNotEmpty == true)
+          'communeId': filters.communeId!,
+        if (filters.controllerId?.isNotEmpty == true)
+          'controllerId': filters.controllerId!,
+        if (filters.actionType?.isNotEmpty == true)
+          'actionType': filters.actionType!,
+        if (filters.startDate != null)
+          'startDate': filters.startDate!.toIso8601String(),
+        if (filters.endDate != null)
+          'endDate': filters.endDate!.toIso8601String(),
       },
     );
     if (payload == null) return null;
     final records = payload['logs'] as List<dynamic>? ?? const [];
     return records
         .whereType<Map<String, dynamic>>()
-        .map((item) => ControllerActivityLogModel.fromJson(item, id: item['id'] as String?))
+        .map((item) => ControllerActivityLogModel.fromJson(item,
+            id: item['id'] as String?))
         .toList();
   }
 
@@ -1466,7 +1014,7 @@ class CitizenAccessCodeService {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) {
         if (_secureBackendMode) {
-          throw StateError('Session Firebase requise pour cette operation.');
+          throw StateError('Session Firebase requise pour cette opération.');
         }
         return null;
       }
@@ -1483,8 +1031,14 @@ class CitizenAccessCodeService {
           'x-super-admin-key': SuperAdminService.instance.runtimeSuperAdminKey!,
       };
       final response = method == 'GET'
-          ? await http.get(uri, headers: headers).timeout(const Duration(seconds: 12))
-          : await http.post(uri, headers: headers, body: jsonEncode(body ?? const <String, dynamic>{})).timeout(const Duration(seconds: 12));
+          ? await http
+              .get(uri, headers: headers)
+              .timeout(const Duration(seconds: 12))
+          : await http
+              .post(uri,
+                  headers: headers,
+                  body: jsonEncode(body ?? const <String, dynamic>{}))
+              .timeout(const Duration(seconds: 12));
 
       if (response.statusCode < 200 || response.statusCode >= 300) {
         throw StateError(_readBackendError(response.body));
@@ -1501,9 +1055,9 @@ class CitizenAccessCodeService {
   String _readBackendError(String body) {
     try {
       final payload = jsonDecode(body) as Map<String, dynamic>;
-      return payload['message'] as String? ?? 'Operation backend impossible.';
+      return payload['message'] as String? ?? 'Opération backend impossible.';
     } catch (_) {
-      return 'Operation backend impossible.';
+      return 'Opération backend impossible.';
     }
   }
 }

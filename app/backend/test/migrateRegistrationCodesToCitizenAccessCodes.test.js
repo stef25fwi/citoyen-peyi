@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 
 process.env.SUPER_ADMIN_KEY = process.env.SUPER_ADMIN_KEY || 'test-super-admin-key';
 process.env.VOTE_ACCESS_TOKEN_SECRET = process.env.VOTE_ACCESS_TOKEN_SECRET || 'test-vote-secret';
+process.env.ACCESS_CODE_PEPPER = process.env.ACCESS_CODE_PEPPER || 'test-access-code-pepper';
+process.env.CITIZEN_FINGERPRINT_PEPPER = process.env.CITIZEN_FINGERPRINT_PEPPER || 'test-citizen-fingerprint-pepper';
 process.env.FIREBASE_ADMIN_PROJECT_ID = process.env.FIREBASE_ADMIN_PROJECT_ID || 'test-project';
 process.env.FIREBASE_ADMIN_CLIENT_EMAIL = process.env.FIREBASE_ADMIN_CLIENT_EMAIL || 'test@example.com';
 process.env.FIREBASE_ADMIN_PRIVATE_KEY = process.env.FIREBASE_ADMIN_PRIVATE_KEY || '-----BEGIN PRIVATE KEY-----\\nTEST\\n-----END PRIVATE KEY-----\\n';
@@ -21,8 +23,8 @@ test('buildAccessPayload maps legacy document to official schema', () => {
     status: 'validated',
   }, 'AB12CD34');
 
-  assert.equal(payload.accessCode, 'AB12CD34');
-  assert.equal(payload.codeHash, migrationModule.hashCode('AB12CD34'));
+  assert.equal(payload.accessCode, undefined);
+  assert.equal(payload.accessCodeHash, migrationModule.hashAccessCode('AB12CD34'));
   assert.equal(payload.displayCodeMasked, 'AB••••34');
   assert.equal(payload.status, 'active');
   assert.equal(payload.metadata.legacyRegistrationCodeId, 'legacy-1');

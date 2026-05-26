@@ -35,7 +35,7 @@ class _DuplicateRequestListPageState extends State<DuplicateRequestListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Doublons a verifier')),
+      appBar: AppBar(title: const Text('Doublons à vérifier')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),
@@ -94,11 +94,10 @@ class _DuplicateRequestCard extends StatelessWidget {
     return Card(
       child: ListTile(
         leading: const Icon(Icons.content_copy_rounded),
-        title: Text('${request.communeName} · ${request.sourceKeyMasked}'),
+        title: Text('${request.communeName} · dossier ${request.id}'),
         subtitle: Text(
-          'Controleur: ${request.requestedByControllerName}\n'
+          'Contrôleur: ${request.requestedByControllerName}\n'
           'Date: ${request.requestedAt}\n'
-          'Code existant: ${request.existingAccessCode}\n'
           'Motif: ${request.duplicateReason.label}',
         ),
         isThreeLine: true,

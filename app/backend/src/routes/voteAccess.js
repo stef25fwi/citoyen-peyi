@@ -3,6 +3,7 @@ import express from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
 import { env } from '../config/env.js';
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
+import { logger } from '../services/logger.js';
 
 const router = express.Router();
 
@@ -13,7 +14,12 @@ const TOKEN_TTL_MS = 30 * 60 * 1000;
 
 export const jsonBase64Url = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
 export const normalizeCode = (value) => String(value || '').trim().toUpperCase();
-export const hashCode = (code) => crypto.createHash('sha256').update(normalizeCode(code)).digest('hex');
+export const hashCode = (code) => {
+  if (!env.accessCodePepper) {
+    throw new Error('ACCESS_CODE_PEPPER is required');
+  }
+  return crypto.createHmac('sha256', env.accessCodePepper).update(normalizeCode(code)).digest('hex');
+};
 const tokenSecret = () => env.voteAccessTokenSecret;
 
 const toIso = (value) => {
@@ -73,7 +79,7 @@ const normalizeAccessDoc = (doc) => {
   const data = doc.data() || {};
   return {
     id: doc.id,
-    codeHash: data.codeHash || (data.accessCode ? hashCode(data.accessCode) : ''),
+    accessCodeHash: data.accessCodeHash || '',
     communeId: data.communeId || '',
     communeName: data.communeName || '',
     status: data.status || 'active',
@@ -85,16 +91,9 @@ const normalizeAccessDoc = (doc) => {
 
 const findAccessCode = async (db, code) => {
   const normalized = normalizeCode(code);
-  const codeHash = hashCode(normalized);
-  const byHash = await db.collection(ACCESS_COLLECTION).where('codeHash', '==', codeHash).limit(1).get();
+  const accessCodeHash = hashCode(normalized);
+  const byHash = await db.collection(ACCESS_COLLECTION).where('accessCodeHash', '==', accessCodeHash).limit(1).get();
   if (!byHash.empty) return normalizeAccessDoc(byHash.docs[0]);
-
-  // Compatibilite temporaire: anciens documents dont l'id ou le champ accessCode contient le code clair.
-  const byId = await db.collection(ACCESS_COLLECTION).doc(normalized).get();
-  if (byId.exists) return normalizeAccessDoc(byId);
-
-  const byAccessCode = await db.collection(ACCESS_COLLECTION).where('accessCode', '==', normalized).limit(1).get();
-  if (!byAccessCode.empty) return normalizeAccessDoc(byAccessCode.docs[0]);
 
   return null;
 };
@@ -171,7 +170,7 @@ router.post('/validate', async (req, res) => {
       eligiblePolls,
     });
   } catch (error) {
-    console.error('Validation code citoyen impossible.', error);
+    logger.error({ err: error }, 'vote_access_validation_failed');
     return res.status(500).json({ ok: false, errorCode: 'NETWORK_ERROR', message: 'Validation du code impossible.' });
   }
 });
@@ -246,7 +245,7 @@ router.post('/submit', async (req, res) => {
     }
     return res.status(201).json({ ok: true, receiptId: crypto.randomUUID(), message: 'Votre vote est enregistre anonymement.' });
   } catch (error) {
-    console.error('Soumission vote impossible.', error);
+    logger.error({ err: error }, 'vote_submission_failed');
     return res.status(500).json({ ok: false, errorCode: 'NETWORK_ERROR', message: 'Enregistrement du vote impossible.' });
   }
 });

@@ -1,6 +1,7 @@
 import crypto from 'crypto';
 import { pathToFileURL } from 'url';
 import { FieldPath, FieldValue, Timestamp } from 'firebase-admin/firestore';
+import { env } from '../config/env.js';
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 
 const LEGACY_COLLECTION = 'registrationCodes';
@@ -9,6 +10,10 @@ const BATCH_SIZE = 200;
 
 export const normalizeCode = (value) => String(value || '').trim().toUpperCase();
 export const hashCode = (code) => crypto.createHash('sha256').update(normalizeCode(code)).digest('hex');
+export const hashAccessCode = (code) => {
+  if (!env.accessCodePepper) throw new Error('ACCESS_CODE_PEPPER is required');
+  return crypto.createHmac('sha256', env.accessCodePepper).update(normalizeCode(code)).digest('hex');
+};
 
 export const toTimestamp = (value) => {
   if (!value) return FieldValue.serverTimestamp();
@@ -21,8 +26,7 @@ export const toTimestamp = (value) => {
 export const maskCode = (code) => `${code.substring(0, 2)}••••${code.substring(Math.max(code.length - 2, 2))}`;
 
 export const buildAccessPayload = (legacyId, data, code) => ({
-  accessCode: code,
-  codeHash: hashCode(code),
+  accessCodeHash: hashAccessCode(code),
   displayCodeMasked: maskCode(code),
   communeId: data.communeId || '',
   communeName: data.communeName || '',
@@ -75,7 +79,8 @@ export async function migrateRegistrationCodesToCitizenAccessCodes({ db, dryRun 
         continue;
       }
 
-      const accessRef = targetDb.collection(ACCESS_COLLECTION).doc(code);
+      const accessCodeHash = hashAccessCode(code);
+      const accessRef = targetDb.collection(ACCESS_COLLECTION).doc(`cac_legacy_${accessCodeHash.substring(0, 24)}`);
       const accessDoc = await accessRef.get();
       if (accessDoc.exists) {
         skipped += 1;
@@ -90,7 +95,7 @@ export async function migrateRegistrationCodesToCitizenAccessCodes({ db, dryRun 
       batch.set(accessRef, buildAccessPayload(doc.id, data, code), { merge: true });
       batch.set(doc.ref, {
         migratedAt: FieldValue.serverTimestamp(),
-        migratedAccessCodeId: code,
+        migratedAccessCodeId: accessRef.id,
         migratedToCollection: ACCESS_COLLECTION,
       }, { merge: true });
       pendingWrites += 2;
@@ -125,7 +130,7 @@ const isExecutedAsScript = process.argv[1]
 
 async function runCli() {
   if (!isFirebaseAdminConfigured()) {
-    console.error('Firebase Admin n\'est pas configure. Migration impossible.');
+    process.stderr.write('Firebase Admin n\'est pas configure. Migration impossible.\n');
     process.exit(1);
   }
 
@@ -133,11 +138,11 @@ async function runCli() {
   const result = await migrateRegistrationCodesToCitizenAccessCodes({ dryRun });
 
   if (result.scanned == 0) {
-    console.log('Aucun document registrationCodes a migrer.');
+    process.stdout.write('Aucun document registrationCodes a migrer.\n');
     process.exit(0);
   }
 
-  console.log(JSON.stringify(result, null, 2));
+  process.stdout.write(`${JSON.stringify(result, null, 2)}\n`);
 }
 
 if (isExecutedAsScript) {

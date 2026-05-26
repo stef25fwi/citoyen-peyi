@@ -6,10 +6,12 @@ class ControllerActivityDashboardPage extends StatefulWidget {
   const ControllerActivityDashboardPage({super.key});
 
   @override
-  State<ControllerActivityDashboardPage> createState() => _ControllerActivityDashboardPageState();
+  State<ControllerActivityDashboardPage> createState() =>
+      _ControllerActivityDashboardPageState();
 }
 
-class _ControllerActivityDashboardPageState extends State<ControllerActivityDashboardPage> {
+class _ControllerActivityDashboardPageState
+    extends State<ControllerActivityDashboardPage> {
   bool _isLoading = true;
   ControllerActivityAnalytics _analytics = const ControllerActivityAnalytics(
     logs: [],
@@ -45,11 +47,15 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
       final initialController = args['controllerId'];
       final initialCommune = args['communeId'];
       var changed = false;
-      if (initialController is String && initialController.isNotEmpty && _controllerId != initialController) {
+      if (initialController is String &&
+          initialController.isNotEmpty &&
+          _controllerId != initialController) {
         _controllerId = initialController;
         changed = true;
       }
-      if (initialCommune is String && initialCommune.isNotEmpty && _communeId != initialCommune) {
+      if (initialCommune is String &&
+          initialCommune.isNotEmpty &&
+          _communeId != initialCommune) {
         _communeId = initialCommune;
         changed = true;
       }
@@ -61,7 +67,8 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final analytics = await CitizenAccessCodeService.instance.getControllerAnalytics(
+    final analytics =
+        await CitizenAccessCodeService.instance.getControllerAnalytics(
       filters: ControllerActivityFilters(
         communeId: _communeId,
         controllerId: _controllerId,
@@ -70,11 +77,14 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
         endDate: _endDate,
       ),
     );
-    final communes = await CitizenAccessCodeService.instance.getCommuneAnalyticsForSuperAdmin();
+    final communes = await CitizenAccessCodeService.instance
+        .getCommuneAnalyticsForSuperAdmin();
     if (!mounted) return;
     setState(() {
       _analytics = analytics;
-      _communes = communes..sort((left, right) => right.codesGenerated.compareTo(left.codesGenerated));
+      _communes = communes
+        ..sort((left, right) =>
+            right.codesGenerated.compareTo(left.codesGenerated));
       _isLoading = false;
     });
   }
@@ -133,9 +143,12 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                         initialValue: _communeId,
                         decoration: const InputDecoration(labelText: 'Commune'),
                         items: [
-                          const DropdownMenuItem<String>(value: null, child: Text('Toutes')),
+                          const DropdownMenuItem<String>(
+                              value: null, child: Text('Toutes')),
                           for (final commune in _communes)
-                            DropdownMenuItem(value: commune.communeId, child: Text(commune.communeName)),
+                            DropdownMenuItem(
+                                value: commune.communeId,
+                                child: Text(commune.communeName)),
                         ],
                         onChanged: (value) {
                           setState(() => _communeId = value);
@@ -147,11 +160,15 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                       width: 260,
                       child: DropdownButtonFormField<String>(
                         initialValue: _controllerId,
-                        decoration: const InputDecoration(labelText: 'Controleur'),
+                        decoration:
+                            const InputDecoration(labelText: 'Controleur'),
                         items: [
-                          const DropdownMenuItem<String>(value: null, child: Text('Tous')),
+                          const DropdownMenuItem<String>(
+                              value: null, child: Text('Tous')),
                           for (final controller in controllerOptions)
-                            DropdownMenuItem(value: controller.id, child: Text(controller.name)),
+                            DropdownMenuItem(
+                                value: controller.id,
+                                child: Text(controller.name)),
                         ],
                         onChanged: (value) {
                           setState(() => _controllerId = value);
@@ -163,15 +180,29 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                       width: 260,
                       child: DropdownButtonFormField<String>(
                         initialValue: _actionType,
-                        decoration: const InputDecoration(labelText: 'Type action'),
+                        decoration:
+                            const InputDecoration(labelText: 'Type action'),
                         items: const [
-                          DropdownMenuItem<String>(value: null, child: Text('Toutes')),
-                          DropdownMenuItem(value: 'code_created', child: Text('Code genere')),
-                          DropdownMenuItem(value: 'duplicate_detected', child: Text('Doublon detecte')),
-                          DropdownMenuItem(value: 'duplicate_request_created', child: Text('Demande regeneration')),
-                          DropdownMenuItem(value: 'regeneration_approved', child: Text('Regeneration validee')),
-                          DropdownMenuItem(value: 'regeneration_rejected', child: Text('Regeneration refusee')),
-                          DropdownMenuItem(value: 'login_code_used', child: Text('Code utilise')),
+                          DropdownMenuItem<String>(
+                              value: null, child: Text('Toutes')),
+                          DropdownMenuItem(
+                              value: 'code_created',
+                              child: Text('Code genere')),
+                          DropdownMenuItem(
+                              value: 'duplicate_detected',
+                              child: Text('Doublon detecte')),
+                          DropdownMenuItem(
+                              value: 'duplicate_request_created',
+                              child: Text('Demande regeneration')),
+                          DropdownMenuItem(
+                              value: 'regeneration_approved',
+                              child: Text('Regeneration validee')),
+                          DropdownMenuItem(
+                              value: 'regeneration_rejected',
+                              child: Text('Regeneration refusee')),
+                          DropdownMenuItem(
+                              value: 'login_code_used',
+                              child: Text('Code utilise')),
                         ],
                         onChanged: (value) {
                           setState(() => _actionType = value);
@@ -182,15 +213,21 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                     OutlinedButton.icon(
                       onPressed: () => _selectDate(start: true),
                       icon: const Icon(Icons.date_range_rounded),
-                      label: Text(_startDate == null ? 'Date debut' : 'Debut ${_formatDate(_startDate!)}'),
+                      label: Text(_startDate == null
+                          ? 'Date debut'
+                          : 'Debut ${_formatDate(_startDate!)}'),
                     ),
                     OutlinedButton.icon(
                       onPressed: () => _selectDate(start: false),
                       icon: const Icon(Icons.event_rounded),
-                      label: Text(_endDate == null ? 'Date fin' : 'Fin ${_formatDate(_endDate!)}'),
+                      label: Text(_endDate == null
+                          ? 'Date fin'
+                          : 'Fin ${_formatDate(_endDate!)}'),
                     ),
                     TextButton.icon(
-                      onPressed: _startDate == null && _endDate == null ? null : _clearDates,
+                      onPressed: _startDate == null && _endDate == null
+                          ? null
+                          : _clearDates,
                       icon: const Icon(Icons.clear_rounded),
                       label: const Text('Effacer periode'),
                     ),
@@ -198,17 +235,25 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                 ),
                 const SizedBox(height: 18),
                 if (_isLoading)
-                  const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
+                  const Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator()))
                 else ...[
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
                     children: [
-                      _StatCard('Codes generes', _analytics.totalCodesGenerated),
-                      _StatCard('Doublons detectes', _analytics.duplicatesDetected),
-                      _StatCard('Demandes regeneration', _analytics.regenerationRequests),
-                      _StatCard('Regenerations validees', _analytics.regenerationsApproved),
-                      _StatCard('Regenerations refusees', _analytics.regenerationsRejected),
+                      _StatCard(
+                          'Codes generes', _analytics.totalCodesGenerated),
+                      _StatCard(
+                          'Doublons detectes', _analytics.duplicatesDetected),
+                      _StatCard('Demandes regeneration',
+                          _analytics.regenerationRequests),
+                      _StatCard('Regenerations validees',
+                          _analytics.regenerationsApproved),
+                      _StatCard('Regenerations refusees',
+                          _analytics.regenerationsRejected),
                       _StatCard('Codes utilises', _analytics.loginCodesUsed),
                     ],
                   ),
@@ -227,7 +272,11 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                         emptyText: 'Aucun controleur actif sur la periode.',
                       );
                       if (!wide) {
-                        return Column(children: [byDay, const SizedBox(height: 12), byController]);
+                        return Column(children: [
+                          byDay,
+                          const SizedBox(height: 12),
+                          byController
+                        ]);
                       }
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -240,7 +289,8 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                     },
                   ),
                   const SizedBox(height: 20),
-                  Text('Communes', style: Theme.of(context).textTheme.titleLarge),
+                  Text('Communes',
+                      style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 12),
                   for (final commune in _communes)
                     Card(
@@ -253,22 +303,29 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
                           'Dernier code: ${commune.lastCodeGeneratedAt ?? '-'}',
                         ),
                         trailing: TextButton(
-                          onPressed: () => Navigator.of(context).pushNamed('/super/activity/commune/${commune.communeId}'),
+                          onPressed: () => Navigator.of(context).pushNamed(
+                              '/super/activity/commune/${commune.communeId}'),
                           child: const Text('Voir commune'),
                         ),
                       ),
                     ),
                   const SizedBox(height: 20),
-                  Text('Historique', style: Theme.of(context).textTheme.titleLarge),
+                  Text('Historique',
+                      style: Theme.of(context).textTheme.titleLarge),
                   const SizedBox(height: 12),
                   if (_analytics.logs.isEmpty)
-                    const Card(child: Padding(padding: EdgeInsets.all(20), child: Text('Aucune activite.')))
+                    const Card(
+                        child: Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Text('Aucune activite.')))
                   else
                     for (final log in _analytics.logs.take(80))
                       Card(
                         child: ListTile(
-                          title: Text('${log.actionType} · ${log.controllerName}'),
-                          subtitle: Text('${log.communeName} · ${log.createdAt}\nCode: ${log.accessCode ?? '-'}'),
+                          title:
+                              Text('${log.actionType} · ${log.controllerName}'),
+                          subtitle: Text(
+                              '${log.communeName} · ${log.createdAt}\nDossier: ${log.metadata['accessCodeId'] ?? log.metadata['duplicateRequestId'] ?? '-'}'),
                           isThreeLine: true,
                         ),
                       ),
@@ -282,7 +339,8 @@ class _ControllerActivityDashboardPageState extends State<ControllerActivityDash
   }
 }
 
-String _formatDate(DateTime value) => '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+String _formatDate(DateTime value) =>
+    '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
 
 class _ActivityBreakdownCard extends StatelessWidget {
   const _ActivityBreakdownCard({

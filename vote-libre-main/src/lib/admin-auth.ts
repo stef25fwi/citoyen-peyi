@@ -6,7 +6,7 @@ interface AdminExchangeResponse {
 }
 
 const resolveApiBaseUrl = () => {
-  const configuredBaseUrl = import.meta.env.VITE_API_BASE_URL?.trim();
+  const configuredBaseUrl = import.meta.env.CP_API_BASE_URL?.trim();
   return (configuredBaseUrl || 'http://localhost:4000').replace(/\/$/, '');
 };
 

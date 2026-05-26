@@ -68,9 +68,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Supprimer ce controleur ?'),
+        title: const Text('Supprimer ce contrôleur ?'),
         content:
-            Text('Le code "${profile.code}" sera definitivement supprime.'),
+            Text('Le profil "${profile.label}" sera désactivé immédiatement.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -84,7 +84,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       ),
     );
     if (confirmed != true) return;
-    await ControleurProfileService.instance.deleteProfile(profile.code);
+    await ControleurProfileService.instance.deleteProfile(profile.id);
     await _load();
   }
 
@@ -107,12 +107,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       builder: (_) => AlertDialog(
         icon: const Icon(Icons.check_circle_rounded,
             color: Color(0xFF2B9F82), size: 40),
-        title: const Text('Controleur cree'),
+        title: const Text('Contrôleur créé'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Transmettez ce code a ${profile.label}. Il ne sera plus visible en clair apres fermeture.',
+              'Copiez ce code maintenant pour ${profile.label}. Il ne sera plus visible en clair après fermeture.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -146,7 +146,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                             content:
-                                Text('Code copie dans le presse-papiers.')),
+                                Text('Code copié dans le presse-papiers.')),
                       );
                     },
                   ),
@@ -178,7 +178,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final pageTitle = switch (widget.initialSection) {
       AdminDashboardSection.overview => 'Tableau de bord commune',
       AdminDashboardSection.polls => 'Consultations communales',
-      AdminDashboardSection.controllers => 'Controleurs communaux',
+      AdminDashboardSection.controllers => 'Contrôleurs communaux',
     };
 
     final activeCount = _polls.where((poll) => poll.status == 'active').length;
@@ -222,7 +222,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
               }
               Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
             },
-            child: const Text('Deconnexion'),
+            child: const Text('Déconnexion'),
           ),
         ],
       ),
@@ -270,7 +270,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           Navigator.of(context).pushNamed('/admin/polls'),
                     ),
                     ChoiceChip(
-                      label: const Text('Controleurs'),
+                      label: const Text('Contrôleurs'),
                       selected: widget.initialSection ==
                           AdminDashboardSection.controllers,
                       onSelected: (_) =>
@@ -297,13 +297,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         color: _DashboardTheme.success,
                       ),
                       _DashboardStatCard(
-                        label: 'Termines',
+                        label: 'Terminées',
                         value: '$closedCount',
                         icon: Icons.dashboard_rounded,
                         color: _DashboardTheme.accent,
                       ),
                       _DashboardStatCard(
-                        label: 'Archivees',
+                        label: 'Archivées',
                         value: '$archivedCount',
                         icon: Icons.archive_rounded,
                         color: const Color(0xFF64748B),
@@ -328,7 +328,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         const SizedBox(height: 12),
                         Text(
                           session == null
-                              ? 'Aucune session chargee.'
+                              ? 'Aucune session chargée.'
                               : 'Role UX: commune_admin\nRole technique: ${session.role}\nCommune: ${session.commune?.name ?? 'mode global/fallback'}\nProfil: ${session.label ?? 'Administrateur communal'}\nMode: ${session.modeLabel}',
                           style: theme.textTheme.bodyLarge,
                         ),
@@ -344,17 +344,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       FilledButton(
                         onPressed: () => Navigator.of(context)
                             .pushNamed('/admin/polls/create'),
-                        child: const Text('Creer une consultation'),
+                        child: const Text('Créer une consultation'),
                       ),
                       FilledButton.tonal(
                         onPressed: () => Navigator.of(context)
                             .pushNamed('/admin/controllers'),
-                        child: const Text('Controleurs'),
+                        child: const Text('Contrôleurs'),
                       ),
                       FilledButton.tonal(
                         onPressed: () =>
                             Navigator.of(context).pushNamed('/admin/settings'),
-                        child: const Text('Parametres'),
+                        child: const Text('Paramètres'),
                       ),
                       FilledButton.tonal(
                         onPressed: () =>
@@ -544,7 +544,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           Row(
                             children: [
                               Expanded(
-                                child: Text('Controleurs',
+                                child: Text('Contrôleurs',
                                     style: theme.textTheme.titleLarge),
                               ),
                               Chip(label: Text('${_controleurs.length}')),
@@ -560,7 +560,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           const SizedBox(height: 12),
                           if (_controleurs.isEmpty)
                             Text(
-                              'Aucun controleur cree. Utilisez le bouton "Nouveau" pour en creer un.',
+                              'Aucun contrôleur créé. Utilisez le bouton "Nouveau" pour en créer un.',
                               style: theme.textTheme.bodyMedium
                                   ?.copyWith(color: const Color(0xFF5A6573)),
                             )
@@ -869,7 +869,7 @@ class _ControleurRowState extends State<_ControleurRow> {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    _codeVisible
+                    _codeVisible && profile.code.isNotEmpty
                         ? SelectableText(
                             profile.code,
                             style: const TextStyle(
@@ -881,7 +881,9 @@ class _ControleurRowState extends State<_ControleurRow> {
                             ),
                           )
                         : Text(
-                            '•' * profile.code.length,
+                            profile.displayCodeMasked.isNotEmpty
+                                ? profile.displayCodeMasked
+                                : 'Code masqué',
                             style: const TextStyle(
                                 fontSize: 12, color: Color(0xFF9AA9B8)),
                           ),
@@ -893,7 +895,7 @@ class _ControleurRowState extends State<_ControleurRow> {
                           children: [
                             Icon(Icons.check_circle_rounded, size: 13),
                             SizedBox(width: 4),
-                            Text('Utilise', style: TextStyle(fontSize: 11)),
+                            Text('Utilisé', style: TextStyle(fontSize: 11)),
                           ],
                         ),
                         padding: EdgeInsets.zero,
@@ -904,22 +906,23 @@ class _ControleurRowState extends State<_ControleurRow> {
               ],
             ),
           ),
-          IconButton(
-            icon: Icon(
-                _codeVisible
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                size: 20),
-            onPressed: () => setState(() => _codeVisible = !_codeVisible),
-            tooltip: _codeVisible ? 'Masquer' : 'Afficher le code',
-          ),
-          if (_codeVisible)
+          if (profile.code.isNotEmpty)
+            IconButton(
+              icon: Icon(
+                  _codeVisible
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  size: 20),
+              onPressed: () => setState(() => _codeVisible = !_codeVisible),
+              tooltip: _codeVisible ? 'Masquer' : 'Afficher le code',
+            ),
+          if (_codeVisible && profile.code.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.copy_rounded, size: 20),
               onPressed: () {
                 Clipboard.setData(ClipboardData(text: profile.code));
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Code copie.')),
+                  const SnackBar(content: Text('Code copié.')),
                 );
               },
               tooltip: 'Copier',

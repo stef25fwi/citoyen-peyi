@@ -31,7 +31,7 @@ class SuperAdminDuplicateTile extends StatelessWidget {
                 children: [
                   const Icon(Icons.content_copy_rounded, color: Color(0xFF0F6D8F)),
                   const SizedBox(width: 10),
-                  Expanded(child: Text('Doublons a verifier', style: theme.textTheme.titleLarge)),
+                  Expanded(child: Text('Doublons à vérifier', style: theme.textTheme.titleLarge)),
                   Badge(label: Text('$pendingCount')),
                 ],
               ),
@@ -39,7 +39,7 @@ class SuperAdminDuplicateTile extends StatelessWidget {
               Text(
                 pendingCount == 0
                     ? 'Aucune demande en attente.'
-                    : '$pendingCount demande(s) en attente de decision superadmin.',
+                    : '$pendingCount demande(s) en attente de décision super administrateur.',
                 style: theme.textTheme.bodyMedium,
               ),
               const SizedBox(height: 12),
@@ -47,7 +47,7 @@ class SuperAdminDuplicateTile extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: Text(
-                    '${request.communeName} · ${request.requestedByControllerName} · ${request.sourceKeyMasked} · ${request.status}',
+                    '${request.communeName} · ${request.requestedByControllerName} · dossier ${request.id} · ${request.status}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                   ),

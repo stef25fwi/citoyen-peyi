@@ -8,7 +8,7 @@ Renseigner les variables presentes dans `.env.example`.
 
 Activer dans Firebase Authentication la methode `Anonymous`.
 
-Si vous voulez activer les gardes de roles cote front, positionner `VITE_FIREBASE_ENFORCE_ROLE_GUARDS=true` et fournir des custom claims Firebase.
+Si vous voulez activer les gardes de roles cote front, positionner `CP_FIREBASE_ENFORCE_ROLE_GUARDS=true` et fournir des custom claims Firebase.
 
 Claims attendus:
 
@@ -32,7 +32,7 @@ Le backend Express dans `app/backend` doit etre configure avec Firebase Admin po
 - `CORS_ORIGIN`
 - `ADMIN_ACCESS_KEY` pour l'echange administrateur
 
-Le front utilise `VITE_API_BASE_URL` pour appeler ce backend.
+Le front utilise `CP_API_BASE_URL` pour appeler ce backend.
 
 ## Limite actuelle
 

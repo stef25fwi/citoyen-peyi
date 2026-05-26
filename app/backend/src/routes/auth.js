@@ -1,9 +1,10 @@
 import crypto from 'crypto';
 import express from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
-import { env } from '../config/env.js';
+import { env, isBootstrapAdminEnabled } from '../config/env.js';
 import { requireSuperAdminKey } from '../middlewares/requireSuperAdminKey.js';
 import { getFirebaseAdminAuth, getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
+import { logger } from '../services/logger.js';
 
 const router = express.Router();
 
@@ -19,22 +20,31 @@ const safeEquals = (left, right) => {
 
 const loadControleurRecordByCode = async (code) => {
   const db = getFirebaseAdminDb();
+  const codeHash = hashAccessKey(code);
   const snapshot = await db
+    .collection('controleurCodes')
+    .where('codeHash', '==', codeHash)
+    .limit(1)
+    .get();
+
+  if (!snapshot.empty) {
+    const document = snapshot.docs[0];
+    return {
+      id: document.id,
+      ref: document.ref,
+      ...document.data(),
+    };
+  }
+
+  const legacySnapshot = await db
     .collection('controleurCodes')
     .where('code', '==', code)
     .limit(1)
     .get();
 
-  if (snapshot.empty) {
-    return null;
-  }
-
-  const document = snapshot.docs[0];
-  return {
-    id: document.id,
-    ref: document.ref,
-    ...document.data(),
-  };
+  if (legacySnapshot.empty) return null;
+  const document = legacySnapshot.docs[0];
+  return { id: document.id, ref: document.ref, ...document.data() };
 };
 
 router.post('/controller/exchange', async (req, res) => {
@@ -53,6 +63,10 @@ router.post('/controller/exchange', async (req, res) => {
     const record = await loadControleurRecordByCode(code);
     if (!record) {
       return res.status(401).json({ message: 'Code controleur invalide.' });
+    }
+
+    if (record.enabled === false) {
+      return res.status(403).json({ error: 'CONTROLLER_DISABLED', message: 'Ce compte controleur est desactive.' });
     }
 
     if (!record.usedAt) {
@@ -76,14 +90,13 @@ router.post('/controller/exchange', async (req, res) => {
       customToken,
       profile: {
         id: record.id,
-        code: record.code,
         label: record.label || 'Controleur',
         commune: record.commune ?? null,
       },
       claims,
     });
   } catch (error) {
-    console.error('Echange de code controleur impossible.', error);
+    logger.error({ err: error }, 'controller_exchange_failed');
     return res.status(500).json({ message: 'Echange de code controleur impossible.' });
   }
 });
@@ -120,6 +133,10 @@ router.post('/admin/exchange', async (req, res) => {
       label = data.label || label;
       await doc.ref.set({ lastUsedAt: FieldValue.serverTimestamp() }, { merge: true });
     } else if (env.adminAccessKey && safeEquals(providedAccessKey, env.adminAccessKey)) {
+      if (!isBootstrapAdminEnabled()) {
+        logger.info('bootstrap_admin_disabled');
+        return res.status(403).json({ error: 'BOOTSTRAP_DISABLED', message: 'Bootstrap administrateur desactive.' });
+      }
       adminId = 'bootstrap';
       adminScope = 'bootstrap';
     } else {
@@ -142,7 +159,7 @@ router.post('/admin/exchange', async (req, res) => {
       claims,
     });
   } catch (error) {
-    console.error('Emission du token administrateur impossible.', error);
+    logger.error({ err: error }, 'admin_token_exchange_failed');
     return res.status(500).json({ message: 'Emission du token administrateur impossible.' });
   }
 });
@@ -173,7 +190,7 @@ router.post('/super/exchange', requireSuperAdminKey, async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Emission du token super administrateur impossible.', error);
+    logger.error({ err: error }, 'super_admin_token_exchange_failed');
     return res.status(500).json({ message: 'Emission du token super administrateur impossible.' });
   }
 });

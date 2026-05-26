@@ -37,7 +37,7 @@ class _QrAccessPageState extends State<QrAccessPage> {
     });
 
     try {
-      // Validation securisee cote backend.
+      // Validation sécurisée côté backend.
       final validation = await VoteAccessService.instance.validateCode(rawCode);
       if (!mounted) return;
 
@@ -78,7 +78,7 @@ class _QrAccessPageState extends State<QrAccessPage> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Validation indisponible. Reessayez plus tard.';
+        _errorMessage = 'Validation indisponible. Réessayez plus tard.';
         _isSubmitting = false;
       });
     }
@@ -91,7 +91,7 @@ class _QrAccessPageState extends State<QrAccessPage> {
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FB),
       appBar: AppBar(
-        title: const Text('Acces citoyen'),
+        title: const Text('Accès citoyen'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pushNamed('/'),
@@ -117,13 +117,13 @@ class _QrAccessPageState extends State<QrAccessPage> {
                 Text('Accedez a votre espace citoyen', style: theme.textTheme.headlineMedium, textAlign: TextAlign.center),
                 const SizedBox(height: 10),
                 Text(
-                  'Saisissez le code citoyen anonyme remis par le controleur ou collez l\'URL de votre QR.',
+                  'Saisissez le code citoyen anonyme remis par le contrôleur ou collez l\'URL de votre QR.',
                   style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Validation securisee cote serveur. Votre identite ne sera pas enregistree.',
+                  'Validation sécurisée côté serveur. Votre identité ne sera pas enregistrée.',
                   style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
                   textAlign: TextAlign.center,
                 ),

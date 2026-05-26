@@ -23,13 +23,15 @@ class SuperAdminDashboardPage extends StatefulWidget {
   final SuperAdminDashboardSection initialSection;
 
   @override
-  State<SuperAdminDashboardPage> createState() => _SuperAdminDashboardPageState();
+  State<SuperAdminDashboardPage> createState() =>
+      _SuperAdminDashboardPageState();
 }
 
 class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
   List<AdminProfileModel> _profiles = const [];
   List<DuplicateCodeRequestModel> _duplicateRequests = const [];
-  ControllerActivityAnalytics _activityAnalytics = const ControllerActivityAnalytics(
+  ControllerActivityAnalytics _activityAnalytics =
+      const ControllerActivityAnalytics(
     logs: [],
     totalCodesGenerated: 0,
     duplicatesDetected: 0,
@@ -69,9 +71,12 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Supprimer ce profil ?'),
-        content: Text('Le profil "${profile.label}" et sa cle de connexion seront supprimes definitivement.'),
+        content: Text(
+            'Le profil "${profile.label}" et sa cle de connexion seront supprimes definitivement.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
@@ -102,13 +107,14 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
-        icon: const Icon(Icons.check_circle_rounded, color: Color(0xFF2B9F82), size: 40),
-        title: const Text('Profil cree avec succes'),
+        icon: const Icon(Icons.check_circle_rounded,
+            color: Color(0xFF2B9F82), size: 40),
+        title: const Text('Profil créé avec succès'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Transmettez cette cle a l\'administrateur de "${profile.communeName}". Elle ne sera plus visible en clair apres fermeture.',
+              'Copiez cette clé maintenant pour l\'administrateur de "${profile.communeName}". Elle ne sera plus visible en clair après fermeture.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -134,12 +140,15 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                     ),
                   ),
                   IconButton(
-                    icon: const Icon(Icons.copy_rounded, color: Color(0xFF0F6D8F)),
-                    tooltip: 'Copier la cle',
+                    icon: const Icon(Icons.copy_rounded,
+                        color: Color(0xFF0F6D8F)),
+                    tooltip: 'Copier la clé',
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: profile.accessKey));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Cle copiee dans le presse-papiers.')),
+                        const SnackBar(
+                            content:
+                                Text('Clé copiée dans le presse-papiers.')),
                       );
                     },
                   ),
@@ -162,14 +171,18 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final session = AuthSessionStore.instance.currentSession;
-    final showOverviewSection = widget.initialSection == SuperAdminDashboardSection.overview;
-    final pageTitle = showOverviewSection ? 'Super Administration' : 'Admins communaux';
+    final showOverviewSection =
+        widget.initialSection == SuperAdminDashboardSection.overview;
+    final pageTitle =
+        showOverviewSection ? 'Super Administration' : 'Admins communaux';
 
     return Scaffold(
       appBar: AppBar(
         title: Text(pageTitle),
-        titleTextStyle: theme.textTheme.titleLarge?.copyWith(color: const Color(0xFF0F6D8F)),
-        leading: const Icon(Icons.admin_panel_settings_rounded, color: Color(0xFF0F6D8F)),
+        titleTextStyle: theme.textTheme.titleLarge
+            ?.copyWith(color: const Color(0xFF0F6D8F)),
+        leading: const Icon(Icons.admin_panel_settings_rounded,
+            color: Color(0xFF0F6D8F)),
         leadingWidth: 56,
         actions: [
           TextButton(
@@ -199,7 +212,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                     padding: const EdgeInsets.all(20),
                     child: Row(
                       children: [
-                        const Icon(Icons.shield_rounded, color: Color(0xFF0F6D8F), size: 32),
+                        const Icon(Icons.shield_rounded,
+                            color: Color(0xFF0F6D8F), size: 32),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
@@ -214,7 +228,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                               ),
                               Text(
                                 'Role: ${session?.role ?? '-'}  •  Mode: ${session?.modeLabel ?? '-'}',
-                                style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF0891B2)),
+                                style: theme.textTheme.bodySmall
+                                    ?.copyWith(color: const Color(0xFF0891B2)),
                               ),
                             ],
                           ),
@@ -230,100 +245,119 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                   children: [
                     ChoiceChip(
                       label: const Text('Vue d\'ensemble'),
-                      selected: widget.initialSection == SuperAdminDashboardSection.overview,
-                      onSelected: (_) => Navigator.of(context).pushNamed('/super'),
+                      selected: widget.initialSection ==
+                          SuperAdminDashboardSection.overview,
+                      onSelected: (_) =>
+                          Navigator.of(context).pushNamed('/super'),
                     ),
                     ChoiceChip(
                       label: const Text('Admins communaux'),
-                      selected: widget.initialSection == SuperAdminDashboardSection.admins,
-                      onSelected: (_) => Navigator.of(context).pushNamed('/super/admins'),
+                      selected: widget.initialSection ==
+                          SuperAdminDashboardSection.admins,
+                      onSelected: (_) =>
+                          Navigator.of(context).pushNamed('/super/admins'),
                     ),
                   ],
                 ),
                 if (showOverviewSection) ...[
-                const SizedBox(height: 24),
-                Row(
-                  children: [
-                    const Icon(Icons.analytics_rounded, color: Color(0xFF0F6D8F)),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Text(
-                        'Donnees analytics superadmin',
-                        style: theme.textTheme.headlineSmall,
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      const Icon(Icons.analytics_rounded,
+                          color: Color(0xFF0F6D8F)),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          'Donnees analytics superadmin',
+                          style: theme.textTheme.headlineSmall,
+                        ),
                       ),
-                    ),
-                    if (_isLoading)
-                      const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                      if (_isLoading)
+                        const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Vue globale des doublons citoyens, regenerations et activites des controleurs par commune.',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: const Color(0xFF5A6573)),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
+                      FilledButton.tonal(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/super/communes'),
+                        child: const Text('Communes'),
                       ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Vue globale des doublons citoyens, regenerations et activites des controleurs par commune.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
-                  children: [
-                    FilledButton.tonal(
-                      onPressed: () => Navigator.of(context).pushNamed('/super/communes'),
-                      child: const Text('Communes'),
-                    ),
-                    FilledButton.tonal(
-                      onPressed: () => Navigator.of(context).pushNamed('/super/admins'),
-                      child: const Text('Admins communaux'),
-                    ),
-                    FilledButton.tonal(
-                      onPressed: () => Navigator.of(context).pushNamed('/super/controllers'),
-                      child: const Text('Controleurs'),
-                    ),
-                    FilledButton.tonal(
-                      onPressed: () => Navigator.of(context).pushNamed('/super/duplicates'),
-                      child: const Text('Doublons'),
-                    ),
-                    FilledButton.tonal(
-                      onPressed: () => Navigator.of(context).pushNamed('/super/activity'),
-                      child: const Text('Activite'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                LayoutBuilder(
-                  builder: (context, constraints) {
-                    final pendingDuplicates = _duplicateRequests.where((item) => item.status == 'pending').length;
-                    final duplicateTile = SuperAdminDuplicateTile(
-                      pendingCount: pendingDuplicates,
-                      latestRequests: _duplicateRequests,
-                      onOpen: () => Navigator.of(context).pushNamed('/super/duplicates'),
-                    );
-                    final activityTile = SuperAdminControllerActivityTile(
-                      analytics: _activityAnalytics,
-                      onOpen: () => Navigator.of(context).pushNamed('/super/activity'),
-                    );
+                      FilledButton.tonal(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/super/admins'),
+                        child: const Text('Admins communaux'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () => Navigator.of(context)
+                            .pushNamed('/super/controllers'),
+                        child: const Text('Controleurs'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () => Navigator.of(context)
+                            .pushNamed('/super/duplicates'),
+                        child: const Text('Doublons'),
+                      ),
+                      FilledButton.tonal(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/super/activity'),
+                        child: const Text('Activite'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final pendingDuplicates = _duplicateRequests
+                          .where((item) => item.status == 'pending')
+                          .length;
+                      final duplicateTile = SuperAdminDuplicateTile(
+                        pendingCount: pendingDuplicates,
+                        latestRequests: _duplicateRequests,
+                        onOpen: () => Navigator.of(context)
+                            .pushNamed('/super/duplicates'),
+                      );
+                      final activityTile = SuperAdminControllerActivityTile(
+                        analytics: _activityAnalytics,
+                        onOpen: () =>
+                            Navigator.of(context).pushNamed('/super/activity'),
+                      );
 
-                    if (constraints.maxWidth >= 760) {
-                      return Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      if (constraints.maxWidth >= 760) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: duplicateTile),
+                            const SizedBox(width: 16),
+                            Expanded(child: activityTile),
+                          ],
+                        );
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          Expanded(child: duplicateTile),
-                          const SizedBox(width: 16),
-                          Expanded(child: activityTile),
+                          duplicateTile,
+                          const SizedBox(height: 16),
+                          activityTile
                         ],
                       );
-                    }
-
-                    return Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [duplicateTile, const SizedBox(height: 16), activityTile],
-                    );
-                  },
-                ),
-                const SizedBox(height: 24),
+                    },
+                  ),
+                  const SizedBox(height: 24),
                 ],
                 Row(
                   children: [
@@ -335,7 +369,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                     Chip(label: Text('${_profiles.length}')),
                     const Spacer(),
                     FilledButton.icon(
-                      style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0F6D8F)),
+                      style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF0F6D8F)),
                       onPressed: _openCreateDialog,
                       icon: const Icon(Icons.person_add_rounded, size: 18),
                       label: const Text('Nouveau profil'),
@@ -345,27 +380,34 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                 const SizedBox(height: 4),
                 Text(
                   'Chaque profil est rattache a une commune et possede une cle de connexion unique.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: const Color(0xFF5A6573)),
                 ),
                 const SizedBox(height: 16),
                 if (_isLoading)
-                  const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
+                  const Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator()))
                 else if (_profiles.isEmpty)
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(28),
                       child: Column(
                         children: [
-                          const Icon(Icons.group_outlined, size: 48, color: Color(0xFF9AA9B8)),
+                          const Icon(Icons.group_outlined,
+                              size: 48, color: Color(0xFF9AA9B8)),
                           const SizedBox(height: 12),
                           Text(
                             'Aucun profil administrateur cree.',
-                            style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
+                            style: theme.textTheme.bodyLarge
+                                ?.copyWith(color: const Color(0xFF5A6573)),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             'Utilisez le bouton + en bas a droite pour creer le premier profil.',
-                            style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF9AA9B8)),
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(color: const Color(0xFF9AA9B8)),
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -411,7 +453,10 @@ class _ProfileCardState extends State<_ProfileCard> {
 
     final createdDate = () {
       try {
-        return DateTime.parse(profile.createdAt).toLocal().toString().substring(0, 16);
+        return DateTime.parse(profile.createdAt)
+            .toLocal()
+            .toString()
+            .substring(0, 16);
       } catch (_) {
         return profile.createdAt;
       }
@@ -432,7 +477,8 @@ class _ProfileCardState extends State<_ProfileCard> {
                     color: const Color(0xFF0F6D8F).withValues(alpha: 0.10),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(Icons.manage_accounts_rounded, color: Color(0xFF0F6D8F)),
+                  child: const Icon(Icons.manage_accounts_rounded,
+                      color: Color(0xFF0F6D8F)),
                 ),
                 const SizedBox(width: 14),
                 Expanded(
@@ -441,17 +487,20 @@ class _ProfileCardState extends State<_ProfileCard> {
                     children: [
                       Text(
                         profile.label,
-                        style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w700),
+                        style: theme.textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       Text(
                         '${profile.communeName}${profile.codePostal != null ? " (${profile.codePostal})" : ""}',
-                        style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
+                        style: theme.textTheme.bodyMedium
+                            ?.copyWith(color: const Color(0xFF5A6573)),
                       ),
                     ],
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded, color: Colors.red),
+                  icon: const Icon(Icons.delete_outline_rounded,
+                      color: Colors.red),
                   tooltip: 'Supprimer',
                   onPressed: widget.onDelete,
                 ),
@@ -463,7 +512,7 @@ class _ProfileCardState extends State<_ProfileCard> {
             Row(
               children: [
                 Expanded(
-                  child: _keyVisible
+                  child: _keyVisible && profile.accessKey.isNotEmpty
                       ? SelectableText(
                           profile.accessKey,
                           style: const TextStyle(
@@ -475,7 +524,9 @@ class _ProfileCardState extends State<_ProfileCard> {
                           ),
                         )
                       : Text(
-                          '•' * profile.accessKey.length,
+                          profile.accessKey.isEmpty
+                              ? 'Clé masquée'
+                              : '•' * profile.accessKey.length,
                           style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xFF9AA9B8),
@@ -485,18 +536,24 @@ class _ProfileCardState extends State<_ProfileCard> {
                 ),
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: Icon(_keyVisible ? Icons.visibility_off_outlined : Icons.visibility_outlined),
-                  tooltip: _keyVisible ? 'Masquer la cle' : 'Afficher la cle',
-                  onPressed: () => setState(() => _keyVisible = !_keyVisible),
+                  icon: Icon(_keyVisible
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined),
+                  tooltip: _keyVisible ? 'Masquer la clé' : 'Afficher la clé',
+                  onPressed: profile.accessKey.isEmpty
+                      ? null
+                      : () => setState(() => _keyVisible = !_keyVisible),
                 ),
-                if (_keyVisible)
+                if (_keyVisible && profile.accessKey.isNotEmpty)
                   IconButton(
                     icon: const Icon(Icons.copy_rounded),
-                    tooltip: 'Copier la cle',
+                    tooltip: 'Copier la clé',
                     onPressed: () {
                       Clipboard.setData(ClipboardData(text: profile.accessKey));
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Cle copiee dans le presse-papiers.')),
+                        const SnackBar(
+                            content:
+                                Text('Clé copiée dans le presse-papiers.')),
                       );
                     },
                   ),
@@ -505,7 +562,8 @@ class _ProfileCardState extends State<_ProfileCard> {
             const SizedBox(height: 6),
             Text(
               'Cree le $createdDate',
-              style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF9AA9B8)),
+              style: theme.textTheme.bodySmall
+                  ?.copyWith(color: const Color(0xFF9AA9B8)),
             ),
           ],
         ),
@@ -576,8 +634,8 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
         : 'https://geo.api.gouv.fr/communes?nom=${Uri.encodeComponent(q)}&fields=nom,code,codesPostaux,population&boost=population&limit=10';
 
     try {
-      final response = await http.get(Uri.parse(url))
-          .timeout(const Duration(seconds: 5));
+      final response =
+          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
       if (response.statusCode != 200) return [];
       final data = jsonDecode(response.body) as List<dynamic>;
       return data.map((e) {
@@ -644,7 +702,8 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
       widget.onCreated(profile);
     } on SuperAdminAuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -683,14 +742,16 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                               child: SizedBox(
                                 width: 18,
                                 height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
                               ),
                             )
                           : const Icon(Icons.location_on_outlined),
                     ),
                     onChanged: _onCommuneChanged,
-                    validator: (v) =>
-                        (v == null || v.trim().isEmpty) ? 'Champ requis.' : null,
+                    validator: (v) => (v == null || v.trim().isEmpty)
+                        ? 'Champ requis.'
+                        : null,
                   ),
                   if (_suggestions.isNotEmpty)
                     Container(
@@ -712,8 +773,7 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                         shrinkWrap: true,
                         padding: EdgeInsets.zero,
                         itemCount: _suggestions.length,
-                        separatorBuilder: (_, __) =>
-                            const Divider(height: 1),
+                        separatorBuilder: (_, __) => const Divider(height: 1),
                         itemBuilder: (context, i) {
                           final c = _suggestions[i];
                           return ListTile(
@@ -721,7 +781,8 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                             leading: const Icon(Icons.location_city_rounded,
                                 size: 18, color: Color(0xFF0F6D8F)),
                             title: Text(c.nom,
-                                style: const TextStyle(fontWeight: FontWeight.w600)),
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.w600)),
                             subtitle: Text(
                               '${c.codesPostaux.join(', ')}  •  INSEE ${c.code}',
                               style: const TextStyle(fontSize: 12),
@@ -792,13 +853,15 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
           child: const Text('Annuler'),
         ),
         FilledButton.icon(
-          style: FilledButton.styleFrom(backgroundColor: const Color(0xFF0F6D8F)),
+          style:
+              FilledButton.styleFrom(backgroundColor: const Color(0xFF0F6D8F)),
           onPressed: _isSubmitting ? null : _submit,
           icon: _isSubmitting
               ? const SizedBox(
                   width: 16,
                   height: 16,
-                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
                 )
               : const Icon(Icons.check_rounded),
           label: Text(_isSubmitting ? 'Creation...' : 'Creer le profil'),

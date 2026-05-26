@@ -28,6 +28,10 @@ const generateControllerCode = () => {
   return `CTRL-${segment}`;
 };
 
+const hashControllerCode = (code) => crypto.createHash('sha256').update(String(code || '').trim().toUpperCase()).digest('hex');
+
+const maskCode = (code) => `${code.substring(0, 5)}••••${code.substring(code.length - 2)}`;
+
 router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin);
 
 const resolveCommuneScope = (req) => {
@@ -60,11 +64,12 @@ router.get('/', async (req, res, next) => {
         const data = doc.data() || {};
         return {
           id: doc.id,
-          code: data.code,
+          displayCodeMasked: data.displayCodeMasked || (data.code ? maskCode(data.code) : ''),
           label: data.label,
           commune: data.commune,
           createdAt: data.createdAt,
           usedAt: data.usedAt,
+          enabled: data.enabled !== false,
         };
       }),
     });
@@ -87,7 +92,8 @@ router.post('/', async (req, res, next) => {
     const db = getFirebaseAdminDb();
     const payload = {
       id: code,
-      code,
+      codeHash: hashControllerCode(code),
+      displayCodeMasked: maskCode(code),
       label,
       commune: {
         name: scope.communeName,
@@ -97,9 +103,10 @@ router.post('/', async (req, res, next) => {
       createdAt: FieldValue.serverTimestamp(),
       createdBy: req.user?.uid || 'admin',
       usedAt: null,
+      enabled: true,
     };
     await db.collection(COLLECTION).doc(code).set(payload);
-    return res.status(201).json({ controller: payload });
+    return res.status(201).json({ controller: { ...payload, code } });
   } catch (error) {
     return next(error);
   }
@@ -119,7 +126,12 @@ router.delete('/:controllerCode', async (req, res, next) => {
         return res.status(403).json({ message: 'Ce controleur appartient a une autre commune.' });
       }
     }
-    await ref.delete();
+    await ref.set({ enabled: false, disabledAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    try {
+      await import('../services/firebaseAdmin.js').then(({ getFirebaseAdminAuth }) => getFirebaseAdminAuth().revokeRefreshTokens(`controller:${code}`));
+    } catch {
+      // La revocation peut echouer si l'utilisateur Firebase n'a jamais ete cree.
+    }
     return res.json({ ok: true });
   } catch (error) {
     return next(error);

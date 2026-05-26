@@ -1,8 +1,10 @@
 import crypto from 'crypto';
 import express from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
+import { env } from '../config/env.js';
 import { hasValidSuperAdminKey, requireSuperAdminKey } from '../middlewares/requireSuperAdminKey.js';
 import { getFirebaseAdminAuth, getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
+import { logger } from '../services/logger.js';
 
 const router = express.Router();
 
@@ -11,6 +13,7 @@ const FINGERPRINT_COLLECTION = 'citizen_fingerprints';
 const DUPLICATE_COLLECTION = 'duplicate_code_requests';
 const ACTIVITY_COLLECTION = 'controller_activity_logs';
 const CONTROLLER_COLLECTION = 'controleurCodes';
+const ACCESS_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const duplicateReasons = new Set([
   'lost_code',
@@ -45,10 +48,10 @@ const requireAuth = async (req, res, next) => {
   }
 
   try {
-    req.user = await getFirebaseAdminAuth().verifyIdToken(match[1]);
+    req.user = await getFirebaseAdminAuth().verifyIdToken(match[1], true);
     return next();
   } catch (error) {
-    console.error('Token Firebase invalide.', error);
+    logger.warn({ err: error }, 'invalid_firebase_token');
     return res.status(401).json({ message: 'Token Firebase invalide.' });
   }
 };
@@ -103,24 +106,41 @@ const buildSource = ({ firstName, lastName, birthYear, phoneSuffix }) => {
   };
 };
 
-const fingerprintFor = (sourceKeyMasked) => crypto
-  .createHash('sha256')
-  .update(String(sourceKeyMasked).trim().toUpperCase())
-  .digest('hex');
+export function generateSecureAccessCode(length = 10) {
+  const bytes = crypto.randomBytes(length * 2);
+  let code = '';
 
-const hashAccessCode = (accessCode) => crypto
-  .createHash('sha256')
-  .update(String(accessCode || '').trim().toUpperCase())
-  .digest('hex');
+  for (const byte of bytes) {
+    if (code.length >= length) break;
+    code += ACCESS_CODE_ALPHABET[byte % ACCESS_CODE_ALPHABET.length];
+  }
 
-const accessCodeFor = (sourceKeyMasked) => fingerprintFor(sourceKeyMasked).substring(0, 8).toUpperCase();
+  return code.length < length ? generateSecureAccessCode(length) : code;
+}
 
-const regeneratedCodeFor = (sourceKeyMasked, regenerationIndex) => crypto
-  .createHash('sha256')
-  .update(`${String(sourceKeyMasked).trim().toUpperCase()}-REGEN-${regenerationIndex}`)
-  .digest('hex')
-  .substring(0, 8)
-  .toUpperCase();
+export function hashAccessCode(accessCode) {
+  if (!env.accessCodePepper) {
+    throw new Error('ACCESS_CODE_PEPPER is required');
+  }
+
+  return crypto
+    .createHmac('sha256', env.accessCodePepper)
+    .update(String(accessCode || '').trim().toUpperCase())
+    .digest('hex');
+}
+
+export function createCitizenFingerprint(source) {
+  if (!env.citizenFingerprintPepper) {
+    throw new Error('CITIZEN_FINGERPRINT_PEPPER is required');
+  }
+
+  return crypto
+    .createHmac('sha256', env.citizenFingerprintPepper)
+    .update(String(source || '').trim().toUpperCase())
+    .digest('hex');
+}
+
+const newAccessCodeRef = (db) => db.collection(ACCESS_COLLECTION).doc(`cac_${crypto.randomUUID()}`);
 
 const toIso = (value) => {
   if (!value) return new Date().toISOString();
@@ -131,54 +151,83 @@ const toIso = (value) => {
 
 const materializeDoc = (doc) => ({ id: doc.id, ...doc.data() });
 
-const serializeAccess = (data, { privileged = false } = {}) => ({
-  ...data,
+const serializeAccess = (data) => ({
+  id: data.id,
+  accessCode: data.accessCode,
+  displayCodeMasked: data.displayCodeMasked,
+  communeId: data.communeId,
+  communeName: data.communeName,
+  createdByControllerId: data.createdByControllerId,
+  createdByControllerName: data.createdByControllerName,
+  status: data.status,
+  usedForLogin: data.usedForLogin,
+  regenerationIndex: data.regenerationIndex,
   createdAt: toIso(data.createdAt),
   approvedAt: data.approvedAt ? toIso(data.approvedAt) : undefined,
   updatedAt: data.updatedAt ? toIso(data.updatedAt) : undefined,
-  fingerprint: privileged ? data.fingerprint : undefined,
-  sourceKeyMasked: privileged ? data.sourceKeyMasked : undefined,
 });
 
-const serializeDuplicate = (data, { privileged = false } = {}) => ({
-  ...data,
+const serializeDuplicate = (data) => ({
+  id: data.id,
+  requestedByControllerId: data.requestedByControllerId,
+  requestedByControllerName: data.requestedByControllerName,
+  communeId: data.communeId,
+  communeName: data.communeName,
+  existingAccessCodeId: data.existingAccessCodeId,
   requestedAt: toIso(data.requestedAt),
+  status: data.status,
+  duplicateReason: data.duplicateReason,
+  controllerComment: data.controllerComment,
   reviewedAt: data.reviewedAt ? toIso(data.reviewedAt) : undefined,
   updatedAt: data.updatedAt ? toIso(data.updatedAt) : undefined,
-  fingerprint: privileged ? data.fingerprint : undefined,
-  sourceKeyMasked: privileged ? data.sourceKeyMasked : undefined,
-  existingAccessCode: privileged ? data.existingAccessCode : undefined,
+  rejectionReason: data.rejectionReason,
 });
 
 const serializeLog = (data) => ({
   ...data,
   createdAt: toIso(data.createdAt),
   updatedAt: data.updatedAt ? toIso(data.updatedAt) : undefined,
-  fingerprint: undefined,
-  sourceKeyMasked: undefined,
+  citizenFingerprintHash: undefined,
 });
 
 const loadControllerProfile = async (user) => {
   const id = controllerIdFromUser(user);
-  const fallback = {
-    id,
-    name: user?.name || 'Controleur',
-    communeId: user?.communeCode || 'unknown-commune',
-    communeName: user?.communeCode || 'Commune non renseignee',
-  };
-
-  if (!id) return fallback;
+  if (!id) return null;
 
   const doc = await getFirebaseAdminDb().collection(CONTROLLER_COLLECTION).doc(id).get();
-  if (!doc.exists) return fallback;
+  if (!doc.exists) return null;
 
   const data = doc.data() || {};
+  if (data.enabled === false) return null;
+
+  const communeId = data.commune?.code || data.commune?.name || user?.communeCode || '';
+  const tokenCommune = user?.communeId || user?.communeCode || '';
+  if (tokenCommune && communeId && tokenCommune !== communeId) return null;
+
   return {
     id,
-    name: data.label || fallback.name,
-    communeId: data.commune?.code || data.commune?.name || fallback.communeId,
-    communeName: data.commune?.name || fallback.communeName,
+    name: data.label || user?.name || 'Controleur',
+    communeId: communeId || 'unknown-commune',
+    communeName: data.commune?.name || user?.communeCode || 'Commune non renseignee',
   };
+};
+
+const requireActiveController = async (req, res, next) => {
+  if (!isController(req.user) || isAdmin(req.user) || isSuperAdmin(req.user)) {
+    return next();
+  }
+
+  try {
+    const controller = await loadControllerProfile(req.user);
+    if (!controller) {
+      return res.status(403).json({ error: 'CONTROLLER_DISABLED', message: 'Ce compte controleur est desactive.' });
+    }
+    req.controllerProfile = controller;
+    return next();
+  } catch (error) {
+    logger.warn({ err: error }, 'controller_profile_check_failed');
+    return res.status(403).json({ error: 'CONTROLLER_DISABLED', message: 'Ce compte controleur est desactive.' });
+  }
 };
 
 const writeActivity = (transaction, db, payload) => {
@@ -190,15 +239,13 @@ const writeActivity = (transaction, db, payload) => {
     controllerId: payload.controllerId,
     controllerName: payload.controllerName,
     actionType: payload.actionType,
-    accessCode: payload.accessCode || null,
-    fingerprint: payload.fingerprint || null,
-    sourceKeyMasked: payload.sourceKeyMasked || null,
+    accessCodeId: payload.accessCodeId || null,
     createdAt: FieldValue.serverTimestamp(),
     metadata: payload.metadata || {},
   });
 };
 
-router.use(isConfigured, requireAuth);
+router.use(isConfigured, requireAuth, requireActiveController);
 
 const createCitizenAccessCodeHandler = async (req, res) => {
   if (!isController(req.user)) {
@@ -218,23 +265,35 @@ const createCitizenAccessCodeHandler = async (req, res) => {
       ? req.body.controllerComment.trim().substring(0, 500)
       : null;
     const verification = typeof req.body?.verification === 'object' && req.body.verification != null ? req.body.verification : {};
-    const fingerprint = fingerprintFor(source.sourceKeyMasked);
-    const accessCode = accessCodeFor(source.sourceKeyMasked);
-    const controller = await loadControllerProfile(req.user);
+    const citizenFingerprintHash = createCitizenFingerprint(source.sourceKeyMasked);
+    const accessCode = generateSecureAccessCode(10);
+    const accessCodeHash = hashAccessCode(accessCode);
+    const displayCodeMasked = `${accessCode.substring(0, 2)}••••${accessCode.substring(accessCode.length - 2)}`;
+    const controller = req.controllerProfile || await loadControllerProfile(req.user);
+    if (!controller) {
+      return res.status(403).json({ error: 'CONTROLLER_DISABLED', message: 'Ce compte controleur est desactive.' });
+    }
     const db = getFirebaseAdminDb();
 
     const result = await db.runTransaction(async (transaction) => {
-      const fingerprintRef = db.collection(FINGERPRINT_COLLECTION).doc(fingerprint);
+      const fingerprintRef = db.collection(FINGERPRINT_COLLECTION).doc(citizenFingerprintHash);
       const fingerprintDoc = await transaction.get(fingerprintRef);
 
       if (fingerprintDoc.exists) {
-        const existing = fingerprintDoc.data() || {};
+        const fingerprint = fingerprintDoc.data() || {};
+        const existingAccessCodeId = fingerprint.latestAccessCodeId || fingerprint.firstAccessCodeId || '';
+        const existingAccessDoc = existingAccessCodeId
+          ? await transaction.get(db.collection(ACCESS_COLLECTION).doc(existingAccessCodeId))
+          : null;
+        const existingDisplayCodeMasked = existingAccessDoc?.exists
+          ? (existingAccessDoc.data() || {}).displayCodeMasked || ''
+          : '';
         const requestRef = db.collection(DUPLICATE_COLLECTION).doc();
         const request = {
           id: requestRef.id,
-          fingerprint,
-          sourceKeyMasked: source.sourceKeyMasked,
-          existingAccessCode: existing.latestAccessCode || existing.firstAccessCode || '',
+          citizenFingerprintHash,
+          existingAccessCodeId,
+          existingDisplayCodeMasked,
           requestedByControllerId: controller.id,
           requestedByControllerName: controller.name,
           communeId: controller.communeId,
@@ -251,9 +310,6 @@ const createCitizenAccessCodeHandler = async (req, res) => {
           controllerId: controller.id,
           controllerName: controller.name,
           actionType: 'duplicate_detected',
-          accessCode: existing.latestAccessCode || existing.firstAccessCode || null,
-          fingerprint,
-          sourceKeyMasked: source.sourceKeyMasked,
           metadata: { duplicateRequestId: requestRef.id },
         });
         writeActivity(transaction, db, {
@@ -261,28 +317,22 @@ const createCitizenAccessCodeHandler = async (req, res) => {
           controllerId: controller.id,
           controllerName: controller.name,
           actionType: 'duplicate_request_created',
-          accessCode: existing.latestAccessCode || existing.firstAccessCode || null,
-          fingerprint,
-          sourceKeyMasked: source.sourceKeyMasked,
           metadata: { duplicateRequestId: requestRef.id, reason: duplicateReason },
         });
 
         return {
           status: 'duplicate_request_created',
-          duplicateRequest: serializeDuplicate({ ...request, requestedAt: new Date().toISOString() }, { privileged: false }),
+          duplicateRequest: serializeDuplicate({ ...request, requestedAt: new Date().toISOString() }),
         };
       }
 
+      const accessRef = newAccessCodeRef(db);
+
       const access = {
-        accessCode,
-        codeHash: hashAccessCode(accessCode),
-        displayCodeMasked: `${accessCode.substring(0, 2)}••••${accessCode.substring(accessCode.length - 2)}`,
-        fingerprint,
-        sourceKeyMasked: source.sourceKeyMasked,
-        firstNameInitial: source.firstNameInitial,
-        lastNameInitial: source.lastNameInitial,
-        birthYear: source.birthYear,
-        phoneSuffix: source.phoneSuffix,
+        id: accessRef.id,
+        accessCodeHash,
+        displayCodeMasked,
+        citizenFingerprintHash,
         communeId: controller.communeId,
         communeName: controller.communeName,
         createdByControllerId: controller.id,
@@ -305,37 +355,34 @@ const createCitizenAccessCodeHandler = async (req, res) => {
         },
       };
       const fingerprintRecord = {
-        fingerprint,
-        sourceKeyMasked: source.sourceKeyMasked,
-        firstAccessCode: accessCode,
-        latestAccessCode: accessCode,
+        citizenFingerprintHash,
+        firstAccessCodeId: accessRef.id,
+        latestAccessCodeId: accessRef.id,
         communeId: controller.communeId,
         createdAt: FieldValue.serverTimestamp(),
         updatedAt: FieldValue.serverTimestamp(),
         regenerationCount: 0,
       };
 
-      transaction.set(db.collection(ACCESS_COLLECTION).doc(accessCode), access);
+      transaction.set(accessRef, access);
       transaction.set(fingerprintRef, fingerprintRecord);
       writeActivity(transaction, db, {
         ...controller,
         controllerId: controller.id,
         controllerName: controller.name,
         actionType: 'code_created',
-        accessCode,
-        fingerprint,
-        sourceKeyMasked: source.sourceKeyMasked,
+        accessCodeId: accessRef.id,
       });
 
       return {
         status: 'created',
-        accessCode: serializeAccess({ ...access, createdAt: new Date().toISOString() }, { privileged: false }),
+        accessCode: serializeAccess({ ...access, accessCode, createdAt: new Date().toISOString() }),
       };
     });
 
     return res.status(result.status === 'created' ? 201 : 200).json(result);
   } catch (error) {
-    console.error('Generation de code citoyen impossible.', error);
+    logger.error({ err: error }, 'citizen_code_generation_failed');
     return res.status(error.status || 500).json({ message: error.message || 'Generation de code citoyen impossible.' });
   }
 };
@@ -365,9 +412,9 @@ router.get('/duplicates', async (req, res) => {
     }
 
     const snapshot = await query.orderBy('requestedAt', 'desc').limit(200).get();
-    return res.json({ requests: snapshot.docs.map((doc) => serializeDuplicate(materializeDoc(doc), { privileged })) });
+    return res.json({ requests: snapshot.docs.map((doc) => serializeDuplicate(materializeDoc(doc))) });
   } catch (error) {
-    console.error('Lecture des demandes doublon impossible.', error);
+    logger.error({ err: error }, 'duplicate_requests_read_failed');
     return res.status(500).json({ message: 'Lecture des demandes doublon impossible.' });
   }
 });
@@ -386,7 +433,13 @@ router.post('/duplicates/:requestId/approve', requireSuperAdminKey, async (req, 
       const request = requestDoc.data() || {};
       if (request.status !== 'pending') return { id: requestDoc.id, ...request };
 
-      const fingerprintRef = db.collection(FINGERPRINT_COLLECTION).doc(request.fingerprint);
+      const citizenFingerprintHash = request.citizenFingerprintHash;
+      if (!citizenFingerprintHash) {
+        const error = new Error('Empreinte citoyenne invalide.');
+        error.status = 400;
+        throw error;
+      }
+      const fingerprintRef = db.collection(FINGERPRINT_COLLECTION).doc(citizenFingerprintHash);
       const fingerprintDoc = await transaction.get(fingerprintRef);
       if (!fingerprintDoc.exists) {
         const error = new Error('Empreinte citoyenne introuvable.');
@@ -396,18 +449,14 @@ router.post('/duplicates/:requestId/approve', requireSuperAdminKey, async (req, 
 
       const fingerprint = fingerprintDoc.data() || {};
       const nextIndex = Number(fingerprint.regenerationCount || 0) + 1;
-      const newCode = regeneratedCodeFor(request.sourceKeyMasked, nextIndex);
-      const previousCode = fingerprint.latestAccessCode || request.existingAccessCode;
+      const newCode = generateSecureAccessCode(10);
+      const newAccessRef = newAccessCodeRef(db);
+      const previousCodeId = fingerprint.latestAccessCodeId || request.existingAccessCodeId;
       const newAccess = {
-        accessCode: newCode,
-        codeHash: hashAccessCode(newCode),
+        id: newAccessRef.id,
+        accessCodeHash: hashAccessCode(newCode),
         displayCodeMasked: `${newCode.substring(0, 2)}••••${newCode.substring(newCode.length - 2)}`,
-        fingerprint: request.fingerprint,
-        sourceKeyMasked: request.sourceKeyMasked,
-        firstNameInitial: request.sourceKeyMasked.substring(0, 1),
-        lastNameInitial: request.sourceKeyMasked.substring(1, 2),
-        birthYear: request.sourceKeyMasked.substring(2, 6),
-        phoneSuffix: request.sourceKeyMasked.substring(6),
+        citizenFingerprintHash,
         communeId: request.communeId,
         communeName: request.communeName,
         createdByControllerId: request.requestedByControllerId,
@@ -418,7 +467,7 @@ router.post('/duplicates/:requestId/approve', requireSuperAdminKey, async (req, 
         replacedByCodeId: null,
         replacedAt: null,
         lastUsedAt: null,
-        regeneratedFromCode: previousCode,
+        regeneratedFromCodeId: previousCodeId,
         regenerationIndex: nextIndex,
         approvedBySuperAdminId: req.user.uid,
         approvedAt: FieldValue.serverTimestamp(),
@@ -427,21 +476,21 @@ router.post('/duplicates/:requestId/approve', requireSuperAdminKey, async (req, 
         status: 'approved',
         reviewedBySuperAdminId: req.user.uid,
         reviewedAt: FieldValue.serverTimestamp(),
-        newAccessCode: newCode,
+        newAccessCodeId: newAccessRef.id,
         updatedAt: FieldValue.serverTimestamp(),
       };
 
-      transaction.set(db.collection(ACCESS_COLLECTION).doc(newCode), newAccess);
+      transaction.set(newAccessRef, newAccess);
       transaction.set(fingerprintRef, {
         ...fingerprint,
-        latestAccessCode: newCode,
+        latestAccessCodeId: newAccessRef.id,
         updatedAt: FieldValue.serverTimestamp(),
         regenerationCount: nextIndex,
       }, { merge: true });
-      if (previousCode) {
-        transaction.set(db.collection(ACCESS_COLLECTION).doc(previousCode), {
+      if (previousCodeId) {
+        transaction.set(db.collection(ACCESS_COLLECTION).doc(previousCodeId), {
           status: 'replaced',
-          replacedByCodeId: newCode,
+          replacedByCodeId: newAccessRef.id,
           replacedAt: FieldValue.serverTimestamp(),
           updatedAt: FieldValue.serverTimestamp(),
         }, { merge: true });
@@ -453,19 +502,17 @@ router.post('/duplicates/:requestId/approve', requireSuperAdminKey, async (req, 
         controllerId: request.requestedByControllerId,
         controllerName: request.requestedByControllerName,
         actionType: 'regeneration_approved',
-        accessCode: newCode,
-        fingerprint: request.fingerprint,
-        sourceKeyMasked: request.sourceKeyMasked,
-        metadata: { duplicateRequestId: requestDoc.id, previousCode },
+        accessCodeId: newAccessRef.id,
+        metadata: { duplicateRequestId: requestDoc.id, previousCodeId },
       });
 
-      return { id: requestDoc.id, ...request, ...requestUpdate, newAccessCode: newCode };
+      return { id: requestDoc.id, ...request, ...requestUpdate };
     });
 
     if (!updated) return res.status(404).json({ message: 'Demande introuvable.' });
-    return res.json({ request: serializeDuplicate(updated, { privileged: true }) });
+    return res.json({ request: serializeDuplicate(updated) });
   } catch (error) {
-    console.error('Validation de regeneration impossible.', error);
+    logger.error({ err: error }, 'duplicate_request_approval_failed');
     return res.status(error.status || 500).json({ message: error.message || 'Validation de regeneration impossible.' });
   }
 });
@@ -500,16 +547,13 @@ router.post('/duplicates/:requestId/reject', requireSuperAdminKey, async (req, r
       controllerId: request.requestedByControllerId,
       controllerName: request.requestedByControllerName,
       actionType: 'regeneration_rejected',
-      accessCode: request.existingAccessCode || null,
-      fingerprint: request.fingerprint || null,
-      sourceKeyMasked: request.sourceKeyMasked || null,
       createdAt: FieldValue.serverTimestamp(),
       metadata: { duplicateRequestId: requestDoc.id, reason: rejectionReason },
     });
 
-    return res.json({ request: serializeDuplicate({ id: requestDoc.id, ...request, ...update }, { privileged: true }) });
+    return res.json({ request: serializeDuplicate({ id: requestDoc.id, ...request, ...update }) });
   } catch (error) {
-    console.error('Refus de regeneration impossible.', error);
+    logger.error({ err: error }, 'duplicate_request_rejection_failed');
     return res.status(500).json({ message: 'Refus de regeneration impossible.' });
   }
 });
@@ -525,7 +569,10 @@ router.post('/codes/:accessCode/revoke', requireSuperAdminKey, async (req, res) 
   const reason = typeof req.body?.reason === 'string' ? req.body.reason.trim().substring(0, 500) : '';
   try {
     const db = getFirebaseAdminDb();
-    const ref = db.collection(ACCESS_COLLECTION).doc(accessCode);
+    const accessCodeHash = hashAccessCode(accessCode);
+    const snapshot = await db.collection(ACCESS_COLLECTION).where('accessCodeHash', '==', accessCodeHash).limit(1).get();
+    if (snapshot.empty) return res.status(404).json({ message: 'Code introuvable.' });
+    const ref = snapshot.docs[0].ref;
     const doc = await ref.get();
     if (!doc.exists) return res.status(404).json({ message: 'Code introuvable.' });
     await ref.set({
@@ -537,7 +584,7 @@ router.post('/codes/:accessCode/revoke', requireSuperAdminKey, async (req, res) 
     }, { merge: true });
     return res.json({ ok: true });
   } catch (error) {
-    console.error('Revocation du code citoyen impossible.', error);
+    logger.error({ err: error }, 'citizen_code_revocation_failed');
     return res.status(500).json({ message: 'Revocation impossible.' });
   }
 });
@@ -583,7 +630,7 @@ router.get('/activity', async (req, res) => {
 
     return res.json({ logs });
   } catch (error) {
-    console.error('Lecture analytics controleurs impossible.', error);
+    logger.error({ err: error }, 'controller_activity_read_failed');
     return res.status(500).json({ message: 'Lecture analytics controleurs impossible.' });
   }
 });

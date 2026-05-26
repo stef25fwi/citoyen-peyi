@@ -7,7 +7,9 @@ void main() {
     await tester.pumpWidget(const CitoyenPeyiApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Plateforme de consultation citoyenne anonyme'), findsOneWidget);
-    expect(find.text('Administrateur communal'), findsOneWidget);
+    expect(find.text('Plateforme de consultation citoyenne anonyme'),
+        findsOneWidget);
+    expect(find.text('Je participe'), findsOneWidget);
+    expect(find.text('Contrôleur / accueil'), findsOneWidget);
   });
 }

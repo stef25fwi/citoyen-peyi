@@ -17,7 +17,7 @@ const hasRoleClaim = (claims: Record<string, unknown>, role: FirebaseAppRole) =>
   return claims[role] === true;
 };
 
-export const isFirebaseRoleGuardEnabled = () => import.meta.env.VITE_FIREBASE_ENFORCE_ROLE_GUARDS === 'true';
+export const isFirebaseRoleGuardEnabled = () => import.meta.env.CP_FIREBASE_ENFORCE_ROLE_GUARDS === 'true';
 
 export const loadFirebaseRoleState = async (): Promise<FirebaseRoleState> => {
   const services = initializeFirebaseServices();

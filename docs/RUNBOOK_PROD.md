@@ -29,7 +29,7 @@ GitHub Pages (statique)         Cloud Run                 Firestore
 | Cloud Run identity | service account avec Firestore User | IAM | `GCP_RUNTIME_SERVICE_ACCOUNT` |
 | GitHub Actions | `GCP_PROJECT_ID`, `GCP_REGION`, `FIREBASE_PROJECT_ID`, `CORS_ORIGIN`, `API_BASE_URL` | repo `vars` |  |
 | GitHub Actions | `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_RUNTIME_SERVICE_ACCOUNT` | repo `secrets` |  |
-| GitHub Pages | `VITE_FIREBASE_*` (6 secrets) | repo `secrets` |  |
+| GitHub Pages | `FIREBASE_*` (6 secrets) | repo `secrets` |  |
 
 ## Rotation de cle (operation courante)
 

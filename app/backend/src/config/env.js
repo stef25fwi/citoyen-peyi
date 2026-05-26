@@ -73,6 +73,9 @@ export const env = {
   logLevel: optional(process.env.LOG_LEVEL) || (nodeEnv === 'production' ? 'info' : 'debug'),
   superAdminKey: optional(process.env.SUPER_ADMIN_KEY),
   adminAccessKey: optional(process.env.ADMIN_ACCESS_KEY),
+  enableBootstrapAdmin: optional(process.env.ENABLE_BOOTSTRAP_ADMIN) === 'true',
+  accessCodePepper: optional(process.env.ACCESS_CODE_PEPPER),
+  citizenFingerprintPepper: optional(process.env.CITIZEN_FINGERPRINT_PEPPER),
   voteAccessTokenSecret: optional(process.env.VOTE_ACCESS_TOKEN_SECRET),
   googleApplicationCredentials: optional(process.env.GOOGLE_APPLICATION_CREDENTIALS),
   firebaseAdminProjectId: optional(process.env.FIREBASE_ADMIN_PROJECT_ID),
@@ -81,6 +84,8 @@ export const env = {
 };
 
 export const isSuperAdminConfigured = () => Boolean(env.superAdminKey);
+
+export const isBootstrapAdminEnabled = () => env.enableBootstrapAdmin;
 
 export const isFirebaseAdminConfigured = () => hasGoogleApplicationCredentials() || hasExplicitFirebaseAdminCredentials();
 
@@ -107,6 +112,22 @@ export const validateEnv = () => {
 
   if (env.isProduction && env.voteAccessTokenSecret.length < 32) {
     errors.push('VOTE_ACCESS_TOKEN_SECRET doit faire au moins 32 caracteres en production.');
+  }
+
+  if (env.isProduction && !env.accessCodePepper) {
+    errors.push('ACCESS_CODE_PEPPER est requis en production pour hacher les codes citoyens.');
+  }
+
+  if (env.isProduction && !env.citizenFingerprintPepper) {
+    errors.push('CITIZEN_FINGERPRINT_PEPPER est requis en production pour hacher les empreintes citoyennes.');
+  }
+
+  if (env.isProduction && env.accessCodePepper && env.accessCodePepper.length < 32) {
+    errors.push('ACCESS_CODE_PEPPER doit faire au moins 32 caracteres en production.');
+  }
+
+  if (env.isProduction && env.citizenFingerprintPepper && env.citizenFingerprintPepper.length < 32) {
+    errors.push('CITIZEN_FINGERPRINT_PEPPER doit faire au moins 32 caracteres en production.');
   }
 
   if (env.isProduction && env.corsOrigins.length === 0) {

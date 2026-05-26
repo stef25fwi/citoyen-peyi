@@ -7,7 +7,7 @@
 - [ ] Service account Firebase Admin avec scope minimal (Firestore User).
 - [ ] `CORS_ORIGIN` configure avec uniquement le domaine prod du frontend (HTTPS).
 - [ ] Variables GitHub Actions definies: `GCP_PROJECT_ID`, `GCP_REGION`, `API_BASE_URL`, `CORS_ORIGIN`, `FIREBASE_PROJECT_ID`.
-- [ ] Secrets GitHub Actions definis: `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_RUNTIME_SERVICE_ACCOUNT`, `VITE_FIREBASE_*` (x6).
+- [ ] Secrets GitHub Actions definis: `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_DEPLOY_SERVICE_ACCOUNT`, `GCP_RUNTIME_SERVICE_ACCOUNT`, `FIREBASE_*` (x6).
 
 ## Code et tests
 - [ ] CI vert sur la branche cible (backend tests, Flutter analyze + test, Firestore rules emulator).

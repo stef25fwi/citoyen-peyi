@@ -1,6 +1,6 @@
 // Lightweight client-side store for "contrôleur" access codes.
 // NOTE: This is a demo-only mechanism (localStorage). For production,
-// use Lovable Cloud auth + a server-validated invite/role system.
+// use backend-validated access codes and Firebase custom claims.
 
 import type { CommuneConfig } from '@/lib/registration-data';
 

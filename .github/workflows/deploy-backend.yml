@@ -53,7 +53,7 @@ jobs:
             --allow-unauthenticated \
             --service-account="${{ secrets.GCP_RUNTIME_SERVICE_ACCOUNT }}" \
             --set-env-vars=NODE_ENV=production,CORS_ORIGIN=${{ vars.CORS_ORIGIN }},API_BASE_URL=${{ vars.API_BASE_URL }},LOG_LEVEL=info \
-            --set-secrets=SUPER_ADMIN_KEY=SUPER_ADMIN_KEY:latest,ADMIN_ACCESS_KEY=ADMIN_ACCESS_KEY:latest,VOTE_ACCESS_TOKEN_SECRET=VOTE_ACCESS_TOKEN_SECRET:latest \
+            --set-secrets=SUPER_ADMIN_KEY=SUPER_ADMIN_KEY:latest,ADMIN_ACCESS_KEY=ADMIN_ACCESS_KEY:latest,VOTE_ACCESS_TOKEN_SECRET=VOTE_ACCESS_TOKEN_SECRET:latest,ACCESS_CODE_PEPPER=ACCESS_CODE_PEPPER:latest,CITIZEN_FINGERPRINT_PEPPER=CITIZEN_FINGERPRINT_PEPPER:latest \
             --max-instances=5 \
             --concurrency=80 \
             --cpu=1 \

@@ -41,18 +41,26 @@ class AdminProfileModel {
         'communeName': communeName,
         'communeCode': communeCode,
         'codePostal': codePostal,
-        'accessKey': accessKey,
         'createdAt': createdAt,
       };
+
+  AdminProfileModel withoutAccessKey() => AdminProfileModel(
+        id: id,
+        label: label,
+        communeName: communeName,
+        communeCode: communeCode,
+        codePostal: codePostal,
+        accessKey: '',
+        createdAt: createdAt,
+      );
 
   static AdminProfileModel? fromJson(Object? raw) {
     if (raw is! Map<String, dynamic>) return null;
     final id = raw['id'] as String?;
     final label = raw['label'] as String?;
     final communeName = raw['communeName'] as String?;
-    final accessKey = raw['accessKey'] as String?;
     final createdAt = raw['createdAt'] as String?;
-    if (id == null || label == null || communeName == null || accessKey == null || createdAt == null) {
+    if (id == null || label == null || communeName == null || createdAt == null) {
       return null;
     }
     return AdminProfileModel(
@@ -61,7 +69,7 @@ class AdminProfileModel {
       communeName: communeName,
       communeCode: raw['communeCode'] as String?,
       codePostal: raw['codePostal'] as String?,
-      accessKey: accessKey,
+      accessKey: '',
       createdAt: createdAt,
     );
   }
@@ -134,7 +142,6 @@ class SuperAdminService {
       controller: false,
       mode: 'secure',
       adminScope: 'global',
-      customToken: customToken,
       label: 'Super Administrateur',
     ));
   }
@@ -225,7 +232,7 @@ class SuperAdminService {
     );
 
     final profiles = await loadProfiles();
-    profiles.add(profile);
+    profiles.add(profile.withoutAccessKey());
     await _saveProfiles(profiles);
     return profile;
   }
@@ -291,7 +298,7 @@ class SuperAdminService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(
       _profilesKey,
-      jsonEncode(profiles.map((p) => p.toJson()).toList()),
+      jsonEncode(profiles.map((p) => p.withoutAccessKey().toJson()).toList()),
     );
   }
 

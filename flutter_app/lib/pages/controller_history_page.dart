@@ -166,7 +166,7 @@ class _CodeHistoryTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final status = code.usedForLogin ? 'Utilise' : code.status;
+    final status = code.usedForLogin ? 'Utilisé' : code.status;
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -176,7 +176,7 @@ class _CodeHistoryTile extends StatelessWidget {
       ),
       child: ListTile(
         leading: const Icon(Icons.qr_code_2_rounded),
-        title: Text(code.accessCode),
+        title: Text(code.accessCode.isEmpty ? code.createdAt : code.accessCode),
         subtitle: Text('${code.communeName} · ${code.createdAt}'),
         trailing: Chip(label: Text(status)),
       ),
@@ -192,15 +192,15 @@ class _DuplicateHistoryTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final title = switch (request.status) {
-      'approved' => 'Validation accordee',
-      'rejected' => 'Validation refusee',
+      'approved' => 'Validation accordée',
+      'rejected' => 'Validation refusée',
       _ => 'Validation en attente',
     };
 
     final subtitle = request.status == 'approved'
-        ? 'Nouveau code: ${request.newAccessCode ?? '-'}'
+        ? 'Nouveau code émis'
         : request.status == 'rejected'
-            ? 'Motif de refus: ${request.rejectionReason ?? 'Non precise'}'
+          ? 'Motif de refus: ${request.rejectionReason ?? 'Non précisé'}'
             : 'Motif demande: ${request.duplicateReason.label}';
 
     return DecoratedBox(

@@ -27,11 +27,11 @@ class AdminAuthService {
   Future<AdminSignInResult> signInWithAccessKey(String accessKey) async {
     final trimmed = accessKey.trim();
     if (trimmed.isEmpty) {
-      throw const AdminAuthException('Cle administrateur requise.');
+      throw const AdminAuthException('Clé administrateur requise.');
     }
 
     if (AppConfig.apiBaseUrl.trim().isEmpty) {
-      throw const AdminAuthException('Backend non configure (API_BASE_URL manquant).');
+      throw const AdminAuthException('Backend non configuré (API_BASE_URL manquant).');
     }
 
     late http.Response response;
@@ -44,7 +44,7 @@ class AdminAuthService {
           )
           .timeout(const Duration(seconds: 10));
     } catch (_) {
-      throw const AdminAuthException('Backend injoignable. Reessayez plus tard.');
+      throw const AdminAuthException('Backend injoignable. Réessayez plus tard.');
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -57,7 +57,7 @@ class AdminAuthService {
     final customToken = payload['customToken'] as String?;
 
     if (customToken == null || customToken.isEmpty) {
-      throw const AdminAuthException('Reponse backend invalide (customToken manquant).');
+      throw const AdminAuthException('Réponse backend invalide (customToken manquant).');
     }
 
     await FirebaseAuthService.instance.signInWithCustomToken(customToken);
@@ -68,7 +68,6 @@ class AdminAuthService {
       controller: false,
       mode: 'secure',
       adminScope: claims['adminScope'] as String?,
-      customToken: customToken,
       id: profile['id'] as String?,
       label: profile['label'] as String? ?? 'Administrateur communal',
       commune: profile['communeName'] is String && (profile['communeName'] as String).isNotEmpty

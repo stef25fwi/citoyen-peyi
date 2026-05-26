@@ -14,6 +14,7 @@ class ControleurProfileModel {
     required this.communeName,
     this.communeCode,
     this.codePostal,
+    this.displayCodeMasked = '',
     required this.createdAt,
     this.usedAt,
   });
@@ -24,6 +25,7 @@ class ControleurProfileModel {
   final String communeName;
   final String? communeCode;
   final String? codePostal;
+  final String displayCodeMasked;
   final String createdAt;
   final String? usedAt;
 
@@ -32,6 +34,7 @@ class ControleurProfileModel {
   Map<String, dynamic> toJson() => {
         'id': id,
         'code': code,
+        'displayCodeMasked': displayCodeMasked,
         'label': label,
         'commune': {
           'name': communeName,
@@ -44,20 +47,26 @@ class ControleurProfileModel {
 
   static ControleurProfileModel? fromJson(Object? raw) {
     if (raw is! Map<String, dynamic>) return null;
-    final code = raw['code'] as String?;
+    final code = raw['code'] as String? ?? '';
     final label = raw['label'] as String?;
-    if (code == null || label == null) return null;
+    final id = raw['id'] as String? ?? code;
+    if (id.isEmpty || label == null) return null;
 
     final commune = raw['commune'] as Map<String, dynamic>?;
 
     return ControleurProfileModel(
-      id: raw['id'] as String? ?? code,
+      id: id,
       code: code,
       label: label,
       communeName: commune?['name'] as String? ?? '',
       communeCode: commune?['code'] as String?,
       codePostal: commune?['codePostal'] as String?,
-      createdAt: raw['createdAt']?.toString() ?? DateTime.now().toIso8601String(),
+      displayCodeMasked: raw['displayCodeMasked'] as String? ??
+          (code.isEmpty
+              ? ''
+              : '${code.substring(0, 5)}••••${code.substring(code.length - 2)}'),
+      createdAt:
+          raw['createdAt']?.toString() ?? DateTime.now().toIso8601String(),
       usedAt: raw['usedAt']?.toString(),
     );
   }
@@ -90,32 +99,39 @@ class ControleurProfileService {
     String? communeCode,
     String? codePostal,
   }) async {
-    if (label.trim().isEmpty) throw const ControleurProfileException('Le libelle est requis.');
-    if (communeName.trim().isEmpty) throw const ControleurProfileException('La commune est requise.');
+    if (label.trim().isEmpty)
+      throw const ControleurProfileException('Le libellé est requis.');
+    if (communeName.trim().isEmpty)
+      throw const ControleurProfileException('La commune est requise.');
 
-    final response = await _authorizedRequest('POST', '/api/controllers', body: {
+    final response =
+        await _authorizedRequest('POST', '/api/controllers', body: {
       'label': label.trim(),
       'communeName': communeName.trim(),
-      if (communeCode != null && communeCode.trim().isNotEmpty) 'communeCode': communeCode.trim(),
-      if (codePostal != null && codePostal.trim().isNotEmpty) 'codePostal': codePostal.trim(),
+      if (communeCode != null && communeCode.trim().isNotEmpty)
+        'communeCode': communeCode.trim(),
+      if (codePostal != null && codePostal.trim().isNotEmpty)
+        'codePostal': codePostal.trim(),
     });
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
     final controller = ControleurProfileModel.fromJson(payload['controller']);
     if (controller == null) {
-      throw const ControleurProfileException('Reponse backend invalide.');
+      throw const ControleurProfileException('Réponse backend invalide.');
     }
     return controller;
   }
 
-  Future<void> deleteProfile(String code) async {
-    await _authorizedRequest('DELETE', '/api/controllers/$code');
+  Future<void> deleteProfile(String id) async {
+    await _authorizedRequest('DELETE', '/api/controllers/$id');
   }
 
-  Future<http.Response> _authorizedRequest(String method, String path, {Object? body}) async {
+  Future<http.Response> _authorizedRequest(String method, String path,
+      {Object? body}) async {
     final token = await FirebaseAuthService.instance.currentIdToken();
     if (token == null || token.isEmpty) {
-      throw const ControleurProfileException('Session Firebase manquante, reconnectez-vous.');
+      throw const ControleurProfileException(
+          'Session Firebase manquante, reconnectez-vous.');
     }
     final uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
     final headers = {
@@ -126,25 +142,35 @@ class ControleurProfileService {
     try {
       switch (method) {
         case 'GET':
-          response = await http.get(uri, headers: headers).timeout(const Duration(seconds: 10));
+          response = await http
+              .get(uri, headers: headers)
+              .timeout(const Duration(seconds: 10));
           break;
         case 'POST':
-          response = await http.post(uri, headers: headers, body: jsonEncode(body ?? const {})).timeout(const Duration(seconds: 12));
+          response = await http
+              .post(uri, headers: headers, body: jsonEncode(body ?? const {}))
+              .timeout(const Duration(seconds: 12));
           break;
         case 'DELETE':
-          response = await http.delete(uri, headers: headers).timeout(const Duration(seconds: 10));
+          response = await http
+              .delete(uri, headers: headers)
+              .timeout(const Duration(seconds: 10));
           break;
         default:
-          throw ControleurProfileException('Methode HTTP non supportee: $method');
+          throw ControleurProfileException(
+                  'Méthode HTTP non supportée: $method');
       }
     } catch (error) {
       if (error is ControleurProfileException) rethrow;
-      throw const ControleurProfileException('Backend injoignable. Reessayez plus tard.');
+      throw const ControleurProfileException(
+          'Backend injoignable. Réessayez plus tard.');
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      String message = 'Operation impossible.';
+      String message = 'Opération impossible.';
       try {
-        message = (jsonDecode(response.body) as Map<String, dynamic>)['message'] as String? ?? message;
+        message = (jsonDecode(response.body) as Map<String, dynamic>)['message']
+                as String? ??
+            message;
       } catch (_) {}
       throw ControleurProfileException(message);
     }

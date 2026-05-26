@@ -27,11 +27,11 @@ class ControllerAuthService {
   Future<ControllerSignInResult> signInWithCode(String code) async {
     final normalizedCode = code.trim().toUpperCase();
     if (normalizedCode.isEmpty) {
-      throw const ControllerAuthException('Le code controleur est requis.');
+      throw const ControllerAuthException('Le code contrôleur est requis.');
     }
 
     if (AppConfig.apiBaseUrl.trim().isEmpty) {
-      throw const ControllerAuthException('Backend non configure (API_BASE_URL manquant).');
+      throw const ControllerAuthException('Backend non configuré (API_BASE_URL manquant).');
     }
 
     late http.Response response;
@@ -44,7 +44,7 @@ class ControllerAuthService {
           )
           .timeout(const Duration(seconds: 10));
     } catch (_) {
-      throw const ControllerAuthException('Backend injoignable. Reessayez plus tard.');
+      throw const ControllerAuthException('Backend injoignable. Réessayez plus tard.');
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
@@ -57,7 +57,7 @@ class ControllerAuthService {
     final customToken = payload['customToken'] as String?;
 
     if (customToken == null || customToken.isEmpty) {
-      throw const ControllerAuthException('Reponse backend invalide (customToken manquant).');
+      throw const ControllerAuthException('Réponse backend invalide (customToken manquant).');
     }
 
     await FirebaseAuthService.instance.signInWithCustomToken(customToken);
@@ -67,10 +67,8 @@ class ControllerAuthService {
       admin: false,
       controller: claims['controller'] as bool? ?? true,
       mode: 'secure',
-      customToken: customToken,
       id: profile['id'] as String?,
-      code: profile['code'] as String? ?? normalizedCode,
-      label: profile['label'] as String? ?? 'Controleur',
+      label: profile['label'] as String? ?? 'Contrôleur',
       commune: AuthSessionCommune.fromJson(profile['commune']),
     );
 
@@ -81,9 +79,9 @@ class ControllerAuthService {
   String _readErrorMessage(String responseBody) {
     try {
       final payload = jsonDecode(responseBody) as Map<String, dynamic>;
-      return payload['message'] as String? ?? 'Connexion controleur impossible.';
+      return payload['message'] as String? ?? 'Connexion contrôleur impossible.';
     } catch (_) {
-      return 'Connexion controleur impossible.';
+      return 'Connexion contrôleur impossible.';
     }
   }
 }

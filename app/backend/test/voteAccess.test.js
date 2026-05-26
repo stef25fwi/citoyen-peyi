@@ -1,8 +1,11 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import crypto from 'crypto';
 
 process.env.SUPER_ADMIN_KEY = process.env.SUPER_ADMIN_KEY || 'test-super-admin-key';
 process.env.VOTE_ACCESS_TOKEN_SECRET = process.env.VOTE_ACCESS_TOKEN_SECRET || 'test-vote-secret';
+process.env.ACCESS_CODE_PEPPER = process.env.ACCESS_CODE_PEPPER || 'test-access-code-pepper';
+process.env.CITIZEN_FINGERPRINT_PEPPER = process.env.CITIZEN_FINGERPRINT_PEPPER || 'test-citizen-fingerprint-pepper';
 process.env.FIREBASE_ADMIN_PROJECT_ID = process.env.FIREBASE_ADMIN_PROJECT_ID || 'test-project';
 process.env.FIREBASE_ADMIN_CLIENT_EMAIL = process.env.FIREBASE_ADMIN_CLIENT_EMAIL || 'test@example.com';
 process.env.FIREBASE_ADMIN_PRIVATE_KEY = process.env.FIREBASE_ADMIN_PRIVATE_KEY || '-----BEGIN PRIVATE KEY-----\\nTEST\\n-----END PRIVATE KEY-----\\n';
@@ -11,6 +14,13 @@ const voteAccess = await import('../src/routes/voteAccess.js');
 
 test('normalizeCode trims and uppercases values', () => {
   assert.equal(voteAccess.normalizeCode(' ab12cd34 '), 'AB12CD34');
+});
+
+test('hashCode uses peppered HMAC instead of legacy SHA-256', () => {
+  const code = 'AB12CD34';
+  const legacyHash = crypto.createHash('sha256').update(code).digest('hex');
+  assert.notEqual(voteAccess.hashCode(code), legacyHash);
+  assert.equal(voteAccess.hashCode(code), voteAccess.hashCode(' ab12cd34 '));
 });
 
 test('signAccessToken and verifyAccessToken roundtrip payload', () => {

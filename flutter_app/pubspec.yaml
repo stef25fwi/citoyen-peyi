@@ -31,9 +31,5 @@ flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/fondecran.png
-    - assets/images/logo.png
-    - assets/images/logo1.png
-    - assets/images/logo3.png
-    - assets/images/lastlogo.png
-    - assets/images/logo1.webp
+    - assets/images/
+    - assets/citoyen_peyi/

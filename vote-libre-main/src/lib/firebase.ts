@@ -14,12 +14,12 @@ const FIREBASE_CONFIG_KEYS = [
 type FirebaseConfigShape = Record<(typeof FIREBASE_CONFIG_KEYS)[number], string>;
 
 const resolveFirebaseConfig = (): FirebaseConfigShape => ({
-  apiKey: import.meta.env.VITE_FIREBASE_API_KEY?.trim() || '',
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN?.trim() || '',
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID?.trim() || '',
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET?.trim() || '',
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID?.trim() || '',
-  appId: import.meta.env.VITE_FIREBASE_APP_ID?.trim() || '',
+  apiKey: import.meta.env.CP_FIREBASE_API_KEY?.trim() || '',
+  authDomain: import.meta.env.CP_FIREBASE_AUTH_DOMAIN?.trim() || '',
+  projectId: import.meta.env.CP_FIREBASE_PROJECT_ID?.trim() || '',
+  storageBucket: import.meta.env.CP_FIREBASE_STORAGE_BUCKET?.trim() || '',
+  messagingSenderId: import.meta.env.CP_FIREBASE_MESSAGING_SENDER_ID?.trim() || '',
+  appId: import.meta.env.CP_FIREBASE_APP_ID?.trim() || '',
 });
 
 const hasCompleteFirebaseConfig = (config: FirebaseConfigShape) =>
@@ -54,7 +54,7 @@ export const initializeFirebaseServices = () => {
 
     if (import.meta.env.DEV && !missingConfigWarningShown) {
       missingConfigWarningShown = true;
-      console.warn('Firebase non configure: definir les variables VITE_FIREBASE_* pour activer Firestore.');
+      console.warn('Firebase non configure: definir les variables CP_FIREBASE_* pour activer Firestore.');
     }
 
     return {

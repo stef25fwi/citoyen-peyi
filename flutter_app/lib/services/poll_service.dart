@@ -201,15 +201,15 @@ class PollService {
               .timeout(const Duration(seconds: 10));
           break;
         default:
-          throw PollServiceException('Methode HTTP non supportee: $method');
+          throw PollServiceException('Méthode HTTP non supportée: $method');
       }
     } catch (error) {
       if (error is PollServiceException) rethrow;
       throw const PollServiceException(
-          'Backend injoignable. Reessayez plus tard.');
+          'Backend injoignable. Réessayez plus tard.');
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      String message = 'Operation impossible.';
+      String message = 'Opération impossible.';
       try {
         message = (jsonDecode(response.body) as Map<String, dynamic>)['message']
                 as String? ??

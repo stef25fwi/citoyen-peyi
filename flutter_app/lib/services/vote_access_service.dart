@@ -116,7 +116,7 @@ class VoteAccessService {
       final payload = jsonDecode(response.body) as Map<String, dynamic>;
       if (response.statusCode < 200 || response.statusCode >= 300 || payload['ok'] != true) {
         throw VoteAccessException(
-          payload['message'] as String? ?? 'Code inconnu, expire ou desactive.',
+          payload['message'] as String? ?? 'Code inconnu, expiré ou désactivé.',
           errorCode: payload['errorCode'] as String? ?? 'INVALID_CODE',
         );
       }
@@ -136,7 +136,7 @@ class VoteAccessService {
     } on VoteAccessException {
       rethrow;
     } catch (_) {
-      throw const VoteAccessException('Validation securisee indisponible. Reessayez plus tard.', errorCode: 'NETWORK_ERROR');
+      throw const VoteAccessException('Validation sécurisée indisponible. Réessayez plus tard.', errorCode: 'NETWORK_ERROR');
     }
   }
 
@@ -172,7 +172,7 @@ class VoteAccessService {
     } on VoteAccessException {
       rethrow;
     } catch (_) {
-      throw const VoteAccessException('Reseau indisponible. Votre vote n’a pas ete enregistre.', errorCode: 'NETWORK_ERROR');
+      throw const VoteAccessException('Réseau indisponible. Votre vote n’a pas été enregistré.', errorCode: 'NETWORK_ERROR');
     }
   }
 
