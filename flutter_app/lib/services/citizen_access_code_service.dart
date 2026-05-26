@@ -15,6 +15,7 @@ enum DuplicateReason {
   lostCode('lost_code', 'Code perdu'),
   unreadableCode('unreadable_code', 'Code illisible'),
   citizenClaimsNoAccess('citizen_claims_no_access', 'La personne affirme ne jamais avoir recu son code'),
+  newCitizenCodeCreation('new_citizen_code_creation', 'Nouvelle creation de code citoyen'),
   controllerError('controller_error', 'Erreur de saisie'),
   other('other', 'Autre');
 

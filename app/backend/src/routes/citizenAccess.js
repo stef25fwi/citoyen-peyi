@@ -16,6 +16,7 @@ const duplicateReasons = new Set([
   'lost_code',
   'unreadable_code',
   'citizen_claims_no_access',
+  'new_citizen_code_creation',
   'controller_error',
   'other',
 ]);

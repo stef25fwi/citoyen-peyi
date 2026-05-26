@@ -56,8 +56,10 @@ class _QrAccessPageState extends State<QrAccessPage> {
       // Navigation: si une seule consultation eligible, on va directement voter.
       if (validation.eligiblePolls.length == 1) {
         final poll = validation.eligiblePolls.first;
+        final routeCode = Uri.encodeComponent(session.accessCode);
+        final routePollId = Uri.encodeQueryComponent(poll.pollId);
         Navigator.of(context).pushNamed(
-          '/vote/$rawCode?poll=${poll.pollId}',
+          '/vote/$routeCode?poll=$routePollId',
         );
         return;
       }
