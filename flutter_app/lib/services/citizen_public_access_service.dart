@@ -9,6 +9,7 @@ import 'browser_storage_service.dart';
 import 'citizen_access_code_service.dart';
 import 'firestore_data_service.dart';
 import 'poll_service.dart';
+import 'vote_access_service.dart';
 
 String _readStoredDateString(Object? value) {
   if (value == null) return '';
@@ -82,6 +83,48 @@ class CitizenPublicAccessService {
       accessCode: access.accessCode,
       communeId: access.communeId,
       communeName: access.communeName,
+      openPolls: openPolls,
+      votedPollIds: votedPollIds,
+    );
+  }
+
+  /// Construit une session citoyen directement depuis le résultat de validation
+  /// backend, utilisé comme fallback quand la lecture Firestore côté client est
+  /// bloquée par les règles de sécurité (ex: citizen_access_codes en prod).
+  CitizenPublicAccessSession sessionFromValidation({
+    required String rawCode,
+    required VoteAccessValidationResult validation,
+  }) {
+    final code = resolveVoteAccessCode(rawCode) ?? rawCode.trim();
+    final openPolls = validation.eligiblePolls
+        .where((p) => p.status == 'open' && !p.hasVoted)
+        .map(
+          (p) => PollModel(
+            id: p.pollId,
+            projectTitle: p.title,
+            description: p.description,
+            question: p.question,
+            options: p.options
+                .asMap()
+                .entries
+                .map((e) => PollOptionModel(id: e.value.id, label: e.value.label, votes: 0))
+                .toList(),
+            openDate: '',
+            closeDate: '',
+            status: 'open',
+            totalVoters: 0,
+            totalVoted: 0,
+          ),
+        )
+        .toList();
+    final votedPollIds = validation.eligiblePolls
+        .where((p) => p.hasVoted)
+        .map((p) => p.pollId)
+        .toSet();
+    return CitizenPublicAccessSession(
+      accessCode: code,
+      communeId: validation.communeId,
+      communeName: validation.communeName,
       openPolls: openPolls,
       votedPollIds: votedPollIds,
     );

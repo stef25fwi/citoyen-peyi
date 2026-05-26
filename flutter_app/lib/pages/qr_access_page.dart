@@ -41,9 +41,14 @@ class _QrAccessPageState extends State<QrAccessPage> {
       final validation = await VoteAccessService.instance.validateCode(rawCode);
       if (!mounted) return;
 
-      // Charger en parallele la session "espace citoyen" pour rester compatible
-      // avec le tableau de bord cote client (lecture sondages publics).
-      final session = await CitizenPublicAccessService.instance.openAccess(rawCode);
+      // Charger la session "espace citoyen" depuis Firestore si accessible,
+      // sinon construire la session directement depuis les données backend.
+      final sessionFromFirestore = await CitizenPublicAccessService.instance.openAccess(rawCode);
+      final session = sessionFromFirestore ??
+          CitizenPublicAccessService.instance.sessionFromValidation(
+            rawCode: rawCode,
+            validation: validation,
+          );
       if (!mounted) return;
 
       setState(() => _isSubmitting = false);
