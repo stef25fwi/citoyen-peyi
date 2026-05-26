@@ -282,7 +282,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                   ),
                   const SizedBox(height: 6),
                   Text(
-                    'Vue globale des doublons citoyens, regenerations et activites des controleurs par commune.',
+                    'Vue globale des doublons citoyens, regenerations et activites des agents de mobilisation citoyenne par commune.',
                     style: theme.textTheme.bodyMedium
                         ?.copyWith(color: const Color(0xFF5A6573)),
                   ),
@@ -304,7 +304,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                       FilledButton.tonal(
                         onPressed: () => Navigator.of(context)
                             .pushNamed('/super/controllers'),
-                        child: const Text('Controleurs'),
+                        child: const Text('Agents de mobilisation citoyenne'),
                       ),
                       FilledButton.tonal(
                         onPressed: () => Navigator.of(context)

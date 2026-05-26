@@ -522,7 +522,7 @@ class _CitizenAccessCard extends StatelessWidget {
           children: [
             Text('Acces citoyens', style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
-            Text('Les controleurs generent les codes citoyens a l\'accueil apres verification physique. Cette consultation n\'utilise pas de stock QR dedie.'),
+            Text('Les agents de mobilisation citoyenne generent les codes citoyens a l\'accueil apres verification physique. Cette consultation n\'utilise pas de stock QR dedie.'),
             const SizedBox(height: 16),
             _InfoRow(label: 'Commune', value: poll.communeName.isEmpty ? 'Non renseignee' : poll.communeName),
             _InfoRow(label: 'Codes citoyens actifs', value: '$activeCodes'),

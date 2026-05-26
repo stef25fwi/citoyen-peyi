@@ -96,7 +96,7 @@ class _DuplicateRequestCard extends StatelessWidget {
         leading: const Icon(Icons.content_copy_rounded),
         title: Text('${request.communeName} · dossier ${request.id}'),
         subtitle: Text(
-          'Contrôleur: ${request.requestedByControllerName}\n'
+          'Agent de mobilisation citoyenne: ${request.requestedByControllerName}\n'
           'Date: ${request.requestedAt}\n'
           'Motif: ${request.duplicateReason.label}',
         ),

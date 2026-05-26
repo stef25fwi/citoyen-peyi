@@ -117,7 +117,7 @@ class _QrAccessPageState extends State<QrAccessPage> {
                 Text('Accedez a votre espace citoyen', style: theme.textTheme.headlineMedium, textAlign: TextAlign.center),
                 const SizedBox(height: 10),
                 Text(
-                  'Saisissez le code citoyen anonyme remis par le contrôleur ou collez l\'URL de votre QR.',
+                  'Saisissez le code citoyen anonyme remis par l\'agent de mobilisation citoyenne ou collez l\'URL de votre QR.',
                   style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
                   textAlign: TextAlign.center,
                 ),

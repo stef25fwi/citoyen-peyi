@@ -46,7 +46,7 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                 Text('Pilotage multi-communes', style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 Text(
-                  'Vue consolidee des communes actives, basee sur les logs controleurs et les demandes de doublons deja disponibles dans la plateforme.',
+                  'Vue consolidee des communes actives, basee sur les logs des agents de mobilisation citoyenne et les demandes de doublons deja disponibles dans la plateforme.',
                   style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B)),
                 ),
                 const SizedBox(height: 18),
@@ -72,7 +72,7 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                         value: _communes.length.toString(),
                       ),
                       _TopStatCard(
-                        label: 'Controleurs actifs',
+                        label: 'Agents actifs',
                         value: _communes.fold<int>(0, (sum, item) => sum + item.activeControllers).toString(),
                       ),
                       _TopStatCard(
@@ -108,7 +108,7 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                                 spacing: 10,
                                 runSpacing: 10,
                                 children: [
-                                  _MetricChip(label: 'Controleurs actifs', value: commune.activeControllers.toString()),
+                                  _MetricChip(label: 'Agents actifs', value: commune.activeControllers.toString()),
                                   _MetricChip(label: 'Codes generes', value: commune.codesGenerated.toString()),
                                   _MetricChip(label: 'Doublons detectes', value: commune.duplicatesDetected.toString()),
                                   _MetricChip(label: 'Demandes pending', value: commune.pendingRequests.toString()),

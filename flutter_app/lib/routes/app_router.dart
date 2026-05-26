@@ -119,7 +119,7 @@ class AppRouter {
           const _LegacyRouteRedirectPage(
             targetRoute: '/controleur/acces-citoyen',
             message:
-                'Le parcours Inscriptions a ete deplace vers Acces citoyen dans l\'espace controleur.',
+              'Le parcours Inscriptions a ete deplace vers Acces citoyen dans l\'espace agent de mobilisation citoyenne.',
           ),
           settings,
         );

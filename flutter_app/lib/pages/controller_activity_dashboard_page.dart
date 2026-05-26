@@ -124,7 +124,7 @@ class _ControllerActivityDashboardPageState
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Activite des controleurs')),
+      appBar: AppBar(title: const Text('Activite des agents de mobilisation citoyenne')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1120),
@@ -161,7 +161,7 @@ class _ControllerActivityDashboardPageState
                       child: DropdownButtonFormField<String>(
                         initialValue: _controllerId,
                         decoration:
-                            const InputDecoration(labelText: 'Controleur'),
+                            const InputDecoration(labelText: 'Agent de mobilisation citoyenne'),
                         items: [
                           const DropdownMenuItem<String>(
                               value: null, child: Text('Tous')),
@@ -267,9 +267,9 @@ class _ControllerActivityDashboardPageState
                         emptyText: 'Aucune activite sur la periode.',
                       );
                       final byController = _ActivityBreakdownCard(
-                        title: 'Activite par controleur',
+                        title: 'Activite par agent de mobilisation citoyenne',
                         items: _analytics.activityByController,
-                        emptyText: 'Aucun controleur actif sur la periode.',
+                        emptyText: 'Aucun agent de mobilisation citoyenne actif sur la periode.',
                       );
                       if (!wide) {
                         return Column(children: [
@@ -297,7 +297,7 @@ class _ControllerActivityDashboardPageState
                       child: ListTile(
                         title: Text(commune.communeName),
                         subtitle: Text(
-                          'Controleurs actifs: ${commune.activeControllers} · Codes: ${commune.codesGenerated} · '
+                          'Agents actifs: ${commune.activeControllers} · Codes: ${commune.codesGenerated} · '
                           'Doublons: ${commune.duplicatesDetected} · Pending: ${commune.pendingRequests} · '
                           'Taux doublons: ${(commune.duplicateRate * 100).round()}% · '
                           'Dernier code: ${commune.lastCodeGeneratedAt ?? '-'}',

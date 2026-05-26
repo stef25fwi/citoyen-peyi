@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-enum PublicTab { home, vote, results, news, profile }
+enum PublicTab { home, vote, results, news }
 
 class PublicBottomNav extends StatelessWidget {
   const PublicBottomNav({
@@ -11,7 +11,7 @@ class PublicBottomNav extends StatelessWidget {
   final PublicTab currentTab;
 
   void _handleTap(BuildContext context, int index) {
-    final routes = <String>['/', '/access', '/results', '/news', '/citizen'];
+    final routes = <String>['/', '/access', '/results', '/news'];
     final targetRoute = routes[index];
     final currentRoute = ModalRoute.of(context)?.settings.name;
 
@@ -65,11 +65,6 @@ class PublicBottomNav extends StatelessWidget {
               icon: Icon(Icons.newspaper_outlined),
               selectedIcon: Icon(Icons.newspaper_rounded),
               label: 'Actualites',
-            ),
-            NavigationDestination(
-              icon: Icon(Icons.account_circle_outlined),
-              selectedIcon: Icon(Icons.account_circle_rounded),
-              label: 'Espace citoyen',
             ),
           ],
         ),

@@ -45,7 +45,7 @@ class _ControllerHistoryPageState extends State<ControllerHistoryPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Historique controleur'),
+        title: const Text('Historique agent de mobilisation citoyenne'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pushNamed('/controleur/acces-citoyen'),

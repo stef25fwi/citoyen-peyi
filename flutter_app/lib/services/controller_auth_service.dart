@@ -27,7 +27,7 @@ class ControllerAuthService {
   Future<ControllerSignInResult> signInWithCode(String code) async {
     final normalizedCode = code.trim().toUpperCase();
     if (normalizedCode.isEmpty) {
-      throw const ControllerAuthException('Le code contrôleur est requis.');
+      throw const ControllerAuthException('Le code agent de mobilisation citoyenne est requis.');
     }
 
     if (AppConfig.apiBaseUrl.trim().isEmpty) {
@@ -68,7 +68,7 @@ class ControllerAuthService {
       controller: claims['controller'] as bool? ?? true,
       mode: 'secure',
       id: profile['id'] as String?,
-      label: profile['label'] as String? ?? 'Contrôleur',
+      label: profile['label'] as String? ?? 'Agent de mobilisation citoyenne',
       commune: AuthSessionCommune.fromJson(profile['commune']),
     );
 
@@ -79,9 +79,9 @@ class ControllerAuthService {
   String _readErrorMessage(String responseBody) {
     try {
       final payload = jsonDecode(responseBody) as Map<String, dynamic>;
-      return payload['message'] as String? ?? 'Connexion contrôleur impossible.';
+      return payload['message'] as String? ?? 'Connexion agent de mobilisation citoyenne impossible.';
     } catch (_) {
-      return 'Connexion contrôleur impossible.';
+      return 'Connexion agent de mobilisation citoyenne impossible.';
     }
   }
 }

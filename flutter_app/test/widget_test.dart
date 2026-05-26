@@ -7,9 +7,10 @@ void main() {
     await tester.pumpWidget(const CitoyenPeyiApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('Plateforme de consultation citoyenne anonyme'),
+    expect(
+      find.text('Votre collectivité place votre parole au coeur de l\'action publique'),
         findsOneWidget);
     expect(find.text('Je participe'), findsOneWidget);
-    expect(find.text('Contrôleur / accueil'), findsOneWidget);
+    expect(find.text('Agent de mobilisation citoyenne / accueil'), findsOneWidget);
   });
 }

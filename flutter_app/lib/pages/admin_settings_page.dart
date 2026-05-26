@@ -130,7 +130,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                           OutlinedButton.icon(
                             onPressed: () => Navigator.of(context).pushNamed('/admin/controllers'),
                             icon: const Icon(Icons.groups_rounded),
-                            label: const Text('Controleurs'),
+                            label: const Text('Agents de mobilisation citoyenne'),
                           ),
                           OutlinedButton.icon(
                             onPressed: () => Navigator.of(context).pushNamed('/admin/results'),

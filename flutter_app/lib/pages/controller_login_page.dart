@@ -49,8 +49,8 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
 
       final commune = result.session.commune?.name;
       final message = commune == null || commune.isEmpty
-          ? 'Bienvenue, ${result.session.label ?? 'Controleur'}'
-          : 'Bienvenue, ${result.session.label ?? 'Controleur'} · $commune';
+          ? 'Bienvenue, ${result.session.label ?? 'Agent de mobilisation citoyenne'}'
+          : 'Bienvenue, ${result.session.label ?? 'Agent de mobilisation citoyenne'} · $commune';
 
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(message)));
@@ -83,7 +83,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
             Icon(Icons.assignment_turned_in_rounded,
                 color: _ControllerLoginTheme.primary, size: 22),
             SizedBox(width: 8),
-            Text('Espace controleur'),
+            Text('Espace agent de mobilisation citoyenne'),
           ],
         ),
         leading: IconButton(
@@ -114,13 +114,13 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                           size: 34, color: _ControllerLoginTheme.primary),
                     ),
                     const SizedBox(height: 18),
-                    Text('Connexion controleur',
+                    Text('Connexion agent de mobilisation citoyenne',
                         style: theme.textTheme.headlineMedium
                             ?.copyWith(fontSize: 28),
                         textAlign: TextAlign.center),
                     const SizedBox(height: 10),
                     Text(
-                      'Entrez le code fourni par un administrateur pour acceder a l\'interface de controle des pieces.',
+                      'Entrez le code fourni par un administrateur pour acceder a l\'interface de verification des pieces.',
                       style: theme.textTheme.bodyLarge?.copyWith(
                           color: _ControllerLoginTheme.mutedForeground),
                       textAlign: TextAlign.center,
