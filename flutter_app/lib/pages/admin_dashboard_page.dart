@@ -68,7 +68,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Supprimer ce contrôleur ?'),
+        title: const Text('Supprimer cet agent de mobilisation citoyenne ?'),
         content:
             Text('Le profil "${profile.label}" sera désactivé immédiatement.'),
         actions: [
@@ -107,7 +107,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
       builder: (_) => AlertDialog(
         icon: const Icon(Icons.check_circle_rounded,
             color: Color(0xFF2B9F82), size: 40),
-        title: const Text('Contrôleur créé'),
+        title: const Text('Agent de mobilisation citoyenne créé'),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -178,7 +178,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final pageTitle = switch (widget.initialSection) {
       AdminDashboardSection.overview => 'Tableau de bord commune',
       AdminDashboardSection.polls => 'Consultations communales',
-      AdminDashboardSection.controllers => 'Contrôleurs communaux',
+      AdminDashboardSection.controllers => 'Agents de mobilisation citoyenne communaux',
     };
 
     final activeCount = _polls.where((poll) => poll.status == 'active').length;
@@ -270,7 +270,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           Navigator.of(context).pushNamed('/admin/polls'),
                     ),
                     ChoiceChip(
-                      label: const Text('Contrôleurs'),
+                      label: const Text('Agents de mobilisation citoyenne'),
                       selected: widget.initialSection ==
                           AdminDashboardSection.controllers,
                       onSelected: (_) =>
@@ -349,7 +349,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                       FilledButton.tonal(
                         onPressed: () => Navigator.of(context)
                             .pushNamed('/admin/controllers'),
-                        child: const Text('Contrôleurs'),
+                        child: const Text('Agents de mobilisation citoyenne'),
                       ),
                       FilledButton.tonal(
                         onPressed: () =>
@@ -544,7 +544,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           Row(
                             children: [
                               Expanded(
-                                child: Text('Contrôleurs',
+                                child: Text('Agents de mobilisation citoyenne',
                                     style: theme.textTheme.titleLarge),
                               ),
                               Chip(label: Text('${_controleurs.length}')),
@@ -560,7 +560,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           const SizedBox(height: 12),
                           if (_controleurs.isEmpty)
                             Text(
-                              'Aucun contrôleur créé. Utilisez le bouton "Nouveau" pour en créer un.',
+                              'Aucun agent de mobilisation citoyenne créé. Utilisez le bouton "Nouveau" pour en créer un.',
                               style: theme.textTheme.bodyMedium
                                   ?.copyWith(color: const Color(0xFF5A6573)),
                             )
@@ -995,7 +995,7 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
         children: [
           Icon(Icons.person_add_rounded, color: Color(0xFF0F6D8F)),
           SizedBox(width: 10),
-          Text('Nouveau controleur'),
+          Text('Nouvel agent de mobilisation citoyenne'),
         ],
       ),
       content: SizedBox(
@@ -1042,7 +1042,7 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
               ),
               const SizedBox(height: 8),
               const Text(
-                'Un code de connexion unique sera genere automatiquement.',
+                'Un code de connexion unique sera genere automatiquement pour cet agent.',
                 style: TextStyle(color: Color(0xFF7A8796), fontSize: 13),
                 textAlign: TextAlign.center,
               ),
@@ -1065,7 +1065,7 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
                       strokeWidth: 2, color: Colors.white),
                 )
               : const Icon(Icons.check_rounded),
-          label: Text(_isSubmitting ? 'Creation...' : 'Creer le controleur'),
+          label: Text(_isSubmitting ? 'Creation...' : 'Creer l\'agent de mobilisation citoyenne'),
         ),
       ],
     );

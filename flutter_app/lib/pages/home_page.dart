@@ -93,8 +93,6 @@ class _HomeScaffold extends StatelessWidget {
                     SizedBox(height: _isMobile ? 20 : 28),
                     const _PlatformPill(),
                     SizedBox(height: _isMobile ? 26 : 36),
-                    const _StatementPanel(),
-                    SizedBox(height: _isMobile ? 26 : 36),
                     _PrimaryActions(isDesktop: _isDesktop),
                     SizedBox(height: _isMobile ? 28 : 44),
                     const _PublicNav(),
@@ -125,11 +123,6 @@ class _HomeLogo extends StatelessWidget {
         CitoyenPeyiHomePage.logoPath,
         height: logoHeight,
         fit: BoxFit.contain,
-        errorBuilder: (_, __, ___) => Image.asset(
-          'assets/images/logo1.webp',
-          height: logoHeight,
-          fit: BoxFit.contain,
-        ),
       ),
     );
   }
@@ -151,48 +144,10 @@ class _PlatformPill extends StatelessWidget {
         child: const Padding(
           padding: EdgeInsets.symmetric(horizontal: 18, vertical: 11),
           child: Text(
-            'Plateforme de consultation citoyenne anonyme',
+            'Votre collectivité place votre parole au coeur de l\'action publique',
             textAlign: TextAlign.center,
             style: TextStyle(
                 color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatementPanel extends StatelessWidget {
-  const _StatementPanel();
-
-  @override
-  Widget build(BuildContext context) {
-    final textTheme = Theme.of(context).textTheme;
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: const Color(0xFFF4D000), width: 2),
-        color: Colors.black.withValues(alpha: 0.08),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 22),
-        child: Text.rich(
-          const TextSpan(
-            children: [
-              TextSpan(text: 'Votre collectivité place '),
-              TextSpan(
-                  text: 'votre parole au cœur\n',
-                  style: TextStyle(color: Color(0xFFF4D000))),
-              TextSpan(
-                  text: 'de l’action publique',
-                  style: TextStyle(color: Color(0xFFF4D000))),
-            ],
-          ),
-          textAlign: TextAlign.center,
-          style: textTheme.headlineSmall?.copyWith(
-            color: Colors.white,
-            fontWeight: FontWeight.w800,
-            height: 1.28,
           ),
         ),
       ),
@@ -219,9 +174,9 @@ class _PrimaryActions extends StatelessWidget {
     );
     final controller = Semantics(
       button: true,
-      label: 'Accéder à l’espace contrôleur',
+      label: 'Accéder à l’espace agent de mobilisation citoyenne',
       child: _HomeButton(
-        label: 'Contrôleur / accueil',
+        label: 'Agent de mobilisation citoyenne / accueil',
         icon: Icons.fact_check_rounded,
         onPressed: () => Navigator.of(context).pushNamed('/controleur-accueil'),
       ),
@@ -378,7 +333,7 @@ class _AdministrationAccess extends StatelessWidget {
                   icon: Icons.admin_panel_settings_rounded,
                   routeName: '/admin-communal'),
               _AdminChoice(
-                  label: 'Contrôleur',
+                  label: 'Agent de mobilisation citoyenne',
                   icon: Icons.fact_check_rounded,
                   routeName: '/controleur-accueil'),
               _AdminChoice(

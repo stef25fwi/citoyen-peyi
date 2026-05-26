@@ -53,7 +53,7 @@ class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage>
       _isSubmitting = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Demande traitée. Le nouveau code est affiché une seule fois au contrôleur.')),
+      const SnackBar(content: Text('Demande traitée. Le nouveau code est affiché une seule fois à l\'agent de mobilisation citoyenne.')),
     );
   }
 
@@ -101,10 +101,10 @@ class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage>
                                 Wrap(spacing: 8, children: [Chip(label: Text(request.status)), Chip(label: Text(request.duplicateReason.label))]),
                                 const SizedBox(height: 16),
                                 _Line('Commune', request.communeName),
-                                _Line('Contrôleur', request.requestedByControllerName),
+                                _Line('Agent de mobilisation citoyenne', request.requestedByControllerName),
                                 _Line('Date tentative', request.requestedAt),
                                 _Line('Référence dossier', request.id),
-                                if (request.controllerComment != null) _Line('Commentaire contrôleur', request.controllerComment!),
+                                if (request.controllerComment != null) _Line('Commentaire agent de mobilisation citoyenne', request.controllerComment!),
                                 if (request.rejectionReason != null) _Line('Motif refus', request.rejectionReason!),
                               ],
                             ),

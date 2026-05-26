@@ -52,7 +52,7 @@ class _SuperCommunesPageState extends State<SuperCommunesPage> {
                 Text('Vue globale par commune', style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 Text(
-                  'Suivi des controleurs, codes generes, doublons et admins communaux rattaches.',
+                  'Suivi des agents de mobilisation citoyenne, codes generes, doublons et admins communaux rattaches.',
                   style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B)),
                 ),
                 const SizedBox(height: 18),
@@ -128,7 +128,7 @@ class _CommuneCard extends StatelessWidget {
               runSpacing: 12,
               children: [
                 _MetricChip(label: 'Admins', value: '$adminCount'),
-                _MetricChip(label: 'Controleurs actifs', value: '${commune.activeControllers}'),
+                _MetricChip(label: 'Agents actifs', value: '${commune.activeControllers}'),
                 _MetricChip(label: 'Codes generes', value: '${commune.codesGenerated}'),
                 _MetricChip(label: 'Doublons', value: '${commune.duplicatesDetected}'),
                 _MetricChip(label: 'Demandes pending', value: '${commune.pendingRequests}'),

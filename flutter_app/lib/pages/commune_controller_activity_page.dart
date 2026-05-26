@@ -51,7 +51,7 @@ class _CommuneControllerActivityPageState extends State<CommuneControllerActivit
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Controleurs de la commune')),
+      appBar: AppBar(title: const Text('Agents de mobilisation citoyenne de la commune')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 980),
@@ -60,10 +60,10 @@ class _CommuneControllerActivityPageState extends State<CommuneControllerActivit
               : ListView(
                   padding: const EdgeInsets.all(20),
                   children: [
-                    Text('Controleurs', style: Theme.of(context).textTheme.headlineMedium),
+                    Text('Agents de mobilisation citoyenne', style: Theme.of(context).textTheme.headlineMedium),
                     const SizedBox(height: 16),
                     if (byController.isEmpty)
-                      const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Aucun controleur actif pour cette commune.')))
+                      const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Aucun agent de mobilisation citoyenne actif pour cette commune.')))
                     else
                       for (final entry in byController.entries)
                         _ControllerCard(controllerId: entry.key, logs: entry.value),

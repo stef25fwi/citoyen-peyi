@@ -45,7 +45,7 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Tableau de bord controleur'),
+        title: const Text('Tableau de bord agent de mobilisation citoyenne'),
         actions: [
           TextButton(
             onPressed: () async {
@@ -77,7 +77,7 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(session?.label ?? 'Controleur', style: Theme.of(context).textTheme.titleLarge),
+                              Text(session?.label ?? 'Agent de mobilisation citoyenne', style: Theme.of(context).textTheme.titleLarge),
                               const SizedBox(height: 4),
                               Text('Commune : ${session?.commune?.name ?? 'Non renseignee'}${session?.commune?.codePostal == null ? '' : ' · CP ${session!.commune!.codePostal}'}'),
                               Text('Mode ${session?.modeLabel ?? '-'} · role controller'),
@@ -106,7 +106,7 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Parcours controleur', style: Theme.of(context).textTheme.titleLarge),
+                        Text('Parcours agent de mobilisation citoyenne', style: Theme.of(context).textTheme.titleLarge),
                         const SizedBox(height: 12),
                         const _StepLine(index: 1, text: 'Verification physique de l\'eligibilite'),
                         const _StepLine(index: 2, text: 'Saisie des donnees minimales autorisees'),

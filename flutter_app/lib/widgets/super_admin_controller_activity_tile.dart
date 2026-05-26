@@ -29,7 +29,7 @@ class SuperAdminControllerActivityTile extends StatelessWidget {
                 children: [
                   const Icon(Icons.timeline_rounded, color: Color(0xFF0F6D8F)),
                   const SizedBox(width: 10),
-                  Expanded(child: Text('Activite des controleurs', style: theme.textTheme.titleLarge)),
+                  Expanded(child: Text('Activite des agents de mobilisation citoyenne', style: theme.textTheme.titleLarge)),
                 ],
               ),
               const SizedBox(height: 14),

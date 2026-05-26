@@ -351,7 +351,7 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'Les codes citoyens restent geres par les controleurs. Cet ecran ne genere pas de QR.',
+                            'Les codes citoyens restent geres par les agents de mobilisation citoyenne. Cet ecran ne genere pas de QR.',
                             style: theme.textTheme.bodyMedium,
                           ),
                         ],

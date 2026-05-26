@@ -287,11 +287,11 @@ class _ControllerCitizenAccessPageState
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Controleur / agent d\'accueil',
+                                Text('Agent de mobilisation citoyenne / accueil',
                                   style: theme.textTheme.headlineSmall),
                               const SizedBox(height: 10),
                               Text(
-                                'Commune de rattachement : $communeName\nLe controleur verifie l\'eligibilite sans enregistrer l\'identite complete.',
+                                'Commune de rattachement : $communeName\nL\'agent de mobilisation citoyenne verifie l\'eligibilite sans enregistrer l\'identite complete.',
                                 style: theme.textTheme.bodyLarge,
                               ),
                               const SizedBox(height: 16),
@@ -330,7 +330,7 @@ class _ControllerCitizenAccessPageState
                               const _StepLine(
                                   index: 1,
                                   text:
-                                      'Commune determinee automatiquement depuis le profil controleur'),
+                                      'Commune determinee automatiquement depuis le profil agent de mobilisation citoyenne'),
                               const _StepLine(
                                   index: 2,
                                   text:
@@ -547,7 +547,7 @@ class _ControllerCitizenAccessPageState
                                 minLines: 2,
                                 maxLines: 4,
                                 decoration: const InputDecoration(
-                                  labelText: 'Commentaire controleur optionnel',
+                                  labelText: 'Commentaire agent de mobilisation citoyenne optionnel',
                                 ),
                               ),
                               const SizedBox(height: 16),
