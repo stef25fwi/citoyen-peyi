@@ -88,12 +88,9 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 18),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 12,
+                Row(
                   children: [
-                    SizedBox(
-                      width: 240,
+                    Expanded(
                       child: DropdownButtonFormField<String>(
                         initialValue: _communeFilter,
                         decoration: const InputDecoration(labelText: 'Commune'),
@@ -105,8 +102,8 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
                         onChanged: (value) => setState(() => _communeFilter = value),
                       ),
                     ),
-                    SizedBox(
-                      width: 240,
+                    const SizedBox(width: 12),
+                    Expanded(
                       child: DropdownButtonFormField<String>(
                         initialValue: _statusFilter,
                         decoration: const InputDecoration(labelText: 'Etat'),
