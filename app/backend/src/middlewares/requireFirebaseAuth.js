@@ -23,8 +23,22 @@ export const requireFirebaseAuth = async (req, res, next) => {
 const hasRole = (user, role) => user?.role === role || user?.[role] === true;
 
 export const isSuperAdmin = (user) => hasRole(user, 'super_admin');
+export const isAdmin = (user) => hasRole(user, 'admin') || isSuperAdmin(user);
 export const isCommuneAdmin = (user) => hasRole(user, 'admin') || hasRole(user, 'commune_admin') || isSuperAdmin(user);
 export const isController = (user) => hasRole(user, 'controller') || user?.controller === true;
+
+export const controllerIdFromUser = (user) => {
+  if (typeof user?.controleurCodeId === 'string' && user.controleurCodeId.trim()) {
+    return user.controleurCodeId.trim();
+  }
+  if (typeof user?.controllerId === 'string' && user.controllerId.trim()) {
+    return user.controllerId.trim();
+  }
+  if (typeof user?.uid === 'string' && user.uid.startsWith('controller:')) {
+    return user.uid.substring('controller:'.length);
+  }
+  return user?.uid || '';
+};
 
 export const communeScopeFromUser = (user) => {
   if (typeof user?.communeId === 'string' && user.communeId.trim()) return user.communeId.trim();

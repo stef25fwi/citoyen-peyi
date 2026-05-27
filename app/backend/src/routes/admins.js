@@ -4,6 +4,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 import { requireFirebaseAuth, requireSuperAdmin } from '../middlewares/requireFirebaseAuth.js';
 import { requireSuperAdminKey } from '../middlewares/requireSuperAdminKey.js';
+import { hashAdminAccessKey } from '../services/keyHashing.js';
 
 const router = express.Router();
 const COLLECTION = 'communeAdmins';
@@ -23,7 +24,6 @@ const generateAccessKey = () => {
   const part2 = Array.from(buf.slice(8, 12)).map((b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
   return `ADM-${part1}-${part2}`;
 };
-const hashAccessKey = (key) => crypto.createHash('sha256').update(key).digest('hex');
 
 router.use(ensureConfigured, requireFirebaseAuth, requireSuperAdmin, requireSuperAdminKey);
 
@@ -71,7 +71,7 @@ router.post('/', async (req, res, next) => {
       communeName,
       communeCode,
       codePostal,
-      accessKeyHash: hashAccessKey(accessKey),
+      accessKeyHash: hashAdminAccessKey(accessKey),
       createdAt: FieldValue.serverTimestamp(),
       createdBy: req.user?.uid || 'super_admin',
     });

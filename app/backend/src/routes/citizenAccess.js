@@ -2,8 +2,15 @@ import crypto from 'crypto';
 import express from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
 import { env } from '../config/env.js';
+import {
+  controllerIdFromUser,
+  isAdmin,
+  isController,
+  isSuperAdmin,
+  requireFirebaseAuth,
+} from '../middlewares/requireFirebaseAuth.js';
 import { hasValidSuperAdminKey, requireSuperAdminKey } from '../middlewares/requireSuperAdminKey.js';
-import { getFirebaseAdminAuth, getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
+import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 import { logger } from '../services/logger.js';
 
 const router = express.Router();
@@ -40,39 +47,6 @@ const isConfigured = (_req, res, next) => {
   return next();
 };
 
-const requireAuth = async (req, res, next) => {
-  const header = req.headers.authorization || '';
-  const match = header.match(/^Bearer\s+(.+)$/i);
-  if (!match) {
-    return res.status(401).json({ message: 'Token Firebase requis.' });
-  }
-
-  try {
-    req.user = await getFirebaseAdminAuth().verifyIdToken(match[1], true);
-    return next();
-  } catch (error) {
-    logger.warn({ err: error }, 'invalid_firebase_token');
-    return res.status(401).json({ message: 'Token Firebase invalide.' });
-  }
-};
-
-const hasRole = (user, role) => user?.role === role || user?.[role] === true;
-const isSuperAdmin = (user) => hasRole(user, 'super_admin');
-const isAdmin = (user) => hasRole(user, 'admin') || isSuperAdmin(user);
-const isController = (user) => hasRole(user, 'controller') || user?.controller === true;
-
-const controllerIdFromUser = (user) => {
-  if (typeof user?.controleurCodeId === 'string' && user.controleurCodeId.trim()) {
-    return user.controleurCodeId.trim();
-  }
-  if (typeof user?.controllerId === 'string' && user.controllerId.trim()) {
-    return user.controllerId.trim();
-  }
-  if (typeof user?.uid === 'string' && user.uid.startsWith('controller:')) {
-    return user.uid.substring('controller:'.length);
-  }
-  return user?.uid || '';
-};
 
 const normalizeInitial = (value) => {
   const trimmed = String(value || '').trim().toUpperCase();
@@ -245,7 +219,7 @@ const writeActivity = (transaction, db, payload) => {
   });
 };
 
-router.use(isConfigured, requireAuth, requireActiveController);
+router.use(isConfigured, requireFirebaseAuth, requireActiveController);
 
 const createCitizenAccessCodeHandler = async (req, res) => {
   if (!isController(req.user)) {

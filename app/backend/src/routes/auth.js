@@ -3,13 +3,13 @@ import express from 'express';
 import { FieldValue } from 'firebase-admin/firestore';
 import { env, isBootstrapAdminEnabled } from '../config/env.js';
 import { requireSuperAdminKey } from '../middlewares/requireSuperAdminKey.js';
+import { hashAdminAccessKey, hashControllerCode, hashLegacySha256, matchesStoredHash } from '../services/keyHashing.js';
 import { getFirebaseAdminAuth, getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 import { logger } from '../services/logger.js';
 
 const router = express.Router();
 
 const normalizeCode = (value) => value.trim().toUpperCase();
-const hashAccessKey = (key) => crypto.createHash('sha256').update(String(key || '')).digest('hex');
 
 const safeEquals = (left, right) => {
   const leftBuffer = Buffer.from(String(left || ''), 'utf8');
@@ -20,7 +20,8 @@ const safeEquals = (left, right) => {
 
 const loadControleurRecordByCode = async (code) => {
   const db = getFirebaseAdminDb();
-  const codeHash = hashAccessKey(code);
+  const codeHash = hashControllerCode(code);
+  const legacyCodeHash = hashLegacySha256(code);
   const snapshot = await db
     .collection('controleurCodes')
     .where('codeHash', '==', codeHash)
@@ -33,6 +34,23 @@ const loadControleurRecordByCode = async (code) => {
       id: document.id,
       ref: document.ref,
       ...document.data(),
+    };
+  }
+
+  const legacyHashSnapshot = await db
+    .collection('controleurCodes')
+    .where('codeHash', '==', legacyCodeHash)
+    .limit(1)
+    .get();
+
+  if (!legacyHashSnapshot.empty) {
+    const document = legacyHashSnapshot.docs[0];
+    await document.ref.set({ codeHash, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    return {
+      id: document.id,
+      ref: document.ref,
+      ...document.data(),
+      codeHash,
     };
   }
 
@@ -115,8 +133,17 @@ router.post('/admin/exchange', async (req, res) => {
 
   try {
     const db = getFirebaseAdminDb();
-    const accessKeyHash = hashAccessKey(providedAccessKey);
-    const snapshot = await db.collection('communeAdmins').where('accessKeyHash', '==', accessKeyHash).limit(1).get();
+    const accessKeyHash = hashAdminAccessKey(providedAccessKey);
+    let snapshot = await db.collection('communeAdmins').where('accessKeyHash', '==', accessKeyHash).limit(1).get();
+
+    if (snapshot.empty) {
+      const legacySnapshot = await db.collection('communeAdmins').where('accessKeyHash', '==', hashLegacySha256(providedAccessKey)).limit(1).get();
+      if (!legacySnapshot.empty) {
+        const legacyDoc = legacySnapshot.docs[0];
+        await legacyDoc.ref.set({ accessKeyHash, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+        snapshot = await db.collection('communeAdmins').where('accessKeyHash', '==', accessKeyHash).limit(1).get();
+      }
+    }
 
     let adminId = '';
     let communeId = '';
@@ -127,6 +154,9 @@ router.post('/admin/exchange', async (req, res) => {
     if (!snapshot.empty) {
       const doc = snapshot.docs[0];
       const data = doc.data() || {};
+      if (!matchesStoredHash(providedAccessKey, data.accessKeyHash, accessKeyHash)) {
+        return res.status(401).json({ message: 'Cle administrateur invalide.' });
+      }
       adminId = doc.id;
       communeId = data.communeCode || data.communeName || '';
       communeName = data.communeName || '';

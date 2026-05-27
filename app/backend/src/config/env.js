@@ -76,7 +76,10 @@ export const env = {
   enableBootstrapAdmin: optional(process.env.ENABLE_BOOTSTRAP_ADMIN) === 'true',
   accessCodePepper: optional(process.env.ACCESS_CODE_PEPPER),
   citizenFingerprintPepper: optional(process.env.CITIZEN_FINGERPRINT_PEPPER),
+  adminAccessPepper: optional(process.env.ADMIN_ACCESS_PEPPER) || optional(process.env.ACCESS_CODE_PEPPER),
+  controllerCodePepper: optional(process.env.CONTROLLER_CODE_PEPPER) || optional(process.env.ACCESS_CODE_PEPPER),
   voteAccessTokenSecret: optional(process.env.VOTE_ACCESS_TOKEN_SECRET),
+  rateLimitRedisUrl: optional(process.env.RATE_LIMIT_REDIS_URL),
   googleApplicationCredentials: optional(process.env.GOOGLE_APPLICATION_CREDENTIALS),
   firebaseAdminProjectId: optional(process.env.FIREBASE_ADMIN_PROJECT_ID),
   firebaseAdminClientEmail: optional(process.env.FIREBASE_ADMIN_CLIENT_EMAIL),
@@ -138,12 +141,28 @@ export const validateEnv = () => {
     errors.push('CITIZEN_FINGERPRINT_PEPPER est requis en production pour hacher les empreintes citoyennes.');
   }
 
+  if (env.isProduction && !env.adminAccessPepper) {
+    errors.push('ADMIN_ACCESS_PEPPER est requis en production pour hacher les cles administrateur.');
+  }
+
+  if (env.isProduction && !env.controllerCodePepper) {
+    errors.push('CONTROLLER_CODE_PEPPER est requis en production pour hacher les codes controleur.');
+  }
+
   if (env.isProduction && env.accessCodePepper && env.accessCodePepper.length < 32) {
     errors.push('ACCESS_CODE_PEPPER doit faire au moins 32 caracteres en production.');
   }
 
   if (env.isProduction && env.citizenFingerprintPepper && env.citizenFingerprintPepper.length < 32) {
     errors.push('CITIZEN_FINGERPRINT_PEPPER doit faire au moins 32 caracteres en production.');
+  }
+
+  if (env.isProduction && env.adminAccessPepper && env.adminAccessPepper.length < 32) {
+    errors.push('ADMIN_ACCESS_PEPPER doit faire au moins 32 caracteres en production.');
+  }
+
+  if (env.isProduction && env.controllerCodePepper && env.controllerCodePepper.length < 32) {
+    errors.push('CONTROLLER_CODE_PEPPER doit faire au moins 32 caracteres en production.');
   }
 
   if (env.isProduction && env.corsOrigins.length === 0) {

@@ -103,13 +103,26 @@ const loadEligiblePolls = async (db, access, requestedPollId = '') => {
     ? await db.collection(POLL_COLLECTION).where('id', '==', requestedPollId).limit(1).get()
     : await db.collection(POLL_COLLECTION).where('communeId', '==', access.communeId).limit(50).get();
 
+  const openPollDocs = snapshot.docs
+    .map((doc) => {
+      const poll = { id: doc.id, ...doc.data() };
+      const pollId = poll.id || doc.id;
+      const sameCommune = !access.communeId || !poll.communeId || poll.communeId === access.communeId;
+      if (!sameCommune || !isPollOpen(poll)) return null;
+      return { poll, pollId };
+    })
+    .filter(Boolean);
+
+  if (openPollDocs.length === 0) {
+    return [];
+  }
+
+  const voteRefs = openPollDocs.map(({ pollId }) => db.collection(POLL_VOTE_COLLECTION).doc(`${pollId}_${access.id}`));
+  const voteDocs = await db.getAll(...voteRefs);
+  const voteMap = new Map(voteDocs.map((doc, index) => [openPollDocs[index].pollId, doc.exists]));
+
   const polls = [];
-  for (const doc of snapshot.docs) {
-    const poll = { id: doc.id, ...doc.data() };
-    const pollId = poll.id || doc.id;
-    const sameCommune = !access.communeId || !poll.communeId || poll.communeId === access.communeId;
-    if (!sameCommune || !isPollOpen(poll)) continue;
-    const voteDoc = await db.collection(POLL_VOTE_COLLECTION).doc(`${pollId}_${access.id}`).get();
+  for (const { poll, pollId } of openPollDocs) {
     const safeOptions = Array.isArray(poll.options)
       ? poll.options
           .filter((option) => option && (option.id || option.label))
@@ -124,7 +137,7 @@ const loadEligiblePolls = async (db, access, requestedPollId = '') => {
       description: poll.description || '',
       question: poll.question || '',
       status: 'open',
-      hasVoted: voteDoc.exists,
+      hasVoted: voteMap.get(pollId) === true,
       options: safeOptions,
     });
   }

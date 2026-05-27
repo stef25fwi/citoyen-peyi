@@ -8,6 +8,7 @@ import {
   requireCommuneAdmin,
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
+import { hashControllerCode } from '../services/keyHashing.js';
 
 const router = express.Router();
 const COLLECTION = 'controleurCodes';
@@ -27,8 +28,6 @@ const generateControllerCode = () => {
   const segment = Array.from(buf).map((b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
   return `CTRL-${segment}`;
 };
-
-const hashControllerCode = (code) => crypto.createHash('sha256').update(String(code || '').trim().toUpperCase()).digest('hex');
 
 const maskCode = (code) => `${code.substring(0, 5)}••••${code.substring(code.length - 2)}`;
 

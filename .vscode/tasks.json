@@ -18,6 +18,22 @@
       "detail": "Stage les fichiers corriges, commit, pousse sur main et declenche le deploy CI/CD."
     },
     {
+      "label": "Git push origin main",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && git push origin main && echo PUSH_OK"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Pousse la branche main vers origin."
+    },
+    {
       "label": "Apercu web local",
       "type": "shell",
       "command": "npm",
