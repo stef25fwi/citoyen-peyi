@@ -59,8 +59,8 @@ class _HomeScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final horizontalPadding = _isMobile ? 20.0 : 40.0;
-    final maxWidth = _isDesktop ? 1120.0 : 760.0;
+    final maxWidth = _isDesktop ? 520.0 : 480.0;
+    final hPad = _isMobile ? 22.0 : 36.0;
 
     return Stack(
       children: [
@@ -71,38 +71,35 @@ class _HomeScaffold extends StatelessWidget {
             errorBuilder: (_, __, ___) => const DecoratedBox(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
-                  colors: [Color(0xFF004B98), Color(0xFF0477A8)],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF003E82), Color(0xFF0477A8)],
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
                 ),
               ),
             ),
           ),
         ),
         Positioned.fill(
-          child: ColoredBox(color: Colors.black26),
+          child: ColoredBox(
+            color: const Color(0xFF001E4A).withValues(alpha: 0.40),
+          ),
         ),
         SafeArea(
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
               child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                    horizontalPadding, 20, horizontalPadding, 24),
+                padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 24),
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: _isMobile ? 8 : 18),
+                    SizedBox(height: _isMobile ? 6 : 16),
                     const _HomeLogo(),
-                    SizedBox(height: _isMobile ? 20 : 28),
-                    const _PlatformPill(),
-                    SizedBox(height: _isMobile ? 26 : 36),
-                    const _PrimaryActions(),
-                    SizedBox(height: _isMobile ? 28 : 44),
-                    const _PlatformBadge(),
-                    const SizedBox(height: 16),
+                    SizedBox(height: _isMobile ? 18 : 26),
+                    const _MainCard(),
+                    SizedBox(height: _isMobile ? 22 : 32),
                     const _AdministrationAccess(),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -135,50 +132,40 @@ class _HomeLogo extends StatelessWidget {
   }
 }
 
-class _PlatformPill extends StatelessWidget {
-  const _PlatformPill();
+// ── Carte centrale transparente ─────────────────────────────────────────────
 
-  static Shader _yellowGradientShader(Rect bounds) =>
-      const LinearGradient(
-        colors: [Color(0xFFFFE066), Color(0xFFFFB300), Color(0xFFFFE066)],
-        stops: [0.0, 0.5, 1.0],
-        begin: Alignment.centerLeft,
-        end: Alignment.centerRight,
-      ).createShader(bounds);
+class _MainCard extends StatelessWidget {
+  const _MainCard();
 
   @override
   Widget build(BuildContext context) {
-    return Align(
-      alignment: Alignment.center,
-      child: Stack(
-        clipBehavior: Clip.none,
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: const Color(0xFF4A9FD4).withValues(alpha: 0.55),
+          width: 1.5,
+        ),
+        color: Colors.white.withValues(alpha: 0.07),
+      ),
+      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          DecoratedBox(
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.10),
-              borderRadius: BorderRadius.circular(999),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.26)),
-            ),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 28, vertical: 11),
-              child: ShaderMask(
-                shaderCallback: _yellowGradientShader,
-                blendMode: BlendMode.srcIn,
-                child: Text(
-                  'Votre collectivité place votre parole au coeur de l\'action publique',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Colors.white,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600),
-                ),
-              ),
-            ),
+          const _HeroText(),
+          const SizedBox(height: 26),
+          _ActionCard(
+            icon: Icons.group_rounded,
+            title: 'Je participe',
+            subtitle: 'Exprimez-vous et contribuez',
+            onTap: () => Navigator.of(context).pushNamed('/participer'),
           ),
-          const Positioned(
-            top: -10,
-            left: -10,
-            child: Icon(Icons.star_rounded, color: Color(0xFFFFD740), size: 22),
+          const SizedBox(height: 18),
+          _ActionCard(
+            icon: Icons.chat_bubble_outline_rounded,
+            title: 'Plateforme de consultation\ncitoyenne anonyme',
+            subtitle: 'Partagez vos avis en toute confidentialité',
+            onTap: () => Navigator.of(context).pushNamed('/participer'),
           ),
         ],
       ),
@@ -186,88 +173,151 @@ class _PlatformPill extends StatelessWidget {
   }
 }
 
-class _PrimaryActions extends StatelessWidget {
-  const _PrimaryActions();
+class _HeroText extends StatelessWidget {
+  const _HeroText();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          width: 46,
+          height: 46,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: const Color(0xFF1565C0).withValues(alpha: 0.75),
+          ),
+          child: const Icon(
+            Icons.star_rounded,
+            color: Color(0xFFFFD740),
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: RichText(
+            text: const TextSpan(
+              style: TextStyle(
+                fontSize: 29,
+                fontWeight: FontWeight.w800,
+                height: 1.35,
+                letterSpacing: -0.3,
+              ),
+              children: [
+                TextSpan(
+                  text: 'Votre collectivité place\n',
+                  style: TextStyle(color: Colors.white),
+                ),
+                TextSpan(
+                  text: 'votre parole',
+                  style: TextStyle(color: Color(0xFFFFD740)),
+                ),
+                TextSpan(
+                  text: ' au cœur\nde l\'action publique',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ActionCard extends StatelessWidget {
+  const _ActionCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  static const _blue = Color(0xFF005098);
 
   @override
   Widget build(BuildContext context) {
     return Semantics(
       button: true,
-      label: 'Participer à une consultation citoyenne',
-      child: _HomeButton(
-        label: 'Je participe',
-        icon: Icons.how_to_vote_rounded,
-        emphasized: true,
-        onPressed: () => Navigator.of(context).pushNamed('/participer'),
-      ),
-    );
-  }
-}
-
-class _HomeButton extends StatelessWidget {
-  const _HomeButton(
-      {required this.label,
-      required this.icon,
-      required this.onPressed,
-      this.emphasized = false});
-
-  final String label;
-  final IconData icon;
-  final VoidCallback onPressed;
-  final bool emphasized;
-
-  @override
-  Widget build(BuildContext context) {
-    final background =
-        emphasized ? Colors.white : Colors.white.withValues(alpha: 0.08);
-    final foreground = emphasized ? const Color(0xFF005098) : Colors.white;
-    return SizedBox(
-      height: 56,
-      child: FilledButton.icon(
-        style: FilledButton.styleFrom(
-          backgroundColor: background,
-          foregroundColor: foreground,
-          side: BorderSide(
-              color: emphasized
-                  ? Colors.white
-                  : Colors.white.withValues(alpha: 0.70)),
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-          textStyle: const TextStyle(fontSize: 17, fontWeight: FontWeight.w800),
-        ),
-        onPressed: onPressed,
-        icon: Icon(icon),
-        label: Text(label),
-      ),
-    );
-  }
-}
-
-class _PlatformBadge extends StatelessWidget {
-  const _PlatformBadge();
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
+      child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      child: const Padding(
-        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-        child: Text(
-          'Plateforme de consultation citoyenne anonyme',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Color(0xFF005098),
-            fontSize: 15,
-            fontWeight: FontWeight.w700,            letterSpacing: 0.3,
-            height: 1.4,          ),
+        borderRadius: BorderRadius.circular(22),
+        shadowColor: Colors.black.withValues(alpha: 0.18),
+        elevation: 4,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: onTap,
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 118),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            child: Row(
+              children: [
+                Container(
+                  width: 50,
+                  height: 50,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Color(0xFFE8F0FE),
+                  ),
+                  child: Icon(icon, color: _blue, size: 26),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          color: _blue,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w800,
+                          height: 1.3,
+                        ),
+                      ),
+                      const SizedBox(height: 5),
+                      Text(
+                        subtitle,
+                        style: TextStyle(
+                          color: Colors.grey.shade600,
+                          fontSize: 13,
+                          height: 1.4,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Container(
+                  width: 38,
+                  height: 38,
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _blue,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 20,
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 }
+
+// ── Accès administration ─────────────────────────────────────────────────────
 
 class _AdministrationAccess extends StatelessWidget {
   const _AdministrationAccess();
@@ -277,13 +327,64 @@ class _AdministrationAccess extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Accès administration',
-      child: Center(
-        child: TextButton.icon(
-          onPressed: () => _showAdministrationSheet(context),
-          icon: const Icon(Icons.lock_outline_rounded, size: 18),
-          label: const Text('Accès administration'),
-          style: TextButton.styleFrom(
-              foregroundColor: Colors.white, minimumSize: const Size(180, 44)),
+      child: GestureDetector(
+        onTap: () => _showAdministrationSheet(context),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Divider(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    thickness: 1,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.15),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.35),
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.lock_outline_rounded,
+                    color: Colors.white,
+                    size: 22,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Divider(
+                    color: Colors.white.withValues(alpha: 0.35),
+                    thickness: 1,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            const Text(
+              'Accès administration',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Espace réservé aux administrateurs',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.65),
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -300,24 +401,29 @@ class _AdministrationAccess extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text('Administration',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleLarge
-                      ?.copyWith(fontWeight: FontWeight.w800)),
+              Text(
+                'Administration',
+                style: Theme.of(context)
+                    .textTheme
+                    .titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800),
+              ),
               const SizedBox(height: 12),
               _AdminChoice(
-                  label: 'Commune',
-                  icon: Icons.admin_panel_settings_rounded,
-                  routeName: '/admin-communal'),
+                label: 'Commune',
+                icon: Icons.admin_panel_settings_rounded,
+                routeName: '/admin-communal',
+              ),
               _AdminChoice(
-                  label: 'Agent de mobilisation citoyenne',
-                  icon: Icons.fact_check_rounded,
-                  routeName: '/controleur-accueil'),
+                label: 'Agent de mobilisation citoyenne',
+                icon: Icons.fact_check_rounded,
+                routeName: '/controleur-accueil',
+              ),
               _AdminChoice(
-                  label: 'Super administration',
-                  icon: Icons.workspace_premium_rounded,
-                  routeName: '/super-admin'),
+                label: 'Super administration',
+                icon: Icons.workspace_premium_rounded,
+                routeName: '/super-admin',
+              ),
             ],
           ),
         ),
