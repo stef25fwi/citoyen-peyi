@@ -6,10 +6,18 @@ class AppConfig {
     defaultValue: false,
   );
 
-  static const String apiBaseUrl = String.fromEnvironment(
+  // Valeur brute compilée. Peut être vide si --dart-define=API_BASE_URL= est
+  // passé sans valeur (ex: variable GitHub non définie). Utiliser apiBaseUrl.
+  static const String _apiBaseUrlRaw = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:4000',
+    defaultValue: '',
   );
+
+  /// URL du backend. Retourne localhost:4000 si non configurée.
+  static String get apiBaseUrl {
+    final raw = _apiBaseUrlRaw.trim();
+    return raw.isEmpty ? 'http://localhost:4000' : raw;
+  }
 
   static const String firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY', defaultValue: '');
   static const String firebaseAuthDomain = String.fromEnvironment('FIREBASE_AUTH_DOMAIN', defaultValue: '');

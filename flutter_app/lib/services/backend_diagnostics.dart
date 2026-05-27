@@ -34,6 +34,11 @@ class BackendDiagnostics {
         return 'Backend en HTTP alors que la page est servie en HTTPS ($raw). '
             'Le navigateur bloque les requetes mixtes : exposez le backend en HTTPS.';
       }
+      // Page HTTPS + backend localhost : backend inaccessible depuis le navigateur.
+      return 'Backend configure sur $raw mais la page est servie en HTTPS. '
+          'Definissez la variable API_BASE_URL avec l\'URL publique de votre backend '
+          '(ex : https://mon-backend.run.app) dans les variables du depot GitHub '
+          '(Settings > Variables > Repository variables).';
     }
 
     return null;
