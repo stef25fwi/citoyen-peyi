@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 
 import '../config/app_config.dart';
+import '../firebase_options.dart';
 
 class FirebaseAuthService {
   FirebaseAuthService._();
@@ -21,7 +22,7 @@ class FirebaseAuthService {
     }
 
     if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(options: AppConfig.firebaseOptions);
+      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     }
 
     if (AppConfig.isAppCheckConfigured) {
