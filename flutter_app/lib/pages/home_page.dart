@@ -95,7 +95,7 @@ class _HomeScaffold extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     const _HomeLogo(),
-                    SizedBox(height: _isMobile ? 10 : 18),
+                    SizedBox(height: _isMobile ? 6 : 14),
                     const _MainCard(),
                     SizedBox(height: _isMobile ? 14 : 22),
                     const _AdministrationAccess(),
@@ -116,15 +116,18 @@ class _HomeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final logoHeight =
-        MediaQuery.textScalerOf(context).scale(90).clamp(72, 104).toDouble();
+        MediaQuery.textScalerOf(context).scale(110).clamp(100, 130).toDouble();
     return Semantics(
       label: 'Citoyen Peyi',
       image: true,
-      child: Center(
-        child: Image.asset(
-          CitoyenPeyiHomePage.logoPath,
-          height: logoHeight,
-          fit: BoxFit.contain,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        child: Center(
+          child: Image.asset(
+            CitoyenPeyiHomePage.logoPath,
+            height: logoHeight,
+            fit: BoxFit.contain,
+          ),
         ),
       ),
     );
