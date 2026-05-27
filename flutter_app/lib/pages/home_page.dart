@@ -14,8 +14,7 @@ class HomePage extends StatelessWidget {
 class CitoyenPeyiHomePage extends StatelessWidget {
   const CitoyenPeyiHomePage({super.key});
 
-  static const String backgroundPath =
-      'assets/images/fondecran.png';
+  static const String backgroundPath = 'assets/images/fondecran.png';
   static const String logoPath =
       'assets/citoyen_peyi/logo_citoyen_peyi_transparent.webp';
 
@@ -61,13 +60,18 @@ class _HomeScaffold extends StatelessWidget {
   Widget build(BuildContext context) {
     final maxWidth = switch (layout) {
       _HomeLayout.mobile => 480.0,
-      _HomeLayout.tablet => 560.0,
-      _HomeLayout.desktop => 640.0,
+      _HomeLayout.tablet => 720.0,
+      _HomeLayout.desktop => 920.0,
     };
     final hPad = switch (layout) {
-      _HomeLayout.mobile => 22.0,
-      _HomeLayout.tablet => 34.0,
-      _HomeLayout.desktop => 44.0,
+      _HomeLayout.mobile => 20.0,
+      _HomeLayout.tablet => 36.0,
+      _HomeLayout.desktop => 48.0,
+    };
+    final vPad = switch (layout) {
+      _HomeLayout.mobile => 10.0,
+      _HomeLayout.tablet => 18.0,
+      _HomeLayout.desktop => 24.0,
     };
 
     return Stack(
@@ -93,24 +97,40 @@ class _HomeScaffold extends StatelessWidget {
           ),
         ),
         SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(maxWidth: maxWidth),
-              child: Padding(
-                padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 10),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _HomeLogo(layout: layout),
-                    SizedBox(height: _isMobile ? 6 : (_isDesktop ? 16 : 12)),
-                    _MainCard(layout: layout),
-                    SizedBox(height: _isMobile ? 14 : (_isDesktop ? 24 : 20)),
-                    const _AdministrationAccess(),
-                  ],
+          child: LayoutBuilder(
+            builder: (context, viewport) {
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: viewport.maxHeight),
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: hPad,
+                      vertical: vPad,
+                    ),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(maxWidth: maxWidth),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            _HomeLogo(layout: layout),
+                            SizedBox(
+                              height: _isMobile ? 6 : (_isDesktop ? 16 : 12),
+                            ),
+                            _MainCard(layout: layout),
+                            SizedBox(
+                              height: _isMobile ? 14 : (_isDesktop ? 24 : 20),
+                            ),
+                            const _AdministrationAccess(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ],
@@ -177,13 +197,13 @@ class _MainCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontalPadding = switch (layout) {
       _HomeLayout.mobile => 20.0,
-      _HomeLayout.tablet => 24.0,
-      _HomeLayout.desktop => 28.0,
+      _HomeLayout.tablet => 28.0,
+      _HomeLayout.desktop => 32.0,
     };
     final verticalPadding = switch (layout) {
       _HomeLayout.mobile => 16.0,
-      _HomeLayout.tablet => 18.0,
-      _HomeLayout.desktop => 20.0,
+      _HomeLayout.tablet => 20.0,
+      _HomeLayout.desktop => 24.0,
     };
 
     return Container(
@@ -203,25 +223,54 @@ class _MainCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HeroText(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 12 : 14),
-          _ActionCard(
-            icon: Icons.group_rounded,
-            title: 'Je participe',
-            subtitle: 'Exprimez-vous et contribuez',
-            layout: layout,
-            onTap: () => Navigator.of(context).pushNamed('/participer'),
-          ),
-          SizedBox(height: layout == _HomeLayout.mobile ? 10 : 12),
-          _ActionCard(
-            icon: Icons.chat_bubble_outline_rounded,
-            title: 'Plateforme de consultation\ncitoyenne anonyme',
-            subtitle: 'Partagez vos avis en toute confidentialité',
-            layout: layout,
-            showDecorations: false,
-            onTap: () => Navigator.of(context).pushNamed('/participer'),
-          ),
+          SizedBox(height: layout == _HomeLayout.mobile ? 14 : 18),
+          _ActionCards(layout: layout),
         ],
       ),
+    );
+  }
+}
+
+class _ActionCards extends StatelessWidget {
+  const _ActionCards({required this.layout});
+
+  final _HomeLayout layout;
+
+  @override
+  Widget build(BuildContext context) {
+    final participationCard = _ActionCard(
+      icon: Icons.group_rounded,
+      title: 'Je participe',
+      subtitle: 'Exprimez-vous et contribuez',
+      layout: layout,
+      onTap: () => Navigator.of(context).pushNamed('/participer'),
+    );
+    final consultationCard = _ActionCard(
+      icon: Icons.chat_bubble_outline_rounded,
+      title: 'Plateforme de consultation citoyenne anonyme',
+      subtitle: 'Partagez vos avis en toute confidentialité',
+      layout: layout,
+      showDecorations: false,
+      onTap: () => Navigator.of(context).pushNamed('/participer'),
+    );
+
+    if (layout == _HomeLayout.desktop) {
+      return Row(
+        children: [
+          Expanded(child: participationCard),
+          const SizedBox(width: 16),
+          Expanded(child: consultationCard),
+        ],
+      );
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        participationCard,
+        SizedBox(height: layout == _HomeLayout.mobile ? 10 : 12),
+        consultationCard,
+      ],
     );
   }
 }
@@ -245,12 +294,12 @@ class _HeroText extends StatelessWidget {
     };
     final fontSize = switch (layout) {
       _HomeLayout.mobile => 22.0,
-      _HomeLayout.tablet => 24.0,
-      _HomeLayout.desktop => 26.0,
+      _HomeLayout.tablet => 27.0,
+      _HomeLayout.desktop => 30.0,
     };
 
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Container(
           width: iconSize,
@@ -265,32 +314,31 @@ class _HeroText extends StatelessWidget {
             size: starSize,
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: RichText(
-            text: TextSpan(
-              style: TextStyle(
-                fontSize: fontSize,
-                fontWeight: FontWeight.w800,
-                height: 1.30,
-                letterSpacing: 0,
-              ),
-              children: const [
-                TextSpan(
-                  text: 'Votre collectivité place\n',
-                  style: TextStyle(color: Colors.white),
-                ),
-                TextSpan(
-                  text: 'votre parole',
-                  style: TextStyle(color: Color(0xFFFFD740)),
-                ),
-                TextSpan(
-                  text: ' au cœur\nde l\'action publique',
-                  style: TextStyle(color: Colors.white),
-                ),
-              ],
+        SizedBox(height: layout == _HomeLayout.mobile ? 10 : 12),
+        Text.rich(
+          TextSpan(
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w800,
+              height: 1.22,
+              letterSpacing: 0,
             ),
+            children: const [
+              TextSpan(
+                text: 'Votre collectivité place ',
+                style: TextStyle(color: Colors.white),
+              ),
+              TextSpan(
+                text: 'votre parole',
+                style: TextStyle(color: Color(0xFFFFD740)),
+              ),
+              TextSpan(
+                text: ' au cœur de l\'action publique',
+                style: TextStyle(color: Colors.white),
+              ),
+            ],
           ),
+          textAlign: TextAlign.center,
         ),
       ],
     );
@@ -319,9 +367,9 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 80.0,
-      _HomeLayout.tablet => 86.0,
-      _HomeLayout.desktop => 92.0,
+      _HomeLayout.mobile => 82.0,
+      _HomeLayout.tablet => 92.0,
+      _HomeLayout.desktop => 116.0,
     };
     final horizontalPadding = switch (layout) {
       _HomeLayout.mobile => 12.0,

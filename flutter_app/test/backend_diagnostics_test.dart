@@ -36,13 +36,14 @@ void main() {
       expect(issue, contains('http://api.example.com'));
     });
 
-    test('autorise localhost HTTP depuis une page HTTPS (exception navigateur)',
-        () {
+    test('signale localhost HTTP depuis une page HTTPS de production', () {
       final issue = BackendDiagnostics.describeConfigIssue(
         pageOrigin: Uri.parse('https://citoyen-peyi.web.app/'),
         apiBaseUrl: 'http://localhost:4000',
       );
-      expect(issue, isNull);
+      expect(issue, isNotNull);
+      expect(issue, contains('http://localhost:4000'));
+      expect(issue, contains('API_BASE_URL'));
     });
 
     test('autorise une configuration valide', () {

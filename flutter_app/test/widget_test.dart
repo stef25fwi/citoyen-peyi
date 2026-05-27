@@ -8,9 +8,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('Votre collectivité place votre parole au coeur de l\'action publique'),
-        findsOneWidget);
+      find.text(
+        'Votre collectivité place votre parole au cœur de l\'action publique',
+      ),
+      findsOneWidget,
+    );
     expect(find.text('Je participe'), findsOneWidget);
-    expect(find.text('Agent de mobilisation citoyenne / accueil'), findsOneWidget);
+    expect(find.text('Accès administration'), findsOneWidget);
   });
 }
