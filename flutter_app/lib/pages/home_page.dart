@@ -68,7 +68,7 @@ class _HomeScaffold extends StatelessWidget {
       _HomeLayout.desktop => 48.0,
     };
     final vPad = switch (layout) {
-      _HomeLayout.mobile => 6.0,
+      _HomeLayout.mobile => 8.0,
       _HomeLayout.tablet => 18.0,
       _HomeLayout.desktop => 24.0,
     };
@@ -165,11 +165,8 @@ class _HomeContent extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Transform.translate(
-                offset: Offset(0, _isMobile ? -8 : 0),
-                child: _HomeLogo(layout: layout),
-              ),
-              SizedBox(height: _isMobile ? 4 : (_isDesktop ? 16 : 12)),
+              _HomeLogo(layout: layout),
+              SizedBox(height: _isMobile ? 8 : (_isDesktop ? 16 : 12)),
               _MainCard(layout: layout),
               SizedBox(height: _isMobile ? 16 : (_isDesktop ? 24 : 20)),
               _AdministrationAccess(layout: layout),
@@ -189,22 +186,22 @@ class _HomeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final targetHeight = switch (layout) {
-      _HomeLayout.mobile => 88.0,
-      _HomeLayout.tablet => 124.0,
-      _HomeLayout.desktop => 138.0,
+      _HomeLayout.mobile => 132.0,
+      _HomeLayout.tablet => 186.0,
+      _HomeLayout.desktop => 207.0,
     };
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 76.0,
-      _HomeLayout.tablet => 112.0,
-      _HomeLayout.desktop => 122.0,
+      _HomeLayout.mobile => 114.0,
+      _HomeLayout.tablet => 168.0,
+      _HomeLayout.desktop => 183.0,
     };
     final maxHeight = switch (layout) {
-      _HomeLayout.mobile => 96.0,
-      _HomeLayout.tablet => 142.0,
-      _HomeLayout.desktop => 156.0,
+      _HomeLayout.mobile => 144.0,
+      _HomeLayout.tablet => 213.0,
+      _HomeLayout.desktop => 234.0,
     };
     final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 4.0,
+      _HomeLayout.mobile => 0.0,
       _HomeLayout.tablet => 11.0,
       _HomeLayout.desktop => 12.0,
     };
