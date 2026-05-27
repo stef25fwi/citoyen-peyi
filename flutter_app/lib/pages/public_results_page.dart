@@ -88,34 +88,26 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
                   textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 18),
-                Row(
-                  children: [
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _communeFilter,
-                        decoration: const InputDecoration(labelText: 'Commune'),
-                        items: [
-                          const DropdownMenuItem<String>(value: null, child: Text('Toutes')),
-                          for (final commune in _communes)
-                            DropdownMenuItem(value: commune, child: Text(commune)),
-                        ],
-                        onChanged: (value) => setState(() => _communeFilter = value),
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: DropdownButtonFormField<String>(
-                        initialValue: _statusFilter,
-                        decoration: const InputDecoration(labelText: 'Etat'),
-                        items: const [
-                          DropdownMenuItem(value: 'all', child: Text('Tous')),
-                          DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
-                          DropdownMenuItem(value: 'closed', child: Text('Cloturees')),
-                        ],
-                        onChanged: (value) => setState(() => _statusFilter = value ?? 'all'),
-                      ),
-                    ),
+                DropdownButtonFormField<String>(
+                  initialValue: _communeFilter,
+                  decoration: const InputDecoration(labelText: 'Commune'),
+                  items: [
+                    const DropdownMenuItem<String>(value: null, child: Text('Toutes')),
+                    for (final commune in _communes)
+                      DropdownMenuItem(value: commune, child: Text(commune)),
                   ],
+                  onChanged: (value) => setState(() => _communeFilter = value),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _statusFilter,
+                  decoration: const InputDecoration(labelText: 'Etat'),
+                  items: const [
+                    DropdownMenuItem(value: 'all', child: Text('Tous')),
+                    DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
+                    DropdownMenuItem(value: 'closed', child: Text('Cloturees')),
+                  ],
+                  onChanged: (value) => setState(() => _statusFilter = value ?? 'all'),
                 ),
                 const SizedBox(height: 16),
                 if (_isLoading)
