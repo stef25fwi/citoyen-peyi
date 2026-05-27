@@ -132,7 +132,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                         controller: _codeController,
                         enabled: !_isSubmitting,
                         autofocus: true,
-                        maxLength: 20,
+                        maxLength: 8,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                             fontSize: 16,
@@ -140,7 +140,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                             fontWeight: FontWeight.w600),
                         decoration: InputDecoration(
                           counterText: '',
-                          hintText: 'Ex : CTRL-A1B2C3D4',
+                          hintText: 'Ex : A3F2B1C9',
                           filled: true,
                           fillColor: Colors.white,
                           contentPadding: const EdgeInsets.symmetric(

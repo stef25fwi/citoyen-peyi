@@ -24,10 +24,10 @@ const sanitize = (value, max) => (typeof value === 'string' ? value.trim().subst
 
 const generateControllerCode = () => {
   const hash = crypto.createHash('sha256').update(crypto.randomBytes(32)).digest('hex');
-  return `CTRL-${hash.substring(0, 8).toUpperCase()}`;
+  return hash.substring(0, 8).toUpperCase();
 };
 
-const maskCode = (code) => `${code.substring(0, 5)}••••${code.substring(code.length - 2)}`;
+const maskCode = (code) => `${code.substring(0, 2)}••••${code.substring(code.length - 2)}`;
 
 router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin);
 
