@@ -180,8 +180,6 @@ export const validateEnv = () => {
     errors.push('GOOGLE_APPLICATION_CREDENTIALS pointe vers un fichier introuvable.');
   }
 
-  if (errors.length > 0) {
-    
   const hasCloudRunApplicationDefaultCredentials = Boolean(
     process.env.K_SERVICE &&
     (
@@ -199,16 +197,14 @@ export const validateEnv = () => {
     }
   }
 
-
   for (let index = errors.length - 1; index >= 0; index -= 1) {
     if (!String(errors[index] ?? '').trim()) {
       errors.splice(index, 1);
     }
   }
 
-if (errors.length > 0) {
+  if (errors.length > 0) {
     throw new Error(`Configuration backend invalide:\n- ${errors.join('\n- ')}`);
-  }
   }
 
   return env;

@@ -15,11 +15,32 @@ permissions:
 
 jobs:
   deploy:
-    if: ${{ vars.GCP_PROJECT_ID != '' }}
     runs-on: ubuntu-latest
     environment: production
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION }}
+      CORS_ORIGIN: ${{ vars.CORS_ORIGIN }}
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      RATE_LIMIT_REDIS_URL: ${{ vars.RATE_LIMIT_REDIS_URL }}
+      GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+      GCP_DEPLOY_SERVICE_ACCOUNT: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+      GCP_RUNTIME_SERVICE_ACCOUNT: ${{ secrets.GCP_RUNTIME_SERVICE_ACCOUNT }}
     steps:
       - uses: actions/checkout@v4
+
+      - name: Validate deployment config
+        run: |
+          missing=0
+          for name in GCP_PROJECT_ID GCP_REGION CORS_ORIGIN GCP_WORKLOAD_IDENTITY_PROVIDER GCP_DEPLOY_SERVICE_ACCOUNT GCP_RUNTIME_SERVICE_ACCOUNT; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub configuration: $name" >&2
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
 
       - id: auth
         name: Authenticate to Google Cloud
@@ -33,28 +54,77 @@ jobs:
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
 
+      - name: Validate required Secret Manager secrets
+        run: |
+          missing=0
+          for secret in SUPER_ADMIN_KEY VOTE_ACCESS_TOKEN_SECRET ACCESS_CODE_PEPPER CITIZEN_FINGERPRINT_PEPPER; do
+            if ! gcloud secrets describe "$secret" >/dev/null 2>&1; then
+              echo "Missing required Secret Manager secret: $secret" >&2
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
       - name: Configure docker for Artifact Registry
-        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+        run: gcloud auth configure-docker "$GCP_REGION-docker.pkg.dev" --quiet
+
+      - name: Ensure Artifact Registry repository
+        run: |
+          gcloud artifacts repositories describe citoyen-peyi \
+            --location="$GCP_REGION" >/dev/null 2>&1 || \
+          gcloud artifacts repositories create citoyen-peyi \
+            --repository-format=docker \
+            --location="$GCP_REGION" \
+            --description="Citoyen Peyi backend images"
 
       - name: Build image
         working-directory: app/backend
         run: |
-          IMAGE="${{ vars.GCP_REGION }}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/citoyen-peyi/backend:${{ github.sha }}"
+          IMAGE="$GCP_REGION-docker.pkg.dev/$GCP_PROJECT_ID/citoyen-peyi/backend:${{ github.sha }}"
           docker build -t "$IMAGE" .
           docker push "$IMAGE"
           echo "IMAGE=$IMAGE" >> "$GITHUB_ENV"
 
       - name: Deploy to Cloud Run
         run: |
+          ENV_VARS="^@^NODE_ENV=production@CORS_ORIGIN=$CORS_ORIGIN@LOG_LEVEL=info"
+          if [ -n "$API_BASE_URL" ]; then
+            ENV_VARS="$ENV_VARS@API_BASE_URL=$API_BASE_URL"
+          fi
+          if [ -n "$RATE_LIMIT_REDIS_URL" ]; then
+            ENV_VARS="$ENV_VARS@RATE_LIMIT_REDIS_URL=$RATE_LIMIT_REDIS_URL"
+          fi
+
+          SECRET_BINDINGS="SUPER_ADMIN_KEY=SUPER_ADMIN_KEY:latest,VOTE_ACCESS_TOKEN_SECRET=VOTE_ACCESS_TOKEN_SECRET:latest,ACCESS_CODE_PEPPER=ACCESS_CODE_PEPPER:latest,CITIZEN_FINGERPRINT_PEPPER=CITIZEN_FINGERPRINT_PEPPER:latest"
+          for optional_secret in ADMIN_ACCESS_KEY ADMIN_ACCESS_PEPPER CONTROLLER_CODE_PEPPER; do
+            if gcloud secrets describe "$optional_secret" >/dev/null 2>&1; then
+              SECRET_BINDINGS="$SECRET_BINDINGS,$optional_secret=$optional_secret:latest"
+            fi
+          done
+
           gcloud run deploy citoyen-peyi-api \
             --image="$IMAGE" \
-            --region="${{ vars.GCP_REGION }}" \
+            --region="$GCP_REGION" \
             --platform=managed \
             --allow-unauthenticated \
-            --service-account="${{ secrets.GCP_RUNTIME_SERVICE_ACCOUNT }}" \
-            --set-env-vars=NODE_ENV=production,CORS_ORIGIN=${{ vars.CORS_ORIGIN }},API_BASE_URL=${{ vars.API_BASE_URL }},LOG_LEVEL=info,RATE_LIMIT_REDIS_URL=${{ vars.RATE_LIMIT_REDIS_URL }} \
-            --set-secrets=SUPER_ADMIN_KEY=SUPER_ADMIN_KEY:latest,ADMIN_ACCESS_KEY=ADMIN_ACCESS_KEY:latest,VOTE_ACCESS_TOKEN_SECRET=VOTE_ACCESS_TOKEN_SECRET:latest,ACCESS_CODE_PEPPER=ACCESS_CODE_PEPPER:latest,CITIZEN_FINGERPRINT_PEPPER=CITIZEN_FINGERPRINT_PEPPER:latest \
+            --service-account="$GCP_RUNTIME_SERVICE_ACCOUNT" \
+            --set-env-vars="$ENV_VARS" \
+            --set-secrets="$SECRET_BINDINGS" \
             --max-instances=5 \
             --concurrency=80 \
             --cpu=1 \
             --memory=512Mi
+
+      - name: Report backend URL
+        run: |
+          SERVICE_URL="$(gcloud run services describe citoyen-peyi-api --region="$GCP_REGION" --format='value(status.url)')"
+          echo "Backend deployed: $SERVICE_URL"
+          {
+            echo "### Backend Cloud Run"
+            echo ""
+            echo "Service URL: $SERVICE_URL"
+            echo ""
+            echo "Set GitHub repository variable API_BASE_URL to this URL, then rerun the Pages workflow."
+          } >> "$GITHUB_STEP_SUMMARY"
