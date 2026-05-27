@@ -88,7 +88,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
             valueListenable: _badgeSvc.hasNew,
             builder: (context, hasNew, _) {
               return NavigationBar(
-                height: 110,
+                height: 74,
                 selectedIndex: widget.currentTab.index,
                 labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
                 onDestinationSelected: (index) =>

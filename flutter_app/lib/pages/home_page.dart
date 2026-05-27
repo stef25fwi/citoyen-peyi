@@ -88,18 +88,17 @@ class _HomeScaffold extends StatelessWidget {
           child: Center(
             child: ConstrainedBox(
               constraints: BoxConstraints(maxWidth: maxWidth),
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(hPad, 16, hPad, 24),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: hPad, vertical: 10),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    SizedBox(height: _isMobile ? 6 : 16),
                     const _HomeLogo(),
-                    SizedBox(height: _isMobile ? 18 : 26),
+                    SizedBox(height: _isMobile ? 10 : 18),
                     const _MainCard(),
-                    SizedBox(height: _isMobile ? 22 : 32),
+                    SizedBox(height: _isMobile ? 14 : 22),
                     const _AdministrationAccess(),
-                    const SizedBox(height: 8),
                   ],
                 ),
               ),
@@ -117,7 +116,7 @@ class _HomeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final logoHeight =
-        MediaQuery.textScalerOf(context).scale(130).clamp(110, 170).toDouble();
+        MediaQuery.textScalerOf(context).scale(90).clamp(72, 104).toDouble();
     return Semantics(
       label: 'Citoyen Peyi',
       image: true,
@@ -148,19 +147,19 @@ class _MainCard extends StatelessWidget {
         ),
         color: Colors.white.withValues(alpha: 0.07),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 30),
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           const _HeroText(),
-          const SizedBox(height: 26),
+          const SizedBox(height: 12),
           _ActionCard(
             icon: Icons.group_rounded,
             title: 'Je participe',
             subtitle: 'Exprimez-vous et contribuez',
             onTap: () => Navigator.of(context).pushNamed('/participer'),
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 10),
           _ActionCard(
             icon: Icons.chat_bubble_outline_rounded,
             title: 'Plateforme de consultation\ncitoyenne anonyme',
@@ -182,8 +181,8 @@ class _HeroText extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 46,
-          height: 46,
+          width: 38,
+          height: 38,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: const Color(0xFF1565C0).withValues(alpha: 0.75),
@@ -191,17 +190,17 @@ class _HeroText extends StatelessWidget {
           child: const Icon(
             Icons.star_rounded,
             color: Color(0xFFFFD740),
-            size: 24,
+            size: 20,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: 12),
         Expanded(
           child: RichText(
             text: const TextSpan(
               style: TextStyle(
-                fontSize: 29,
+                fontSize: 22,
                 fontWeight: FontWeight.w800,
-                height: 1.35,
+                height: 1.30,
                 letterSpacing: -0.3,
               ),
               children: [
@@ -254,20 +253,20 @@ class _ActionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 118),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            constraints: const BoxConstraints(minHeight: 80),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
             child: Row(
               children: [
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 42,
+                  height: 42,
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     color: Color(0xFFE8F0FE),
                   ),
-                  child: Icon(icon, color: _blue, size: 26),
+                  child: Icon(icon, color: _blue, size: 22),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,27 +276,27 @@ class _ActionCard extends StatelessWidget {
                         title,
                         style: const TextStyle(
                           color: _blue,
-                          fontSize: 17,
+                          fontSize: 15,
                           fontWeight: FontWeight.w800,
-                          height: 1.3,
+                          height: 1.25,
                         ),
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(height: 3),
                       Text(
                         subtitle,
                         style: TextStyle(
                           color: Colors.grey.shade600,
-                          fontSize: 13,
-                          height: 1.4,
+                          fontSize: 12,
+                          height: 1.3,
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 8),
                 Container(
-                  width: 38,
-                  height: 38,
+                  width: 32,
+                  height: 32,
                   decoration: const BoxDecoration(
                     shape: BoxShape.circle,
                     color: _blue,
@@ -305,7 +304,7 @@ class _ActionCard extends StatelessWidget {
                   child: const Icon(
                     Icons.arrow_forward_rounded,
                     color: Colors.white,
-                    size: 20,
+                    size: 17,
                   ),
                 ),
               ],
@@ -365,23 +364,23 @@ class _AdministrationAccess extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 10),
+            const SizedBox(height: 7),
             const Text(
               'Accès administration',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 2),
             Text(
               'Espace réservé aux administrateurs',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.65),
-                fontSize: 13,
+                fontSize: 12,
               ),
             ),
           ],
