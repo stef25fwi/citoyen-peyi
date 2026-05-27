@@ -126,6 +126,18 @@
       "detail": "Construit la version Flutter Web de production pour GitHub Pages."
     },
     {
+      "label": "Firebase triggeer workflow dispatch",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && gh secret list && echo '---' && gh variable list"
+      ],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "detail": "Liste les secrets et variables GitHub du repo."
+    },
+    {
       "label": "Flutter build Firebase Hosting",
       "type": "shell",
       "command": "bash",
