@@ -83,6 +83,42 @@ class SuperAdminService {
 
   static final SuperAdminService instance = SuperAdminService._();
 
+  Future<String?> _superAdminIdToken() async {
+    final token = await FirebaseAuthService.instance.requireFreshIdToken();
+    if (token != null && token.isNotEmpty) {
+      return token;
+    }
+
+    final key = runtimeSuperAdminKey;
+    if (key == null || key.trim().isEmpty) {
+      return null;
+    }
+
+    // Recrée une session Firebase super admin si la page a perdu currentUser.
+    final response = await http.post(
+      Uri.parse('${AppConfig.apiBaseUrl}/api/auth/super/exchange'),
+      headers: {
+        'Content-Type': 'application/json',
+        'x-super-admin-key': key,
+      },
+      body: jsonEncode({'accessKey': key}),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      return null;
+    }
+
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
+    final customToken = payload['customToken'] as String?;
+    if (customToken == null || customToken.isEmpty) {
+      return null;
+    }
+
+    await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+    return FirebaseAuthService.instance.requireFreshIdToken();
+  }
+
+
   static const _profilesKey = 'super_admin_profiles_v1';
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
@@ -155,7 +191,7 @@ class SuperAdminService {
   Future<List<AdminProfileModel>> loadProfiles() async {
     try {
       final superKey = _runtimeSuperAdminKey;
-      final token = await FirebaseAuthService.instance.currentIdToken();
+      final token = await _superAdminIdToken();
       if (superKey != null && superKey.isNotEmpty && token != null) {
         final response = await http
             .get(
@@ -254,7 +290,7 @@ class SuperAdminService {
     if (superKey == null || superKey.isEmpty) {
       throw const SuperAdminAuthException('Session super admin expiree, reconnectez-vous.');
     }
-    final token = await FirebaseAuthService.instance.currentIdToken();
+    final token = await _superAdminIdToken();
     if (token == null) {
       throw const SuperAdminAuthException('Session Firebase manquante, reconnectez-vous.');
     }
@@ -280,7 +316,7 @@ class SuperAdminService {
     if (superKey == null || superKey.isEmpty) {
       throw const SuperAdminAuthException('Session super admin expiree, reconnectez-vous.');
     }
-    final token = await FirebaseAuthService.instance.currentIdToken();
+    final token = await _superAdminIdToken();
     if (token == null) {
       throw const SuperAdminAuthException('Session Firebase manquante, reconnectez-vous.');
     }

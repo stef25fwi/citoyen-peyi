@@ -12,6 +12,20 @@ class FirebaseAuthService {
 
   static final FirebaseAuthService instance = FirebaseAuthService._();
 
+  Future<void> ensureInitialized() async {
+    if (Firebase.apps.isEmpty) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    }
+  }
+
+
+  bool get isSignedIn => FirebaseAuth.instance.currentUser != null;
+
+  String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
+
+
   bool _initialized = false;
 
   bool get isConfigured => AppConfig.isFirebaseConfigured;
@@ -25,7 +39,7 @@ class FirebaseAuthService {
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     }
 
-    if (AppConfig.isAppCheckConfigured) {
+    if (AppConfig.shouldActivateAppCheck) {
       try {
         await FirebaseAppCheck.instance.activate(
           webProvider: ReCaptchaV3Provider(AppConfig.recaptchaSiteKey),
@@ -53,7 +67,17 @@ class FirebaseAuthService {
   /// Returns a fresh Firebase ID token suitable for the Authorization header.
   /// Forces refresh when the cached token is older than the threshold so
   /// long-lived sessions do not silently drift past the 1h expiry.
-  Future<String?> currentIdToken({bool forceRefresh = false}) async {
+  
+  Future<String?> requireFreshIdToken() async {
+    await ensureInitialized();
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      return null;
+    }
+    return user.getIdToken(true);
+  }
+
+Future<String?> currentIdToken({bool forceRefresh = false}) async {
     if (!isConfigured) return null;
     await initialize();
     final user = FirebaseAuth.instance.currentUser;
