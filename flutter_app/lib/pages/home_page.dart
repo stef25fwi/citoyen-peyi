@@ -165,10 +165,13 @@ class _HomeContent extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _HomeLogo(layout: layout),
+              Transform.translate(
+                offset: Offset(0, _isMobile ? -8 : 0),
+                child: _HomeLogo(layout: layout),
+              ),
               SizedBox(height: _isMobile ? 4 : (_isDesktop ? 16 : 12)),
               _MainCard(layout: layout),
-              SizedBox(height: _isMobile ? 10 : (_isDesktop ? 24 : 20)),
+              SizedBox(height: _isMobile ? 16 : (_isDesktop ? 24 : 20)),
               _AdministrationAccess(layout: layout),
             ],
           ),
@@ -263,7 +266,7 @@ class _MainCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HeroText(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 10 : 18),
+          SizedBox(height: layout == _HomeLayout.mobile ? 16 : 18),
           _ActionCards(layout: layout),
         ],
       ),
@@ -394,17 +397,17 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 70.0,
+      _HomeLayout.mobile => 64.0,
       _HomeLayout.tablet => 92.0,
       _HomeLayout.desktop => 116.0,
     };
     final horizontalPadding = switch (layout) {
-      _HomeLayout.mobile => 10.0,
+      _HomeLayout.mobile => 8.0,
       _HomeLayout.tablet => 14.0,
       _HomeLayout.desktop => 16.0,
     };
     final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 8.0,
+      _HomeLayout.mobile => 6.0,
       _HomeLayout.tablet => 11.0,
       _HomeLayout.desktop => 12.0,
     };
