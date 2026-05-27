@@ -91,93 +91,95 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
           onPressed: () => Navigator.of(context).pushNamed('/'),
         ),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+      body: SafeArea(
+        child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 460),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color:
-                            theme.colorScheme.primary.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(18),
-                      ),
-                      child: const Icon(Icons.key_rounded,
-                          size: 34, color: _ControllerLoginTheme.primary),
-                    ),
-                    const SizedBox(height: 18),
-                    Text('Connexion agent de mobilisation citoyenne',
-                        style: theme.textTheme.headlineMedium
-                            ?.copyWith(fontSize: 28),
-                        textAlign: TextAlign.center),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Entrez le code fourni par un administrateur pour acceder a l\'interface de verification des pieces.',
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                          color: _ControllerLoginTheme.mutedForeground),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    TextField(
-                      controller: _codeController,
-                      enabled: !_isSubmitting,
-                      autofocus: true,
-                      maxLength: 20,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 18,
-                          letterSpacing: 1,
-                          fontWeight: FontWeight.w600),
-                      decoration: InputDecoration(
-                        counterText: '',
-                        hintText: 'Ex : CTRL-A1B2C3D4',
-                        filled: true,
-                        fillColor: Colors.white,
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 18, vertical: 18),
-                        border: OutlineInputBorder(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color:
+                              theme.colorScheme.primary.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(18),
-                          borderSide: const BorderSide(
-                              color: _ControllerLoginTheme.border),
+                        ),
+                        child: const Icon(Icons.key_rounded,
+                            size: 28, color: _ControllerLoginTheme.primary),
+                      ),
+                      const SizedBox(height: 12),
+                      Text('Connexion agent de mobilisation citoyenne',
+                          style: theme.textTheme.titleLarge?.copyWith(
+                              fontSize: 18, fontWeight: FontWeight.w700),
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Entrez le code fourni par un administrateur pour acceder a l\'interface de verification des pieces.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                            color: _ControllerLoginTheme.mutedForeground),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _codeController,
+                        enabled: !_isSubmitting,
+                        autofocus: true,
+                        maxLength: 20,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                            fontSize: 16,
+                            letterSpacing: 1,
+                            fontWeight: FontWeight.w600),
+                        decoration: InputDecoration(
+                          counterText: '',
+                          hintText: 'Ex : CTRL-A1B2C3D4',
+                          filled: true,
+                          fillColor: Colors.white,
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 14),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(
+                                color: _ControllerLoginTheme.border),
+                          ),
+                        ),
+                        onChanged: (value) {
+                          final upper = value.toUpperCase();
+                          if (upper != value) {
+                            _codeController.value =
+                                _codeController.value.copyWith(
+                              text: upper,
+                              selection:
+                                  TextSelection.collapsed(offset: upper.length),
+                            );
+                          }
+                          setState(() {});
+                        },
+                        onSubmitted: (_) => _submit(),
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: _LoginGradientButton(
+                          onPressed:
+                              _isSubmitting || _codeController.text.trim().isEmpty
+                                  ? null
+                                  : _submit,
+                          isLoading: _isSubmitting,
+                          label: _isSubmitting
+                              ? 'Connexion en cours...'
+                              : 'Acceder a mon profil',
                         ),
                       ),
-                      onChanged: (value) {
-                        final upper = value.toUpperCase();
-                        if (upper != value) {
-                          _codeController.value =
-                              _codeController.value.copyWith(
-                            text: upper,
-                            selection:
-                                TextSelection.collapsed(offset: upper.length),
-                          );
-                        }
-                        setState(() {});
-                      },
-                      onSubmitted: (_) => _submit(),
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: _LoginGradientButton(
-                        onPressed:
-                            _isSubmitting || _codeController.text.trim().isEmpty
-                                ? null
-                                : _submit,
-                        isLoading: _isSubmitting,
-                        label: _isSubmitting
-                            ? 'Connexion en cours...'
-                            : 'Acceder a mon profil',
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
             ),

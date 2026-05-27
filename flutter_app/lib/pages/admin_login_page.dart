@@ -114,111 +114,113 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           ],
         ),
       ),
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(20),
+      body: SafeArea(
+        child: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 460),
-            child: Card(
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 72,
-                      height: 72,
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.10),
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      child: Icon(
-                        Icons.lock_rounded,
-                        size: 34,
-                        color: theme.colorScheme.primary,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Connexion administrateur communal',
-                      style: theme.textTheme.headlineMedium?.copyWith(fontSize: 28),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 10),
-                    Text(
-                      'Entrez votre cle d\'acces administrateur communal pour recevoir un jeton de confiance emis par le backend.',
-                      style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 24),
-                    TextField(
-                      controller: _accessKeyController,
-                      obscureText: true,
-                      enabled: !_isSubmitting,
-                      autofocus: true,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        fontSize: 18,
-                        letterSpacing: 1,
-                        fontWeight: FontWeight.w600,
-                      ),
-                      decoration: InputDecoration(
-                        hintText: 'Cle administrateur communal',
-                        filled: true,
-                        fillColor: const Color(0xFFF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 18),
-                        border: OutlineInputBorder(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(18),
-                          borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
                         ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(18),
-                          borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(18),
-                          borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.6),
+                        child: Icon(
+                          Icons.lock_rounded,
+                          size: 28,
+                          color: theme.colorScheme.primary,
                         ),
                       ),
-                      onChanged: (_) {
-                        setState(() {});
-                      },
-                      onSubmitted: (_) {
-                        if (canSubmit) {
-                          _handleSubmit();
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 16),
-                    SizedBox(
-                      width: double.infinity,
-                      child: FilledButton.icon(
-                        onPressed: canSubmit ? _handleSubmit : null,
-                        icon: _isSubmitting
-                            ? const SizedBox(
-                                width: 18,
-                                height: 18,
-                                child: CircularProgressIndicator(strokeWidth: 2),
-                              )
-                            : const Icon(Icons.arrow_forward_rounded),
-                        label: Text(_isSubmitting ? 'Connexion en cours...' : 'Acceder au tableau de bord'),
+                      const SizedBox(height: 12),
+                      Text(
+                        'Connexion administrateur communal',
+                        style: theme.textTheme.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w700),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    Text(
-                      'En mode configure, cette cle sera verifiee par le backend avant emission des claims admin communaux.',
-                      style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF7A8796)),
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    TextButton(
-                      onPressed: () => Navigator.of(context).pushNamed('/super/login'),
-                      child: const Text(
-                        'Espace Super Administrateur',
-                        style: TextStyle(color: Color(0xFF6B21A8)),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Entrez votre cle d\'acces administrateur communal pour recevoir un jeton de confiance emis par le backend.',
+                        style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573)),
+                        textAlign: TextAlign.center,
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _accessKeyController,
+                        obscureText: true,
+                        enabled: !_isSubmitting,
+                        autofocus: true,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          letterSpacing: 1,
+                          fontWeight: FontWeight.w600,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Cle administrateur communal',
+                          filled: true,
+                          fillColor: const Color(0xFFF8FAFC),
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.6),
+                          ),
+                        ),
+                        onChanged: (_) {
+                          setState(() {});
+                        },
+                        onSubmitted: (_) {
+                          if (canSubmit) {
+                            _handleSubmit();
+                          }
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      SizedBox(
+                        width: double.infinity,
+                        child: FilledButton.icon(
+                          onPressed: canSubmit ? _handleSubmit : null,
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                )
+                              : const Icon(Icons.arrow_forward_rounded),
+                          label: Text(_isSubmitting ? 'Connexion en cours...' : 'Acceder au tableau de bord'),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'En mode configure, cette cle sera verifiee par le backend avant emission des claims admin communaux.',
+                        style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF7A8796)),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 4),
+                      TextButton(
+                        onPressed: () => Navigator.of(context).pushNamed('/super/login'),
+                        child: const Text(
+                          'Espace Super Administrateur',
+                          style: TextStyle(color: Color(0xFF6B21A8)),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
