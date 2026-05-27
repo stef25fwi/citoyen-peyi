@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/new_poll_badge_service.dart';
 
-enum PublicTab { home, vote, results, news }
+enum PublicTab { home, news, vote, results }
 
 class PublicBottomNav extends StatefulWidget {
   const PublicBottomNav({
@@ -26,7 +26,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
   }
 
   void _handleTap(BuildContext context, int index) {
-    final routes = <String>['/', '/access', '/results', '/news'];
+    final routes = <String>['/', '/news', '/access', '/results'];
     final targetRoute = routes[index];
     final currentRoute = ModalRoute.of(context)?.settings.name;
 
@@ -99,6 +99,11 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
                     selectedIcon: Icon(Icons.home_filled),
                     label: 'Accueil',
                   ),
+                  const NavigationDestination(
+                    icon: Icon(Icons.newspaper_outlined),
+                    selectedIcon: Icon(Icons.newspaper_rounded),
+                    label: 'Actualites',
+                  ),
                   NavigationDestination(
                     icon: Badge(
                       isLabelVisible: hasNew,
@@ -114,11 +119,6 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
                     icon: Icon(Icons.bar_chart_outlined),
                     selectedIcon: Icon(Icons.bar_chart_rounded),
                     label: 'Resultats',
-                  ),
-                  const NavigationDestination(
-                    icon: Icon(Icons.newspaper_outlined),
-                    selectedIcon: Icon(Icons.newspaper_rounded),
-                    label: 'Actualites',
                   ),
                 ],
               );
