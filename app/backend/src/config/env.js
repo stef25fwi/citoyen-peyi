@@ -164,6 +164,13 @@ export const validateEnv = () => {
     }
   }
 
+
+  for (let index = errors.length - 1; index >= 0; index -= 1) {
+    if (!String(errors[index] ?? '').trim()) {
+      errors.splice(index, 1);
+    }
+  }
+
 throw new Error(`Configuration backend invalide:\n- ${errors.join('\n- ')}`);
   }
 
