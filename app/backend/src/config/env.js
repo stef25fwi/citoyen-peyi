@@ -146,7 +146,25 @@ export const validateEnv = () => {
   }
 
   if (errors.length > 0) {
-    throw new Error(`Configuration backend invalide:\n- ${errors.join('\n- ')}`);
+    
+  const hasCloudRunApplicationDefaultCredentials = Boolean(
+    process.env.K_SERVICE &&
+    (
+      process.env.GOOGLE_CLOUD_PROJECT ||
+      process.env.GCLOUD_PROJECT ||
+      process.env.FIREBASE_PROJECT_ID
+    )
+  );
+
+  if (hasCloudRunApplicationDefaultCredentials) {
+    for (let index = errors.length - 1; index >= 0; index -= 1) {
+      if (String(errors[index]).includes('Firebase Admin doit etre configure')) {
+        errors.splice(index, 1);
+      }
+    }
+  }
+
+throw new Error(`Configuration backend invalide:\n- ${errors.join('\n- ')}`);
   }
 
   return env;

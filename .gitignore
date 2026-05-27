@@ -10,3 +10,4 @@ coverage/
 .DS_Store
 *.log
 app-release.zip
+.backend-secrets.generated.txt
