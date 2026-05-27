@@ -98,9 +98,9 @@ class _HomeScaffold extends StatelessWidget {
                     SizedBox(height: _isMobile ? 20 : 28),
                     const _PlatformPill(),
                     SizedBox(height: _isMobile ? 26 : 36),
-                    _PrimaryActions(isDesktop: _isDesktop),
+                    const _PrimaryActions(),
                     SizedBox(height: _isMobile ? 28 : 44),
-                    const _PublicNav(),
+                    const _PlatformBadge(),
                     const SizedBox(height: 16),
                     const _AdministrationAccess(),
                   ],
@@ -120,14 +120,16 @@ class _HomeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final logoHeight =
-        MediaQuery.textScalerOf(context).scale(92).clamp(76, 116).toDouble();
+        MediaQuery.textScalerOf(context).scale(130).clamp(110, 170).toDouble();
     return Semantics(
       label: 'Citoyen Peyi',
       image: true,
-      child: Image.asset(
-        CitoyenPeyiHomePage.logoPath,
-        height: logoHeight,
-        fit: BoxFit.contain,
+      child: Center(
+        child: Image.asset(
+          CitoyenPeyiHomePage.logoPath,
+          height: logoHeight,
+          fit: BoxFit.contain,
+        ),
       ),
     );
   }
@@ -136,38 +138,60 @@ class _HomeLogo extends StatelessWidget {
 class _PlatformPill extends StatelessWidget {
   const _PlatformPill();
 
+  static Shader _yellowGradientShader(Rect bounds) =>
+      const LinearGradient(
+        colors: [Color(0xFFFFE066), Color(0xFFFFB300), Color(0xFFFFE066)],
+        stops: [0.0, 0.5, 1.0],
+        begin: Alignment.centerLeft,
+        end: Alignment.centerRight,
+      ).createShader(bounds);
+
   @override
   Widget build(BuildContext context) {
     return Align(
       alignment: Alignment.center,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(999),
-          border: Border.all(color: Colors.white.withValues(alpha: 0.26)),
-        ),
-        child: const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 18, vertical: 11),
-          child: Text(
-            'Votre collectivité place votre parole au coeur de l\'action publique',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-                color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(999),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.26)),
+            ),
+            child: const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 28, vertical: 11),
+              child: ShaderMask(
+                shaderCallback: _yellowGradientShader,
+                blendMode: BlendMode.srcIn,
+                child: Text(
+                  'Votre collectivité place votre parole au coeur de l\'action publique',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
           ),
-        ),
+          const Positioned(
+            top: -10,
+            left: -10,
+            child: Icon(Icons.star_rounded, color: Color(0xFFFFD740), size: 22),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _PrimaryActions extends StatelessWidget {
-  const _PrimaryActions({required this.isDesktop});
-
-  final bool isDesktop;
+  const _PrimaryActions();
 
   @override
   Widget build(BuildContext context) {
-    final citizen = Semantics(
+    return Semantics(
       button: true,
       label: 'Participer à une consultation citoyenne',
       child: _HomeButton(
@@ -177,27 +201,6 @@ class _PrimaryActions extends StatelessWidget {
         onPressed: () => Navigator.of(context).pushNamed('/participer'),
       ),
     );
-    final controller = Semantics(
-      button: true,
-      label: 'Accéder à l’espace agent de mobilisation citoyenne',
-      child: _HomeButton(
-        label: 'Agent de mobilisation citoyenne / accueil',
-        icon: Icons.fact_check_rounded,
-        onPressed: () => Navigator.of(context).pushNamed('/controleur-accueil'),
-      ),
-    );
-
-    if (!isDesktop) {
-      return Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [citizen, const SizedBox(height: 12), controller]);
-    }
-
-    return Row(children: [
-      Expanded(child: citizen),
-      const SizedBox(width: 16),
-      Expanded(child: controller)
-    ]);
   }
 }
 
@@ -240,59 +243,27 @@ class _HomeButton extends StatelessWidget {
   }
 }
 
-class _PublicNav extends StatelessWidget {
-  const _PublicNav();
+class _PlatformBadge extends StatelessWidget {
+  const _PlatformBadge();
 
   @override
   Widget build(BuildContext context) {
-    final items = [
-      _NavEntry('Accueil', Icons.home_rounded, '/accueil'),
-      _NavEntry('Avis', Icons.rate_review_rounded, '/avis'),
-      _NavEntry('Résultats', Icons.bar_chart_rounded, '/resultats'),
-      _NavEntry('Actualités', Icons.article_rounded, '/actualites'),
-    ];
-
     return DecoratedBox(
       decoration: BoxDecoration(
-          color: Colors.white, borderRadius: BorderRadius.circular(18)),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-        child: Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 4,
-          runSpacing: 4,
-          children: [for (final item in items) _PublicNavButton(entry: item)],
-        ),
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
       ),
-    );
-  }
-}
-
-class _NavEntry {
-  const _NavEntry(this.label, this.icon, this.routeName);
-
-  final String label;
-  final IconData icon;
-  final String routeName;
-}
-
-class _PublicNavButton extends StatelessWidget {
-  const _PublicNavButton({required this.entry});
-
-  final _NavEntry entry;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      label: entry.label,
-      child: TextButton.icon(
-        onPressed: () => Navigator.of(context).pushNamed(entry.routeName),
-        icon: Icon(entry.icon, size: 20),
-        label: Text(entry.label),
-        style: TextButton.styleFrom(
-            minimumSize: const Size(116, 44),
-            foregroundColor: const Color(0xFF005098)),
+      child: const Padding(
+        padding: EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+        child: Text(
+          'Plateforme de consultation citoyenne anonyme',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Color(0xFF005098),
+            fontSize: 15,
+            fontWeight: FontWeight.w700,            letterSpacing: 0.3,
+            height: 1.4,          ),
+        ),
       ),
     );
   }
@@ -306,12 +277,14 @@ class _AdministrationAccess extends StatelessWidget {
     return Semantics(
       button: true,
       label: 'Accès administration',
-      child: TextButton.icon(
-        onPressed: () => _showAdministrationSheet(context),
-        icon: const Icon(Icons.lock_outline_rounded, size: 18),
-        label: const Text('Accès administration'),
-        style: TextButton.styleFrom(
-            foregroundColor: Colors.white, minimumSize: const Size(180, 44)),
+      child: Center(
+        child: TextButton.icon(
+          onPressed: () => _showAdministrationSheet(context),
+          icon: const Icon(Icons.lock_outline_rounded, size: 18),
+          label: const Text('Accès administration'),
+          style: TextButton.styleFrom(
+              foregroundColor: Colors.white, minimumSize: const Size(180, 44)),
+        ),
       ),
     );
   }

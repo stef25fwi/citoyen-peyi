@@ -37,8 +37,12 @@ class PublicBottomNav extends StatelessWidget {
         hoverColor: Colors.transparent,
       ),
       child: NavigationBarTheme(
-        data: const NavigationBarThemeData(
-          overlayColor: WidgetStatePropertyAll<Color>(Colors.transparent),
+        data: NavigationBarThemeData(
+          overlayColor: const WidgetStatePropertyAll<Color>(Colors.transparent),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            final selected = states.contains(WidgetState.selected);
+            return IconThemeData(size: selected ? 26 : 22);
+          }),
         ),
         child: NavigationBar(
           height: 78,
