@@ -1,6 +1,11 @@
 import 'package:firebase_core/firebase_core.dart';
 
 class AppConfig {
+  static const bool appCheckEnabled = bool.fromEnvironment(
+    'APP_CHECK_ENABLED',
+    defaultValue: false,
+  );
+
   static const String apiBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
     defaultValue: 'http://localhost:4000',
@@ -23,6 +28,9 @@ class AppConfig {
   );
 
   static bool get isAppCheckConfigured => recaptchaSiteKey.trim().isNotEmpty;
+
+  static bool get shouldActivateAppCheck =>
+      appCheckEnabled && isAppCheckConfigured;
 
   static bool get isFirebaseConfigured => [
         firebaseApiKey,
