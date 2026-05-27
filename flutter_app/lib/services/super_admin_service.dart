@@ -6,6 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
 import 'auth_session_store.dart';
+import 'backend_diagnostics.dart';
 import 'firebase_auth_service.dart';
 
 class SuperAdminAuthException implements Exception {
@@ -101,15 +102,17 @@ class SuperAdminService {
       throw const SuperAdminAuthException('Cle super admin requise.');
     }
 
-    if (AppConfig.apiBaseUrl.trim().isEmpty) {
-      throw const SuperAdminAuthException('Backend non configure (API_BASE_URL manquant).');
+    final configIssue = BackendDiagnostics.describeConfigIssue();
+    if (configIssue != null) {
+      throw SuperAdminAuthException(configIssue);
     }
 
+    final url = '${AppConfig.apiBaseUrl}/api/auth/super/exchange';
     late http.Response response;
     try {
       response = await http
           .post(
-            Uri.parse('${AppConfig.apiBaseUrl}/api/auth/super/exchange'),
+            Uri.parse(url),
             headers: {
               'Content-Type': 'application/json',
               'x-super-admin-key': trimmed,
@@ -117,8 +120,9 @@ class SuperAdminService {
             body: jsonEncode(const <String, dynamic>{}),
           )
           .timeout(const Duration(seconds: 10));
-    } catch (_) {
-      throw const SuperAdminAuthException('Backend injoignable. Reessayez plus tard.');
+    } catch (error) {
+      throw SuperAdminAuthException(
+          BackendDiagnostics.describeNetworkError(error, attemptedUrl: url));
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
