@@ -178,22 +178,6 @@
       "detail": "Stage, commit, fast-forward main puis pousse la migration full Flutter."
     },
     {
-      "label": "Temp commit garde-fous backend https",
-      "type": "shell",
-      "command": "bash",
-      "args": [
-        "-lc",
-        "cd /workspaces/citoyen-peyi; status=0; git status --short; git add .vscode/tasks.json package.json README.md; git diff --cached --stat; if git diff --cached --quiet; then echo NO_CHANGES_TO_COMMIT; else git commit -m \"fix: exiger backend https en production\" || status=$?; fi; if [[ $status -eq 0 ]]; then git push origin main || status=$?; fi; git restore .vscode/tasks.json 2>/dev/null || true; if [[ $status -eq 0 ]]; then echo PUSH_OK; fi; exit $status"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      },
-      "detail": "Commit temporaire des garde-fous backend HTTPS."
-    },
-    {
       "label": "Backend verifier prerequis migration",
       "type": "shell",
       "command": "bash",
