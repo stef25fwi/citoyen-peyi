@@ -87,7 +87,23 @@ export const isSuperAdminConfigured = () => Boolean(env.superAdminKey);
 
 export const isBootstrapAdminEnabled = () => env.enableBootstrapAdmin;
 
-export const isFirebaseAdminConfigured = () => hasGoogleApplicationCredentials() || hasExplicitFirebaseAdminCredentials();
+
+export const isFirebaseAdminConfigured = () => Boolean(
+  env.googleApplicationCredentials ||
+  (
+    env.firebaseAdminProjectId &&
+    env.firebaseAdminClientEmail &&
+    env.firebaseAdminPrivateKey
+  ) ||
+  (
+    process.env.K_SERVICE &&
+    (
+      process.env.GOOGLE_CLOUD_PROJECT ||
+      process.env.GCLOUD_PROJECT ||
+      process.env.FIREBASE_PROJECT_ID
+    )
+  )
+);
 
 export const validateEnv = () => {
   const errors = [];
@@ -171,7 +187,9 @@ export const validateEnv = () => {
     }
   }
 
-throw new Error(`Configuration backend invalide:\n- ${errors.join('\n- ')}`);
+if (errors.length > 0) {
+    throw new Error(`Configuration backend invalide:\n- ${errors.join('\n- ')}`);
+  }
   }
 
   return env;
