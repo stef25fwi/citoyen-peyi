@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import 'auth_session_store.dart';
+import 'backend_diagnostics.dart';
 import 'firebase_auth_service.dart';
 
 class ControllerAuthException implements Exception {
@@ -30,21 +31,24 @@ class ControllerAuthService {
       throw const ControllerAuthException('Le code agent de mobilisation citoyenne est requis.');
     }
 
-    if (AppConfig.apiBaseUrl.trim().isEmpty) {
-      throw const ControllerAuthException('Backend non configuré (API_BASE_URL manquant).');
+    final configIssue = BackendDiagnostics.describeConfigIssue();
+    if (configIssue != null) {
+      throw ControllerAuthException(configIssue);
     }
 
+    final url = '${AppConfig.apiBaseUrl}/api/auth/controller/exchange';
     late http.Response response;
     try {
       response = await http
           .post(
-            Uri.parse('${AppConfig.apiBaseUrl}/api/auth/controller/exchange'),
+            Uri.parse(url),
             headers: const {'Content-Type': 'application/json'},
             body: jsonEncode({'code': normalizedCode}),
           )
           .timeout(const Duration(seconds: 10));
-    } catch (_) {
-      throw const ControllerAuthException('Backend injoignable. Réessayez plus tard.');
+    } catch (error) {
+      throw ControllerAuthException(
+          BackendDiagnostics.describeNetworkError(error, attemptedUrl: url));
     }
 
     if (response.statusCode < 200 || response.statusCode >= 300) {
