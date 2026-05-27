@@ -2,6 +2,18 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Git status et push",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && git status --short && git diff --stat HEAD && git add -A && git diff --cached --stat && git commit -m 'chore: sync tasks et arbre repo' --allow-empty && git push origin main && echo PUSH_OK"
+      ],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "detail": "Stage tout, commit si besoin, pousse sur main."
+    },
+    {
       "label": "Git commit push et deployer",
       "type": "shell",
       "command": "bash",
