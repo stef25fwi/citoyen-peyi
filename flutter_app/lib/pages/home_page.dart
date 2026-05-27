@@ -63,12 +63,12 @@ class _HomeScaffold extends StatelessWidget {
       _HomeLayout.desktop => 920.0,
     };
     final hPad = switch (layout) {
-      _HomeLayout.mobile => 16.0,
+      _HomeLayout.mobile => 12.0,
       _HomeLayout.tablet => 36.0,
       _HomeLayout.desktop => 48.0,
     };
     final vPad = switch (layout) {
-      _HomeLayout.mobile => 8.0,
+      _HomeLayout.mobile => 12.0,
       _HomeLayout.tablet => 18.0,
       _HomeLayout.desktop => 24.0,
     };
@@ -109,7 +109,8 @@ class _HomeScaffold extends StatelessWidget {
                 return SizedBox(
                   width: viewport.maxWidth,
                   height: viewport.maxHeight,
-                  child: Center(
+                  child: Align(
+                    alignment: Alignment.topCenter,
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       child: SizedBox(
@@ -166,7 +167,7 @@ class _HomeContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _HomeLogo(layout: layout),
-              SizedBox(height: _isMobile ? 8 : (_isDesktop ? 16 : 12)),
+              SizedBox(height: _isMobile ? 12 : (_isDesktop ? 16 : 12)),
               _MainCard(layout: layout),
               SizedBox(height: _isMobile ? 16 : (_isDesktop ? 24 : 20)),
               _AdministrationAccess(layout: layout),
@@ -186,19 +187,19 @@ class _HomeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final targetHeight = switch (layout) {
-      _HomeLayout.mobile => 132.0,
-      _HomeLayout.tablet => 186.0,
-      _HomeLayout.desktop => 207.0,
+      _HomeLayout.mobile => 198.0,
+      _HomeLayout.tablet => 279.0,
+      _HomeLayout.desktop => 310.5,
     };
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 114.0,
-      _HomeLayout.tablet => 168.0,
-      _HomeLayout.desktop => 183.0,
+      _HomeLayout.mobile => 171.0,
+      _HomeLayout.tablet => 252.0,
+      _HomeLayout.desktop => 274.5,
     };
     final maxHeight = switch (layout) {
-      _HomeLayout.mobile => 144.0,
-      _HomeLayout.tablet => 213.0,
-      _HomeLayout.desktop => 234.0,
+      _HomeLayout.mobile => 216.0,
+      _HomeLayout.tablet => 319.5,
+      _HomeLayout.desktop => 351.0,
     };
     final verticalPadding = switch (layout) {
       _HomeLayout.mobile => 0.0,
@@ -236,7 +237,7 @@ class _MainCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = switch (layout) {
-      _HomeLayout.mobile => 16.0,
+      _HomeLayout.mobile => 8.0,
       _HomeLayout.tablet => 28.0,
       _HomeLayout.desktop => 32.0,
     };
