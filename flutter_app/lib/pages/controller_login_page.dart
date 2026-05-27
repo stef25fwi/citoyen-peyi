@@ -83,7 +83,8 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
             Icon(Icons.assignment_turned_in_rounded,
                 color: _ControllerLoginTheme.primary, size: 22),
             SizedBox(width: 8),
-            Text('Espace agent de mobilisation citoyenne'),
+            Text('Espace agent de mobilisation citoyenne',
+                style: TextStyle(fontSize: 14)),
           ],
         ),
         leading: IconButton(
