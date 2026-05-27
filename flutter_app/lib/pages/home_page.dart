@@ -54,7 +54,6 @@ class _HomeScaffold extends StatelessWidget {
   final _HomeLayout layout;
 
   bool get _isMobile => layout == _HomeLayout.mobile;
-  bool get _isDesktop => layout == _HomeLayout.desktop;
 
   @override
   Widget build(BuildContext context) {
@@ -64,12 +63,12 @@ class _HomeScaffold extends StatelessWidget {
       _HomeLayout.desktop => 920.0,
     };
     final hPad = switch (layout) {
-      _HomeLayout.mobile => 20.0,
+      _HomeLayout.mobile => 16.0,
       _HomeLayout.tablet => 36.0,
       _HomeLayout.desktop => 48.0,
     };
     final vPad = switch (layout) {
-      _HomeLayout.mobile => 10.0,
+      _HomeLayout.mobile => 6.0,
       _HomeLayout.tablet => 18.0,
       _HomeLayout.desktop => 24.0,
     };
@@ -99,41 +98,82 @@ class _HomeScaffold extends StatelessWidget {
         SafeArea(
           child: LayoutBuilder(
             builder: (context, viewport) {
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: viewport.maxHeight),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: hPad,
-                      vertical: vPad,
-                    ),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: maxWidth),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _HomeLogo(layout: layout),
-                            SizedBox(
-                              height: _isMobile ? 6 : (_isDesktop ? 16 : 12),
-                            ),
-                            _MainCard(layout: layout),
-                            SizedBox(
-                              height: _isMobile ? 14 : (_isDesktop ? 24 : 20),
-                            ),
-                            const _AdministrationAccess(),
-                          ],
-                        ),
+              final content = _HomeContent(
+                layout: layout,
+                maxWidth: maxWidth,
+                horizontalPadding: hPad,
+                verticalPadding: vPad,
+              );
+
+              if (_isMobile) {
+                return SizedBox(
+                  width: viewport.maxWidth,
+                  height: viewport.maxHeight,
+                  child: Center(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: SizedBox(
+                        width: viewport.maxWidth,
+                        child: content,
                       ),
                     ),
                   ),
+                );
+              }
+
+              return SingleChildScrollView(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: viewport.maxHeight),
+                  child: content,
                 ),
               );
             },
           ),
         ),
       ],
+    );
+  }
+}
+
+class _HomeContent extends StatelessWidget {
+  const _HomeContent({
+    required this.layout,
+    required this.maxWidth,
+    required this.horizontalPadding,
+    required this.verticalPadding,
+  });
+
+  final _HomeLayout layout;
+  final double maxWidth;
+  final double horizontalPadding;
+  final double verticalPadding;
+
+  bool get _isMobile => layout == _HomeLayout.mobile;
+  bool get _isDesktop => layout == _HomeLayout.desktop;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxWidth),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _HomeLogo(layout: layout),
+              SizedBox(height: _isMobile ? 4 : (_isDesktop ? 16 : 12)),
+              _MainCard(layout: layout),
+              SizedBox(height: _isMobile ? 10 : (_isDesktop ? 24 : 20)),
+              _AdministrationAccess(layout: layout),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -146,22 +186,22 @@ class _HomeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final targetHeight = switch (layout) {
-      _HomeLayout.mobile => 110.0,
+      _HomeLayout.mobile => 88.0,
       _HomeLayout.tablet => 124.0,
       _HomeLayout.desktop => 138.0,
     };
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 100.0,
+      _HomeLayout.mobile => 76.0,
       _HomeLayout.tablet => 112.0,
       _HomeLayout.desktop => 122.0,
     };
     final maxHeight = switch (layout) {
-      _HomeLayout.mobile => 130.0,
+      _HomeLayout.mobile => 96.0,
       _HomeLayout.tablet => 142.0,
       _HomeLayout.desktop => 156.0,
     };
     final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 10.0,
+      _HomeLayout.mobile => 4.0,
       _HomeLayout.tablet => 11.0,
       _HomeLayout.desktop => 12.0,
     };
@@ -196,12 +236,12 @@ class _MainCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = switch (layout) {
-      _HomeLayout.mobile => 20.0,
+      _HomeLayout.mobile => 16.0,
       _HomeLayout.tablet => 28.0,
       _HomeLayout.desktop => 32.0,
     };
     final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 16.0,
+      _HomeLayout.mobile => 12.0,
       _HomeLayout.tablet => 20.0,
       _HomeLayout.desktop => 24.0,
     };
@@ -223,7 +263,7 @@ class _MainCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HeroText(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 14 : 18),
+          SizedBox(height: layout == _HomeLayout.mobile ? 10 : 18),
           _ActionCards(layout: layout),
         ],
       ),
@@ -268,7 +308,7 @@ class _ActionCards extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         participationCard,
-        SizedBox(height: layout == _HomeLayout.mobile ? 10 : 12),
+        SizedBox(height: layout == _HomeLayout.mobile ? 8 : 12),
         consultationCard,
       ],
     );
@@ -282,65 +322,52 @@ class _HeroText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = switch (layout) {
-      _HomeLayout.mobile => 38.0,
-      _HomeLayout.tablet => 42.0,
-      _HomeLayout.desktop => 46.0,
-    };
-    final starSize = switch (layout) {
-      _HomeLayout.mobile => 20.0,
-      _HomeLayout.tablet => 22.0,
-      _HomeLayout.desktop => 24.0,
-    };
     final fontSize = switch (layout) {
-      _HomeLayout.mobile => 22.0,
+      _HomeLayout.mobile => 17.0,
       _HomeLayout.tablet => 27.0,
       _HomeLayout.desktop => 30.0,
     };
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        Container(
-          width: iconSize,
-          height: iconSize,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: const Color(0xFF1565C0).withValues(alpha: 0.75),
-          ),
-          child: Icon(
-            Icons.star_rounded,
-            color: const Color(0xFFFFD740),
-            size: starSize,
-          ),
-        ),
-        SizedBox(height: layout == _HomeLayout.mobile ? 10 : 12),
-        Text.rich(
-          TextSpan(
-            style: TextStyle(
-              fontSize: fontSize,
-              fontWeight: FontWeight.w800,
-              height: 1.22,
-              letterSpacing: 0,
+    final textSpans = layout == _HomeLayout.mobile
+        ? const [
+            TextSpan(
+              text: 'Votre collectivité place ',
+              style: TextStyle(color: Colors.white),
             ),
-            children: const [
-              TextSpan(
-                text: 'Votre collectivité place ',
-                style: TextStyle(color: Colors.white),
-              ),
-              TextSpan(
-                text: 'votre parole',
-                style: TextStyle(color: Color(0xFFFFD740)),
-              ),
-              TextSpan(
-                text: ' au cœur de l\'action publique',
-                style: TextStyle(color: Colors.white),
-              ),
-            ],
-          ),
-          textAlign: TextAlign.center,
+            TextSpan(
+              text: 'votre parole\n',
+              style: TextStyle(color: Color(0xFFFFD740)),
+            ),
+            TextSpan(
+              text: 'au cœur de l\'action publique',
+              style: TextStyle(color: Colors.white),
+            ),
+          ]
+        : const [
+            TextSpan(
+              text: 'Votre collectivité place ',
+              style: TextStyle(color: Colors.white),
+            ),
+            TextSpan(
+              text: 'votre parole',
+              style: TextStyle(color: Color(0xFFFFD740)),
+            ),
+            TextSpan(
+              text: ' au cœur de l\'action publique',
+              style: TextStyle(color: Colors.white),
+            ),
+          ];
+
+    return Text.rich(
+      TextSpan(
+        style: TextStyle(
+          fontSize: fontSize,
+          fontWeight: FontWeight.w800,
+          height: layout == _HomeLayout.mobile ? 1.18 : 1.22,
+          letterSpacing: 0,
         ),
-      ],
+        children: textSpans,
+      ),
+      textAlign: TextAlign.center,
     );
   }
 }
@@ -367,17 +394,17 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 82.0,
+      _HomeLayout.mobile => 70.0,
       _HomeLayout.tablet => 92.0,
       _HomeLayout.desktop => 116.0,
     };
     final horizontalPadding = switch (layout) {
-      _HomeLayout.mobile => 12.0,
+      _HomeLayout.mobile => 10.0,
       _HomeLayout.tablet => 14.0,
       _HomeLayout.desktop => 16.0,
     };
     final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 10.0,
+      _HomeLayout.mobile => 8.0,
       _HomeLayout.tablet => 11.0,
       _HomeLayout.desktop => 12.0,
     };
@@ -407,16 +434,16 @@ class _ActionCard extends StatelessWidget {
 
   Widget _decoratedContent() {
     final iconSize = switch (layout) {
-      _HomeLayout.mobile => 42.0,
+      _HomeLayout.mobile => 36.0,
       _HomeLayout.tablet => 46.0,
       _HomeLayout.desktop => 48.0,
     };
     final titleSize = switch (layout) {
-      _HomeLayout.mobile => 15.0,
+      _HomeLayout.mobile => 14.0,
       _HomeLayout.tablet => 16.0,
       _HomeLayout.desktop => 17.0,
     };
-    final subtitleSize = layout == _HomeLayout.mobile ? 12.0 : 13.0;
+    final subtitleSize = layout == _HomeLayout.mobile ? 11.0 : 13.0;
 
     return Row(
       children: [
@@ -429,7 +456,7 @@ class _ActionCard extends StatelessWidget {
           ),
           child: Icon(icon, color: _blue, size: iconSize * 0.52),
         ),
-        const SizedBox(width: 12),
+        SizedBox(width: layout == _HomeLayout.mobile ? 10 : 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -444,7 +471,7 @@ class _ActionCard extends StatelessWidget {
                   height: 1.25,
                 ),
               ),
-              const SizedBox(height: 3),
+              SizedBox(height: layout == _HomeLayout.mobile ? 2 : 3),
               Text(
                 subtitle,
                 style: TextStyle(
@@ -456,10 +483,10 @@ class _ActionCard extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        SizedBox(width: layout == _HomeLayout.mobile ? 6 : 8),
         Container(
-          width: 32,
-          height: 32,
+          width: layout == _HomeLayout.mobile ? 28 : 32,
+          height: layout == _HomeLayout.mobile ? 28 : 32,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
             color: _blue,
@@ -467,7 +494,7 @@ class _ActionCard extends StatelessWidget {
           child: const Icon(
             Icons.arrow_forward_rounded,
             color: Colors.white,
-            size: 17,
+            size: 16,
           ),
         ),
       ],
@@ -476,11 +503,11 @@ class _ActionCard extends StatelessWidget {
 
   Widget _plainContent() {
     final titleSize = switch (layout) {
-      _HomeLayout.mobile => 16.0,
+      _HomeLayout.mobile => 14.5,
       _HomeLayout.tablet => 17.0,
       _HomeLayout.desktop => 18.0,
     };
-    final subtitleSize = layout == _HomeLayout.mobile ? 12.0 : 13.0;
+    final subtitleSize = layout == _HomeLayout.mobile ? 11.0 : 13.0;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
@@ -496,7 +523,7 @@ class _ActionCard extends StatelessWidget {
             height: 1.3,
           ),
         ),
-        const SizedBox(height: 5),
+        SizedBox(height: layout == _HomeLayout.mobile ? 3 : 5),
         Text(
           subtitle,
           textAlign: TextAlign.center,
@@ -514,10 +541,18 @@ class _ActionCard extends StatelessWidget {
 // ── Accès administration ─────────────────────────────────────────────────────
 
 class _AdministrationAccess extends StatelessWidget {
-  const _AdministrationAccess();
+  const _AdministrationAccess({required this.layout});
+
+  final _HomeLayout layout;
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = layout == _HomeLayout.mobile ? 38.0 : 46.0;
+    final iconGlyphSize = layout == _HomeLayout.mobile ? 19.0 : 22.0;
+    final sideGap = layout == _HomeLayout.mobile ? 10.0 : 14.0;
+    final titleSize = layout == _HomeLayout.mobile ? 12.0 : 14.0;
+    final subtitleSize = layout == _HomeLayout.mobile ? 10.5 : 12.0;
+
     return Semantics(
       button: true,
       label: 'Accès administration',
@@ -533,10 +568,10 @@ class _AdministrationAccess extends StatelessWidget {
                     thickness: 1,
                   ),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: sideGap),
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: iconSize,
+                  height: iconSize,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.white.withValues(alpha: 0.15),
@@ -544,13 +579,13 @@ class _AdministrationAccess extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.35),
                     ),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.lock_outline_rounded,
                     color: Colors.white,
-                    size: 22,
+                    size: iconGlyphSize,
                   ),
                 ),
-                const SizedBox(width: 14),
+                SizedBox(width: sideGap),
                 Expanded(
                   child: Divider(
                     color: Colors.white.withValues(alpha: 0.35),
@@ -559,23 +594,23 @@ class _AdministrationAccess extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: 7),
-            const Text(
+            SizedBox(height: layout == _HomeLayout.mobile ? 4 : 7),
+            Text(
               'Accès administration',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: titleSize,
                 fontWeight: FontWeight.w700,
               ),
             ),
-            const SizedBox(height: 2),
+            SizedBox(height: layout == _HomeLayout.mobile ? 1 : 2),
             Text(
               'Espace réservé aux administrateurs',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.65),
-                fontSize: 12,
+                fontSize: subtitleSize,
               ),
             ),
           ],
