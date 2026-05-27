@@ -164,6 +164,7 @@ class _MainCard extends StatelessWidget {
             icon: Icons.chat_bubble_outline_rounded,
             title: 'Plateforme de consultation\ncitoyenne anonyme',
             subtitle: 'Partagez vos avis en toute confidentialité',
+            showDecorations: false,
             onTap: () => Navigator.of(context).pushNamed('/participer'),
           ),
         ],
@@ -231,12 +232,14 @@ class _ActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.showDecorations = true,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool showDecorations;
 
   static const _blue = Color(0xFF005098);
 
@@ -255,63 +258,96 @@ class _ActionCard extends StatelessWidget {
           child: Container(
             constraints: const BoxConstraints(minHeight: 80),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            child: Row(
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Color(0xFFE8F0FE),
-                  ),
-                  child: Icon(icon, color: _blue, size: 22),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          color: _blue,
-                          fontSize: 15,
-                          fontWeight: FontWeight.w800,
-                          height: 1.25,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        subtitle,
-                        style: TextStyle(
-                          color: Colors.grey.shade600,
-                          fontSize: 12,
-                          height: 1.3,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Container(
-                  width: 32,
-                  height: 32,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _blue,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 17,
-                  ),
-                ),
-              ],
-            ),
+            child: showDecorations ? _decoratedContent() : _plainContent(),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _decoratedContent() {
+    return Row(
+      children: [
+        Container(
+          width: 42,
+          height: 42,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: Color(0xFFE8F0FE),
+          ),
+          child: Icon(icon, color: _blue, size: 22),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                title,
+                style: const TextStyle(
+                  color: _blue,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w800,
+                  height: 1.25,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  color: Colors.grey.shade600,
+                  fontSize: 12,
+                  height: 1.3,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        Container(
+          width: 32,
+          height: 32,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: _blue,
+          ),
+          child: const Icon(
+            Icons.arrow_forward_rounded,
+            color: Colors.white,
+            size: 17,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _plainContent() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text(
+          title,
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+            color: _blue,
+            fontSize: 16,
+            fontWeight: FontWeight.w800,
+            height: 1.3,
+          ),
+        ),
+        const SizedBox(height: 5),
+        Text(
+          subtitle,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.grey.shade600,
+            fontSize: 12,
+            height: 1.35,
+          ),
+        ),
+      ],
     );
   }
 }
