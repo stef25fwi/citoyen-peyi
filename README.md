@@ -135,12 +135,16 @@ flutter build web --release \
 
 ## Build
 
-npm run build
+API_BASE_URL=https://URL_BACKEND_PROD npm run build
 
 La commande construit la version Flutter GitHub Pages. Equivalent manuel:
 
 	cd flutter_app
-	flutter build web --release --base-href /citoyen-peyi/
+	flutter build web --release --base-href /citoyen-peyi/ \
+		--dart-define=API_BASE_URL=https://URL_BACKEND_PROD
+
+Les builds de production refusent volontairement `http://localhost:4000` afin
+d'eviter de publier une app HTTPS qui pointe vers un backend local.
 
 ## Creer le ZIP complet de l'app
 

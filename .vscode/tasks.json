@@ -115,7 +115,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter build web --release --base-href /citoyen-peyi/ --dart-define=API_BASE_URL=${API_BASE_URL:-http://localhost:4000} --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}"
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; case \"${API_BASE_URL:-}\" in https://*) ;; *) echo API_BASE_URL_HTTPS_REQUIS_POUR_BUILD_PRODUCTION >&2; exit 1;; esac; cd flutter_app && flutter build web --release --base-href /citoyen-peyi/ --dart-define=API_BASE_URL=$API_BASE_URL --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -143,7 +143,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter build web --release --base-href / --dart-define=API_BASE_URL=${API_BASE_URL:-http://localhost:4000} --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}"
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; case \"${API_BASE_URL:-}\" in https://*) ;; *) echo API_BASE_URL_HTTPS_REQUIS_POUR_BUILD_PRODUCTION_FIREBASE_HOSTING >&2; exit 1;; esac; cd flutter_app && flutter build web --release --base-href / --dart-define=API_BASE_URL=$API_BASE_URL --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}"
       ],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
@@ -155,7 +155,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "cd /workspaces/citoyen-peyi && npx --yes firebase-tools@13 deploy --config firebase.ghpages.json --only hosting --project citoyen-peyi && echo DEPLOY_OK"
+        "cd /workspaces/citoyen-peyi && if grep -q http://localhost:4000 flutter_app/build/web/main.dart.js; then echo BUILD_CONTAINS_LOCALHOST_REFUS_DEPLOY >&2; exit 1; fi && npx --yes firebase-tools@13 deploy --config firebase.ghpages.json --only hosting --project citoyen-peyi && echo DEPLOY_OK"
       ],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
@@ -176,6 +176,22 @@
         "clear": true
       },
       "detail": "Stage, commit, fast-forward main puis pousse la migration full Flutter."
+    },
+    {
+      "label": "Temp commit garde-fous backend https",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi; status=0; git status --short; git add .vscode/tasks.json package.json README.md; git diff --cached --stat; if git diff --cached --quiet; then echo NO_CHANGES_TO_COMMIT; else git commit -m \"fix: exiger backend https en production\" || status=$?; fi; if [[ $status -eq 0 ]]; then git push origin main || status=$?; fi; git restore .vscode/tasks.json 2>/dev/null || true; if [[ $status -eq 0 ]]; then echo PUSH_OK; fi; exit $status"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Commit temporaire des garde-fous backend HTTPS."
     },
     {
       "label": "Backend verifier prerequis migration",
