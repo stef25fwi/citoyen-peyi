@@ -126,6 +126,30 @@
       "detail": "Construit la version Flutter Web de production pour GitHub Pages."
     },
     {
+      "label": "Flutter build Firebase Hosting",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter build web --release --base-href / --dart-define=API_BASE_URL=${API_BASE_URL:-http://localhost:4000} --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}"
+      ],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "detail": "Construit Flutter Web avec base-href / pour Firebase Hosting (citoyen-peyi.web.app)."
+    },
+    {
+      "label": "Firebase deployer hosting",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && npx --yes firebase-tools@13 deploy --config firebase.ghpages.json --only hosting --project citoyen-peyi && echo DEPLOY_OK"
+      ],
+      "problemMatcher": [],
+      "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
+      "detail": "Deploie flutter_app/build/web sur citoyen-peyi.web.app via Firebase Hosting."
+    },
+    {
       "label": "Git publier full Flutter",
       "type": "shell",
       "command": "bash",

@@ -1,7 +1,7 @@
 {
   "hosting": {
     "site": "citoyen-peyi",
-    "public": ".firebase-ghpages-public",
+    "public": "flutter_app/build/web",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [{"source": "**", "destination": "/index.html"}],
     "headers": [{
