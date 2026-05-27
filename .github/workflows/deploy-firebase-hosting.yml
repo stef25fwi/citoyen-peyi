@@ -19,6 +19,8 @@ jobs:
     if: ${{ vars.FIREBASE_PROJECT_ID != '' || true }}
     runs-on: ubuntu-latest
     environment: production
+    env:
+      API_BASE_URL: ${{ vars.API_BASE_URL }}
     defaults:
       run:
         working-directory: flutter_app
@@ -33,6 +35,13 @@ jobs:
 
       - name: Install dependencies
         run: flutter pub get
+
+      - name: Validate required Firebase Hosting config
+        run: |
+          if [ -z "$API_BASE_URL" ]; then
+            echo "Repository variable API_BASE_URL is required for Firebase Hosting builds." >&2
+            exit 1
+          fi
 
       - name: Build for Firebase Hosting (base-href /)
         run: >-

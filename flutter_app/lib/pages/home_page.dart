@@ -59,8 +59,16 @@ class _HomeScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxWidth = _isDesktop ? 520.0 : 480.0;
-    final hPad = _isMobile ? 22.0 : 36.0;
+    final maxWidth = switch (layout) {
+      _HomeLayout.mobile => 480.0,
+      _HomeLayout.tablet => 560.0,
+      _HomeLayout.desktop => 640.0,
+    };
+    final hPad = switch (layout) {
+      _HomeLayout.mobile => 22.0,
+      _HomeLayout.tablet => 34.0,
+      _HomeLayout.desktop => 44.0,
+    };
 
     return Stack(
       children: [
@@ -94,10 +102,10 @@ class _HomeScaffold extends StatelessWidget {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const _HomeLogo(),
-                    SizedBox(height: _isMobile ? 6 : 14),
-                    const _MainCard(),
-                    SizedBox(height: _isMobile ? 14 : 22),
+                    _HomeLogo(layout: layout),
+                    SizedBox(height: _isMobile ? 6 : (_isDesktop ? 16 : 12)),
+                    _MainCard(layout: layout),
+                    SizedBox(height: _isMobile ? 14 : (_isDesktop ? 24 : 20)),
                     const _AdministrationAccess(),
                   ],
                 ),
@@ -111,17 +119,41 @@ class _HomeScaffold extends StatelessWidget {
 }
 
 class _HomeLogo extends StatelessWidget {
-  const _HomeLogo();
+  const _HomeLogo({required this.layout});
+
+  final _HomeLayout layout;
 
   @override
   Widget build(BuildContext context) {
-    final logoHeight =
-        MediaQuery.textScalerOf(context).scale(110).clamp(100, 130).toDouble();
+    final targetHeight = switch (layout) {
+      _HomeLayout.mobile => 110.0,
+      _HomeLayout.tablet => 124.0,
+      _HomeLayout.desktop => 138.0,
+    };
+    final minHeight = switch (layout) {
+      _HomeLayout.mobile => 100.0,
+      _HomeLayout.tablet => 112.0,
+      _HomeLayout.desktop => 122.0,
+    };
+    final maxHeight = switch (layout) {
+      _HomeLayout.mobile => 130.0,
+      _HomeLayout.tablet => 142.0,
+      _HomeLayout.desktop => 156.0,
+    };
+    final verticalPadding = switch (layout) {
+      _HomeLayout.mobile => 10.0,
+      _HomeLayout.tablet => 11.0,
+      _HomeLayout.desktop => 12.0,
+    };
+    final logoHeight = MediaQuery.textScalerOf(context)
+        .scale(targetHeight)
+        .clamp(minHeight, maxHeight)
+        .toDouble();
     return Semantics(
       label: 'Citoyen Peyi',
       image: true,
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 10),
+        padding: EdgeInsets.symmetric(vertical: verticalPadding),
         child: Center(
           child: Image.asset(
             CitoyenPeyiHomePage.logoPath,
@@ -137,10 +169,23 @@ class _HomeLogo extends StatelessWidget {
 // ── Carte centrale transparente ─────────────────────────────────────────────
 
 class _MainCard extends StatelessWidget {
-  const _MainCard();
+  const _MainCard({required this.layout});
+
+  final _HomeLayout layout;
 
   @override
   Widget build(BuildContext context) {
+    final horizontalPadding = switch (layout) {
+      _HomeLayout.mobile => 20.0,
+      _HomeLayout.tablet => 24.0,
+      _HomeLayout.desktop => 28.0,
+    };
+    final verticalPadding = switch (layout) {
+      _HomeLayout.mobile => 16.0,
+      _HomeLayout.tablet => 18.0,
+      _HomeLayout.desktop => 20.0,
+    };
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
@@ -150,23 +195,28 @@ class _MainCard extends StatelessWidget {
         ),
         color: Colors.white.withValues(alpha: 0.07),
       ),
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const _HeroText(),
-          const SizedBox(height: 12),
+          _HeroText(layout: layout),
+          SizedBox(height: layout == _HomeLayout.mobile ? 12 : 14),
           _ActionCard(
             icon: Icons.group_rounded,
             title: 'Je participe',
             subtitle: 'Exprimez-vous et contribuez',
+            layout: layout,
             onTap: () => Navigator.of(context).pushNamed('/participer'),
           ),
-          const SizedBox(height: 10),
+          SizedBox(height: layout == _HomeLayout.mobile ? 10 : 12),
           _ActionCard(
             icon: Icons.chat_bubble_outline_rounded,
             title: 'Plateforme de consultation\ncitoyenne anonyme',
             subtitle: 'Partagez vos avis en toute confidentialité',
+            layout: layout,
             showDecorations: false,
             onTap: () => Navigator.of(context).pushNamed('/participer'),
           ),
@@ -177,37 +227,55 @@ class _MainCard extends StatelessWidget {
 }
 
 class _HeroText extends StatelessWidget {
-  const _HeroText();
+  const _HeroText({required this.layout});
+
+  final _HomeLayout layout;
 
   @override
   Widget build(BuildContext context) {
+    final iconSize = switch (layout) {
+      _HomeLayout.mobile => 38.0,
+      _HomeLayout.tablet => 42.0,
+      _HomeLayout.desktop => 46.0,
+    };
+    final starSize = switch (layout) {
+      _HomeLayout.mobile => 20.0,
+      _HomeLayout.tablet => 22.0,
+      _HomeLayout.desktop => 24.0,
+    };
+    final fontSize = switch (layout) {
+      _HomeLayout.mobile => 22.0,
+      _HomeLayout.tablet => 24.0,
+      _HomeLayout.desktop => 26.0,
+    };
+
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          width: 38,
-          height: 38,
+          width: iconSize,
+          height: iconSize,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: const Color(0xFF1565C0).withValues(alpha: 0.75),
           ),
-          child: const Icon(
+          child: Icon(
             Icons.star_rounded,
-            color: Color(0xFFFFD740),
-            size: 20,
+            color: const Color(0xFFFFD740),
+            size: starSize,
           ),
         ),
         const SizedBox(width: 12),
         Expanded(
           child: RichText(
-            text: const TextSpan(
+            text: TextSpan(
               style: TextStyle(
-                fontSize: 22,
+                fontSize: fontSize,
                 fontWeight: FontWeight.w800,
                 height: 1.30,
-                letterSpacing: -0.3,
+                letterSpacing: 0,
               ),
-              children: [
+              children: const [
                 TextSpan(
                   text: 'Votre collectivité place\n',
                   style: TextStyle(color: Colors.white),
@@ -234,6 +302,7 @@ class _ActionCard extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.subtitle,
+    required this.layout,
     required this.onTap,
     this.showDecorations = true,
   });
@@ -241,6 +310,7 @@ class _ActionCard extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
+  final _HomeLayout layout;
   final VoidCallback onTap;
   final bool showDecorations;
 
@@ -248,6 +318,22 @@ class _ActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final minHeight = switch (layout) {
+      _HomeLayout.mobile => 80.0,
+      _HomeLayout.tablet => 86.0,
+      _HomeLayout.desktop => 92.0,
+    };
+    final horizontalPadding = switch (layout) {
+      _HomeLayout.mobile => 12.0,
+      _HomeLayout.tablet => 14.0,
+      _HomeLayout.desktop => 16.0,
+    };
+    final verticalPadding = switch (layout) {
+      _HomeLayout.mobile => 10.0,
+      _HomeLayout.tablet => 11.0,
+      _HomeLayout.desktop => 12.0,
+    };
+
     return Semantics(
       button: true,
       child: Material(
@@ -259,8 +345,11 @@ class _ActionCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(22),
           onTap: onTap,
           child: Container(
-            constraints: const BoxConstraints(minHeight: 80),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            constraints: BoxConstraints(minHeight: minHeight),
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
+            ),
             child: showDecorations ? _decoratedContent() : _plainContent(),
           ),
         ),
@@ -269,16 +358,28 @@ class _ActionCard extends StatelessWidget {
   }
 
   Widget _decoratedContent() {
+    final iconSize = switch (layout) {
+      _HomeLayout.mobile => 42.0,
+      _HomeLayout.tablet => 46.0,
+      _HomeLayout.desktop => 48.0,
+    };
+    final titleSize = switch (layout) {
+      _HomeLayout.mobile => 15.0,
+      _HomeLayout.tablet => 16.0,
+      _HomeLayout.desktop => 17.0,
+    };
+    final subtitleSize = layout == _HomeLayout.mobile ? 12.0 : 13.0;
+
     return Row(
       children: [
         Container(
-          width: 42,
-          height: 42,
+          width: iconSize,
+          height: iconSize,
           decoration: const BoxDecoration(
             shape: BoxShape.circle,
             color: Color(0xFFE8F0FE),
           ),
-          child: Icon(icon, color: _blue, size: 22),
+          child: Icon(icon, color: _blue, size: iconSize * 0.52),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -288,9 +389,9 @@ class _ActionCard extends StatelessWidget {
             children: [
               Text(
                 title,
-                style: const TextStyle(
+                style: TextStyle(
                   color: _blue,
-                  fontSize: 15,
+                  fontSize: titleSize,
                   fontWeight: FontWeight.w800,
                   height: 1.25,
                 ),
@@ -300,7 +401,7 @@ class _ActionCard extends StatelessWidget {
                 subtitle,
                 style: TextStyle(
                   color: Colors.grey.shade600,
-                  fontSize: 12,
+                  fontSize: subtitleSize,
                   height: 1.3,
                 ),
               ),
@@ -326,6 +427,13 @@ class _ActionCard extends StatelessWidget {
   }
 
   Widget _plainContent() {
+    final titleSize = switch (layout) {
+      _HomeLayout.mobile => 16.0,
+      _HomeLayout.tablet => 17.0,
+      _HomeLayout.desktop => 18.0,
+    };
+    final subtitleSize = layout == _HomeLayout.mobile ? 12.0 : 13.0;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       mainAxisAlignment: MainAxisAlignment.center,
@@ -333,9 +441,9 @@ class _ActionCard extends StatelessWidget {
         Text(
           title,
           textAlign: TextAlign.center,
-          style: const TextStyle(
+          style: TextStyle(
             color: _blue,
-            fontSize: 16,
+            fontSize: titleSize,
             fontWeight: FontWeight.w800,
             height: 1.3,
           ),
@@ -346,7 +454,7 @@ class _ActionCard extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.grey.shade600,
-            fontSize: 12,
+            fontSize: subtitleSize,
             height: 1.35,
           ),
         ),

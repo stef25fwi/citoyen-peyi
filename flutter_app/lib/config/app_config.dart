@@ -6,6 +6,8 @@ class AppConfig {
     defaultValue: false,
   );
 
+  static const bool _isProductBuild = bool.fromEnvironment('dart.vm.product');
+
   // Valeur brute compilée. Peut être vide si --dart-define=API_BASE_URL= est
   // passé sans valeur (ex: variable GitHub non définie). Utiliser apiBaseUrl.
   static const String _apiBaseUrlRaw = String.fromEnvironment(
@@ -13,10 +15,12 @@ class AppConfig {
     defaultValue: '',
   );
 
-  /// URL du backend. Retourne localhost:4000 si non configurée.
+  /// URL du backend. En dev, retombe sur localhost. En release, une valeur
+  /// vide reste vide pour exposer clairement une configuration manquante.
   static String get apiBaseUrl {
     final raw = _apiBaseUrlRaw.trim();
-    return raw.isEmpty ? 'http://localhost:4000' : raw;
+    if (raw.isNotEmpty) return raw;
+    return _isProductBuild ? '' : 'http://localhost:4000';
   }
 
   static const String firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY', defaultValue: '');
