@@ -13,7 +13,7 @@ class CitoyenPeyiHomePage extends StatelessWidget {
   const CitoyenPeyiHomePage({super.key});
 
   static const String backgroundPath =
-      'assets/citoyen_peyi/home_background.webp';
+      'assets/images/fondecran.png';
   static const String logoPath =
       'assets/citoyen_peyi/logo_citoyen_peyi_transparent.webp';
 
