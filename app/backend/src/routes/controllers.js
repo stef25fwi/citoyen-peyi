@@ -12,7 +12,6 @@ import { hashControllerCode } from '../services/keyHashing.js';
 
 const router = express.Router();
 const COLLECTION = 'controleurCodes';
-const CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 
 const ensureConfigured = (_req, res, next) => {
   if (!isFirebaseAdminConfigured()) {
@@ -24,9 +23,8 @@ const ensureConfigured = (_req, res, next) => {
 const sanitize = (value, max) => (typeof value === 'string' ? value.trim().substring(0, max) : '');
 
 const generateControllerCode = () => {
-  const buf = crypto.randomBytes(8);
-  const segment = Array.from(buf).map((b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
-  return `CTRL-${segment}`;
+  const hash = crypto.createHash('sha256').update(crypto.randomBytes(32)).digest('hex');
+  return `CTRL-${hash.substring(0, 8).toUpperCase()}`;
 };
 
 const maskCode = (code) => `${code.substring(0, 5)}••••${code.substring(code.length - 2)}`;
