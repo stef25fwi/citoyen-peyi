@@ -22,5 +22,16 @@
     "lint": "bash -lc 'export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter analyze'",
     "deploy:firestore:rules": "npx firebase-tools deploy --only firestore:rules",
     "zip": "bash app/scripts/zip-app.sh"
+  },
+  "overrides": {
+    "cookie": "^0.7.1",
+    "send": "^0.19.0",
+    "body-parser": "^1.20.3",
+    "path-to-regexp": "^0.1.12",
+    "ws": "^8.18.0",
+    "protobufjs": "^7.5.4",
+    "jsonwebtoken": "^9.0.2",
+    "node-fetch": "^2.7.0",
+    "uuid": "^11.1.1"
   }
 }

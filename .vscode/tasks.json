@@ -2,6 +2,22 @@
   "version": "2.0.0",
   "tasks": [
     {
+      "label": "Git commit push et deployer",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && git add package.json package-lock.json app/backend/package.json .vscode/tasks.json && git diff --cached --stat && git commit -m 'fix: eliminer 8 vulnerabilites moderees uuid via override npm root' && git push origin main && echo '--- push OK --- CI/CD backend deploy declenche sur GitHub Actions ---'"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Stage les fichiers corriges, commit, pousse sur main et declenche le deploy CI/CD."
+    },
+    {
       "label": "Apercu web local",
       "type": "shell",
       "command": "npm",
