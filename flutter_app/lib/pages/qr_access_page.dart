@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/citizen_public_access_service.dart';
+import '../services/new_poll_badge_service.dart';
 import '../services/vote_access_service.dart';
 import '../widgets/public_bottom_nav.dart';
 
@@ -15,6 +16,12 @@ class _QrAccessPageState extends State<QrAccessPage> {
   final TextEditingController _codeController = TextEditingController();
   bool _isSubmitting = false;
   String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    NewPollBadgeService.instance.markAllSeen();
+  }
 
   @override
   void dispose() {
