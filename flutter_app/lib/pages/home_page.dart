@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../widgets/public_bottom_nav.dart';
+
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
 
@@ -19,7 +21,10 @@ class CitoyenPeyiHomePage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(body: ResponsiveHomeLayout());
+    return const Scaffold(
+      body: ResponsiveHomeLayout(),
+      bottomNavigationBar: PublicBottomNav(currentTab: PublicTab.home),
+    );
   }
 }
 
