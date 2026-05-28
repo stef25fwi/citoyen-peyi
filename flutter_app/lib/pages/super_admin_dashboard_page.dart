@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
@@ -94,8 +95,16 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
     showDialog<void>(
       context: context,
       builder: (_) => _CreateProfileDialog(
-        onCreated: (profile) {
-          _loadProfiles();
+        onCreated: (profile) async {
+          if (!mounted) return;
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Profil administrateur créé'),
+              backgroundColor: Color(0xFF2B9F82),
+            ),
+          );
+          await _loadProfiles();
+          if (!mounted || profile.accessKey.isEmpty) return;
           _showKeyRevealDialog(profile);
         },
       ),
@@ -596,7 +605,7 @@ class _CommuneSuggestion {
 class _CreateProfileDialog extends StatefulWidget {
   const _CreateProfileDialog({required this.onCreated});
 
-  final void Function(AdminProfileModel) onCreated;
+  final Future<void> Function(AdminProfileModel) onCreated;
 
   @override
   State<_CreateProfileDialog> createState() => _CreateProfileDialogState();
@@ -613,6 +622,12 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
   Timer? _debounce;
   List<_CommuneSuggestion> _suggestions = [];
   bool _searching = false;
+
+  void _debugLog(String message) {
+    if (kDebugMode) {
+      debugPrint('[CreateProfileDialog] $message');
+    }
+  }
 
   @override
   void dispose() {
@@ -649,7 +664,9 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
               [],
         );
       }).toList();
-    } catch (_) {
+    } catch (error) {
+      _debugLog('Erreur catchée: $error');
+      if (mounted) _showErrorSnackBar(error.toString());
       return [];
     }
   }
@@ -686,24 +703,45 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
     });
   }
 
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          message,
+          style: const TextStyle(color: Color(0xFF7F1D1D)),
+        ),
+        backgroundColor: const Color(0xFFFFCDD2),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
-    if (!(_formKey.currentState?.validate() ?? false)) return;
+    if (_isSubmitting) return;
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      _showErrorSnackBar('Veuillez renseigner tous les champs obligatoires.');
+      return;
+    }
     setState(() => _isSubmitting = true);
 
     try {
+      _debugLog('Tentative de création profil administrateur.');
       final profile = await SuperAdminService.instance.createAdminProfile(
         label: _labelCtrl.text,
         communeName: _communeCtrl.text,
-        communeCode: _codeCtrl.text.isEmpty ? null : _codeCtrl.text,
-        codePostal: _postalCtrl.text.isEmpty ? null : _postalCtrl.text,
+        communeCode: _codeCtrl.text,
+        codePostal: _postalCtrl.text,
       );
       if (!mounted) return;
       Navigator.of(context).pop();
-      widget.onCreated(profile);
+      await widget.onCreated(profile);
     } on SuperAdminAuthException catch (e) {
+      _debugLog('Erreur catchée: ${e.message}');
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+      _showErrorSnackBar(e.message);
+    } catch (error) {
+      _debugLog('Erreur catchée: $error');
+      if (!mounted) return;
+      _showErrorSnackBar(error.toString());
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -804,10 +842,13 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                       enabled: !_isSubmitting,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
-                        labelText: 'Code postal',
+                        labelText: 'Code postal *',
                         hintText: '97122',
                         prefixIcon: Icon(Icons.markunread_mailbox_outlined),
                       ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Champ requis.'
+                          : null,
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -816,10 +857,13 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                       controller: _codeCtrl,
                       enabled: !_isSubmitting,
                       decoration: const InputDecoration(
-                        labelText: 'Code INSEE',
+                        labelText: 'Code INSEE *',
                         hintText: '97109',
                         prefixIcon: Icon(Icons.tag_rounded),
                       ),
+                      validator: (v) => (v == null || v.trim().isEmpty)
+                          ? 'Champ requis.'
+                          : null,
                     ),
                   ),
                 ],
@@ -830,7 +874,7 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                 controller: _labelCtrl,
                 enabled: !_isSubmitting,
                 decoration: const InputDecoration(
-                  labelText: 'Libelle du profil *',
+                  labelText: 'Libellé du profil *',
                   hintText: 'Ex : Mairie de Baie-Mahault',
                   prefixIcon: Icon(Icons.badge_outlined),
                 ),
@@ -864,7 +908,7 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                       strokeWidth: 2, color: Colors.white),
                 )
               : const Icon(Icons.check_rounded),
-          label: Text(_isSubmitting ? 'Creation...' : 'Creer le profil'),
+          label: Text(_isSubmitting ? 'Création…' : 'Créer le profil'),
         ),
       ],
     );

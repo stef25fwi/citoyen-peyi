@@ -31,6 +31,16 @@ app.use(cors({
 }));
 app.use(express.json({ limit: '100kb' }));
 
+// Garde-fou: limite la duree maximale d'une requete pour eviter les sockets bloques.
+app.use((req, res, next) => {
+  res.setTimeout(30000, () => {
+    if (!res.headersSent) {
+      res.status(503).json({ message: 'Requete trop longue, reessayez.' });
+    }
+  });
+  next();
+});
+
 app.get('/api/health/live', (_req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
 });

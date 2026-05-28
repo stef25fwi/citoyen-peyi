@@ -126,6 +126,8 @@ test('validateEnv accepts Cloud Run application default credentials', async () =
   process.env.VOTE_ACCESS_TOKEN_SECRET = 'y'.repeat(48);
   process.env.ACCESS_CODE_PEPPER = 'a'.repeat(48);
   process.env.CITIZEN_FINGERPRINT_PEPPER = 'b'.repeat(48);
+  process.env.ADMIN_ACCESS_PEPPER = 'c'.repeat(48);
+  process.env.CONTROLLER_CODE_PEPPER = 'd'.repeat(48);
   delete process.env.FIREBASE_ADMIN_PROJECT_ID;
   delete process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
   delete process.env.FIREBASE_ADMIN_PRIVATE_KEY;
@@ -133,6 +135,46 @@ test('validateEnv accepts Cloud Run application default credentials', async () =
 
   const { validateEnv } = await importFresh();
   assert.doesNotThrow(() => validateEnv());
+
+  resetEnv(snapshot);
+});
+
+test('validateEnv refuses production boot with non-HTTPS CORS origin', async () => {
+  const snapshot = baseEnv();
+  process.env.NODE_ENV = 'production';
+  process.env.CORS_ORIGIN = 'http://app.example.com';
+  process.env.SUPER_ADMIN_KEY = 'x'.repeat(48);
+  process.env.VOTE_ACCESS_TOKEN_SECRET = 'y'.repeat(48);
+  process.env.ACCESS_CODE_PEPPER = 'a'.repeat(48);
+  process.env.CITIZEN_FINGERPRINT_PEPPER = 'b'.repeat(48);
+  process.env.ADMIN_ACCESS_PEPPER = 'c'.repeat(48);
+  process.env.CONTROLLER_CODE_PEPPER = 'd'.repeat(48);
+  process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
+  process.env.FIREBASE_ADMIN_CLIENT_EMAIL = 'demo@example.com';
+  process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';
+
+  const { validateEnv } = await importFresh();
+  assert.throws(() => validateEnv(), /HTTPS en production/);
+
+  resetEnv(snapshot);
+});
+
+test('validateEnv refuses production boot when peppers are not all distinct', async () => {
+  const snapshot = baseEnv();
+  process.env.NODE_ENV = 'production';
+  process.env.CORS_ORIGIN = 'https://app.example.com';
+  process.env.SUPER_ADMIN_KEY = 'x'.repeat(48);
+  process.env.VOTE_ACCESS_TOKEN_SECRET = 'y'.repeat(48);
+  process.env.ACCESS_CODE_PEPPER = 'a'.repeat(48);
+  process.env.CITIZEN_FINGERPRINT_PEPPER = 'b'.repeat(48);
+  process.env.ADMIN_ACCESS_PEPPER = 'a'.repeat(48); // identique a ACCESS_CODE_PEPPER
+  process.env.CONTROLLER_CODE_PEPPER = 'd'.repeat(48);
+  process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
+  process.env.FIREBASE_ADMIN_CLIENT_EMAIL = 'demo@example.com';
+  process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';
+
+  const { validateEnv } = await importFresh();
+  assert.throws(() => validateEnv(), /tous distincts/);
 
   resetEnv(snapshot);
 });

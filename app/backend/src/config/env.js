@@ -76,6 +76,7 @@ export const env = {
   enableBootstrapAdmin: optional(process.env.ENABLE_BOOTSTRAP_ADMIN) === 'true',
   accessCodePepper: optional(process.env.ACCESS_CODE_PEPPER),
   citizenFingerprintPepper: optional(process.env.CITIZEN_FINGERPRINT_PEPPER),
+  // Fallback dev/test seulement: la validation prod (validateEnv) interdit les peppers identiques.
   adminAccessPepper: optional(process.env.ADMIN_ACCESS_PEPPER) || optional(process.env.ACCESS_CODE_PEPPER),
   controllerCodePepper: optional(process.env.CONTROLLER_CODE_PEPPER) || optional(process.env.ACCESS_CODE_PEPPER),
   voteAccessTokenSecret: optional(process.env.VOTE_ACCESS_TOKEN_SECRET),
@@ -173,6 +174,22 @@ export const validateEnv = () => {
     const insecureOrigins = env.corsOrigins.filter((origin) => /^http:\/\/(localhost|127\.|0\.0\.0\.0)/i.test(origin));
     if (insecureOrigins.length > 0) {
       errors.push(`CORS_ORIGIN contient des origines de developpement en production: ${insecureOrigins.join(', ')}`);
+    }
+    const nonHttpsOrigins = env.corsOrigins.filter((origin) => !/^https:\/\//i.test(origin));
+    if (nonHttpsOrigins.length > 0) {
+      errors.push(`CORS_ORIGIN doit utiliser HTTPS en production: ${nonHttpsOrigins.join(', ')}`);
+    }
+
+    const pepperValues = [
+      env.accessCodePepper,
+      env.citizenFingerprintPepper,
+      env.adminAccessPepper,
+      env.controllerCodePepper,
+    ].filter(Boolean);
+    if (new Set(pepperValues).size !== pepperValues.length) {
+      errors.push(
+        'Les peppers ACCESS_CODE_PEPPER, CITIZEN_FINGERPRINT_PEPPER, ADMIN_ACCESS_PEPPER et CONTROLLER_CODE_PEPPER doivent etre tous distincts en production.',
+      );
     }
   }
 

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 
 import '../config/app_config.dart';
 import '../firebase_options.dart';
@@ -45,10 +46,13 @@ class FirebaseAuthService {
           webProvider: ReCaptchaV3Provider(AppConfig.recaptchaSiteKey),
         );
         await FirebaseAppCheck.instance.setTokenAutoRefreshEnabled(true);
-      } catch (_) {
+      } catch (error) {
         // Si le navigateur bloque reCAPTCHA, on continue sans App Check.
         // L'enforcement cote console determinera si Firestore/Auth refusent
         // les appels non attestes.
+        if (kDebugMode) {
+          debugPrint('[FirebaseAuthService] AppCheck activation failed: $error');
+        }
       }
     }
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -61,7 +62,10 @@ class AdminProfileModel {
     final label = raw['label'] as String?;
     final communeName = raw['communeName'] as String?;
     final createdAt = raw['createdAt'] as String?;
-    if (id == null || label == null || communeName == null || createdAt == null) {
+    if (id == null ||
+        label == null ||
+        communeName == null ||
+        createdAt == null) {
       return null;
     }
     return AdminProfileModel(
@@ -95,17 +99,25 @@ class SuperAdminService {
     }
 
     // Recrée une session Firebase super admin si la page a perdu currentUser.
-    final response = await http.post(
-      Uri.parse('${AppConfig.apiBaseUrl}/api/auth/super/exchange'),
-      headers: {
-        'Content-Type': 'application/json',
-        'x-super-admin-key': key,
-      },
-      body: jsonEncode({'accessKey': key}),
-    );
+    final url = '${AppConfig.apiBaseUrl}/api/auth/super/exchange';
+    _debugLog('Endpoint appelé: $url');
+    final response = await http
+        .post(
+          Uri.parse(url),
+          headers: {
+            'Content-Type': 'application/json',
+            'x-super-admin-key': key,
+          },
+          body: jsonEncode({'accessKey': key}),
+        )
+        .timeout(const Duration(seconds: 10));
+    _debugLog('Statut HTTP: ${response.statusCode}');
 
-    if (response.statusCode < 200 || response.statusCode >= 300) {
+    if (response.statusCode == 401 || response.statusCode == 403) {
       return null;
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw SuperAdminAuthException(_readError(response.body));
     }
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
@@ -118,13 +130,18 @@ class SuperAdminService {
     return FirebaseAuthService.instance.requireFreshIdToken();
   }
 
-
   static const _profilesKey = 'super_admin_profiles_v1';
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
   String? _runtimeSuperAdminKey;
 
   String? get runtimeSuperAdminKey => _runtimeSuperAdminKey;
+
+  void _debugLog(String message) {
+    if (kDebugMode) {
+      debugPrint('[SuperAdminService] $message');
+    }
+  }
 
   void clearRuntimeSuperAdminKey() {
     _runtimeSuperAdminKey = null;
@@ -169,7 +186,8 @@ class SuperAdminService {
     final customToken = payload['customToken'] as String?;
 
     if (customToken == null || customToken.isEmpty) {
-      throw const SuperAdminAuthException('Reponse backend invalide (customToken manquant).');
+      throw const SuperAdminAuthException(
+          'Reponse backend invalide (customToken manquant).');
     }
 
     await FirebaseAuthService.instance.signInWithCustomToken(customToken);
@@ -193,15 +211,13 @@ class SuperAdminService {
       final superKey = _runtimeSuperAdminKey;
       final token = await _superAdminIdToken();
       if (superKey != null && superKey.isNotEmpty && token != null) {
-        final response = await http
-            .get(
-              Uri.parse('${AppConfig.apiBaseUrl}/api/admins'),
-              headers: {
-                'Authorization': 'Bearer $token',
-                'x-super-admin-key': superKey,
-              },
-            )
-            .timeout(const Duration(seconds: 10));
+        final response = await http.get(
+          Uri.parse('${AppConfig.apiBaseUrl}/api/admins'),
+          headers: {
+            'Authorization': 'Bearer $token',
+            'x-super-admin-key': superKey,
+          },
+        ).timeout(const Duration(seconds: 10));
         if (response.statusCode >= 200 && response.statusCode < 300) {
           final payload = jsonDecode(response.body) as Map<String, dynamic>;
           final list = (payload['admins'] as List<dynamic>? ?? const [])
@@ -213,7 +229,8 @@ class SuperAdminService {
                     communeCode: item['communeCode'] as String?,
                     codePostal: item['codePostal'] as String?,
                     accessKey: '',
-                    createdAt: item['createdAt']?.toString() ?? DateTime.now().toIso8601String(),
+                    createdAt: item['createdAt']?.toString() ??
+                        DateTime.now().toIso8601String(),
                   ))
               .where((profile) => profile.id.isNotEmpty)
               .toList();
@@ -246,25 +263,38 @@ class SuperAdminService {
     String? communeCode,
     String? codePostal,
   }) async {
-    if (label.trim().isEmpty) {
-      throw const SuperAdminAuthException('Le libelle du profil est requis.');
-    }
-    if (communeName.trim().isEmpty) {
+    final trimmedLabel = label.trim();
+    final trimmedCommuneName = communeName.trim();
+    final trimmedCommuneCode = communeCode?.trim() ?? '';
+    final trimmedCodePostal = codePostal?.trim() ?? '';
+
+    if (trimmedCommuneName.isEmpty) {
       throw const SuperAdminAuthException('Le nom de la commune est requis.');
     }
+    if (trimmedCodePostal.isEmpty) {
+      throw const SuperAdminAuthException('Le code postal est requis.');
+    }
+    if (trimmedCommuneCode.isEmpty) {
+      throw const SuperAdminAuthException('Le code INSEE est requis.');
+    }
+    if (trimmedLabel.isEmpty) {
+      throw const SuperAdminAuthException('Le libelle du profil est requis.');
+    }
+
+    _debugLog('Tentative de création profil administrateur.');
 
     final response = await _authorizedPost('/api/admins', {
-      'label': label.trim(),
-      'communeName': communeName.trim(),
-      'communeCode': communeCode?.trim(),
-      'codePostal': codePostal?.trim(),
+      'label': trimmedLabel,
+      'communeName': trimmedCommuneName,
+      'communeCode': trimmedCommuneCode,
+      'codePostal': trimmedCodePostal,
     });
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
     final profile = AdminProfileModel(
       id: payload['id'] as String? ?? _generateId(),
-      label: payload['label'] as String? ?? label.trim(),
-      communeName: payload['communeName'] as String? ?? communeName.trim(),
+      label: payload['label'] as String? ?? trimmedLabel,
+      communeName: payload['communeName'] as String? ?? trimmedCommuneName,
       communeCode: payload['communeCode'] as String?,
       codePostal: payload['codePostal'] as String?,
       accessKey: payload['accessKey'] as String? ?? '',
@@ -286,25 +316,60 @@ class SuperAdminService {
   }
 
   Future<http.Response> _authorizedPost(String path, Object body) async {
+    final configIssue = BackendDiagnostics.describeConfigIssue();
+    if (configIssue != null) {
+      throw SuperAdminAuthException(configIssue);
+    }
+
     final superKey = _runtimeSuperAdminKey;
     if (superKey == null || superKey.isEmpty) {
-      throw const SuperAdminAuthException('Session super admin expiree, reconnectez-vous.');
+      throw const SuperAdminAuthException(
+          'Session super administrateur expirée ou non autorisée. Reconnectez-vous.');
     }
-    final token = await _superAdminIdToken();
-    if (token == null) {
-      throw const SuperAdminAuthException('Session Firebase manquante, reconnectez-vous.');
+
+    final url = '${AppConfig.apiBaseUrl}$path';
+    _debugLog('Endpoint appelé: $url');
+
+    late String token;
+    try {
+      final resolvedToken = await _superAdminIdToken();
+      if (resolvedToken == null || resolvedToken.isEmpty) {
+        throw const SuperAdminAuthException(
+            'Session super administrateur expirée ou non autorisée. Reconnectez-vous.');
+      }
+      token = resolvedToken;
+    } on SuperAdminAuthException {
+      rethrow;
+    } catch (error) {
+      _debugLog('Erreur catchée: $error');
+      throw const SuperAdminAuthException(
+          'Backend indisponible. Vérifiez la connexion API.');
     }
-    final response = await http
-        .post(
-          Uri.parse('${AppConfig.apiBaseUrl}$path'),
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer $token',
-            'x-super-admin-key': superKey,
-          },
-          body: jsonEncode(body),
-        )
-        .timeout(const Duration(seconds: 12));
+
+    late http.Response response;
+    try {
+      response = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $token',
+              'x-super-admin-key': superKey,
+            },
+            body: jsonEncode(body),
+          )
+          .timeout(const Duration(seconds: 12));
+      _debugLog('Statut HTTP: ${response.statusCode}');
+    } catch (error) {
+      _debugLog('Erreur catchée: $error');
+      throw const SuperAdminAuthException(
+          'Backend indisponible. Vérifiez la connexion API.');
+    }
+
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const SuperAdminAuthException(
+          'Session super administrateur expirée ou non autorisée. Reconnectez-vous.');
+    }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw SuperAdminAuthException(_readError(response.body));
     }
@@ -314,21 +379,21 @@ class SuperAdminService {
   Future<void> _authorizedDelete(String path) async {
     final superKey = _runtimeSuperAdminKey;
     if (superKey == null || superKey.isEmpty) {
-      throw const SuperAdminAuthException('Session super admin expiree, reconnectez-vous.');
+      throw const SuperAdminAuthException(
+          'Session super admin expiree, reconnectez-vous.');
     }
     final token = await _superAdminIdToken();
     if (token == null) {
-      throw const SuperAdminAuthException('Session Firebase manquante, reconnectez-vous.');
+      throw const SuperAdminAuthException(
+          'Session Firebase manquante, reconnectez-vous.');
     }
-    final response = await http
-        .delete(
-          Uri.parse('${AppConfig.apiBaseUrl}$path'),
-          headers: {
-            'Authorization': 'Bearer $token',
-            'x-super-admin-key': superKey,
-          },
-        )
-        .timeout(const Duration(seconds: 12));
+    final response = await http.delete(
+      Uri.parse('${AppConfig.apiBaseUrl}$path'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'x-super-admin-key': superKey,
+      },
+    ).timeout(const Duration(seconds: 12));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw SuperAdminAuthException(_readError(response.body));
     }
@@ -349,7 +414,9 @@ class SuperAdminService {
 
   String _readError(String body) {
     try {
-      return (jsonDecode(body) as Map<String, dynamic>)['message'] as String? ??
+      final payload = jsonDecode(body) as Map<String, dynamic>;
+      return payload['message'] as String? ??
+          payload['error'] as String? ??
           'Connexion impossible.';
     } catch (_) {
       return 'Connexion impossible.';

@@ -29,8 +29,12 @@ if (env.rateLimitRedisUrl) {
   } catch (error) {
     logger.error({ err: error }, 'rate_limit_redis_setup_failed');
   }
-} else if (env.isProduction) {
-  logger.warn('rate_limit_memory_store_in_production');
+}
+
+if (env.isProduction && !sharedStore) {
+  // Le memory store n'est pas partage entre instances Cloud Run et peut etre
+  // sature trivialement; on refuse le boot pour eviter une fausse protection.
+  throw new Error('RATE_LIMIT_REDIS_URL est requis en production pour partager le rate limiter entre instances.');
 }
 
 const withStore = (options) => ({

@@ -188,12 +188,17 @@ router.post('/validate', async (req, res) => {
   }
 });
 
+const ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
+
 router.post('/submit', async (req, res) => {
   const token = verifyAccessToken(req.body?.accessToken);
   const pollId = typeof req.body?.pollId === 'string' ? req.body.pollId.trim() : '';
   const optionId = typeof req.body?.optionId === 'string' ? req.body.optionId.trim() : '';
   if (!token?.accessCodeId || !pollId || !optionId) {
     return res.status(400).json({ ok: false, errorCode: 'INVALID_REQUEST', message: 'Demande de vote incomplete.' });
+  }
+  if (!ID_PATTERN.test(pollId) || !ID_PATTERN.test(optionId)) {
+    return res.status(400).json({ ok: false, errorCode: 'INVALID_REQUEST', message: 'Identifiants invalides.' });
   }
 
   try {

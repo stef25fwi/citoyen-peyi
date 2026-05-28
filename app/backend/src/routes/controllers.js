@@ -9,6 +9,7 @@ import {
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
 import { hashControllerCode } from '../services/keyHashing.js';
+import { logger } from '../services/logger.js';
 
 const router = express.Router();
 const COLLECTION = 'controleurCodes';
@@ -126,8 +127,9 @@ router.delete('/:controllerCode', async (req, res, next) => {
     await ref.set({ enabled: false, disabledAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     try {
       await import('../services/firebaseAdmin.js').then(({ getFirebaseAdminAuth }) => getFirebaseAdminAuth().revokeRefreshTokens(`controller:${code}`));
-    } catch {
+    } catch (revokeError) {
       // La revocation peut echouer si l'utilisateur Firebase n'a jamais ete cree.
+      logger.warn({ err: revokeError, controllerCode: code }, 'controller_token_revocation_failed');
     }
     return res.json({ ok: true });
   } catch (error) {
