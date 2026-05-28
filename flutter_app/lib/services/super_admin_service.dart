@@ -88,7 +88,13 @@ class SuperAdminService {
   static final SuperAdminService instance = SuperAdminService._();
 
   Future<String?> _superAdminIdToken() async {
-    final token = await FirebaseAuthService.instance.requireFreshIdToken();
+    String? token;
+    try {
+      token = await FirebaseAuthService.instance.requireFreshIdToken();
+    } catch (error) {
+      // On bascule vers l'exchange backend si le refresh local echoue.
+      _debugLog('Echec refresh idToken local: $error');
+    }
     if (token != null && token.isNotEmpty) {
       return token;
     }
@@ -101,16 +107,22 @@ class SuperAdminService {
     // Recrée une session Firebase super admin si la page a perdu currentUser.
     final url = '${AppConfig.apiBaseUrl}/api/auth/super/exchange';
     _debugLog('Endpoint appelé: $url');
-    final response = await http
-        .post(
-          Uri.parse(url),
-          headers: {
-            'Content-Type': 'application/json',
-            'x-super-admin-key': key,
-          },
-          body: jsonEncode({'accessKey': key}),
-        )
-        .timeout(const Duration(seconds: 10));
+    late http.Response response;
+    try {
+      response = await http
+          .post(
+            Uri.parse(url),
+            headers: {
+              'Content-Type': 'application/json',
+              'x-super-admin-key': key,
+            },
+            body: jsonEncode({'accessKey': key}),
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (error) {
+      throw SuperAdminAuthException(
+          BackendDiagnostics.describeNetworkError(error, attemptedUrl: url));
+    }
     _debugLog('Statut HTTP: ${response.statusCode}');
 
     if (response.statusCode == 401 || response.statusCode == 403) {
@@ -342,8 +354,8 @@ class SuperAdminService {
       rethrow;
     } catch (error) {
       _debugLog('Erreur catchée: $error');
-      throw const SuperAdminAuthException(
-          'Backend indisponible. Vérifiez la connexion API.');
+      throw SuperAdminAuthException(
+          BackendDiagnostics.describeNetworkError(error, attemptedUrl: url));
     }
 
     late http.Response response;
@@ -362,8 +374,8 @@ class SuperAdminService {
       _debugLog('Statut HTTP: ${response.statusCode}');
     } catch (error) {
       _debugLog('Erreur catchée: $error');
-      throw const SuperAdminAuthException(
-          'Backend indisponible. Vérifiez la connexion API.');
+      throw SuperAdminAuthException(
+          BackendDiagnostics.describeNetworkError(error, attemptedUrl: url));
     }
 
     if (response.statusCode == 401 || response.statusCode == 403) {
