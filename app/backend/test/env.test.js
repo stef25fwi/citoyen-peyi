@@ -53,6 +53,7 @@ test('validateEnv accepts production boot without CORS_ORIGIN when public origin
   const { env, validateEnv } = await importFresh();
   assert.doesNotThrow(() => validateEnv());
   assert.ok(env.corsOrigins.includes('https://citoyen-peyi.web.app'));
+  assert.ok(env.corsOrigins.includes('https://citoyen-peyi.firebaseapp.com'));
   assert.ok(env.corsOrigins.includes('https://stef25fwi.github.io'));
 
   resetEnv(snapshot);

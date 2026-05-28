@@ -138,8 +138,17 @@ class SuperAdminService {
       return null;
     }
 
-    await FirebaseAuthService.instance.signInWithCustomToken(customToken);
-    return FirebaseAuthService.instance.requireFreshIdToken();
+    try {
+      await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+      return await FirebaseAuthService.instance.requireFreshIdToken();
+    } catch (error) {
+      _debugLog('Echec Firebase Auth apres exchange: $error');
+      throw SuperAdminAuthException(
+        'Authentification Firebase refusee (${error.runtimeType}: $error). '
+        'Verifiez que les cookies tiers, reCAPTCHA et App Check ne sont pas '
+        'bloques par votre navigateur (Safari iOS / Anti-tracking, mode prive).',
+      );
+    }
   }
 
   static const _profilesKey = 'super_admin_profiles_v1';
