@@ -46,6 +46,22 @@
       "detail": "Pousse la branche main vers origin."
     },
     {
+      "label": "Git pull rebase puis push main",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && git pull --rebase origin main && git push origin main && echo PUSH_OK"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Synchronise main avec origin (rebase) puis pousse."
+    },
+    {
       "label": "Apercu web local",
       "type": "shell",
       "command": "npm",
