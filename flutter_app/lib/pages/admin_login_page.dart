@@ -73,13 +73,17 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.message)),
       );
-    } catch (_) {
+    } catch (error) {
       if (!mounted) {
         return;
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Connexion administrateur communal impossible.')),
+        SnackBar(
+          content: Text(
+            'Connexion administrateur communal impossible: ${error.toString()}',
+          ),
+        ),
       );
     } finally {
       if (mounted) {

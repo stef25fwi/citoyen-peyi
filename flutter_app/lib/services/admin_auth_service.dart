@@ -64,7 +64,7 @@ class AdminAuthService {
       throw const AdminAuthException('Réponse backend invalide (customToken manquant).');
     }
 
-    await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+    await _signInWithCustomTokenWithFallback(customToken);
 
     final session = AuthSession(
       role: claims['role'] as String? ?? 'commune_admin',
@@ -92,6 +92,24 @@ class AdminAuthService {
       return payload['message'] as String? ?? 'Connexion administrateur impossible.';
     } catch (_) {
       return 'Connexion administrateur impossible.';
+    }
+  }
+
+  Future<void> _signInWithCustomTokenWithFallback(String customToken) async {
+    try {
+      await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+      return;
+    } catch (_) {
+      // Repli REST pour Safari/iPad et navigateurs ou FirebaseAuth direct
+      // refuse le custom token (popup / storage bloque).
+    }
+    try {
+      await FirebaseAuthService.instance
+          .exchangeCustomTokenViaRest(customToken);
+    } catch (error) {
+      throw AdminAuthException(
+        'Authentification Firebase refusée. Reessayez ou videz le cache du navigateur (${error.toString()}).',
+      );
     }
   }
 }

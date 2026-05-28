@@ -64,7 +64,7 @@ class ControllerAuthService {
       throw const ControllerAuthException('Réponse backend invalide (customToken manquant).');
     }
 
-    await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+    await _signInWithCustomTokenWithFallback(customToken);
 
     final session = AuthSession(
       role: claims['role'] as String? ?? 'controller',
@@ -86,6 +86,23 @@ class ControllerAuthService {
       return payload['message'] as String? ?? 'Connexion agent de mobilisation citoyenne impossible.';
     } catch (_) {
       return 'Connexion agent de mobilisation citoyenne impossible.';
+    }
+  }
+
+  Future<void> _signInWithCustomTokenWithFallback(String customToken) async {
+    try {
+      await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+      return;
+    } catch (_) {
+      // Repli REST pour Safari/iPad.
+    }
+    try {
+      await FirebaseAuthService.instance
+          .exchangeCustomTokenViaRest(customToken);
+    } catch (error) {
+      throw ControllerAuthException(
+        'Authentification Firebase refusée. Reessayez ou videz le cache du navigateur (${error.toString()}).',
+      );
     }
   }
 }
