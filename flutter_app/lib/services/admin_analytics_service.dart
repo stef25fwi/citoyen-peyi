@@ -1,3 +1,5 @@
+import 'package:flutter/foundation.dart';
+
 import '../models/poll_models.dart';
 import 'citizen_access_code_service.dart';
 import 'citizen_public_access_service.dart';
@@ -81,9 +83,32 @@ class AdminAnalyticsService {
   static final AdminAnalyticsService instance = AdminAnalyticsService._();
 
   Future<AdminAnalyticsSummary> loadSummary() async {
-    final polls = await PollService.instance.loadPolls();
-    final citizenCodes = await CitizenAccessCodeService.instance.loadAccessCodesForCurrentCommune();
-    final voteDates = await CitizenPublicAccessService.instance.loadVoteDatesForCurrentCommune();
+    List<PollModel> polls = const [];
+    try {
+      polls = await PollService.instance.loadPolls();
+    } catch (error, stackTrace) {
+      debugPrint('[AdminAnalytics] loadPolls failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
+    List<CitizenAccessCodeModel> citizenCodes = const [];
+    try {
+      citizenCodes = await CitizenAccessCodeService.instance
+          .loadAccessCodesForCurrentCommune();
+    } catch (error, stackTrace) {
+      debugPrint('[AdminAnalytics] loadAccessCodes failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
+    List<DateTime> voteDates = const [];
+    try {
+      voteDates = await CitizenPublicAccessService.instance
+          .loadVoteDatesForCurrentCommune();
+    } catch (error, stackTrace) {
+      debugPrint('[AdminAnalytics] loadVoteDates failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
     final accessStats = <PollAccessStats>[];
     final votesByDay = <String, int>{};
 
