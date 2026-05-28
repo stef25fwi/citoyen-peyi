@@ -108,8 +108,24 @@ class PollService {
       'communeId': session?.commune?.code,
       'communeName': session?.commune?.name,
     });
-    final payload = jsonDecode(response.body) as Map<String, dynamic>;
-    return PollModel.fromJson(payload['poll'] as Map<String, dynamic>);
+    Map<String, dynamic> payload;
+    try {
+      payload = jsonDecode(response.body) as Map<String, dynamic>;
+    } catch (_) {
+      throw const PollServiceException(
+          'Reponse backend invalide lors de la creation.');
+    }
+    final pollPayload = payload['poll'];
+    if (pollPayload is! Map<String, dynamic>) {
+      throw const PollServiceException(
+          'Reponse backend sans consultation creee.');
+    }
+    try {
+      return PollModel.fromJson(pollPayload);
+    } catch (error) {
+      throw PollServiceException(
+          'Consultation creee mais reponse illisible: $error');
+    }
   }
 
   Future<PollModel?> updatePoll({
@@ -172,12 +188,23 @@ class PollService {
 
   Future<http.Response> _request(String method, String path,
       {Object? body}) async {
-    final token = await FirebaseAuthService.instance.currentIdToken();
+    String? token;
+    try {
+      token = await FirebaseAuthService.instance.currentIdToken();
+    } catch (error) {
+      throw PollServiceException(
+          'Session Firebase indisponible: ${error.toString()}');
+    }
     if (token == null || token.isEmpty) {
       throw const PollServiceException(
           'Session Firebase manquante, reconnectez-vous.');
     }
-    final uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
+    final base = AppConfig.apiBaseUrl.trim();
+    if (base.isEmpty) {
+      throw const PollServiceException(
+          'Backend non configure (API_BASE_URL vide).');
+    }
+    final uri = Uri.parse('$base$path');
     final headers = {
       'Authorization': 'Bearer $token',
       if (body != null) 'Content-Type': 'application/json',
@@ -205,15 +232,19 @@ class PollService {
       }
     } catch (error) {
       if (error is PollServiceException) rethrow;
-      throw const PollServiceException(
-          'Backend injoignable. Réessayez plus tard.');
+      throw PollServiceException(
+          'Backend injoignable: ${error.toString()}');
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
-      String message = 'Opération impossible.';
+      String message = 'Opération impossible (HTTP ${response.statusCode}).';
       try {
-        message = (jsonDecode(response.body) as Map<String, dynamic>)['message']
-                as String? ??
-            message;
+        final parsed = jsonDecode(response.body);
+        if (parsed is Map<String, dynamic>) {
+          final fromBody = parsed['message'];
+          if (fromBody is String && fromBody.trim().isNotEmpty) {
+            message = fromBody;
+          }
+        }
       } catch (_) {}
       throw PollServiceException(message);
     }

@@ -234,25 +234,42 @@ class FirebaseAuthService {
   }
 
   Future<String?> currentIdToken({bool forceRefresh = false}) async {
-    if (!isConfigured) return _validManualIdToken;
-    await initialize();
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
-      return _validManualIdToken;
-    }
+    // Cette methode ne doit JAMAIS jeter : tout incident (plugin web qui
+    // deballe un null, init en cours, etc.) retombe sur le token REST
+    // manuel ou renvoie null. L'appelant decide alors quoi faire.
     try {
-      return await user.getIdToken(forceRefresh);
-    } catch (error) {
-      // Meme contournement que requireFreshIdToken : sur le web,
-      // getIdToken(forceRefresh: true) peut jeter (firebase_auth_web 5.x).
-      // On retombe sur le token en cache avant d'abandonner.
-      if (forceRefresh) {
-        try {
-          return await user.getIdToken();
-        } catch (_) {
-          return _validManualIdToken;
+      if (!isConfigured) return _validManualIdToken;
+      try {
+        await initialize();
+      } catch (_) {
+        return _validManualIdToken;
+      }
+      User? user;
+      try {
+        user = FirebaseAuth.instance.currentUser;
+      } catch (_) {
+        return _validManualIdToken;
+      }
+      if (user == null) {
+        return _validManualIdToken;
+      }
+      try {
+        final token = await user.getIdToken(forceRefresh);
+        if (token != null && token.isNotEmpty) {
+          return token;
+        }
+      } catch (_) {
+        if (forceRefresh) {
+          try {
+            final token = await user.getIdToken();
+            if (token != null && token.isNotEmpty) {
+              return token;
+            }
+          } catch (_) {}
         }
       }
+      return _validManualIdToken;
+    } catch (_) {
       return _validManualIdToken;
     }
   }
