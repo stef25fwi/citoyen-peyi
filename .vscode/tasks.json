@@ -14,6 +14,22 @@
       "detail": "Stage tout, commit si besoin, pousse sur main."
     },
     {
+      "label": "Git commit build deploy push",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && export PATH=\"$HOME/flutter/bin:$PATH\" && COMMIT_MESSAGE=${COMMIT_MESSAGE:-feat: improve admin analytics and test poll tooling} && API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app} && case \"${API_BASE_URL:-}\" in https://*) ;; *) echo API_BASE_URL_HTTPS_REQUIS_POUR_BUILD_PRODUCTION_FIREBASE_HOSTING >&2; exit 1;; esac && git status --short && git add -A && git diff --cached --stat && git commit -m \"$COMMIT_MESSAGE\" --allow-empty && cd flutter_app && flutter analyze && flutter build web --release --pwa-strategy=none --base-href / --dart-define=API_BASE_URL=$API_BASE_URL --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-} && cd /workspaces/citoyen-peyi && if grep -q http://localhost:4000 flutter_app/build/web/main.dart.js; then echo BUILD_CONTAINS_LOCALHOST_REFUS_DEPLOY >&2; exit 1; fi && npx --yes firebase-tools@13 deploy --config firebase.ghpages.json --only hosting --project citoyen-peyi && git push origin main && echo PUBLISH_OK"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Stage, commit, analyse, build Firebase Hosting, deploy puis push sur main."
+    },
+    {
       "label": "Git commit push et deployer",
       "type": "shell",
       "command": "bash",
@@ -304,6 +320,22 @@
         "clear": true
       },
       "detail": "Analyse statique Flutter du port web."
+    },
+    {
+      "label": "Backend creer consultation test",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && : \"${ADMIN_ACCESS_KEY:?ADMIN_ACCESS_KEY requis}\" && : \"${FIREBASE_API_KEY:?FIREBASE_API_KEY requis}\" && chmod +x scripts/create-test-poll.sh && API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app} PUBLISH=${PUBLISH:-1} ./scripts/create-test-poll.sh"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Cree une consultation de test via le backend et la publie par defaut (PUBLISH=1)."
     },
     {
       "label": "Firestore rules tests",
