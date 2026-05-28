@@ -78,7 +78,18 @@ class FirebaseAuthService {
     if (user == null) {
       return null;
     }
-    return user.getIdToken(true);
+    try {
+      return await user.getIdToken(true);
+    } catch (error) {
+      // firebase_auth_web 5.x : getIdToken(forceRefresh: true) peut jeter
+      // "Null check operator used on a null value" sur le web. Le token en
+      // cache reste valide (le SDK le rafraichit automatiquement s'il expire).
+      if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] getIdToken(force) a echoue, '
+            'repli sur le token en cache: $error');
+      }
+      return user.getIdToken();
+    }
   }
 
 Future<String?> currentIdToken({bool forceRefresh = false}) async {
