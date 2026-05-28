@@ -234,10 +234,12 @@ class FirebaseAuthService {
   }
 
   Future<String?> currentIdToken({bool forceRefresh = false}) async {
-    if (!isConfigured) return null;
+    if (!isConfigured) return _validManualIdToken;
     await initialize();
     final user = FirebaseAuth.instance.currentUser;
-    if (user == null) return null;
+    if (user == null) {
+      return _validManualIdToken;
+    }
     try {
       return await user.getIdToken(forceRefresh);
     } catch (error) {
@@ -248,10 +250,10 @@ class FirebaseAuthService {
         try {
           return await user.getIdToken();
         } catch (_) {
-          return null;
+          return _validManualIdToken;
         }
       }
-      return null;
+      return _validManualIdToken;
     }
   }
 
