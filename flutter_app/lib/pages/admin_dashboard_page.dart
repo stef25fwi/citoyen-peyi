@@ -47,21 +47,45 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   Future<void> _load() async {
     setState(() => _isLoading = true);
 
-    final results = await Future.wait([
-      AdminAnalyticsService.instance.loadSummary(),
-      ControleurProfileService.instance.loadProfiles(),
-    ]);
+    AdminAnalyticsSummary analytics = _analytics;
+    List<ControleurProfileModel> controleurs = _controleurs;
+    Object? loadError;
+
+    try {
+      analytics = await AdminAnalyticsService.instance.loadSummary();
+    } catch (error, stackTrace) {
+      loadError = error;
+      debugPrint('[AdminDashboard] loadSummary failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
+    try {
+      controleurs = await ControleurProfileService.instance.loadProfiles();
+    } catch (error, stackTrace) {
+      debugPrint('[AdminDashboard] loadProfiles failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
 
     if (!mounted) return;
-
-    final analytics = results[0] as AdminAnalyticsSummary;
 
     setState(() {
       _analytics = analytics;
       _polls = analytics.polls;
-      _controleurs = results[1] as List<ControleurProfileModel>;
+      _controleurs = controleurs;
       _isLoading = false;
     });
+
+    if (loadError != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red.shade700,
+          content: Text(
+            'Impossible de rafraichir le tableau de bord administrateur: '
+            '${loadError.toString()}',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _deleteControleur(ControleurProfileModel profile) async {
