@@ -734,7 +734,18 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
 
   Future<void> _submit() async {
     if (_isSubmitting) return;
+    debugPrint('[CreateProfileDialog] submit clicked');
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        const SnackBar(
+          content: Text('Création du profil en cours…'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+
     if (!(_formKey.currentState?.validate() ?? false)) {
+      ScaffoldMessenger.of(context).hideCurrentSnackBar();
       _showErrorSnackBar('Veuillez renseigner tous les champs obligatoires.');
       return;
     }
@@ -742,6 +753,7 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
 
     try {
       _debugLog('Tentative de création profil administrateur.');
+      debugPrint('[CreateProfileDialog] appel createAdminProfile');
       final profile = await SuperAdminService.instance.createAdminProfile(
         label: _labelCtrl.text,
         communeName: _communeCtrl.text,
