@@ -45,14 +45,24 @@ class ControleurProfileModel {
         'usedAt': usedAt,
       };
 
+  static String _stripLegacyPrefix(String value) {
+    final upper = value.trim().toUpperCase();
+    return upper.startsWith('CTRL-') ? upper.substring(5) : upper;
+  }
+
   static ControleurProfileModel? fromJson(Object? raw) {
     if (raw is! Map<String, dynamic>) return null;
-    final code = raw['code'] as String? ?? '';
+    final code = _stripLegacyPrefix((raw['code'] as String?) ?? '');
     final label = raw['label'] as String?;
-    final id = raw['id'] as String? ?? code;
+    final rawId = (raw['id'] as String?) ?? code;
+    final id = _stripLegacyPrefix(rawId);
     if (id.isEmpty || label == null) return null;
 
     final commune = raw['commune'] as Map<String, dynamic>?;
+    final rawMasked = raw['displayCodeMasked'] as String?;
+    final maskedSanitized = rawMasked != null && rawMasked.startsWith('CTRL-')
+        ? rawMasked.substring(5)
+        : rawMasked;
 
     return ControleurProfileModel(
       id: id,
@@ -61,7 +71,7 @@ class ControleurProfileModel {
       communeName: commune?['name'] as String? ?? '',
       communeCode: commune?['code'] as String?,
       codePostal: commune?['codePostal'] as String?,
-      displayCodeMasked: raw['displayCodeMasked'] as String? ??
+      displayCodeMasked: maskedSanitized ??
           (code.isEmpty
               ? ''
               : '${code.substring(0, 5)}••••${code.substring(code.length - 2)}'),

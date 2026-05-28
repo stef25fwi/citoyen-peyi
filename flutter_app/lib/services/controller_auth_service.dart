@@ -26,7 +26,10 @@ class ControllerAuthService {
   static final ControllerAuthService instance = ControllerAuthService._();
 
   Future<ControllerSignInResult> signInWithCode(String code) async {
-    final normalizedCode = code.trim().toUpperCase();
+    var normalizedCode = code.trim().toUpperCase();
+    if (normalizedCode.startsWith('CTRL-')) {
+      normalizedCode = normalizedCode.substring(5);
+    }
     if (normalizedCode.isEmpty) {
       throw const ControllerAuthException('Le code agent de mobilisation citoyenne est requis.');
     }

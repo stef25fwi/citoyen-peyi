@@ -75,6 +75,34 @@ class AdminAnalyticsSummary {
         .reduce((left, right) => left + right);
     return (totalRate / eligiblePolls.length) * 100;
   }
+
+  /// Conversion globale "code activé → vote exprimé" sur l'ensemble des accès.
+  double get accessConversionRate {
+    if (totalActivatedCodes == 0) return 0;
+    return (totalUsedCodes / totalActivatedCodes) * 100;
+  }
+
+  /// Total des votes émis sur les 7 derniers jours (sparkline / hero).
+  int get votesLast7Days =>
+      dailyVotes.fold<int>(0, (sum, item) => sum + item.votes);
+
+  /// Compare la 2e moitié de la fenêtre aux 3 premiers jours pour produire un
+  /// delta en pourcentage (positif = accélération récente).
+  double get votesMomentumDelta {
+    if (dailyVotes.length < 4) return 0;
+    final half = dailyVotes.length ~/ 2;
+    final older = dailyVotes
+        .take(half)
+        .fold<int>(0, (sum, item) => sum + item.votes);
+    final recent = dailyVotes
+        .skip(half)
+        .fold<int>(0, (sum, item) => sum + item.votes);
+    if (older == 0) return recent == 0 ? 0 : 100;
+    return ((recent - older) / older) * 100;
+  }
+
+  List<double> get votesSparkline =>
+      dailyVotes.map((item) => item.votes.toDouble()).toList(growable: false);
 }
 
 class AdminAnalyticsService {

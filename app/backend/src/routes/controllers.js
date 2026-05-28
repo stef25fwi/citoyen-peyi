@@ -28,7 +28,17 @@ const generateControllerCode = () => {
   return hash.substring(0, 8).toUpperCase();
 };
 
-const maskCode = (code) => `${code.substring(0, 2)}••••${code.substring(code.length - 2)}`;
+const stripLegacyPrefix = (value) => {
+  if (typeof value !== 'string') return '';
+  const upper = value.trim().toUpperCase();
+  return upper.startsWith('CTRL-') ? upper.substring(5) : upper;
+};
+
+const maskCode = (code) => {
+  const clean = stripLegacyPrefix(code);
+  if (clean.length < 4) return clean;
+  return `${clean.substring(0, 2)}••••${clean.substring(clean.length - 2)}`;
+};
 
 router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin);
 
@@ -60,9 +70,13 @@ router.get('/', async (req, res, next) => {
     return res.json({
       controllers: snapshot.docs.map((doc) => {
         const data = doc.data() || {};
+        const sanitizedId = stripLegacyPrefix(doc.id);
+        const rawMasked = typeof data.displayCodeMasked === 'string' && data.displayCodeMasked.startsWith('CTRL-')
+          ? data.displayCodeMasked.substring(5)
+          : data.displayCodeMasked;
         return {
-          id: doc.id,
-          displayCodeMasked: data.displayCodeMasked || (data.code ? maskCode(data.code) : ''),
+          id: sanitizedId,
+          displayCodeMasked: rawMasked || (data.code ? maskCode(data.code) : ''),
           label: data.label,
           commune: data.commune,
           createdAt: data.createdAt,

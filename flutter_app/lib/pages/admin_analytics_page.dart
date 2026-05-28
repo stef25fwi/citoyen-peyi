@@ -3,6 +3,7 @@ import 'package:fl_chart/fl_chart.dart';
 
 import '../models/poll_models.dart';
 import '../services/admin_analytics_service.dart';
+import '../widgets/analytics_widgets.dart';
 
 class AdminAnalyticsPage extends StatefulWidget {
   const AdminAnalyticsPage({super.key});
@@ -58,16 +59,7 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                   child: ListView(
                     padding: const EdgeInsets.all(20),
                     children: [
-                      Wrap(
-                        spacing: 12,
-                        runSpacing: 12,
-                        children: [
-                          _KpiCard(label: 'Votes emis', value: '${_summary.totalVotes}', subtitle: 'sur ${_summary.totalVoters} inscrits'),
-                          _KpiCard(label: 'Participation moyenne', value: '${_summary.averageParticipation.round()}%', subtitle: 'consultations actives et terminees'),
-                          _KpiCard(label: 'Consultations actives', value: '${_summary.activeCount}', subtitle: '${_summary.completedCount} terminees, ${_summary.draftCount} brouillons'),
-                          _KpiCard(label: 'Codes citoyens actifs', value: '${_summary.totalValidatedCodes}', subtitle: 'generes a l\'accueil communal'),
-                        ],
-                      ),
+                      _AnalyticsHero(summary: _summary),
                       const SizedBox(height: 20),
                       Card(
                         child: Padding(
@@ -534,39 +526,237 @@ class _ChartLegendItem extends StatelessWidget {
   }
 }
 
-class _KpiCard extends StatelessWidget {
-  const _KpiCard({
+class _AnalyticsHero extends StatelessWidget {
+  const _AnalyticsHero({required this.summary});
+
+  final AdminAnalyticsSummary summary;
+
+  @override
+  Widget build(BuildContext context) {
+    final participation = summary.averageParticipation;
+    final votes7d = summary.votesLast7Days;
+    final delta = summary.votesMomentumDelta;
+    final spark = summary.votesSparkline;
+    final conversion = summary.accessConversionRate;
+
+    final gauge = Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AnalyticsPalette.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AnalyticsPalette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.bolt_rounded,
+                  color: AnalyticsPalette.primary, size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Pouls de la commune',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Center(
+            child: ParticipationGauge(
+              percentage: participation,
+              label: 'Participation',
+              subtitle:
+                  '${summary.totalVotes} votes / ${summary.totalVoters} inscrits',
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _MiniStat(
+                  label: 'Actives',
+                  value: '${summary.activeCount}',
+                  color: const Color(0xFF0F9D58)),
+              _MiniStat(
+                  label: 'Clôturées',
+                  value: '${summary.completedCount}',
+                  color: const Color(0xFFF59E0B)),
+              _MiniStat(
+                  label: 'Brouillons',
+                  value: '${summary.draftCount}',
+                  color: AnalyticsPalette.slateMuted),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    final kpis = Wrap(
+      spacing: 12,
+      runSpacing: 12,
+      children: [
+        AnalyticsKpiCard(
+          label: 'VOTES 7 JOURS',
+          value: '$votes7d',
+          icon: Icons.how_to_vote_rounded,
+          subtitle: 'sur les 7 derniers jours',
+          sparkline: spark,
+          delta: delta,
+          accentColor: AnalyticsPalette.primary,
+        ),
+        AnalyticsKpiCard(
+          label: 'CONVERSION ACCÈS → VOTE',
+          value: '${conversion.toStringAsFixed(0)}%',
+          icon: Icons.compare_arrows_rounded,
+          subtitle:
+              '${summary.totalUsedCodes} votes / ${summary.totalActivatedCodes} codes activés',
+          accentColor: AnalyticsPalette.secondary,
+        ),
+        AnalyticsKpiCard(
+          label: 'CODES CITOYENS ACTIFS',
+          value: '${summary.totalValidatedCodes}',
+          icon: Icons.qr_code_2_rounded,
+          subtitle: 'générés à l\'accueil communal',
+          accentColor: AnalyticsPalette.accent,
+        ),
+        AnalyticsKpiCard(
+          label: 'CONSULTATIONS EN COURS',
+          value: '${summary.activeCount}',
+          icon: Icons.campaign_rounded,
+          subtitle:
+              '${summary.completedCount} clôturées · ${summary.draftCount} brouillons',
+          accentColor: const Color(0xFF8B5CF6),
+        ),
+      ],
+    );
+
+    final funnel = Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: AnalyticsPalette.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AnalyticsPalette.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.filter_alt_rounded,
+                  color: Color(0xFF6366F1), size: 18),
+              const SizedBox(width: 8),
+              Text(
+                'Funnel d\'engagement citoyen',
+                style: Theme.of(context).textTheme.titleMedium,
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'De la création du code jusqu\'au vote exprimé.',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 16),
+          EngagementFunnel(
+            steps: [
+              FunnelStep(
+                label: 'Codes générés',
+                value: summary.totalValidatedCodes,
+                hint: 'accès créés à l\'accueil',
+              ),
+              FunnelStep(
+                label: 'Codes activés (connexion)',
+                value: summary.totalActivatedCodes,
+                hint: 'utilisés au moins une fois',
+              ),
+              FunnelStep(
+                label: 'Votes exprimés',
+                value: summary.totalUsedCodes,
+                hint: 'vote anonymisé enregistré',
+              ),
+              FunnelStep(
+                label: 'Objectif participation',
+                value: summary.totalVoters,
+                hint: 'inscrits ciblés',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final wide = constraints.maxWidth >= 900;
+        if (wide) {
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(width: 300, child: gauge),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    kpis,
+                    const SizedBox(height: 16),
+                    funnel,
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            gauge,
+            const SizedBox(height: 16),
+            kpis,
+            const SizedBox(height: 16),
+            funnel,
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _MiniStat extends StatelessWidget {
+  const _MiniStat({
     required this.label,
     required this.value,
-    required this.subtitle,
+    required this.color,
   });
 
   final String label;
   final String value;
-  final String subtitle;
+  final Color color;
 
   @override
   Widget build(BuildContext context) {
-    final availableWidth = MediaQuery.sizeOf(context).width - 40;
-    final cardWidth = availableWidth < 260 ? availableWidth : 220.0;
-
-    return SizedBox(
-      width: cardWidth,
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(18),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(value, style: Theme.of(context).textTheme.headlineMedium),
-              const SizedBox(height: 6),
-              Text(label, style: Theme.of(context).textTheme.titleSmall),
-              const SizedBox(height: 6),
-              Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-            ],
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: color,
           ),
         ),
-      ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: const TextStyle(
+            fontSize: 11,
+            color: AnalyticsPalette.slateMuted,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.3,
+          ),
+        ),
+      ],
     );
   }
 }
