@@ -56,6 +56,6 @@ class BackendDiagnostics {
       return 'Backend injoignable : connexion refusee, DNS introuvable ou CORS refuse. '
           'Verifiez que le service est demarre et que CORS_ORIGIN autorise ce domaine.${suffix()}';
     }
-    return 'Backend injoignable. Reessayez plus tard.${suffix()}';
+    return 'Backend injoignable (${error.runtimeType}: $error). Reessayez plus tard.${suffix()}';
   }
 }
