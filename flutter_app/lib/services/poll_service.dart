@@ -41,10 +41,37 @@ class PollService {
 
   Future<List<PollModel>> loadPolls() async {
     final session = AuthSessionStore.instance.currentSession;
-    final communeScope =
-        (session?.isCommuneAdmin == true || session?.isController == true)
-            ? (session?.commune?.code ?? session?.commune?.name ?? '')
-            : '';
+    final isAuthenticated =
+        session?.isCommuneAdmin == true || session?.isController == true;
+    final communeScope = isAuthenticated
+        ? (session?.commune?.code ?? session?.commune?.name ?? '')
+        : '';
+
+    // Pour les sessions authentifiees, on prefere l'API backend (autorisee
+    // par le token Firebase) qui voit immediatement les nouvelles
+    // consultations meme si la lecture Firestore client est bloquee (App
+    // Check, regle, etc.).
+    if (isAuthenticated) {
+      try {
+        final response = await _request('GET', '/api/polls');
+        final payload = jsonDecode(response.body);
+        if (payload is Map<String, dynamic>) {
+          final rawList = payload['polls'];
+          if (rawList is List) {
+            final polls = rawList
+                .whereType<Map<String, dynamic>>()
+                .map(PollModel.fromJson)
+                .toList()
+              ..sort(
+                  (left, right) => right.openDate.compareTo(left.openDate));
+            await _writeLocalPolls(polls);
+            return _filterByCommuneScope(polls, communeScope);
+          }
+        }
+      } catch (_) {
+        // Repli sur Firestore puis cache local ci-dessous.
+      }
+    }
 
     final db = FirestoreDataService.instance;
     if (db == null) {
@@ -121,7 +148,19 @@ class PollService {
           'Reponse backend sans consultation creee.');
     }
     try {
-      return PollModel.fromJson(pollPayload);
+      final poll = PollModel.fromJson(pollPayload);
+      // Met aussi a jour le cache local immediatement pour que le retour
+      // au dashboard affiche la consultation meme si la lecture suivante
+      // (Firestore/API) est legerement decalee ou bloquee.
+      try {
+        final existing = await _loadLocalPolls();
+        final merged = <PollModel>[
+          poll,
+          ...existing.where((item) => item.id != poll.id),
+        ]..sort((left, right) => right.openDate.compareTo(left.openDate));
+        await _writeLocalPolls(merged);
+      } catch (_) {}
+      return poll;
     } catch (error) {
       throw PollServiceException(
           'Consultation creee mais reponse illisible: $error');
@@ -212,6 +251,11 @@ class PollService {
     late http.Response response;
     try {
       switch (method) {
+        case 'GET':
+          response = await http
+              .get(uri, headers: headers)
+              .timeout(const Duration(seconds: 12));
+          break;
         case 'POST':
           response = await http
               .post(uri, headers: headers, body: jsonEncode(body ?? const {}))
