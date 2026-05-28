@@ -49,8 +49,18 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
         actions: [
           TextButton(
             onPressed: () async {
-              await FirebaseAuthService.instance.signOut();
-              await AuthSessionStore.instance.clear();
+              try {
+                await FirebaseAuthService.instance.signOut();
+              } catch (error, stackTrace) {
+                debugPrint('[ControllerDashboard] signOut failed: $error');
+                debugPrintStack(stackTrace: stackTrace);
+              }
+              try {
+                await AuthSessionStore.instance.clear();
+              } catch (error, stackTrace) {
+                debugPrint('[ControllerDashboard] session clear failed: $error');
+                debugPrintStack(stackTrace: stackTrace);
+              }
               if (!context.mounted) return;
               Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
             },

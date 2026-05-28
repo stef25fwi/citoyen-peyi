@@ -251,8 +251,18 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           TextButton(
             onPressed: () async {
               SuperAdminService.instance.clearRuntimeSuperAdminKey();
-              await FirebaseAuthService.instance.signOut();
-              await AuthSessionStore.instance.clear();
+              try {
+                await FirebaseAuthService.instance.signOut();
+              } catch (error, stackTrace) {
+                debugPrint('[SuperAdminDashboard] signOut failed: $error');
+                debugPrintStack(stackTrace: stackTrace);
+              }
+              try {
+                await AuthSessionStore.instance.clear();
+              } catch (error, stackTrace) {
+                debugPrint('[SuperAdminDashboard] session clear failed: $error');
+                debugPrintStack(stackTrace: stackTrace);
+              }
               if (!context.mounted) return;
               Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
             },

@@ -215,8 +215,18 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
           TextButton(
             onPressed: () async {
-              await FirebaseAuthService.instance.signOut();
-              await AuthSessionStore.instance.clear();
+              try {
+                await FirebaseAuthService.instance.signOut();
+              } catch (error, stackTrace) {
+                debugPrint('[AdminDashboard] signOut failed: $error');
+                debugPrintStack(stackTrace: stackTrace);
+              }
+              try {
+                await AuthSessionStore.instance.clear();
+              } catch (error, stackTrace) {
+                debugPrint('[AdminDashboard] session clear failed: $error');
+                debugPrintStack(stackTrace: stackTrace);
+              }
               if (!context.mounted) {
                 return;
               }
