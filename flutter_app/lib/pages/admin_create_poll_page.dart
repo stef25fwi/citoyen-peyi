@@ -132,7 +132,22 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Consultation creee avec succes.')),
       );
-      Navigator.of(context).pushNamedAndRemoveUntil('/admin', (route) => route.settings.name == '/');
+      Navigator.of(context).pushNamedAndRemoveUntil(
+          '/admin', (route) => route.settings.name == '/');
+    } catch (error, stackTrace) {
+      debugPrint('[AdminCreatePoll] createPoll failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red.shade700,
+          content: Text(
+            'Creation de la consultation impossible: ${error.toString()}',
+          ),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() {
