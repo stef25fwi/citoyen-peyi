@@ -39,6 +39,11 @@ const defaultCorsOrigins = [
   'http://127.0.0.1:8081',
 ];
 
+const publicFrontendCorsOrigins = [
+  'https://citoyen-peyi.web.app',
+  'https://stef25fwi.github.io',
+];
+
 const optional = (value) => (typeof value === 'string' && value.trim().length > 0 ? value.trim() : '');
 
 const parseCorsOrigins = (value, { nodeEnv } = {}) => {
@@ -69,7 +74,12 @@ export const env = {
   isProduction: nodeEnv === 'production',
   port: Number(process.env.PORT || 4000),
   apiBaseUrl: optional(process.env.API_BASE_URL),
-  corsOrigins: parseCorsOrigins(process.env.CORS_ORIGIN, { nodeEnv }),
+  corsOrigins: Array.from(
+    new Set([
+      ...parseCorsOrigins(process.env.CORS_ORIGIN, { nodeEnv }),
+      ...publicFrontendCorsOrigins,
+    ]),
+  ),
   logLevel: optional(process.env.LOG_LEVEL) || (nodeEnv === 'production' ? 'info' : 'debug'),
   superAdminKey: optional(process.env.SUPER_ADMIN_KEY),
   adminAccessKey: optional(process.env.ADMIN_ACCESS_KEY),

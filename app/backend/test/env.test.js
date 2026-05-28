@@ -36,7 +36,7 @@ test('validateEnv accepts a complete development configuration', async () => {
   resetEnv(snapshot);
 });
 
-test('validateEnv refuses production boot without CORS_ORIGIN', async () => {
+test('validateEnv accepts production boot without CORS_ORIGIN when public origins are injected', async () => {
   const snapshot = baseEnv();
   process.env.NODE_ENV = 'production';
   delete process.env.CORS_ORIGIN;
@@ -50,8 +50,10 @@ test('validateEnv refuses production boot without CORS_ORIGIN', async () => {
   process.env.FIREBASE_ADMIN_CLIENT_EMAIL = 'demo@example.com';
   process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';
 
-  const { validateEnv } = await importFresh();
-  assert.throws(() => validateEnv(), /CORS_ORIGIN/);
+  const { env, validateEnv } = await importFresh();
+  assert.doesNotThrow(() => validateEnv());
+  assert.ok(env.corsOrigins.includes('https://citoyen-peyi.web.app'));
+  assert.ok(env.corsOrigins.includes('https://stef25fwi.github.io'));
 
   resetEnv(snapshot);
 });
