@@ -1,4 +1,7 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
+
+import '../firebase_options.dart';
 
 class AppConfig {
   static const bool appCheckEnabled = bool.fromEnvironment(
@@ -30,6 +33,42 @@ class AppConfig {
   static const String firebaseMessagingSenderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '');
   static const String firebaseAppId = String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '');
 
+  static String get resolvedFirebaseApiKey {
+    final raw = firebaseApiKey.trim();
+    if (raw.isNotEmpty) return raw;
+    return kIsWeb ? DefaultFirebaseOptions.web.apiKey : '';
+  }
+
+  static String get resolvedFirebaseAuthDomain {
+    final raw = firebaseAuthDomain.trim();
+    if (raw.isNotEmpty) return raw;
+    return kIsWeb ? DefaultFirebaseOptions.web.authDomain ?? '' : '';
+  }
+
+  static String get resolvedFirebaseProjectId {
+    final raw = firebaseProjectId.trim();
+    if (raw.isNotEmpty) return raw;
+    return kIsWeb ? DefaultFirebaseOptions.web.projectId : '';
+  }
+
+  static String get resolvedFirebaseStorageBucket {
+    final raw = firebaseStorageBucket.trim();
+    if (raw.isNotEmpty) return raw;
+    return kIsWeb ? DefaultFirebaseOptions.web.storageBucket ?? '' : '';
+  }
+
+  static String get resolvedFirebaseMessagingSenderId {
+    final raw = firebaseMessagingSenderId.trim();
+    if (raw.isNotEmpty) return raw;
+    return kIsWeb ? DefaultFirebaseOptions.web.messagingSenderId : '';
+  }
+
+  static String get resolvedFirebaseAppId {
+    final raw = firebaseAppId.trim();
+    if (raw.isNotEmpty) return raw;
+    return kIsWeb ? DefaultFirebaseOptions.web.appId : '';
+  }
+
   // reCAPTCHA v3 site key used by Firebase App Check on web. The key is
   // public by design (it is embedded in every page that calls grecaptcha)
   // and only works on the domains registered on the key in the Google
@@ -45,20 +84,20 @@ class AppConfig {
       appCheckEnabled && isAppCheckConfigured;
 
   static bool get isFirebaseConfigured => [
-        firebaseApiKey,
-        firebaseAuthDomain,
-        firebaseProjectId,
-        firebaseStorageBucket,
-        firebaseMessagingSenderId,
-        firebaseAppId,
+      resolvedFirebaseApiKey,
+      resolvedFirebaseAuthDomain,
+      resolvedFirebaseProjectId,
+      resolvedFirebaseStorageBucket,
+      resolvedFirebaseMessagingSenderId,
+      resolvedFirebaseAppId,
       ].every((value) => value.trim().isNotEmpty);
 
-  static FirebaseOptions get firebaseOptions => const FirebaseOptions(
-        apiKey: firebaseApiKey,
-        authDomain: firebaseAuthDomain,
-        projectId: firebaseProjectId,
-        storageBucket: firebaseStorageBucket,
-        messagingSenderId: firebaseMessagingSenderId,
-        appId: firebaseAppId,
+    static FirebaseOptions get firebaseOptions => FirebaseOptions(
+      apiKey: resolvedFirebaseApiKey,
+      authDomain: resolvedFirebaseAuthDomain,
+      projectId: resolvedFirebaseProjectId,
+      storageBucket: resolvedFirebaseStorageBucket,
+      messagingSenderId: resolvedFirebaseMessagingSenderId,
+      appId: resolvedFirebaseAppId,
       );
 }

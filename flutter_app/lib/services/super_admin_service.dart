@@ -138,15 +138,30 @@ class SuperAdminService {
       return null;
     }
 
+    return _firebaseIdTokenFromCustomToken(customToken);
+  }
+
+  Future<String> _firebaseIdTokenFromCustomToken(String customToken) async {
     try {
-      await FirebaseAuthService.instance.signInWithCustomToken(customToken);
-      return await FirebaseAuthService.instance.requireFreshIdToken();
+      final token =
+          await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+      _debugLog('Token Firebase direct present: ${token.isNotEmpty}');
+      return token;
     } catch (error) {
-      _debugLog('Echec Firebase Auth apres exchange: $error');
-      throw SuperAdminAuthException(
-        'Authentification Firebase refusee (${error.runtimeType}: $error). '
-        'Verifiez que les cookies tiers, reCAPTCHA et App Check ne sont pas '
-        'bloques par votre navigateur (Safari iOS / Anti-tracking, mode prive).',
+      _debugLog('FirebaseAuth custom token direct failure: $error');
+      _debugLog(
+          'Authentification Firebase refusée. Tentative de connexion sécurisée alternative…');
+    }
+
+    try {
+      final token = await FirebaseAuthService.instance
+          .exchangeCustomTokenViaRest(customToken);
+      _debugLog('Token Firebase REST present: ${token.isNotEmpty}');
+      return token;
+    } catch (error) {
+      _debugLog('REST fallback failure: $error');
+      throw const SuperAdminAuthException(
+        'Authentification Firebase refusée. Tentative de connexion sécurisée alternative impossible. Reconnectez-vous.',
       );
     }
   }
@@ -211,7 +226,7 @@ class SuperAdminService {
           'Reponse backend invalide (customToken manquant).');
     }
 
-    await FirebaseAuthService.instance.signInWithCustomToken(customToken);
+    await _firebaseIdTokenFromCustomToken(customToken);
 
     _runtimeSuperAdminKey = trimmed;
 
@@ -350,6 +365,9 @@ class SuperAdminService {
 
     final url = '${AppConfig.apiBaseUrl}$path';
     _debugLog('Endpoint appelé: $url');
+    if (path == '/api/admins') {
+      _debugLog('/api/admins appelé');
+    }
 
     late String token;
     try {
@@ -359,6 +377,7 @@ class SuperAdminService {
             'Session super administrateur expirée ou non autorisée. Reconnectez-vous.');
       }
       token = resolvedToken;
+      _debugLog('Token Firebase present: ${token.isNotEmpty}');
     } on SuperAdminAuthException {
       rethrow;
     } catch (error) {

@@ -1,9 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
+import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import '../firebase_options.dart';
@@ -12,6 +14,9 @@ class FirebaseAuthService {
   FirebaseAuthService._();
 
   static final FirebaseAuthService instance = FirebaseAuthService._();
+
+  String? _manualIdToken;
+  DateTime? _manualIdTokenExpiresAt;
 
   Future<void> ensureInitialized() async {
     if (Firebase.apps.isEmpty) {
@@ -59,37 +64,173 @@ class FirebaseAuthService {
     _initialized = true;
   }
 
-  Future<void> signInWithCustomToken(String customToken) async {
-    if (!isConfigured || customToken.trim().isEmpty) {
-      return;
+  Future<String> signInWithCustomToken(String customToken) async {
+    if (customToken.trim().isEmpty) {
+      throw FirebaseAuthException(
+        code: 'empty-custom-token',
+        message: 'Custom token Firebase manquant.',
+      );
+    }
+    if (!isConfigured) {
+      throw FirebaseAuthException(
+        code: 'firebase-not-configured',
+        message: 'Configuration Firebase web manquante.',
+      );
     }
 
     await initialize();
-    await FirebaseAuth.instance.signInWithCustomToken(customToken);
+    try {
+      final credential =
+          await FirebaseAuth.instance.signInWithCustomToken(customToken);
+      final user = credential.user ?? FirebaseAuth.instance.currentUser;
+      final token = await user?.getIdToken(true);
+      if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] FirebaseAuth custom token direct '
+            'success, token present: ${token?.isNotEmpty == true}');
+      }
+      if (token == null || token.isEmpty) {
+        throw FirebaseAuthException(
+          code: 'empty-id-token',
+          message: 'Firebase Auth n\'a pas retourné de jeton ID.',
+        );
+      }
+      _manualIdToken = null;
+      _manualIdTokenExpiresAt = null;
+      return token;
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] FirebaseAuth custom token direct '
+            'failure: $error');
+      }
+      rethrow;
+    }
+  }
+
+  Future<String> exchangeCustomTokenViaRest(String customToken) async {
+    if (customToken.trim().isEmpty) {
+      throw FirebaseAuthException(
+        code: 'empty-custom-token',
+        message: 'Custom token Firebase manquant.',
+      );
+    }
+
+    final apiKey = AppConfig.resolvedFirebaseApiKey.trim();
+    if (apiKey.isEmpty) {
+      throw FirebaseAuthException(
+        code: 'missing-firebase-api-key',
+        message: 'Clé API Firebase web manquante.',
+      );
+    }
+
+    final url = Uri.https(
+      'identitytoolkit.googleapis.com',
+      '/v1/accounts:signInWithCustomToken',
+      {'key': apiKey},
+    );
+
+    try {
+      final response = await http
+          .post(
+            url,
+            headers: const {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'token': customToken,
+              'returnSecureToken': true,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw FirebaseAuthException(
+          code: 'identity-toolkit-rest-rejected',
+          message: _readRestError(response.body),
+        );
+      }
+
+      final payload = jsonDecode(response.body) as Map<String, dynamic>;
+      final idToken = payload['idToken'] as String?;
+      final expiresInSeconds =
+          int.tryParse(payload['expiresIn']?.toString() ?? '') ?? 3600;
+      if (idToken == null || idToken.isEmpty) {
+        throw FirebaseAuthException(
+          code: 'empty-rest-id-token',
+          message: 'Identity Toolkit n\'a pas retourné de jeton ID.',
+        );
+      }
+
+      _manualIdToken = idToken;
+      _manualIdTokenExpiresAt = DateTime.now()
+          .add(Duration(seconds: expiresInSeconds))
+          .subtract(const Duration(minutes: 1));
+
+      if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] REST fallback success, token '
+            'present: ${_manualIdToken?.isNotEmpty == true}');
+      }
+      return idToken;
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] REST fallback failure: $error');
+      }
+      rethrow;
+    }
   }
 
   /// Returns a fresh Firebase ID token suitable for the Authorization header.
   /// Forces refresh when the cached token is older than the threshold so
   /// long-lived sessions do not silently drift past the 1h expiry.
   
-  Future<String?> requireFreshIdToken() async {
+  Future<String> requireFreshIdToken() async {
     await ensureInitialized();
-    final user = FirebaseAuth.instance.currentUser;
-    if (user == null) {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final token = await user.getIdToken(true);
+        if (kDebugMode) {
+          debugPrint('[FirebaseAuthService] FirebaseAuth fresh token '
+              'present: ${token?.isNotEmpty == true}');
+        }
+        if (token != null && token.isNotEmpty) {
+          return token;
+        }
+      } else if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] FirebaseAuth currentUser null');
+      }
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] FirebaseAuth fresh token failure: '
+            '$error');
+      }
+    }
+
+    final manualToken = _validManualIdToken;
+    if (manualToken != null) {
+      if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] Manual REST token present: true');
+      }
+      return manualToken;
+    }
+
+    if (kDebugMode) {
+      debugPrint('[FirebaseAuthService] Manual REST token present: false');
+    }
+    throw FirebaseAuthException(
+      code: 'super-admin-session-expired',
+      message:
+          'Session super administrateur expirée ou non autorisée. Reconnectez-vous.',
+    );
+  }
+
+  String? get _validManualIdToken {
+    final token = _manualIdToken;
+    final expiresAt = _manualIdTokenExpiresAt;
+    if (token == null || token.isEmpty || expiresAt == null) return null;
+    if (!DateTime.now().isBefore(expiresAt)) {
+      _manualIdToken = null;
+      _manualIdTokenExpiresAt = null;
       return null;
     }
-    try {
-      return await user.getIdToken(true);
-    } catch (error) {
-      // firebase_auth_web 5.x : getIdToken(forceRefresh: true) peut jeter
-      // "Null check operator used on a null value" sur le web. Le token en
-      // cache reste valide (le SDK le rafraichit automatiquement s'il expire).
-      if (kDebugMode) {
-        debugPrint('[FirebaseAuthService] getIdToken(force) a echoue, '
-            'repli sur le token en cache: $error');
-      }
-      return user.getIdToken();
-    }
+    return token;
   }
 
 Future<String?> currentIdToken({bool forceRefresh = false}) async {
@@ -110,10 +251,25 @@ Future<String?> currentIdToken({bool forceRefresh = false}) async {
   }
 
   Future<void> signOut() async {
+    _manualIdToken = null;
+    _manualIdTokenExpiresAt = null;
     if (!isConfigured || Firebase.apps.isEmpty) {
       return;
     }
 
     await FirebaseAuth.instance.signOut();
+  }
+
+  String _readRestError(String body) {
+    try {
+      final payload = jsonDecode(body) as Map<String, dynamic>;
+      final error = payload['error'];
+      if (error is Map<String, dynamic>) {
+        return error['message'] as String? ?? 'Authentification Firebase refusée.';
+      }
+      return payload['message'] as String? ?? 'Authentification Firebase refusée.';
+    } catch (_) {
+      return 'Authentification Firebase refusée.';
+    }
   }
 }
