@@ -41,6 +41,7 @@ const defaultCorsOrigins = [
 
 const publicFrontendCorsOrigins = [
   'https://citoyen-peyi.web.app',
+  'https://citoyen-peyi.firebaseapp.com',
   'https://stef25fwi.github.io',
 ];
 
