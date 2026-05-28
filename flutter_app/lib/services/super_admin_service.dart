@@ -243,17 +243,24 @@ class SuperAdminService {
   /// Retourne la liste des profils admin via le backend (preferred) ou via
   /// le cache local en lecture seule.
   Future<List<AdminProfileModel>> loadProfiles() async {
+    final superKey = _runtimeSuperAdminKey;
+    String? token;
     try {
-      final superKey = _runtimeSuperAdminKey;
-      final token = await _superAdminIdToken();
-      if (superKey != null && superKey.isNotEmpty && token != null) {
+      token = await _superAdminIdToken();
+    } catch (error) {
+      _debugLog('loadProfiles: token indisponible: $error');
+    }
+
+    if (superKey != null && superKey.isNotEmpty && token != null) {
+      try {
         final response = await http.get(
           Uri.parse('${AppConfig.apiBaseUrl}/api/admins'),
           headers: {
             'Authorization': 'Bearer $token',
             'x-super-admin-key': superKey,
           },
-        ).timeout(const Duration(seconds: 10));
+        ).timeout(const Duration(seconds: 12));
+        _debugLog('loadProfiles HTTP ${response.statusCode}');
         if (response.statusCode >= 200 && response.statusCode < 300) {
           final payload = jsonDecode(response.body) as Map<String, dynamic>;
           final list = (payload['admins'] as List<dynamic>? ?? const [])
@@ -270,11 +277,16 @@ class SuperAdminService {
                   ))
               .where((profile) => profile.id.isNotEmpty)
               .toList();
+          await _saveProfiles(list);
           return list;
         }
+        throw SuperAdminAuthException(_readError(response.body));
+      } on SuperAdminAuthException {
+        rethrow;
+      } catch (error) {
+        _debugLog('loadProfiles fallback cache, erreur: $error');
+        // On retombe sur le cache local plutot que de bloquer l'UI.
       }
-    } catch (_) {
-      // Tomber vers le cache local.
     }
 
     final prefs = await SharedPreferences.getInstance();

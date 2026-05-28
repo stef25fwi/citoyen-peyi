@@ -53,18 +53,55 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
 
   Future<void> _loadProfiles() async {
     setState(() => _isLoading = true);
-    final results = await Future.wait([
-      SuperAdminService.instance.loadProfiles(),
-      CitizenAccessCodeService.instance.getDuplicateRequestsForSuperAdmin(),
-      CitizenAccessCodeService.instance.getControllerAnalytics(),
-    ]);
+
+    List<AdminProfileModel> profiles = _profiles;
+    List<DuplicateCodeRequestModel> duplicates = _duplicateRequests;
+    ControllerActivityAnalytics analytics = _activityAnalytics;
+    Object? loadError;
+
+    try {
+      profiles = await SuperAdminService.instance.loadProfiles();
+    } catch (error, stackTrace) {
+      loadError = error;
+      debugPrint('[SuperAdminDashboard] loadProfiles failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
+    try {
+      duplicates = await CitizenAccessCodeService.instance
+          .getDuplicateRequestsForSuperAdmin();
+    } catch (error, stackTrace) {
+      debugPrint('[SuperAdminDashboard] duplicates failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
+    try {
+      analytics =
+          await CitizenAccessCodeService.instance.getControllerAnalytics();
+    } catch (error, stackTrace) {
+      debugPrint('[SuperAdminDashboard] analytics failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
     if (!mounted) return;
     setState(() {
-      _profiles = results[0] as List<AdminProfileModel>;
-      _duplicateRequests = results[1] as List<DuplicateCodeRequestModel>;
-      _activityAnalytics = results[2] as ControllerActivityAnalytics;
+      _profiles = profiles;
+      _duplicateRequests = duplicates;
+      _activityAnalytics = analytics;
       _isLoading = false;
     });
+
+    if (loadError != null && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red.shade700,
+          content: Text(
+            'Impossible de rafraichir la liste des profils administrateurs: '
+            '${loadError.toString()}',
+          ),
+        ),
+      );
+    }
   }
 
   Future<void> _deleteProfile(AdminProfileModel profile) async {
