@@ -233,14 +233,24 @@ class FirebaseAuthService {
     return token;
   }
 
-Future<String?> currentIdToken({bool forceRefresh = false}) async {
+  Future<String?> currentIdToken({bool forceRefresh = false}) async {
     if (!isConfigured) return null;
     await initialize();
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) return null;
     try {
       return await user.getIdToken(forceRefresh);
-    } catch (_) {
+    } catch (error) {
+      // Meme contournement que requireFreshIdToken : sur le web,
+      // getIdToken(forceRefresh: true) peut jeter (firebase_auth_web 5.x).
+      // On retombe sur le token en cache avant d'abandonner.
+      if (forceRefresh) {
+        try {
+          return await user.getIdToken();
+        } catch (_) {
+          return null;
+        }
+      }
       return null;
     }
   }
