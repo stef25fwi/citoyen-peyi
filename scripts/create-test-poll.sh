@@ -24,6 +24,18 @@ API_BASE_URL="${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.a
 command -v jq >/dev/null || { echo "jq requis (sudo apt-get install -y jq)" >&2; exit 1; }
 command -v curl >/dev/null || { echo "curl requis" >&2; exit 1; }
 
+fail_with_payload() {
+  local step="$1"
+  local payload="$2"
+  echo "ECHEC_${step}" >&2
+  if jq -e . >/dev/null 2>&1 <<<"$payload"; then
+    jq . <<<"$payload" >&2
+  else
+    printf '%s\n' "$payload" >&2
+  fi
+  exit 1
+}
+
 today="$(date -u +%Y-%m-%d)"
 plus7="$(date -u -d '+7 days' +%Y-%m-%d)"
 
@@ -38,7 +50,10 @@ exchange_resp="$(curl -sS -X POST "$API_BASE_URL/api/auth/admin/exchange" \
   -H 'Content-Type: application/json' \
   -d "$exchange_payload")"
 
-custom_token="$(jq -er '.customToken' <<<"$exchange_resp")"
+custom_token="$(jq -r '.customToken // empty' <<<"$exchange_resp")"
+if [[ -z "$custom_token" ]]; then
+  fail_with_payload "ADMIN_EXCHANGE" "$exchange_resp"
+fi
 COMMUNE_ID="${COMMUNE_ID:-$(jq -r '.profile.communeId // ""' <<<"$exchange_resp")}"
 COMMUNE_NAME="${COMMUNE_NAME:-$(jq -r '.profile.communeName // ""' <<<"$exchange_resp")}"
 
@@ -55,7 +70,10 @@ id_token_resp="$(curl -sS -X POST \
   -H 'Content-Type: application/json' \
   -d "$(jq -nc --arg t "$custom_token" '{token:$t,returnSecureToken:true}')")"
 
-id_token="$(jq -er '.idToken' <<<"$id_token_resp")"
+id_token="$(jq -r '.idToken // empty' <<<"$id_token_resp")"
+if [[ -z "$id_token" ]]; then
+  fail_with_payload "FIREBASE_CUSTOM_TOKEN" "$id_token_resp"
+fi
 
 echo "==> 3/4 Creation consultation"
 poll_payload="$(jq -nc \
@@ -83,14 +101,21 @@ create_resp="$(curl -sS -X POST "$API_BASE_URL/api/polls" \
   -H 'Content-Type: application/json' \
   -d "$poll_payload")"
 
-poll_id="$(jq -er '.poll.id' <<<"$create_resp")"
+poll_id="$(jq -r '.poll.id // empty' <<<"$create_resp")"
+if [[ -z "$poll_id" ]]; then
+  fail_with_payload "CREATE_POLL" "$create_resp"
+fi
 echo "    consultation creee: $poll_id"
 
 if [[ "${PUBLISH:-0}" == "1" ]]; then
   echo "==> 4/4 Publication"
   publish_resp="$(curl -sS -X POST "$API_BASE_URL/api/polls/$poll_id/publish" \
     -H "Authorization: Bearer $id_token")"
-  echo "    statut: $(jq -r '.poll.status // .message // "?"' <<<"$publish_resp")"
+  publish_status="$(jq -r '.poll.status // empty' <<<"$publish_resp")"
+  if [[ -z "$publish_status" ]]; then
+    fail_with_payload "PUBLISH_POLL" "$publish_resp"
+  fi
+  echo "    statut: $publish_status"
 else
   echo "==> 4/4 Publication ignoree (PUBLISH=1 pour activer)"
 fi
