@@ -7,7 +7,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "cd /workspaces/citoyen-peyi && git status --short && git diff --stat HEAD && git add -A && git diff --cached --stat && git commit -m 'chore: sync tasks et arbre repo' --allow-empty && git push origin main && echo PUSH_OK"
+        "cd /workspaces/citoyen-peyi && export GIT_PAGER=cat && git status --short && git diff --stat HEAD && git add -A && git diff --cached --stat && git commit -m 'chore: sync tasks et arbre repo' --allow-empty && git push origin main && echo PUSH_OK"
       ],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
