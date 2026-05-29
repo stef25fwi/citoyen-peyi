@@ -62,8 +62,10 @@ export const verifyAccessToken = (token) => {
 
 export const isPollOpen = (poll) => {
   const status = String(poll.status || '').toLowerCase();
-  if (!['active', 'open'].includes(status)) return false;
   const now = new Date();
+  const scheduledAt = readDate(poll.scheduledPublishDate || poll.publishDate);
+  const scheduledIsDue = status === 'scheduled' && scheduledAt && scheduledAt <= now;
+  if (!['active', 'open'].includes(status) && !scheduledIsDue) return false;
   const opensAt = readDate(poll.opensAt || poll.openDate);
   const closesAt = readDate(poll.closesAt || poll.closeDate);
   if (opensAt && opensAt > now) return false;

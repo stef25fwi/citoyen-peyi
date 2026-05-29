@@ -72,6 +72,7 @@ class PollModel {
     required this.openDate,
     required this.closeDate,
     required this.status,
+    this.scheduledPublishDate = '',
     this.createdBy = '',
     this.createdAt = '',
     this.updatedAt = '',
@@ -90,6 +91,7 @@ class PollModel {
   final String openDate;
   final String closeDate;
   final String status;
+  final String scheduledPublishDate;
   final String createdBy;
   final String createdAt;
   final String updatedAt;
@@ -108,6 +110,7 @@ class PollModel {
     String? openDate,
     String? closeDate,
     String? status,
+    String? scheduledPublishDate,
     String? createdBy,
     String? createdAt,
     String? updatedAt,
@@ -126,6 +129,7 @@ class PollModel {
       openDate: openDate ?? this.openDate,
       closeDate: closeDate ?? this.closeDate,
       status: status ?? this.status,
+      scheduledPublishDate: scheduledPublishDate ?? this.scheduledPublishDate,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -149,6 +153,7 @@ class PollModel {
         'closeDate': closeDate,
         'closesAt': closeDate,
         'status': status,
+        'scheduledPublishDate': scheduledPublishDate,
         'createdBy': createdBy,
         'createdAt': createdAt,
         'updatedAt': updatedAt,
@@ -179,6 +184,8 @@ class PollModel {
       openDate: _readDateString(json['openDate'] ?? json['opensAt']),
       closeDate: _readDateString(json['closeDate'] ?? json['closesAt']),
       status: json['status'] as String? ?? 'draft',
+      scheduledPublishDate:
+          _readDateString(json['scheduledPublishDate'] ?? json['publishDate']),
       createdBy: json['createdBy'] as String? ?? '',
       createdAt: _readDateString(json['createdAt']),
       updatedAt: _readDateString(json['updatedAt']),

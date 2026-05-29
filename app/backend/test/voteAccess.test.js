@@ -53,3 +53,28 @@ test('isPollOpen respects active/open status and dates', () => {
   assert.equal(voteAccess.isPollOpen({ status: 'closed', opensAt: yesterday, closesAt: tomorrow }), false);
   assert.equal(voteAccess.isPollOpen({ status: 'active', opensAt: tomorrow, closesAt: tomorrow }), false);
 });
+
+test('isPollOpen accepts scheduled polls only after publication date', () => {
+  const now = new Date();
+  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString();
+  const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000).toISOString();
+
+  assert.equal(
+    voteAccess.isPollOpen({
+      status: 'scheduled',
+      scheduledPublishDate: yesterday,
+      opensAt: yesterday,
+      closesAt: tomorrow,
+    }),
+    true,
+  );
+  assert.equal(
+    voteAccess.isPollOpen({
+      status: 'scheduled',
+      scheduledPublishDate: tomorrow,
+      opensAt: yesterday,
+      closesAt: tomorrow,
+    }),
+    false,
+  );
+});

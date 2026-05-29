@@ -116,6 +116,8 @@ class PollService {
     required String openDate,
     required String closeDate,
     required int totalVoters,
+    String publicationMode = 'draft',
+    String scheduledPublishDate = '',
   }) async {
     final session = AuthSessionStore.instance.currentSession;
     final response = await _post('/api/polls', {
@@ -131,6 +133,9 @@ class PollService {
       'openDate': openDate,
       'closeDate': closeDate,
       'totalVoters': totalVoters,
+      'publicationMode': publicationMode,
+      if (scheduledPublishDate.trim().isNotEmpty)
+        'scheduledPublishDate': scheduledPublishDate.trim(),
       'communeId': session?.commune?.code,
       'communeName': session?.commune?.name,
     });

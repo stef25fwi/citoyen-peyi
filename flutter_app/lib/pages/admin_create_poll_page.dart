@@ -2,6 +2,50 @@ import 'package:flutter/material.dart';
 
 import '../services/poll_service.dart';
 
+enum _PublicationMode { draft, scheduled, immediate }
+
+extension _PublicationModeLabel on _PublicationMode {
+  String get apiValue => switch (this) {
+        _PublicationMode.draft => 'draft',
+        _PublicationMode.scheduled => 'scheduled',
+        _PublicationMode.immediate => 'immediate',
+      };
+
+  String get description => switch (this) {
+        _PublicationMode.draft =>
+          'La consultation reste modifiable et invisible au vote citoyen.',
+        _PublicationMode.scheduled =>
+          'La consultation sera publiée automatiquement à la date choisie.',
+        _PublicationMode.immediate =>
+          'La consultation est publiée dès sa création. Le vote respecte toujours les dates d’ouverture et de fermeture.',
+      };
+
+  String get submitLabel => switch (this) {
+        _PublicationMode.draft => 'Enregistrer en brouillon',
+        _PublicationMode.scheduled => 'Programmer la publication',
+        _PublicationMode.immediate => 'Publier maintenant',
+      };
+
+  String get submittingLabel => switch (this) {
+        _PublicationMode.draft => 'Enregistrement...',
+        _PublicationMode.scheduled => 'Programmation...',
+        _PublicationMode.immediate => 'Publication...',
+      };
+
+  String get successMessage => switch (this) {
+        _PublicationMode.draft => 'Consultation enregistrée en brouillon.',
+        _PublicationMode.scheduled =>
+          'Publication de la consultation programmée.',
+        _PublicationMode.immediate => 'Consultation publiée avec succès.',
+      };
+
+  IconData get submitIcon => switch (this) {
+        _PublicationMode.draft => Icons.edit_document,
+        _PublicationMode.scheduled => Icons.event_available_rounded,
+        _PublicationMode.immediate => Icons.publish_rounded,
+      };
+}
+
 class AdminCreatePollPage extends StatefulWidget {
   const AdminCreatePollPage({super.key});
 
@@ -23,6 +67,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
 
   DateTime? _openDate;
   DateTime? _closeDate;
+  DateTime? _scheduledPublishDate;
+  _PublicationMode _publicationMode = _PublicationMode.draft;
   bool _isSubmitting = false;
 
   @override
@@ -73,6 +119,27 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     });
   }
 
+  Future<void> _pickScheduledPublishDate() async {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final preferredDate = _scheduledPublishDate ?? _openDate ?? today;
+    final initialDate = preferredDate.isBefore(today) ? today : preferredDate;
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate,
+      firstDate: today,
+      lastDate: DateTime(2035),
+    );
+
+    if (picked == null) {
+      return;
+    }
+
+    setState(() {
+      _scheduledPublishDate = picked;
+      _publicationMode = _PublicationMode.scheduled;
+    });
+  }
+
   void _addOption() {
     setState(() {
       _optionControllers.add(TextEditingController());
@@ -100,11 +167,35 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
       return;
     }
 
-    final openDate = _openDate ?? DateTime.now();
-    final closeDate = _closeDate;
-    if (closeDate != null && !closeDate.isAfter(openDate)) {
+    final today = DateUtils.dateOnly(DateTime.now());
+    final scheduledPublishDate = _scheduledPublishDate;
+    if (_publicationMode == _PublicationMode.scheduled &&
+        scheduledPublishDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La date de fermeture doit etre posterieure a la date d\'ouverture.')),
+        const SnackBar(
+            content: Text('Choisissez une date de publication programmée.')),
+      );
+      return;
+    }
+
+    final openDate = _openDate ?? scheduledPublishDate ?? today;
+    final closeDate = _closeDate ?? openDate.add(const Duration(days: 7));
+    if (!closeDate.isAfter(openDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'La date de fermeture doit être postérieure à la date d’ouverture.')),
+      );
+      return;
+    }
+
+    if (_publicationMode == _PublicationMode.scheduled &&
+        scheduledPublishDate != null &&
+        !closeDate.isAfter(scheduledPublishDate)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text(
+                'La date de fermeture doit être postérieure à la date de publication.')),
       );
       return;
     }
@@ -121,8 +212,12 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
         options: _optionControllers.map((item) => item.text).toList(),
         targetPopulation: _targetPopulationController.text,
         openDate: _formatDate(openDate),
-        closeDate: _formatDate(closeDate ?? openDate),
+        closeDate: _formatDate(closeDate),
         totalVoters: int.tryParse(_voterCountController.text.trim()) ?? 50,
+        publicationMode: _publicationMode.apiValue,
+        scheduledPublishDate: _publicationMode == _PublicationMode.scheduled
+            ? _formatDate(scheduledPublishDate)
+            : '',
       );
 
       if (!mounted) {
@@ -130,7 +225,7 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
       }
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Consultation creee avec succes.')),
+        SnackBar(content: Text(_publicationMode.successMessage)),
       );
       Navigator.of(context).pushNamedAndRemoveUntil(
           '/admin', (route) => route.settings.name == '/');
@@ -216,6 +311,66 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     );
   }
 
+  Widget _buildPublicationSection(ThemeData theme) {
+    return _FormSection(
+      title: 'Publication',
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: SegmentedButton<_PublicationMode>(
+              showSelectedIcon: false,
+              segments: const [
+                ButtonSegment(
+                  value: _PublicationMode.draft,
+                  icon: Icon(Icons.edit_document),
+                  label: Text('Brouillon'),
+                ),
+                ButtonSegment(
+                  value: _PublicationMode.scheduled,
+                  icon: Icon(Icons.event_available_rounded),
+                  label: Text('Programmer'),
+                ),
+                ButtonSegment(
+                  value: _PublicationMode.immediate,
+                  icon: Icon(Icons.publish_rounded),
+                  label: Text('Publier'),
+                ),
+              ],
+              selected: {_publicationMode},
+              onSelectionChanged: _isSubmitting
+                  ? null
+                  : (selection) {
+                      setState(() {
+                        _publicationMode = selection.first;
+                        if (_publicationMode == _PublicationMode.scheduled &&
+                            _scheduledPublishDate == null) {
+                          final today = DateUtils.dateOnly(DateTime.now());
+                          final preferredDate = _openDate ?? today;
+                          _scheduledPublishDate = preferredDate.isBefore(today)
+                              ? today
+                              : preferredDate;
+                        }
+                      });
+                    },
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(_publicationMode.description, style: theme.textTheme.bodyMedium),
+          if (_publicationMode == _PublicationMode.scheduled) ...[
+            const SizedBox(height: 16),
+            _DateField(
+              label: 'Date de publication',
+              value: _formatDate(_scheduledPublishDate),
+              onTap: _pickScheduledPublishDate,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -255,7 +410,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                         controller: _descriptionController,
                         decoration: const InputDecoration(
                           labelText: 'Description',
-                          hintText: 'Contexte, objectifs et informations utiles pour les citoyens',
+                          hintText:
+                              'Contexte, objectifs et informations utiles pour les citoyens',
                         ),
                         minLines: 3,
                         maxLines: 5,
@@ -289,22 +445,29 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                   ),
                   child: Column(
                     children: [
-                      for (var index = 0; index < _optionControllers.length; index++)
+                      for (var index = 0;
+                          index < _optionControllers.length;
+                          index++)
                         Padding(
-                          padding: EdgeInsets.only(bottom: index == _optionControllers.length - 1 ? 0 : 12),
+                          padding: EdgeInsets.only(
+                              bottom: index == _optionControllers.length - 1
+                                  ? 0
+                                  : 12),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               CircleAvatar(
                                 radius: 16,
-                                backgroundColor: theme.colorScheme.primaryContainer,
+                                backgroundColor:
+                                    theme.colorScheme.primaryContainer,
                                 child: Text('${index + 1}'),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: TextFormField(
                                   controller: _optionControllers[index],
-                                  decoration: InputDecoration(labelText: 'Option ${index + 1}'),
+                                  decoration: InputDecoration(
+                                      labelText: 'Option ${index + 1}'),
                                   validator: (value) {
                                     if (value == null || value.trim().isEmpty) {
                                       return 'Toutes les options doivent etre remplies.';
@@ -317,7 +480,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                                 const SizedBox(width: 8),
                                 IconButton(
                                   onPressed: () => _removeOption(index),
-                                  icon: const Icon(Icons.delete_outline_rounded),
+                                  icon:
+                                      const Icon(Icons.delete_outline_rounded),
                                   tooltip: 'Supprimer cette option',
                                 ),
                               ],
@@ -352,6 +516,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                     );
                   },
                 ),
+                const SizedBox(height: 16),
+                _buildPublicationSection(theme),
                 const SizedBox(height: 24),
                 Wrap(
                   alignment: WrapAlignment.end,
@@ -359,7 +525,9 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                   runSpacing: 12,
                   children: [
                     OutlinedButton(
-                      onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       child: const Text('Annuler'),
                     ),
                     FilledButton.icon(
@@ -370,8 +538,10 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                               height: 18,
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
-                          : const Icon(Icons.save_rounded),
-                      label: Text(_isSubmitting ? 'Creation...' : 'Creer la consultation'),
+                          : Icon(_publicationMode.submitIcon),
+                      label: Text(_isSubmitting
+                          ? _publicationMode.submittingLabel
+                          : _publicationMode.submitLabel),
                     ),
                   ],
                 ),

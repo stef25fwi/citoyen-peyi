@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../models/poll_models.dart';
@@ -21,6 +23,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
   bool _isStatusSubmitting = false;
   PollModel? _poll;
   List<CitizenAccessCodeModel> _citizenCodes = const [];
+  String? _loadError;
+  String? _citizenCodesError;
 
   @override
   void initState() {
@@ -31,12 +35,51 @@ class _PollDetailPageState extends State<PollDetailPage> {
   Future<void> _load() async {
     setState(() {
       _isLoading = true;
+      _loadError = null;
+      _citizenCodesError = null;
     });
 
-    final poll = await PollService.instance.loadPollById(widget.pollId);
-    final citizenCodes = poll == null
-      ? const <CitizenAccessCodeModel>[]
-      : await CitizenAccessCodeService.instance.loadAccessCodesForCurrentCommune();
+    PollModel? poll = _poll;
+    var citizenCodes = _citizenCodes;
+    String? loadError;
+    String? citizenCodesError;
+
+    try {
+      poll = await PollService.instance
+          .loadPollById(widget.pollId)
+          .timeout(const Duration(seconds: 15));
+      if (poll == null) {
+        citizenCodes = const <CitizenAccessCodeModel>[];
+      }
+    } catch (error, stackTrace) {
+      debugPrint('[PollDetail] loadPollById failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      loadError = error is TimeoutException
+          ? 'Le chargement du sondage prend trop de temps. Réessayez.'
+          : 'Impossible de charger le détail du sondage.';
+      if (_poll == null) {
+        poll = null;
+        citizenCodes = const <CitizenAccessCodeModel>[];
+      }
+    }
+
+    if (poll != null) {
+      try {
+        citizenCodes = await CitizenAccessCodeService.instance
+            .loadAccessCodesForCurrentCommune()
+            .timeout(const Duration(seconds: 8));
+      } catch (error, stackTrace) {
+        debugPrint(
+            '[PollDetail] loadAccessCodesForCurrentCommune failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+        citizenCodesError = error is TimeoutException
+            ? 'Les codes citoyens prennent trop de temps à charger.'
+            : 'Les codes citoyens sont temporairement indisponibles.';
+        if (_citizenCodes.isEmpty) {
+          citizenCodes = const <CitizenAccessCodeModel>[];
+        }
+      }
+    }
 
     if (!mounted) {
       return;
@@ -45,6 +88,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
     setState(() {
       _poll = poll;
       _citizenCodes = citizenCodes;
+      _loadError = loadError;
+      _citizenCodesError = citizenCodesError;
       _isLoading = false;
     });
   }
@@ -64,8 +109,12 @@ class _PollDetailPageState extends State<PollDetailPage> {
         title: Text('$actionLabel la consultation ?'),
         content: Text('Cette action sera appliquee a "${poll.projectTitle}".'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
-          FilledButton(onPressed: () => Navigator.pop(context, true), child: Text(actionLabel)),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler')),
+          FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: Text(actionLabel)),
         ],
       ),
     );
@@ -105,9 +154,12 @@ class _PollDetailPageState extends State<PollDetailPage> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Supprimer la consultation ?'),
-        content: Text('La consultation "${poll.projectTitle}" sera supprimee definitivement.'),
+        content: Text(
+            'La consultation "${poll.projectTitle}" sera supprimee definitivement.'),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Annuler')),
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler')),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () => Navigator.pop(context, true),
@@ -138,6 +190,7 @@ class _PollDetailPageState extends State<PollDetailPage> {
   @override
   Widget build(BuildContext context) {
     final poll = _poll;
+    final loadError = _loadError;
 
     return Scaffold(
       appBar: AppBar(
@@ -146,7 +199,8 @@ class _PollDetailPageState extends State<PollDetailPage> {
             ? null
             : [
                 TextButton.icon(
-                  onPressed: () => Navigator.of(context).pushNamed('/admin/polls/${poll.id}/edit'),
+                  onPressed: () => Navigator.of(context)
+                      .pushNamed('/admin/polls/${poll.id}/edit'),
                   icon: const Icon(Icons.edit_rounded),
                   label: const Text('Modifier'),
                 ),
@@ -155,83 +209,120 @@ class _PollDetailPageState extends State<PollDetailPage> {
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1080),
-          child: _isLoading
+          child: _isLoading && poll == null
               ? const Center(child: CircularProgressIndicator())
-              : poll == null
-                  ? _EmptyPollState(onBack: () => Navigator.of(context).pushNamed('/admin'))
-                  : RefreshIndicator(
-                      onRefresh: _load,
-                      child: ListView(
-                        padding: const EdgeInsets.all(20),
-                        children: [
-                          _PollHeroCard(poll: poll),
-                          const SizedBox(height: 20),
-                          _PollActionsCard(
-                            poll: poll,
-                            isSubmitting: _isStatusSubmitting,
-                            onPublish: poll.status == 'draft'
-                                ? () => _changeStatus(
-                                      actionLabel: 'Publier',
-                                      action: PollService.instance.publishPoll,
-                                    )
-                                : null,
-                            onClose: poll.status == 'active'
-                                ? () => _changeStatus(
-                                      actionLabel: 'Cloturer',
-                                      action: PollService.instance.closePoll,
-                                    )
-                                : null,
-                            onArchive: poll.status != 'archived'
-                                ? () => _changeStatus(
-                                      actionLabel: 'Archiver',
-                                      action: PollService.instance.archivePoll,
-                                    )
-                                : null,
-                            onDelete: poll.totalVoted == 0 ? _deletePoll : null,
-                          ),
-                          const SizedBox(height: 20),
-                          LayoutBuilder(
-                            builder: (context, constraints) {
-                              final wide = constraints.maxWidth >= 860;
-                              final results = _ResultsCard(poll: poll);
-                              final side = Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  _InfoCard(poll: poll),
-                                  const SizedBox(height: 16),
-                                  _CitizenAccessCard(codes: _citizenCodes, poll: poll),
-                                  const SizedBox(height: 16),
-                                  _VoteAnonymityCard(poll: poll),
-                                ],
-                              );
+              : loadError != null && poll == null
+                  ? _PollLoadErrorState(
+                      message: loadError,
+                      onRetry: _load,
+                      onBack: () => Navigator.of(context).pushNamed('/admin'),
+                    )
+                  : poll == null
+                      ? _EmptyPollState(
+                          onBack: () =>
+                              Navigator.of(context).pushNamed('/admin'))
+                      : RefreshIndicator(
+                          onRefresh: _load,
+                          child: ListView(
+                            padding: const EdgeInsets.all(20),
+                            children: [
+                              _PollHeroCard(poll: poll),
+                              const SizedBox(height: 20),
+                              _PollActionsCard(
+                                poll: poll,
+                                isSubmitting: _isStatusSubmitting,
+                                onPublish: poll.status == 'draft' ||
+                                        poll.status == 'scheduled'
+                                    ? () => _changeStatus(
+                                          actionLabel: 'Publier',
+                                          action:
+                                              PollService.instance.publishPoll,
+                                        )
+                                    : null,
+                                onClose: poll.status == 'active'
+                                    ? () => _changeStatus(
+                                          actionLabel: 'Cloturer',
+                                          action:
+                                              PollService.instance.closePoll,
+                                        )
+                                    : null,
+                                onArchive: poll.status != 'archived'
+                                    ? () => _changeStatus(
+                                          actionLabel: 'Archiver',
+                                          action:
+                                              PollService.instance.archivePoll,
+                                        )
+                                    : null,
+                                onDelete:
+                                    poll.totalVoted == 0 ? _deletePoll : null,
+                              ),
+                              const SizedBox(height: 20),
+                              LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final wide = constraints.maxWidth >= 860;
+                                  final results = _ResultsCard(poll: poll);
+                                  final side = Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      _InfoCard(poll: poll),
+                                      const SizedBox(height: 16),
+                                      _CitizenAccessCard(
+                                        codes: _citizenCodes,
+                                        poll: poll,
+                                        errorMessage: _citizenCodesError,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      _VoteAnonymityCard(poll: poll),
+                                    ],
+                                  );
 
-                              if (wide) {
-                                return Row(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Expanded(flex: 2, child: results),
-                                    const SizedBox(width: 16),
-                                    Expanded(child: side),
-                                  ],
-                                );
-                              }
+                                  if (wide) {
+                                    return Row(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      children: [
+                                        Expanded(flex: 2, child: results),
+                                        const SizedBox(width: 16),
+                                        Expanded(child: side),
+                                      ],
+                                    );
+                                  }
 
-                              return Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  results,
-                                  const SizedBox(height: 16),
-                                  side,
-                                ],
-                              );
-                            },
+                                  return Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      results,
+                                      const SizedBox(height: 16),
+                                      side,
+                                    ],
+                                  );
+                                },
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
+                        ),
         ),
       ),
     );
+  }
+}
+
+String _pollStatusLabel(String status) {
+  switch (status) {
+    case 'active':
+      return 'En cours';
+    case 'scheduled':
+      return 'Programmée';
+    case 'closed':
+      return 'Terminée';
+    case 'archived':
+      return 'Archivée';
+    case 'draft':
+      return 'Brouillon';
+    default:
+      return status;
   }
 }
 
@@ -243,7 +334,8 @@ class _PollHeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final participation = poll.totalVoters == 0 ? 0.0 : poll.totalVoted / poll.totalVoters;
+    final participation =
+        poll.totalVoters == 0 ? 0.0 : poll.totalVoted / poll.totalVoters;
 
     return Card(
       clipBehavior: Clip.antiAlias,
@@ -261,40 +353,33 @@ class _PollHeroCard extends StatelessWidget {
           children: [
             Text(
               poll.projectTitle,
-              style: theme.textTheme.headlineMedium?.copyWith(color: Colors.white),
+              style:
+                  theme.textTheme.headlineMedium?.copyWith(color: Colors.white),
             ),
             const SizedBox(height: 8),
             Text(
               poll.question,
-              style: theme.textTheme.bodyLarge?.copyWith(color: Colors.white.withValues(alpha: 0.84)),
+              style: theme.textTheme.bodyLarge
+                  ?.copyWith(color: Colors.white.withValues(alpha: 0.84)),
             ),
             const SizedBox(height: 18),
             Wrap(
               spacing: 12,
               runSpacing: 12,
               children: [
-                _HeroStat(label: 'Statut', value: _statusLabel(poll.status)),
-                _HeroStat(label: 'Participation', value: '${poll.totalVoted}/${poll.totalVoters}'),
-                _HeroStat(label: 'Taux', value: '${(participation * 100).round()}%'),
+                _HeroStat(
+                    label: 'Statut', value: _pollStatusLabel(poll.status)),
+                _HeroStat(
+                    label: 'Participation',
+                    value: '${poll.totalVoted}/${poll.totalVoters}'),
+                _HeroStat(
+                    label: 'Taux', value: '${(participation * 100).round()}%'),
               ],
             ),
           ],
         ),
       ),
     );
-  }
-
-  String _statusLabel(String status) {
-    switch (status) {
-      case 'active':
-        return 'En cours';
-      case 'closed':
-        return 'Termine';
-      case 'archived':
-        return 'Archive';
-      default:
-        return 'Brouillon';
-    }
   }
 }
 
@@ -323,7 +408,8 @@ class _PollActionsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Actions de gestion', style: Theme.of(context).textTheme.titleMedium),
+            Text('Actions de gestion',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 10),
             Text(
               'Publiez, cloturez ou archivez la consultation selon son etat courant. La suppression n\'est autorisee que sans vote enregistre.',
@@ -381,9 +467,14 @@ class _HeroStat extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white70, fontSize: 12)),
+          Text(label,
+              style: const TextStyle(color: Colors.white70, fontSize: 12)),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w700)),
+          Text(value,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700)),
         ],
       ),
     );
@@ -397,7 +488,8 @@ class _ResultsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalVotes = poll.options.fold<int>(0, (sum, option) => sum + option.votes);
+    final totalVotes =
+        poll.options.fold<int>(0, (sum, option) => sum + option.votes);
 
     return Card(
       child: Padding(
@@ -405,7 +497,8 @@ class _ResultsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Resultats agreges', style: Theme.of(context).textTheme.titleLarge),
+            Text('Resultats agreges',
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 6),
             Text('$totalVotes vote(s) enregistres'),
             const SizedBox(height: 18),
@@ -436,7 +529,9 @@ class _ResultRow extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: Text(option.label, style: Theme.of(context).textTheme.titleSmall)),
+            Expanded(
+                child: Text(option.label,
+                    style: Theme.of(context).textTheme.titleSmall)),
             Text('${option.votes}'),
           ],
         ),
@@ -462,12 +557,19 @@ class _InfoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Informations', style: Theme.of(context).textTheme.titleMedium),
+            Text('Informations',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
-            _InfoRow(label: 'Statut', value: poll.status),
+            _InfoRow(label: 'Statut', value: _pollStatusLabel(poll.status)),
+            if (poll.scheduledPublishDate.isNotEmpty)
+              _InfoRow(
+                  label: 'Publication prévue',
+                  value: poll.scheduledPublishDate),
             _InfoRow(label: 'Ouverture', value: poll.openDate),
             _InfoRow(label: 'Fermeture', value: poll.closeDate),
-            _InfoRow(label: 'Participation', value: '${poll.totalVoted}/${poll.totalVoters}'),
+            _InfoRow(
+                label: 'Participation',
+                value: '${poll.totalVoted}/${poll.totalVoters}'),
           ],
         ),
       ),
@@ -504,10 +606,15 @@ class _InfoRow extends StatelessWidget {
 }
 
 class _CitizenAccessCard extends StatelessWidget {
-  const _CitizenAccessCard({required this.codes, required this.poll});
+  const _CitizenAccessCard({
+    required this.codes,
+    required this.poll,
+    required this.errorMessage,
+  });
 
   final List<CitizenAccessCodeModel> codes;
   final PollModel poll;
+  final String? errorMessage;
 
   @override
   Widget build(BuildContext context) {
@@ -520,16 +627,64 @@ class _CitizenAccessCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Acces citoyens', style: Theme.of(context).textTheme.titleMedium),
+            Text('Acces citoyens',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 16),
-            Text('Les agents de mobilisation citoyenne generent les codes citoyens a l\'accueil apres verification physique. Cette consultation n\'utilise pas de stock QR dedie.'),
+            Text(
+                'Les agents de mobilisation citoyenne generent les codes citoyens a l\'accueil apres verification physique. Cette consultation n\'utilise pas de stock QR dedie.'),
+            if (errorMessage != null) ...[
+              const SizedBox(height: 14),
+              _InlineWarning(message: errorMessage!),
+            ],
             const SizedBox(height: 16),
-            _InfoRow(label: 'Commune', value: poll.communeName.isEmpty ? 'Non renseignee' : poll.communeName),
+            _InfoRow(
+                label: 'Commune',
+                value: poll.communeName.isEmpty
+                    ? 'Non renseignee'
+                    : poll.communeName),
             _InfoRow(label: 'Codes citoyens actifs', value: '$activeCodes'),
             _InfoRow(label: 'Codes deja utilises', value: '$usedCodes'),
-            _InfoRow(label: 'Votes anonymes enregistres', value: '${poll.totalVoted}'),
+            _InfoRow(
+                label: 'Votes anonymes enregistres',
+                value: '${poll.totalVoted}'),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _InlineWarning extends StatelessWidget {
+  const _InlineWarning({required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7E6),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFF5C26B)),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(Icons.info_outline_rounded,
+              color: Color(0xFF9A6700), size: 20),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: const Color(0xFF6B4E00)),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -548,13 +703,17 @@ class _VoteAnonymityCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Garantie d\'anonymat', style: Theme.of(context).textTheme.titleMedium),
+            Text('Garantie d\'anonymat',
+                style: Theme.of(context).textTheme.titleMedium),
             const SizedBox(height: 12),
-            const Text('Le code citoyen ouvre l\'espace de vote sans relier l\'identite reelle au choix exprime.'),
+            const Text(
+                'Le code citoyen ouvre l\'espace de vote sans relier l\'identite reelle au choix exprime.'),
             const SizedBox(height: 14),
             _InfoRow(label: 'Consultation', value: poll.projectTitle),
             _InfoRow(label: 'Question', value: poll.question),
-            _InfoRow(label: 'Rappel', value: 'Votre identite n\'est pas liee a votre choix.'),
+            _InfoRow(
+                label: 'Rappel',
+                value: 'Votre identite n\'est pas liee a votre choix.'),
           ],
         ),
       ),
@@ -580,13 +739,68 @@ class _EmptyPollState extends StatelessWidget {
               children: [
                 const Icon(Icons.poll_outlined, size: 42),
                 const SizedBox(height: 16),
-                Text('Consultation introuvable', style: Theme.of(context).textTheme.headlineSmall),
+                Text('Consultation introuvable',
+                    style: Theme.of(context).textTheme.headlineSmall),
                 const SizedBox(height: 10),
-                const Text('La consultation demandee n\'existe pas ou n\'est plus disponible.'),
+                const Text(
+                    'La consultation demandee n\'existe pas ou n\'est plus disponible.'),
                 const SizedBox(height: 18),
                 FilledButton(
                   onPressed: onBack,
                   child: const Text('Retour au tableau de bord'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PollLoadErrorState extends StatelessWidget {
+  const _PollLoadErrorState({
+    required this.message,
+    required this.onRetry,
+    required this.onBack,
+  });
+
+  final String message;
+  final VoidCallback onRetry;
+  final VoidCallback onBack;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Card(
+          child: Padding(
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.error_outline_rounded, size: 42),
+                const SizedBox(height: 16),
+                Text('Chargement impossible',
+                    style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 10),
+                Text(message, textAlign: TextAlign.center),
+                const SizedBox(height: 18),
+                Wrap(
+                  alignment: WrapAlignment.center,
+                  spacing: 10,
+                  runSpacing: 10,
+                  children: [
+                    OutlinedButton(
+                      onPressed: onBack,
+                      child: const Text('Retour au tableau de bord'),
+                    ),
+                    FilledButton(
+                      onPressed: onRetry,
+                      child: const Text('Réessayer'),
+                    ),
+                  ],
                 ),
               ],
             ),

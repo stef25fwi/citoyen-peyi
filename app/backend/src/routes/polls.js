@@ -21,13 +21,45 @@ const ensureConfigured = (_req, res, next) => {
 };
 
 const sanitizeString = (value, max) => (typeof value === 'string' ? value.trim().substring(0, max) : '');
-const sanitizeDate = (value) => {
+export const sanitizeDate = (value) => {
   if (typeof value !== 'string') return '';
   const trimmed = value.trim();
   if (!/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return '';
   const date = new Date(`${trimmed}T00:00:00Z`);
   return Number.isNaN(date.getTime()) ? '' : trimmed;
 };
+
+export const resolveInitialPublication = (body = {}) => {
+  const requestedMode = sanitizeString(body.publicationMode, 32).toLowerCase();
+  const requestedStatus = sanitizeString(body.status, 32).toLowerCase();
+  const mode = requestedMode || requestedStatus || 'draft';
+
+  if (['immediate', 'publish', 'published', 'active', 'open'].includes(mode)) {
+    return { status: 'active', scheduledPublishDate: '' };
+  }
+
+  if (['scheduled', 'programmed', 'programme', 'programmee'].includes(mode)) {
+    const scheduledPublishDate = sanitizeDate(body.scheduledPublishDate || body.publishDate);
+    if (!scheduledPublishDate) {
+      return { error: 'Date de publication programmee invalide.' };
+    }
+    return { status: 'scheduled', scheduledPublishDate };
+  }
+
+  return { status: 'draft', scheduledPublishDate: '' };
+};
+
+export const isScheduledPublicationDue = (poll, now = new Date()) => {
+  if (String(poll?.status || '').toLowerCase() !== 'scheduled') return false;
+  const scheduledPublishDate = sanitizeDate(poll?.scheduledPublishDate);
+  if (!scheduledPublishDate) return false;
+  const scheduledAt = new Date(`${scheduledPublishDate}T00:00:00Z`);
+  return scheduledAt <= now;
+};
+
+const normalizePollForRead = (poll, now = new Date()) => (
+  isScheduledPublicationDue(poll, now) ? { ...poll, status: 'active' } : poll
+);
 
 const buildOptions = (rawOptions, existingOptions = []) => {
   if (!Array.isArray(rawOptions)) return [];
@@ -63,7 +95,7 @@ router.get('/', async (req, res, next) => {
     const scope = scopeFromAdmin(req.user);
     if (scope) query = query.where('communeId', '==', scope);
     const snapshot = await query.limit(500).get();
-    const polls = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    const polls = snapshot.docs.map((doc) => normalizePollForRead({ id: doc.id, ...doc.data() }));
     res.json({ polls });
   } catch (error) {
     next(error);
@@ -77,9 +109,16 @@ router.post('/', requireMatchingCommune, async (req, res, next) => {
     const options = buildOptions(req.body?.options);
     const openDate = sanitizeDate(req.body?.openDate);
     const closeDate = sanitizeDate(req.body?.closeDate);
+    const publication = resolveInitialPublication(req.body);
 
     if (!projectTitle || !question || options.length < 2 || !openDate || !closeDate) {
       return res.status(400).json({ message: 'Champs obligatoires manquants ou invalides.' });
+    }
+    if (publication.error) {
+      return res.status(400).json({ message: publication.error });
+    }
+    if (publication.scheduledPublishDate && publication.scheduledPublishDate >= closeDate) {
+      return res.status(400).json({ message: 'La date de publication doit preceder strictement la date de fermeture.' });
     }
 
     const db = getFirebaseAdminDb();
@@ -96,7 +135,8 @@ router.post('/', requireMatchingCommune, async (req, res, next) => {
       targetPopulation: sanitizeString(req.body?.targetPopulation, 300),
       openDate,
       closeDate,
-      status: 'draft',
+      status: publication.status,
+      scheduledPublishDate: publication.scheduledPublishDate,
       communeId,
       communeName,
       totalVoters: Math.max(0, Math.min(10000000, Number(req.body?.totalVoters) || 0)),
@@ -142,6 +182,7 @@ router.patch('/:pollId', async (req, res, next) => {
     if (typeof req.body?.targetPopulation === 'string') update.targetPopulation = sanitizeString(req.body.targetPopulation, 300);
     if (req.body?.openDate) update.openDate = sanitizeDate(req.body.openDate) || data.openDate;
     if (req.body?.closeDate) update.closeDate = sanitizeDate(req.body.closeDate) || data.closeDate;
+    if (typeof req.body?.scheduledPublishDate === 'string') update.scheduledPublishDate = sanitizeDate(req.body.scheduledPublishDate);
     if (Number.isFinite(Number(req.body?.totalVoters))) update.totalVoters = Math.max(0, Number(req.body.totalVoters));
 
     if (Array.isArray(req.body?.options)) {
@@ -165,7 +206,9 @@ const updateStatus = (status) => async (req, res, next) => {
   try {
     const loaded = await loadPollForUpdate(req, res);
     if (!loaded) return undefined;
-    await loaded.ref.set({ status, updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    const update = { status, updatedAt: FieldValue.serverTimestamp() };
+    if (status === 'active') update.scheduledPublishDate = '';
+    await loaded.ref.set(update, { merge: true });
     return res.json({ ok: true, status });
   } catch (error) {
     return next(error);

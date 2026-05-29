@@ -207,6 +207,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     };
 
     final activeCount = _polls.where((poll) => poll.status == 'active').length;
+    final scheduledCount =
+        _polls.where((poll) => poll.status == 'scheduled').length;
     final closedCount = _polls.where((poll) => poll.status == 'closed').length;
     final archivedCount =
         _polls.where((poll) => poll.status == 'archived').length;
@@ -333,6 +335,12 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         value: '$activeCount',
                         icon: Icons.bar_chart_rounded,
                         color: _DashboardTheme.success,
+                      ),
+                      _DashboardStatCard(
+                        label: 'Programmées',
+                        value: '$scheduledCount',
+                        icon: Icons.event_available_rounded,
+                        color: const Color(0xFF7C3AED),
                       ),
                       _DashboardStatCard(
                         label: 'Terminées',
@@ -673,7 +681,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                       .textTheme.titleMedium),
                                               const SizedBox(height: 4),
                                               Text(
-                                                '${poll.totalVoted}/${poll.totalVoters} votants · ${poll.status}',
+                                                '${poll.totalVoted}/${poll.totalVoters} votants · ${_adminPollStatusLabel(poll)}',
                                                 style:
                                                     theme.textTheme.bodyMedium,
                                               ),
@@ -697,6 +705,25 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ),
       ),
     );
+  }
+}
+
+String _adminPollStatusLabel(PollModel poll) {
+  switch (poll.status) {
+    case 'active':
+      return 'En cours';
+    case 'scheduled':
+      return poll.scheduledPublishDate.isEmpty
+          ? 'Programmée'
+          : 'Programmée le ${poll.scheduledPublishDate}';
+    case 'closed':
+      return 'Terminée';
+    case 'archived':
+      return 'Archivée';
+    case 'draft':
+      return 'Brouillon';
+    default:
+      return poll.status;
   }
 }
 
