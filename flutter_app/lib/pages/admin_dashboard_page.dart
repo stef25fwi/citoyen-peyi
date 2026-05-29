@@ -202,7 +202,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final pageTitle = switch (widget.initialSection) {
       AdminDashboardSection.overview => 'Tableau de bord commune',
       AdminDashboardSection.polls => 'Consultations communales',
-      AdminDashboardSection.controllers => 'Agents de mobilisation citoyenne communaux',
+      AdminDashboardSection.controllers =>
+        'Agents de mobilisation citoyenne communaux',
     };
 
     final activeCount = _polls.where((poll) => poll.status == 'active').length;
@@ -210,6 +211,9 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final archivedCount =
         _polls.where((poll) => poll.status == 'archived').length;
     final draftCount = _polls.where((poll) => poll.status == 'draft').length;
+    final visiblePolls = widget.initialSection == AdminDashboardSection.polls
+        ? _polls
+        : _polls.take(5).toList();
 
     return Scaffold(
       backgroundColor: _DashboardTheme.background,
@@ -620,10 +624,16 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           Row(
                             children: [
                               Expanded(
-                                child: Text('Consultations recentes',
+                                child: Text(
+                                    widget.initialSection ==
+                                            AdminDashboardSection.polls
+                                        ? 'Toutes les consultations'
+                                        : 'Consultations recentes',
                                     style:
                                         Theme.of(context).textTheme.titleLarge),
                               ),
+                              Chip(label: Text('${_polls.length}')),
+                              const SizedBox(width: 8),
                               if (_isLoading)
                                 const SizedBox(
                                     width: 18,
@@ -637,7 +647,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             const Text(
                                 'Aucune consultation disponible pour le moment.')
                           else
-                            for (final poll in _polls.take(5))
+                            for (final poll in visiblePolls)
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: InkWell(
@@ -1099,7 +1109,9 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
                       strokeWidth: 2, color: Colors.white),
                 )
               : const Icon(Icons.check_rounded),
-          label: Text(_isSubmitting ? 'Creation...' : 'Creer l\'agent de mobilisation citoyenne'),
+          label: Text(_isSubmitting
+              ? 'Creation...'
+              : 'Creer l\'agent de mobilisation citoyenne'),
         ),
       ],
     );

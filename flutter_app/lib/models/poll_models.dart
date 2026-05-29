@@ -38,6 +38,27 @@ class PollOptionModel {
   }
 }
 
+String _readDateString(Object? value) {
+  if (value == null) return '';
+  if (value is String) return value;
+  if (value is DateTime) return value.toIso8601String();
+  if (value is Map<String, dynamic>) {
+    final seconds = value['_seconds'] ?? value['seconds'];
+    if (seconds is num) {
+      return DateTime.fromMillisecondsSinceEpoch(
+        seconds.toInt() * 1000,
+        isUtc: true,
+      ).toIso8601String();
+    }
+  }
+  try {
+    final dynamic dynamicValue = value;
+    final dynamic date = dynamicValue.toDate();
+    if (date is DateTime) return date.toIso8601String();
+  } catch (_) {}
+  return value.toString();
+}
+
 class PollModel {
   const PollModel({
     required this.id,
@@ -155,13 +176,12 @@ class PollModel {
       targetPopulation: json['targetPopulation'] as String? ?? '',
       communeId: json['communeId'] as String? ?? '',
       communeName: json['communeName'] as String? ?? '',
-      openDate: json['openDate'] as String? ?? json['opensAt'] as String? ?? '',
-      closeDate:
-          json['closeDate'] as String? ?? json['closesAt'] as String? ?? '',
+      openDate: _readDateString(json['openDate'] ?? json['opensAt']),
+      closeDate: _readDateString(json['closeDate'] ?? json['closesAt']),
       status: json['status'] as String? ?? 'draft',
       createdBy: json['createdBy'] as String? ?? '',
-      createdAt: json['createdAt'] as String? ?? '',
-      updatedAt: json['updatedAt'] as String? ?? '',
+      createdAt: _readDateString(json['createdAt']),
+      updatedAt: _readDateString(json['updatedAt']),
       totalVoters: (json['totalVoters'] as num?)?.toInt() ?? 0,
       totalVoted: (json['totalVoted'] as num?)?.toInt() ?? 0,
     );

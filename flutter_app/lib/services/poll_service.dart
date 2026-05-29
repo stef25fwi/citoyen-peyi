@@ -62,8 +62,8 @@ class PollService {
             final polls = rawList
                 .whereType<Map<String, dynamic>>()
                 .map(PollModel.fromJson)
-                .toList()
-              ..sort((left, right) => right.openDate.compareTo(left.openDate));
+                .toList();
+            _sortPollsForDisplay(polls);
             await _writeLocalPolls(polls);
             return _filterByCommuneScope(polls, communeScope);
           }
@@ -86,10 +86,9 @@ class PollService {
         return _filterByCommuneScope(polls, communeScope);
       }
 
-      final polls = snapshot.docs
-          .map((item) => PollModel.fromJson(item.data()))
-          .toList()
-        ..sort((left, right) => right.openDate.compareTo(left.openDate));
+      final polls =
+          snapshot.docs.map((item) => PollModel.fromJson(item.data())).toList();
+      _sortPollsForDisplay(polls);
       await _writeLocalPolls(polls);
       return _filterByCommuneScope(polls, communeScope);
     } catch (_) {
@@ -157,7 +156,8 @@ class PollService {
         final merged = <PollModel>[
           poll,
           ...existing.where((item) => item.id != poll.id),
-        ]..sort((left, right) => right.openDate.compareTo(left.openDate));
+        ];
+        _sortPollsForDisplay(merged);
         await _writeLocalPolls(merged);
       } catch (_) {}
       return poll;
@@ -309,5 +309,23 @@ class PollService {
       }
       return true;
     }).toList();
+  }
+
+  void _sortPollsForDisplay(List<PollModel> polls) {
+    polls.sort((left, right) {
+      final rightDate = _displayDate(right);
+      final leftDate = _displayDate(left);
+      final dateCompare = rightDate.compareTo(leftDate);
+      if (dateCompare != 0) return dateCompare;
+      return right.id.compareTo(left.id);
+    });
+  }
+
+  DateTime _displayDate(PollModel poll) {
+    for (final raw in [poll.updatedAt, poll.createdAt, poll.openDate]) {
+      final parsed = DateTime.tryParse(raw);
+      if (parsed != null) return parsed;
+    }
+    return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   }
 }

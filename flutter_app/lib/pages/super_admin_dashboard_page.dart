@@ -277,7 +277,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
       SuperAdminDashboardSection.controllers =>
         'Agents de mobilisation citoyenne',
     };
-    final activePolls = _polls.where(_isActivePoll).toList();
+    final activePolls = _polls.where(_isActivePoll).length;
 
     return Scaffold(
       appBar: AppBar(
@@ -479,7 +479,10 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  _SuperAdminActivePollsSection(polls: activePolls),
+                  _SuperAdminPollsSection(
+                    polls: _polls,
+                    activeCount: activePolls,
+                  ),
                   const SizedBox(height: 24),
                 ],
                 if (showControllersSection) ...[
@@ -561,10 +564,14 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
   }
 }
 
-class _SuperAdminActivePollsSection extends StatelessWidget {
-  const _SuperAdminActivePollsSection({required this.polls});
+class _SuperAdminPollsSection extends StatelessWidget {
+  const _SuperAdminPollsSection({
+    required this.polls,
+    required this.activeCount,
+  });
 
   final List<PollModel> polls;
+  final int activeCount;
 
   @override
   Widget build(BuildContext context) {
@@ -580,16 +587,18 @@ class _SuperAdminActivePollsSection extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    'Consultations en cours',
+                    'Consultations creees',
                     style: theme.textTheme.headlineSmall,
                   ),
                 ),
                 Chip(label: Text('${polls.length}')),
+                const SizedBox(width: 8),
+                Chip(label: Text('$activeCount en cours')),
               ],
             ),
             const SizedBox(height: 8),
             Text(
-              'Le super administrateur peut verifier les textes publies et corriger le titre, la description ou la question si necessaire.',
+              'Le super administrateur voit les brouillons et les consultations publiees, puis peut corriger le titre, la description ou la question si necessaire.',
               style: theme.textTheme.bodyMedium
                   ?.copyWith(color: const Color(0xFF5A6573)),
             ),
@@ -604,7 +613,7 @@ class _SuperAdminActivePollsSection extends StatelessWidget {
                           size: 46, color: Color(0xFF9AA9B8)),
                       const SizedBox(height: 10),
                       Text(
-                        'Aucune consultation en cours.',
+                        'Aucune consultation creee.',
                         style: theme.textTheme.bodyLarge
                             ?.copyWith(color: const Color(0xFF5A6573)),
                       ),
