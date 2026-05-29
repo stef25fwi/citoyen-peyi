@@ -225,6 +225,12 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    // Abonnements push FCM: associes par le backend a une commune apres
+    // validation du code citoyen. Aucun acces client direct.
+    match /notification_subscriptions/{subscriptionId} {
+      allow read, write: if false;
+    }
+
     // Actualites publiques publiees par les administrateurs communaux.
     // Lecture libre, ecriture exclusivement via /api/news (Admin SDK).
     match /public_news/{newsId} {

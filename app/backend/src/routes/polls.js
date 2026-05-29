@@ -9,6 +9,7 @@ import {
   requireCommuneAdmin,
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
+import { notifyCommunePollPublished } from '../services/notificationService.js';
 
 const router = express.Router();
 const POLL_COLLECTION = 'polls';
@@ -147,7 +148,9 @@ router.post('/', requireMatchingCommune, async (req, res, next) => {
     };
 
     await db.collection(POLL_COLLECTION).doc(id).set(poll);
-    res.status(201).json({ poll: { ...poll, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() } });
+    const responsePoll = { ...poll, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
+    await notifyCommunePollPublished({ db, poll: responsePoll });
+    res.status(201).json({ poll: responsePoll });
   } catch (error) {
     next(error);
   }
@@ -209,6 +212,12 @@ const updateStatus = (status) => async (req, res, next) => {
     const update = { status, updatedAt: FieldValue.serverTimestamp() };
     if (status === 'active') update.scheduledPublishDate = '';
     await loaded.ref.set(update, { merge: true });
+    if (status === 'active') {
+      await notifyCommunePollPublished({
+        db: getFirebaseAdminDb(),
+        poll: { id: req.params.pollId, ...loaded.data, ...update, updatedAt: new Date().toISOString() },
+      });
+    }
     return res.json({ ok: true, status });
   } catch (error) {
     return next(error);

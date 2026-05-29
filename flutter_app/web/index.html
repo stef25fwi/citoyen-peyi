@@ -16,7 +16,10 @@
         if ('serviceWorker' in navigator) {
           navigator.serviceWorker.getRegistrations().then(function (registrations) {
             registrations.forEach(function (registration) {
-              registration.unregister();
+              var activeScript = registration.active && registration.active.scriptURL;
+              if (activeScript && activeScript.indexOf('flutter_service_worker.js') !== -1) {
+                registration.unregister();
+              }
             });
           }).catch(function () {});
         }

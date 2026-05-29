@@ -34,8 +34,10 @@ Les variables suivantes sont lues via `--dart-define` dans [lib/config/app_confi
 - `FIREBASE_STORAGE_BUCKET`
 - `FIREBASE_MESSAGING_SENDER_ID`
 - `FIREBASE_APP_ID`
+- `PUSH_VAPID_KEY` (optionnel: active les notifications push web FCM)
 
 Si les variables Firebase sont absentes, l'application reste utilisable avec son fallback local, mais l'auth Firebase et Firestore ne seront pas actives.
+Si `PUSH_VAPID_KEY` est absent, le badge de consultation continue de fonctionner mais l'inscription push navigateur est ignoree.
 
 ## GitHub Pages
 
@@ -43,7 +45,7 @@ Le workflow [deploy-pages.yml](../.github/workflows/deploy-pages.yml) construit 
 
 Configuration attendue dans GitHub:
 
-- Variable de repository: `API_BASE_URL`
+- Variables de repository: `API_BASE_URL`, `PUSH_VAPID_KEY` (optionnel)
 - Secrets de repository:
   - `FIREBASE_API_KEY`
   - `FIREBASE_AUTH_DOMAIN`

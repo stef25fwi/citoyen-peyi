@@ -26,12 +26,20 @@ class AppConfig {
     return _isProductBuild ? '' : 'http://localhost:4000';
   }
 
-  static const String firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY', defaultValue: '');
-  static const String firebaseAuthDomain = String.fromEnvironment('FIREBASE_AUTH_DOMAIN', defaultValue: '');
-  static const String firebaseProjectId = String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '');
-  static const String firebaseStorageBucket = String.fromEnvironment('FIREBASE_STORAGE_BUCKET', defaultValue: '');
-  static const String firebaseMessagingSenderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '');
-  static const String firebaseAppId = String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '');
+  static const String firebaseApiKey =
+      String.fromEnvironment('FIREBASE_API_KEY', defaultValue: '');
+  static const String firebaseAuthDomain =
+      String.fromEnvironment('FIREBASE_AUTH_DOMAIN', defaultValue: '');
+  static const String firebaseProjectId =
+      String.fromEnvironment('FIREBASE_PROJECT_ID', defaultValue: '');
+  static const String firebaseStorageBucket =
+      String.fromEnvironment('FIREBASE_STORAGE_BUCKET', defaultValue: '');
+  static const String firebaseMessagingSenderId =
+      String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '');
+  static const String firebaseAppId =
+      String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '');
+  static const String pushVapidKey =
+      String.fromEnvironment('PUSH_VAPID_KEY', defaultValue: '');
 
   static String get resolvedFirebaseApiKey {
     final raw = firebaseApiKey.trim();
@@ -84,20 +92,20 @@ class AppConfig {
       appCheckEnabled && isAppCheckConfigured;
 
   static bool get isFirebaseConfigured => [
-      resolvedFirebaseApiKey,
-      resolvedFirebaseAuthDomain,
-      resolvedFirebaseProjectId,
-      resolvedFirebaseStorageBucket,
-      resolvedFirebaseMessagingSenderId,
-      resolvedFirebaseAppId,
+        resolvedFirebaseApiKey,
+        resolvedFirebaseAuthDomain,
+        resolvedFirebaseProjectId,
+        resolvedFirebaseStorageBucket,
+        resolvedFirebaseMessagingSenderId,
+        resolvedFirebaseAppId,
       ].every((value) => value.trim().isNotEmpty);
 
-    static FirebaseOptions get firebaseOptions => FirebaseOptions(
-      apiKey: resolvedFirebaseApiKey,
-      authDomain: resolvedFirebaseAuthDomain,
-      projectId: resolvedFirebaseProjectId,
-      storageBucket: resolvedFirebaseStorageBucket,
-      messagingSenderId: resolvedFirebaseMessagingSenderId,
-      appId: resolvedFirebaseAppId,
+  static FirebaseOptions get firebaseOptions => FirebaseOptions(
+        apiKey: resolvedFirebaseApiKey,
+        authDomain: resolvedFirebaseAuthDomain,
+        projectId: resolvedFirebaseProjectId,
+        storageBucket: resolvedFirebaseStorageBucket,
+        messagingSenderId: resolvedFirebaseMessagingSenderId,
+        appId: resolvedFirebaseAppId,
       );
 }

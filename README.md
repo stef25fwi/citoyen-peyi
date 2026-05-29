@@ -164,6 +164,7 @@ Configuration GitHub Pages requise:
 - Variables de repository:
 	- `API_BASE_URL`
 	- `RECAPTCHA_SITE_KEY` (optionnel: surcharge la cle publique embarquee dans `AppConfig`)
+	- `PUSH_VAPID_KEY` (optionnel: active les notifications push web FCM)
 - Secrets de repository:
 	- `FIREBASE_API_KEY`
 	- `FIREBASE_AUTH_DOMAIN`

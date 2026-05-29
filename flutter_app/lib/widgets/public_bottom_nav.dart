@@ -22,7 +22,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
   @override
   void initState() {
     super.initState();
-    _badgeSvc.check();
+    _badgeSvc.startListening();
   }
 
   void _handleTap(BuildContext context, int index) {

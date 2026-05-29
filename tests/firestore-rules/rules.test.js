@@ -82,6 +82,15 @@ test('public_news is publicly readable but client cannot write', async () => {
   await assertFails(setDoc(doc(adminDb, 'public_news/n2'), { title: 'x', body: 'y' }));
 });
 
+test('notification_subscriptions is fully backend-managed', async () => {
+  const adminDb = userDb('admin-1', { role: 'commune_admin', admin: true });
+  await assertFails(getDoc(doc(adminDb, 'notification_subscriptions/token-1')));
+  await assertFails(setDoc(doc(adminDb, 'notification_subscriptions/token-1'), {
+    token: 'fcm-token',
+    communeId: 'commune-1',
+  }));
+});
+
 test('registrationCodes legacy collection is locked down', async () => {
   const adminDb = userDb('admin-1', { role: 'commune_admin', admin: true });
   await assertFails(getDoc(doc(adminDb, 'registrationCodes/old')));

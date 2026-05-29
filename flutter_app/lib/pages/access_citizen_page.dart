@@ -1,8 +1,12 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/citizen_commune_store.dart';
 import '../services/citizen_public_access_service.dart';
 import '../services/new_poll_badge_service.dart';
+import '../services/push_notification_service.dart';
 import '../services/vote_access_service.dart';
 import '../widgets/public_bottom_nav.dart';
 import 'legal_page.dart';
@@ -127,6 +131,19 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
             validation: validation,
           );
       if (!mounted) return;
+
+      await CitizenCommuneStore.instance.save(
+        communeId: session.communeId,
+        communeName: session.communeName,
+      );
+      await NewPollBadgeService.instance.startListening();
+      await NewPollBadgeService.instance.markAllSeen();
+      if (!mounted) return;
+      unawaited(PushNotificationService.instance.registerForCitizenCommune(
+        rawCode: rawCode,
+        communeId: session.communeId,
+        communeName: session.communeName,
+      ));
 
       setState(() => _isSubmitting = false);
 
