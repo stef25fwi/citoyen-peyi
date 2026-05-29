@@ -104,6 +104,27 @@ exchange_custom_token_for_id_token() {
   printf '%s' "$id_token"
 }
 
+ensure_super_id_token() {
+  if [[ -n "${super_id_token:-}" ]]; then
+    return
+  fi
+  if [[ -z "${SUPER_ADMIN_KEY:-}" ]]; then
+    fail_with_payload "SUPER_EXCHANGE" '{"message":"SUPER_ADMIN_KEY requis pour verifier la liste superadmin des agents."}'
+  fi
+
+  local super_exchange_resp
+  local super_custom_token
+  super_exchange_resp="$(curl -sS -X POST "$API_BASE_URL/api/auth/super/exchange" \
+    -H 'Content-Type: application/json' \
+    -H "x-super-admin-key: $SUPER_ADMIN_KEY" \
+    -d '{}')"
+  super_custom_token="$(jq -r '.customToken // empty' <<<"$super_exchange_resp")"
+  if [[ -z "$super_custom_token" ]]; then
+    fail_with_payload "SUPER_EXCHANGE" "$super_exchange_resp"
+  fi
+  super_id_token="$(exchange_custom_token_for_id_token "$super_custom_token" SUPER_FIREBASE_TOKEN)"
+}
+
 try_admin_exchange() {
   local candidate_key="$1"
   ADMIN_EXCHANGE_RESP="$(curl -sS -X POST "$API_BASE_URL/api/auth/admin/exchange" \
@@ -129,14 +150,14 @@ admin_label="Admin communal QA ${timestamp}"
 admin_source="local_admin_key"
 admin_access_key="${ADMIN_ACCESS_KEY:-}"
 
-echo "==> 1/7 Connexion admin communal"
+echo "==> 1/9 Connexion admin communal"
 if [[ -z "$admin_access_key" ]] || ! try_admin_exchange "$admin_access_key"; then
   echo "    cle admin locale indisponible ou invalide, tentative super admin"
   if [[ -z "${SUPER_ADMIN_KEY:-}" ]]; then
     fail_with_payload "ADMIN_EXCHANGE" "${ADMIN_EXCHANGE_RESP:-{"message":"SUPER_ADMIN_KEY requis pour creer un admin communal."}}"
   fi
 
-  echo "==> 2/7 Connexion super admin et creation admin communal"
+  echo "==> 2/9 Connexion super admin et creation admin communal"
   super_exchange_resp="$(curl -sS -X POST "$API_BASE_URL/api/auth/super/exchange" \
     -H 'Content-Type: application/json' \
     -H "x-super-admin-key: $SUPER_ADMIN_KEY" \
@@ -163,7 +184,7 @@ if [[ -z "$admin_access_key" ]] || ! try_admin_exchange "$admin_access_key"; the
   admin_source="created_from_super_admin"
   try_admin_exchange "$admin_access_key" || fail_with_payload "ADMIN_EXCHANGE_CREATED" "$ADMIN_EXCHANGE_RESP"
 else
-  echo "==> 2/7 Connexion super admin ignoree (admin communal local valide)"
+  echo "==> 2/9 Connexion super admin ignoree (admin communal local valide)"
 fi
 
 admin_id_token="$(exchange_custom_token_for_id_token "$ADMIN_CUSTOM_TOKEN" ADMIN_FIREBASE_TOKEN)"
@@ -171,7 +192,7 @@ commune_code="$ADMIN_COMMUNE_ID"
 commune_name="${ADMIN_COMMUNE_NAME:-$commune_name}"
 echo "    admin communal OK: $commune_name ($commune_code)"
 
-echo "==> 3/7 Creation consultation type"
+echo "==> 3/9 Creation consultation type"
 today="$(date -u +%Y-%m-%d)"
 plus14="$(date -u -d '+14 days' +%Y-%m-%d)"
 project_title="${PROJECT_TITLE:-Consultation type Citoyen Peyi ${today}}"
@@ -192,7 +213,7 @@ if [[ -z "$poll_id" ]]; then
   fail_with_payload "CREATE_POLL" "$create_poll_resp"
 fi
 
-echo "==> 4/7 Publication consultation"
+echo "==> 4/9 Publication consultation"
 publish_resp="$(curl -sS -X POST "$API_BASE_URL/api/polls/$poll_id/publish" \
   -H "Authorization: Bearer $admin_id_token")"
 poll_status="$(jq -r '.poll.status // .status // empty' <<<"$publish_resp")"
@@ -201,7 +222,31 @@ if [[ "$poll_status" != "active" ]]; then
 fi
 echo "    consultation OK: $poll_id ($poll_status)"
 
-echo "==> 5/7 Creation et connexion agent"
+echo "==> 5/9 Verification consultations super admin"
+ensure_super_id_token
+super_polls_resp="$(curl -sS -X GET "$API_BASE_URL/api/polls" \
+  -H "Authorization: Bearer $super_id_token")"
+listed_poll_id="$(jq -r --arg poll_id "$poll_id" '.polls[]? | select(.id == $poll_id) | .id' <<<"$super_polls_resp" | head -n 1)"
+if [[ "$listed_poll_id" != "$poll_id" ]]; then
+  fail_with_payload "SUPER_ADMIN_ACTIVE_POLLS_LIST" "$super_polls_resp"
+fi
+corrected_project_title="${project_title} - texte verifie"
+patch_poll_resp="$(curl -sS -X PATCH "$API_BASE_URL/api/polls/$poll_id" \
+  -H "Authorization: Bearer $super_id_token" \
+  -H 'Content-Type: application/json' \
+  -d "$(jq -nc \
+    --arg project_title "$corrected_project_title" \
+    --arg description "Consultation type creee automatiquement puis corrigee par verification superadmin." \
+    --arg question "$question" \
+    '{projectTitle:$project_title,description:$description,question:$question}')")"
+patch_ok="$(jq -r '.ok // false' <<<"$patch_poll_resp")"
+if [[ "$patch_ok" != "true" ]]; then
+  fail_with_payload "SUPER_ADMIN_PATCH_POLL_TEXT" "$patch_poll_resp"
+fi
+project_title="$corrected_project_title"
+echo "    consultations superadmin OK: liste + correction texte"
+
+echo "==> 6/9 Creation et connexion agent"
 controller_label="Agent mobilisation QA ${timestamp}"
 create_controller_resp="$(curl -sS -X POST "$API_BASE_URL/api/controllers" \
   -H "Authorization: Bearer $admin_id_token" \
@@ -221,7 +266,17 @@ fi
 controller_id_token="$(exchange_custom_token_for_id_token "$controller_custom_token" CONTROLLER_FIREBASE_TOKEN)"
 echo "    agent OK: $(mask_secret "$controller_code")"
 
-echo "==> 6/7 Generation code citoyen"
+echo "==> 7/9 Verification liste agents super admin"
+ensure_super_id_token
+controllers_list_resp="$(curl -sS -X GET "$API_BASE_URL/api/controllers" \
+  -H "Authorization: Bearer $super_id_token")"
+listed_controller_id="$(jq -r --arg controller_code "$controller_code" '.controllers[]? | select(.id == $controller_code) | .id' <<<"$controllers_list_resp" | head -n 1)"
+if [[ "$listed_controller_id" != "$controller_code" ]]; then
+  fail_with_payload "SUPER_ADMIN_CONTROLLERS_LIST" "$controllers_list_resp"
+fi
+echo "    liste superadmin OK: agent present"
+
+echo "==> 8/9 Generation code citoyen"
 citizen_code_resp='{}'
 citizen_access_code=''
 for attempt in 1 2 3 4 5; do
@@ -242,7 +297,7 @@ if [[ -z "$citizen_access_code" ]]; then
 fi
 echo "    code citoyen genere: $(mask_secret "$citizen_access_code")"
 
-echo "==> 7/7 Validation code citoyen sur la consultation"
+echo "==> 9/9 Validation code citoyen sur la consultation"
 validate_resp="$(curl -sS -X POST "$API_BASE_URL/api/vote-access/validate" \
   -H 'Content-Type: application/json' \
   -d "$(jq -nc --arg code "$citizen_access_code" --arg poll_id "$poll_id" '{code:$code,pollId:$poll_id}')")"
@@ -266,7 +321,7 @@ jq -n \
   --arg project_title "$project_title" \
   --arg controller_code "$controller_code" \
   --arg citizen_access_code "$citizen_access_code" \
-  '{createdAt:$created_at,apiBaseUrl:$api_base_url,admin:{source:$admin_source,accessKey:$admin_access_key},commune:{id:$commune_id,name:$commune_name},poll:{id:$poll_id,status:$poll_status,projectTitle:$project_title},controller:{code:$controller_code},citizen:{accessCode:$citizen_access_code}}' \
+  '{createdAt:$created_at,apiBaseUrl:$api_base_url,admin:{source:$admin_source,accessKey:$admin_access_key},commune:{id:$commune_id,name:$commune_name},poll:{id:$poll_id,status:$poll_status,projectTitle:$project_title},controller:{code:$controller_code,visibleToSuperAdmin:true},citizen:{accessCode:$citizen_access_code}}' \
   > "$OUT_FILE"
 
 echo

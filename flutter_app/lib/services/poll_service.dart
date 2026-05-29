@@ -41,9 +41,10 @@ class PollService {
 
   Future<List<PollModel>> loadPolls() async {
     final session = AuthSessionStore.instance.currentSession;
-    final isAuthenticated =
-        session?.isCommuneAdmin == true || session?.isController == true;
-    final communeScope = isAuthenticated
+    final isAuthenticated = session?.isCommuneAdmin == true ||
+        session?.isController == true ||
+        session?.isSuperAdmin == true;
+    final communeScope = isAuthenticated && session?.isSuperAdmin != true
         ? (session?.commune?.code ?? session?.commune?.name ?? '')
         : '';
 
@@ -62,8 +63,7 @@ class PollService {
                 .whereType<Map<String, dynamic>>()
                 .map(PollModel.fromJson)
                 .toList()
-              ..sort(
-                  (left, right) => right.openDate.compareTo(left.openDate));
+              ..sort((left, right) => right.openDate.compareTo(left.openDate));
             await _writeLocalPolls(polls);
             return _filterByCommuneScope(polls, communeScope);
           }
@@ -276,8 +276,7 @@ class PollService {
       }
     } catch (error) {
       if (error is PollServiceException) rethrow;
-      throw PollServiceException(
-          'Backend injoignable: ${error.toString()}');
+      throw PollServiceException('Backend injoignable: ${error.toString()}');
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       String message = 'Opération impossible (HTTP ${response.statusCode}).';

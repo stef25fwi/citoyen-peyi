@@ -55,8 +55,12 @@ class AppRouter {
         return _requireRoles(settings, const ControllerActivityDashboardPage(),
             const ['super_admin']);
       case '/super/controllers':
-        return _requireRoles(settings, const ControllerActivityDashboardPage(),
-            const ['super_admin']);
+        return _requireRoles(
+          settings,
+          const SuperAdminDashboardPage(
+              initialSection: SuperAdminDashboardSection.controllers),
+          const ['super_admin'],
+        );
       case '/super/communes':
         return _requireRoles(
             settings, const SuperAdminCommunesPage(), const ['super_admin']);
@@ -119,7 +123,7 @@ class AppRouter {
           const _LegacyRouteRedirectPage(
             targetRoute: '/controleur/acces-citoyen',
             message:
-              'Le parcours Inscriptions a ete deplace vers Acces citoyen dans l\'espace agent de mobilisation citoyenne.',
+                'Le parcours Inscriptions a ete deplace vers Acces citoyen dans l\'espace agent de mobilisation citoyenne.',
           ),
           settings,
         );
@@ -200,7 +204,7 @@ class AppRouter {
           return _requireRoles(
             settings,
             PollDetailPage(pollId: uri.pathSegments[2]),
-            const ['commune_admin'],
+            const ['commune_admin', 'super_admin'],
           );
         }
 
@@ -211,7 +215,7 @@ class AppRouter {
           return _requireRoles(
             settings,
             AdminEditPollPage(pollId: uri.pathSegments[2]),
-            const ['commune_admin'],
+            const ['commune_admin', 'super_admin'],
           );
         }
 
