@@ -327,7 +327,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "cd /workspaces/citoyen-peyi && : \"${ADMIN_ACCESS_KEY:?ADMIN_ACCESS_KEY requis}\" && : \"${FIREBASE_API_KEY:?FIREBASE_API_KEY requis}\" && chmod +x scripts/create-test-poll.sh && API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app} PUBLISH=${PUBLISH:-1} ./scripts/create-test-poll.sh"
+        "cd /workspaces/citoyen-peyi && chmod +x scripts/create-test-poll.sh && API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app} PUBLISH=${PUBLISH:-1} ./scripts/create-test-poll.sh"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -336,6 +336,22 @@
         "clear": true
       },
       "detail": "Cree une consultation de test via le backend et la publie par defaut (PUBLISH=1)."
+    },
+    {
+      "label": "Backend smoke auth flow",
+      "type": "shell",
+      "command": "bash",
+      "args": [
+        "-lc",
+        "cd /workspaces/citoyen-peyi && chmod +x scripts/run-auth-flow-smoke.sh && API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app} ./scripts/run-auth-flow-smoke.sh"
+      ],
+      "problemMatcher": [],
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "clear": true
+      },
+      "detail": "Verifie les connexions super admin, admin communal, agent et citoyen, puis cree une consultation type."
     },
     {
       "label": "Firestore rules tests",

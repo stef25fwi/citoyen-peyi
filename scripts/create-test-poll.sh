@@ -17,6 +17,56 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+
+strip_optional_quotes() {
+  local raw_value="$1"
+  raw_value="${raw_value#"${raw_value%%[![:space:]]*}"}"
+  raw_value="${raw_value%"${raw_value##*[![:space:]]}"}"
+  local first_char="${raw_value:0:1}"
+  local last_char="${raw_value: -1}"
+  if [[ ${#raw_value} -ge 2 && "$first_char" == "$last_char" && ( "$first_char" == '"' || "$first_char" == "'" ) ]]; then
+    raw_value="${raw_value:1:${#raw_value}-2}"
+  fi
+  printf '%s' "$raw_value"
+}
+
+read_env_value() {
+  local env_file="$1"
+  local key_name="$2"
+  [[ -f "$env_file" ]] || return 0
+  local env_line
+  env_line="$(grep -E "^[[:space:]]*(export[[:space:]]+)?${key_name}=" "$env_file" | tail -n 1 || true)"
+  [[ -n "$env_line" ]] || return 0
+  strip_optional_quotes "${env_line#*${key_name}=}"
+}
+
+for env_file in "$REPO_DIR/.env" "$REPO_DIR/app/backend/.env" "$REPO_DIR/.backend-secrets.generated.txt"; do
+  if [[ -z "${ADMIN_ACCESS_KEY:-}" ]]; then
+    ADMIN_ACCESS_KEY="$(read_env_value "$env_file" ADMIN_ACCESS_KEY)"
+  fi
+  if [[ -z "${FIREBASE_API_KEY:-}" ]]; then
+    FIREBASE_API_KEY="$(read_env_value "$env_file" FIREBASE_API_KEY)"
+  fi
+done
+
+if [[ -z "${ADMIN_ACCESS_KEY:-}" && -f "$REPO_DIR/.auth-flow-smoke.local.json" ]] && command -v jq >/dev/null 2>&1; then
+  ADMIN_ACCESS_KEY="$(jq -r '.admin.accessKey // empty' "$REPO_DIR/.auth-flow-smoke.local.json" 2>/dev/null || true)"
+fi
+
+if [[ -z "${ADMIN_ACCESS_KEY:-}" && -f "$REPO_DIR/.admin_access_key.local" ]]; then
+  local_admin_key="$(grep -vE '^[[:space:]]*(#|$)' "$REPO_DIR/.admin_access_key.local" | head -n 1 || true)"
+  if [[ "$local_admin_key" == *ADMIN_ACCESS_KEY=* ]]; then
+    local_admin_key="${local_admin_key#*ADMIN_ACCESS_KEY=}"
+  fi
+  ADMIN_ACCESS_KEY="$(strip_optional_quotes "$local_admin_key")"
+fi
+
+if [[ -z "${FIREBASE_API_KEY:-}" && -f "$REPO_DIR/flutter_app/lib/firebase_options.dart" ]]; then
+  FIREBASE_API_KEY="$(sed -n "s/.*apiKey: '\([^']*\)'.*/\1/p" "$REPO_DIR/flutter_app/lib/firebase_options.dart" | head -n 1)"
+fi
+
 : "${ADMIN_ACCESS_KEY:?ADMIN_ACCESS_KEY requis}"
 : "${FIREBASE_API_KEY:?FIREBASE_API_KEY requis}"
 API_BASE_URL="${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app}"
@@ -106,15 +156,17 @@ if [[ -z "$poll_id" ]]; then
   fail_with_payload "CREATE_POLL" "$create_resp"
 fi
 echo "    consultation creee: $poll_id"
+final_status="$(jq -r '.poll.status // "draft"' <<<"$create_resp")"
 
 if [[ "${PUBLISH:-0}" == "1" ]]; then
   echo "==> 4/4 Publication"
   publish_resp="$(curl -sS -X POST "$API_BASE_URL/api/polls/$poll_id/publish" \
     -H "Authorization: Bearer $id_token")"
-  publish_status="$(jq -r '.poll.status // empty' <<<"$publish_resp")"
+  publish_status="$(jq -r '.poll.status // .status // empty' <<<"$publish_resp")"
   if [[ -z "$publish_status" ]]; then
     fail_with_payload "PUBLISH_POLL" "$publish_resp"
   fi
+  final_status="$publish_status"
   echo "    statut: $publish_status"
 else
   echo "==> 4/4 Publication ignoree (PUBLISH=1 pour activer)"
@@ -122,4 +174,4 @@ fi
 
 echo
 echo "OK. Consultation:"
-jq '{id:.poll.id,projectTitle:.poll.projectTitle,status:.poll.status,openDate:.poll.openDate,closeDate:.poll.closeDate,options:.poll.options}' <<<"$create_resp"
+jq --arg status "$final_status" '{id:.poll.id,projectTitle:.poll.projectTitle,status:$status,openDate:.poll.openDate,closeDate:.poll.closeDate,options:.poll.options}' <<<"$create_resp"

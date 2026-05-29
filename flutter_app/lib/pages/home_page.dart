@@ -154,12 +154,21 @@ class _HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = switch (layout) {
+      _HomeLayout.mobile => 0.0,
+      _HomeLayout.tablet => 6.0,
+      _HomeLayout.desktop => 8.0,
+    };
+
     return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        topPadding,
+        horizontalPadding,
+        verticalPadding,
       ),
-      child: Center(
+      child: Align(
+        alignment: Alignment.topCenter,
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxWidth),
           child: Column(
@@ -299,7 +308,7 @@ class _ActionCards extends StatelessWidget {
       return Row(
         children: [
           Expanded(child: participationCard),
-          const SizedBox(width: 16),
+          const SizedBox(width: 30),
           Expanded(child: consultationCard),
         ],
       );
@@ -309,7 +318,7 @@ class _ActionCards extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         participationCard,
-        SizedBox(height: layout == _HomeLayout.mobile ? 8 : 12),
+        SizedBox(height: layout == _HomeLayout.mobile ? 16 : 22),
         consultationCard,
       ],
     );
@@ -460,11 +469,12 @@ class _ActionCard extends StatelessWidget {
         SizedBox(width: layout == _HomeLayout.mobile ? 10 : 12),
         Expanded(
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.center,
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               Text(
                 title,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: _blue,
                   fontSize: titleSize,
@@ -475,6 +485,7 @@ class _ActionCard extends StatelessWidget {
               SizedBox(height: layout == _HomeLayout.mobile ? 2 : 3),
               Text(
                 subtitle,
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   color: Colors.grey.shade600,
                   fontSize: subtitleSize,

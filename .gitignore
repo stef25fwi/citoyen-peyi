@@ -11,3 +11,5 @@ coverage/
 *.log
 app-release.zip
 .backend-secrets.generated.txt
+.admin_access_key.local
+.auth-flow-smoke.local.json
