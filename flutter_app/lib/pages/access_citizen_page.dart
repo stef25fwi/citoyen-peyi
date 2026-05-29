@@ -18,10 +18,9 @@ class AccessCitizenPage extends StatefulWidget {
 }
 
 class _AccessCitizenPageState extends State<AccessCitizenPage> {
-  static const _background = Color(0xFFF7F4EA);
-  static const _deepGreen = Color(0xFF123C2F);
-  static const _textDark = Color(0xFF263A33);
-  static const _mutedText = Color(0xFF627169);
+  static const _background = Color(0xFFFFFFFF);
+  static const _foreground = Color(0xFF0F172A);
+  static const _mutedText = Color(0xFF64748B);
 
   final TextEditingController _codeController = TextEditingController();
 
@@ -166,7 +165,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
       backgroundColor: _background,
       appBar: AppBar(
         backgroundColor: _background,
-        foregroundColor: _deepGreen,
+        foregroundColor: _foreground,
         title: const Text('Accès citoyen'),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
@@ -186,7 +185,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                   Text(
                     'Accès citoyen',
                     style: theme.textTheme.headlineMedium?.copyWith(
-                      color: _deepGreen,
+                      color: _foreground,
                       fontWeight: FontWeight.w800,
                     ),
                     textAlign: TextAlign.center,
@@ -195,7 +194,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                   Text(
                     'Avant de participer, veuillez consulter les informations légales et confirmer la lecture des conditions d’utilisation.',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: _textDark,
+                      color: _foreground,
                       height: 1.42,
                     ),
                     textAlign: TextAlign.center,
@@ -247,7 +246,10 @@ class _ConfidentialityCard extends StatelessWidget {
     return Card(
       elevation: 0,
       color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Row(
@@ -257,12 +259,12 @@ class _ConfidentialityCard extends StatelessWidget {
               width: 52,
               height: 52,
               decoration: BoxDecoration(
-                color: const Color(0xFFE8F3EE),
+                color: const Color(0xFFEFF6FF),
                 borderRadius: BorderRadius.circular(18),
               ),
               child: const Icon(
                 Icons.verified_user_rounded,
-                color: Color(0xFF123C2F),
+                color: Color(0xFF0D73F2),
                 size: 28,
               ),
             ),
@@ -271,7 +273,7 @@ class _ConfidentialityCard extends StatelessWidget {
               child: Text(
                 'Votre participation est traitée de manière confidentielle. Le code citoyen permet de sécuriser l’accès à la consultation et de limiter les participations multiples.',
                 style: theme.textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF263A33),
+                  color: const Color(0xFF0F172A),
                   height: 1.45,
                 ),
               ),
@@ -296,7 +298,7 @@ class _LegalInformationPill extends StatelessWidget {
       button: true,
       label: 'Informations légales, consulter les CGU',
       child: Material(
-        color: const Color(0xFFFFF3BF),
+        color: const Color(0xFFF0FDF9),
         borderRadius: BorderRadius.circular(24),
         child: InkWell(
           key: const ValueKey('accessCitizenLegalPill'),
@@ -306,7 +308,7 @@ class _LegalInformationPill extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(24),
-              border: Border.all(color: const Color(0xFFE6B93F)),
+              border: Border.all(color: const Color(0xFFB6ECE1)),
             ),
             child: Row(
               children: [
@@ -314,12 +316,12 @@ class _LegalInformationPill extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.72),
+                    color: Colors.white,
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Icon(
                     Icons.balance_rounded,
-                    color: Color(0xFF705200),
+                    color: Color(0xFF0D73F2),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -330,7 +332,7 @@ class _LegalInformationPill extends StatelessWidget {
                       Text(
                         'Informations légales',
                         style: theme.textTheme.titleSmall?.copyWith(
-                          color: const Color(0xFF263A33),
+                          color: const Color(0xFF0F172A),
                           fontWeight: FontWeight.w800,
                         ),
                       ),
@@ -338,7 +340,7 @@ class _LegalInformationPill extends StatelessWidget {
                       Text(
                         'CGU, confidentialité, anonymat et données personnelles',
                         style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF5D4A11),
+                          color: const Color(0xFF64748B),
                           height: 1.25,
                         ),
                       ),
@@ -348,7 +350,7 @@ class _LegalInformationPill extends StatelessWidget {
                 const SizedBox(width: 10),
                 const Icon(
                   Icons.arrow_forward_rounded,
-                  color: Color(0xFF705200),
+                  color: Color(0xFF0D73F2),
                 ),
               ],
             ),
@@ -391,7 +393,10 @@ class _AccessFormCard extends StatelessWidget {
     return Card(
       elevation: 0,
       color: Colors.white,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(26)),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(24),
+        side: const BorderSide(color: Color(0xFFE5E7EB)),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(18),
         child: Column(
@@ -408,12 +413,12 @@ class _AccessFormCard extends StatelessWidget {
                 helperText:
                     'Ce code permet de vérifier votre accès sans afficher publiquement votre identité.',
                 filled: true,
-                fillColor: const Color(0xFFFAFBF7),
+                fillColor: const Color(0xFFF8FAFC),
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(18),
-                  borderSide: const BorderSide(color: Color(0xFFD7E0D8)),
+                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
                 ),
               ),
               onChanged: (_) => onCodeChanged(),
@@ -440,7 +445,7 @@ class _AccessFormCard extends StatelessWidget {
                     ? 'La validation du code est disponible après acceptation des CGU.'
                     : 'La validation sera disponible après consultation et acceptation des CGU.',
                 style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF627169),
+                  color: const Color(0xFF64748B),
                   height: 1.35,
                 ),
               ),
@@ -461,10 +466,10 @@ class _AccessFormCard extends StatelessWidget {
               child: FilledButton.icon(
                 onPressed: canValidate ? onSubmit : null,
                 style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF123C2F),
-                  disabledBackgroundColor: const Color(0xFFD6DDD8),
+                  backgroundColor: const Color(0xFF0D73F2),
+                  disabledBackgroundColor: const Color(0xFFE5E7EB),
                   foregroundColor: Colors.white,
-                  disabledForegroundColor: const Color(0xFF728078),
+                  disabledForegroundColor: const Color(0xFF64748B),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(18),
                   ),
@@ -517,8 +522,8 @@ class _TermsAcceptanceRow extends StatelessWidget {
           'Je confirme avoir consulté et accepté les conditions générales d’utilisation.',
       child: Material(
         color: hasOpenedLegalPage
-            ? const Color(0xFFF8FBF9)
-            : const Color(0xFFF1F2EF),
+            ? const Color(0xFFF0FDF9)
+            : const Color(0xFFF8FAFC),
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           key: const ValueKey('accessCitizenTermsAcceptance'),
@@ -530,8 +535,8 @@ class _TermsAcceptanceRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
                 color: hasOpenedLegalPage
-                    ? const Color(0xFFC8D6CE)
-                    : const Color(0xFFD8DED9),
+                    ? const Color(0xFFB6ECE1)
+                    : const Color(0xFFE5E7EB),
               ),
             ),
             child: Row(
@@ -540,7 +545,7 @@ class _TermsAcceptanceRow extends StatelessWidget {
                 Checkbox(
                   value: hasAcceptedLegalTerms,
                   onChanged: hasOpenedLegalPage ? (_) => onTap() : null,
-                  activeColor: const Color(0xFF123C2F),
+                  activeColor: const Color(0xFF0D73F2),
                 ),
                 const SizedBox(width: 4),
                 Expanded(
@@ -549,7 +554,7 @@ class _TermsAcceptanceRow extends StatelessWidget {
                     child: Text(
                       'Je confirme avoir consulté et accepté les conditions générales d’utilisation.',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF263A33),
+                        color: const Color(0xFF0F172A),
                         fontWeight: FontWeight.w600,
                         height: 1.35,
                       ),

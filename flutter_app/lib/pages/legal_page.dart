@@ -13,10 +13,10 @@ class LegalPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF7F4EA),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFF7F4EA),
-        foregroundColor: const Color(0xFF123C2F),
+        backgroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0F172A),
         title: const Text('Informations légales'),
       ),
       body: SafeArea(
@@ -29,7 +29,8 @@ class LegalPage extends StatelessWidget {
                 elevation: 0,
                 color: Colors.white,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(26),
+                  borderRadius: BorderRadius.circular(24),
+                  side: const BorderSide(color: Color(0xFFE5E7EB)),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.all(24),
@@ -41,12 +42,12 @@ class LegalPage extends StatelessWidget {
                           width: 74,
                           height: 74,
                           decoration: BoxDecoration(
-                            color: const Color(0xFFFFF3BF),
+                            color: const Color(0xFFEFF6FF),
                             borderRadius: BorderRadius.circular(24),
                           ),
                           child: const Icon(
                             Icons.gavel_rounded,
-                            color: Color(0xFF705200),
+                            color: Color(0xFF0D73F2),
                             size: 36,
                           ),
                         ),
@@ -55,7 +56,7 @@ class LegalPage extends StatelessWidget {
                       Text(
                         'CGU, confidentialité, anonymat et données personnelles',
                         style: theme.textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFF123C2F),
+                          color: const Color(0xFF0F172A),
                           fontWeight: FontWeight.w800,
                         ),
                         textAlign: TextAlign.center,
@@ -88,7 +89,7 @@ class LegalPage extends StatelessWidget {
                         child: FilledButton.icon(
                           key: const ValueKey('legalAcknowledgementButton'),
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF123C2F),
+                            backgroundColor: const Color(0xFF0D73F2),
                             foregroundColor: Colors.white,
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(18),
@@ -137,7 +138,7 @@ class _LegalSection extends StatelessWidget {
           Text(
             title,
             style: theme.textTheme.titleMedium?.copyWith(
-              color: const Color(0xFF123C2F),
+              color: const Color(0xFF0D73F2),
               fontWeight: FontWeight.w800,
             ),
           ),
@@ -145,7 +146,7 @@ class _LegalSection extends StatelessWidget {
           Text(
             body,
             style: theme.textTheme.bodyMedium?.copyWith(
-              color: const Color(0xFF263A33),
+              color: const Color(0xFF0F172A),
               height: 1.45,
             ),
           ),
