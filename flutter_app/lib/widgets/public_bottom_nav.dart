@@ -26,7 +26,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
   }
 
   void _handleTap(BuildContext context, int index) {
-    final routes = <String>['/', '/news', '/access', '/results'];
+    final routes = <String>['/', '/news', '/access-citizen', '/results'];
     final targetRoute = routes[index];
     final currentRoute = ModalRoute.of(context)?.settings.name;
 
@@ -76,8 +76,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
               final selected = states.contains(WidgetState.selected);
               return TextStyle(
                 fontSize: 11,
-                fontWeight:
-                    selected ? FontWeight.w700 : FontWeight.w500,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
                 color: selected
                     ? const Color(0xFF005098)
                     : const Color(0xFF1A2E50),
@@ -91,8 +90,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
                 height: 74,
                 selectedIndex: widget.currentTab.index,
                 labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                onDestinationSelected: (index) =>
-                    _handleTap(context, index),
+                onDestinationSelected: (index) => _handleTap(context, index),
                 destinations: [
                   const NavigationDestination(
                     icon: Icon(Icons.home_rounded),

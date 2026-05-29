@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../widgets/public_bottom_nav.dart';
+import 'access_citizen_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -293,7 +294,7 @@ class _ActionCards extends StatelessWidget {
       title: 'Je participe',
       subtitle: 'Exprimez-vous et contribuez',
       layout: layout,
-      onTap: () => Navigator.of(context).pushNamed('/participer'),
+      onTap: () => Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
     );
     final consultationCard = _ActionCard(
       icon: Icons.chat_bubble_outline_rounded,
@@ -301,7 +302,7 @@ class _ActionCards extends StatelessWidget {
       subtitle: 'Partagez vos avis en toute confidentialité',
       layout: layout,
       showDecorations: false,
-      onTap: () => Navigator.of(context).pushNamed('/participer'),
+      onTap: () => Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
     );
 
     if (layout == _HomeLayout.desktop) {
