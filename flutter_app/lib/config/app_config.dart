@@ -32,6 +32,10 @@ class AppConfig {
   static const String firebaseStorageBucket = String.fromEnvironment('FIREBASE_STORAGE_BUCKET', defaultValue: '');
   static const String firebaseMessagingSenderId = String.fromEnvironment('FIREBASE_MESSAGING_SENDER_ID', defaultValue: '');
   static const String firebaseAppId = String.fromEnvironment('FIREBASE_APP_ID', defaultValue: '');
+  static const String pushVapidKey = String.fromEnvironment(
+    'PUSH_VAPID_KEY',
+    defaultValue: '',
+  );
 
   static String get resolvedFirebaseApiKey {
     final raw = firebaseApiKey.trim();
