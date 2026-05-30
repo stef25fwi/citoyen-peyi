@@ -216,8 +216,6 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                   const SizedBox(height: 20),
                   _ConfidentialityCard(theme: theme),
                   const SizedBox(height: 14),
-                  _LegalInformationPill(onTap: _openLegalPage),
-                  const SizedBox(height: 14),
                   _AccessFormCard(
                     codeController: _codeController,
                     errorMessage: _errorMessage,
@@ -225,6 +223,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                     canValidate: _canValidate,
                     hasOpenedLegalPage: hasOpenedLegalPage,
                     hasAcceptedLegalTerms: hasAcceptedLegalTerms,
+                    onOpenLegalPage: _openLegalPage,
                     onTermsTap: _handleTermsTap,
                     onCodeChanged: () => setState(() => _errorMessage = null),
                     onSubmit: _validateCitizenCode,
@@ -396,6 +395,7 @@ class _AccessFormCard extends StatelessWidget {
     required this.canValidate,
     required this.hasOpenedLegalPage,
     required this.hasAcceptedLegalTerms,
+    required this.onOpenLegalPage,
     required this.onTermsTap,
     required this.onCodeChanged,
     required this.onSubmit,
@@ -407,6 +407,7 @@ class _AccessFormCard extends StatelessWidget {
   final bool canValidate;
   final bool hasOpenedLegalPage;
   final bool hasAcceptedLegalTerms;
+  final VoidCallback onOpenLegalPage;
   final VoidCallback onTermsTap;
   final VoidCallback onCodeChanged;
   final VoidCallback onSubmit;
@@ -445,6 +446,8 @@ class _AccessFormCard extends StatelessWidget {
               onChanged: (_) => onCodeChanged(),
               onSubmitted: (_) => onSubmit(),
             ),
+            const SizedBox(height: 14),
+            _LegalInformationPill(onTap: onOpenLegalPage),
             const SizedBox(height: 14),
             _TermsAcceptanceRow(
               hasOpenedLegalPage: hasOpenedLegalPage,

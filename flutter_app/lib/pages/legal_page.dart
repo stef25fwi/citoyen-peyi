@@ -1,5 +1,7 @@
+import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
+import '../services/legal_document_exporter.dart';
 import '../widgets/public_bottom_nav.dart';
 import 'access_citizen_page.dart';
 
@@ -11,6 +13,31 @@ class LegalPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final legalDocumentText = _buildFullLegalDocumentText();
+
+    Future<void> copyLegalText() async {
+      await Clipboard.setData(ClipboardData(text: legalDocumentText));
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Texte copié. Vous pouvez le conserver hors application.'),
+        ),
+      );
+    }
+
+    Future<void> downloadLegalText() async {
+      final downloaded = await downloadLegalDocumentText(
+        filename: 'citoyen-peyi-cgu-mentions-legales.txt',
+        content: legalDocumentText,
+      );
+      if (!context.mounted) return;
+      final message = downloaded
+          ? 'Téléchargement lancé.'
+          : 'Téléchargement non disponible ici. Utilisez Copier le texte complet.';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    }
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -54,7 +81,7 @@ class LegalPage extends StatelessWidget {
                       ),
                       const SizedBox(height: 18),
                       Text(
-                        'Texte ultra complet - CGU, confidentialité, anonymat et mentions légales',
+                        'CGU, confidentialité, anonymat et mentions légales',
                         style: theme.textTheme.headlineSmall?.copyWith(
                           color: const Color(0xFF0F172A),
                           fontWeight: FontWeight.w800,
@@ -71,6 +98,23 @@ class LegalPage extends StatelessWidget {
                           ),
                           textAlign: TextAlign.center,
                         ),
+                      ),
+                      const SizedBox(height: 18),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          OutlinedButton.icon(
+                            onPressed: copyLegalText,
+                            icon: const Icon(Icons.copy_rounded),
+                            label: const Text('Copier le texte complet'),
+                          ),
+                          OutlinedButton.icon(
+                            onPressed: downloadLegalText,
+                            icon: const Icon(Icons.download_rounded),
+                            label: const Text('Télécharger (.txt)'),
+                          ),
+                        ],
                       ),
                       const SizedBox(height: 24),
                       const _LegalSection(data: _preambleSection),
@@ -125,6 +169,49 @@ class LegalPage extends StatelessWidget {
       bottomNavigationBar: const PublicBottomNav(currentTab: PublicTab.vote),
     );
   }
+}
+
+String _buildFullLegalDocumentText() {
+  final buffer = StringBuffer()
+    ..writeln('CGU, confidentialite, anonymat et mentions legales')
+    ..writeln('');
+
+  void writeSection(_LegalSectionData section) {
+    buffer.writeln(section.title);
+    buffer.writeln('');
+    for (final paragraph in section.paragraphs) {
+      buffer.writeln(paragraph);
+      buffer.writeln('');
+    }
+    for (final bullet in section.bullets) {
+      buffer.writeln('- $bullet');
+    }
+    if (section.bullets.isNotEmpty) {
+      buffer.writeln('');
+    }
+    for (final paragraph in section.afterBullets) {
+      buffer.writeln(paragraph);
+      buffer.writeln('');
+    }
+  }
+
+  writeSection(_preambleSection);
+  for (final section in _legalSections) {
+    writeSection(section);
+  }
+
+  buffer
+    ..writeln('Mentions legales')
+    ..writeln('');
+  for (final block in _legalNoticeBlocks) {
+    buffer.writeln(block.title);
+    for (final line in block.lines) {
+      buffer.writeln('- $line');
+    }
+    buffer.writeln('');
+  }
+
+  return buffer.toString().trim();
 }
 
 class _LegalSection extends StatelessWidget {
