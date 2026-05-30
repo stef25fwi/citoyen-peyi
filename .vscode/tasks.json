@@ -7,7 +7,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "cd /workspaces/citoyen-peyi && export GIT_PAGER=cat && COMMIT_MESSAGE=${COMMIT_MESSAGE:-chore: sync tasks et arbre repo} && git status --short && git diff --stat HEAD && git add -A && git diff --cached --stat && git commit -m \"$COMMIT_MESSAGE\" --allow-empty && git push origin main && echo PUSH_OK"
+        "cd /workspaces/citoyen-peyi && git status --short && git diff --stat HEAD && git add -A && git diff --cached --stat && git commit -m 'chore: sync tasks et arbre repo' --allow-empty && git push origin main && echo PUSH_OK"
       ],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
@@ -19,7 +19,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "cd /workspaces/citoyen-peyi && export GIT_PAGER=cat && export PATH=\"$HOME/flutter/bin:$PATH\" && COMMIT_MESSAGE=${COMMIT_MESSAGE:-feat: harden vote anonymity model} && API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app} && case \"${API_BASE_URL:-}\" in https://*) ;; *) echo API_BASE_URL_HTTPS_REQUIS_POUR_BUILD_PRODUCTION_FIREBASE_HOSTING >&2; exit 1;; esac && git status --short && git add -A && git diff --cached --stat && git commit -m \"$COMMIT_MESSAGE\" --allow-empty && cd flutter_app && flutter analyze && flutter build web --release --pwa-strategy=none --base-href / --dart-define=API_BASE_URL=$API_BASE_URL --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-} --dart-define=PUSH_VAPID_KEY=${PUSH_VAPID_KEY:-} && cd /workspaces/citoyen-peyi && if grep -q http://localhost:4000 flutter_app/build/web/main.dart.js; then echo BUILD_CONTAINS_LOCALHOST_REFUS_DEPLOY >&2; exit 1; fi && npx --yes firebase-tools@13 deploy --config firebase.ghpages.json --only hosting --project citoyen-peyi && git push origin main && echo PUBLISH_OK"
+        "cd /workspaces/citoyen-peyi && export PATH=\"$HOME/flutter/bin:$PATH\" && COMMIT_MESSAGE=${COMMIT_MESSAGE:-feat: improve admin analytics and test poll tooling} && API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app} && case \"${API_BASE_URL:-}\" in https://*) ;; *) echo API_BASE_URL_HTTPS_REQUIS_POUR_BUILD_PRODUCTION_FIREBASE_HOSTING >&2; exit 1;; esac && git status --short && git add -A && git diff --cached --stat && git commit -m \"$COMMIT_MESSAGE\" --allow-empty && cd flutter_app && flutter analyze && flutter build web --release --pwa-strategy=none --base-href / --dart-define=API_BASE_URL=$API_BASE_URL --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-} && cd /workspaces/citoyen-peyi && if grep -q http://localhost:4000 flutter_app/build/web/main.dart.js; then echo BUILD_CONTAINS_LOCALHOST_REFUS_DEPLOY >&2; exit 1; fi && npx --yes firebase-tools@13 deploy --config firebase.ghpages.json --only hosting --project citoyen-peyi && git push origin main && echo PUBLISH_OK"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -130,7 +130,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter run -d web-server --web-hostname 0.0.0.0 --web-port=8081 --dart-define=API_BASE_URL=${API_BASE_URL:-http://localhost:4000} --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-} --dart-define=PUSH_VAPID_KEY=${PUSH_VAPID_KEY:-}"
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; cd flutter_app && flutter run -d web-server --web-hostname 0.0.0.0 --web-port=8081 --dart-define=API_BASE_URL=${API_BASE_URL:-http://localhost:4000} --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}"
       ],
       "isBackground": true,
       "problemMatcher": [],
@@ -147,7 +147,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "export PATH=\"$HOME/flutter/bin:$PATH\"; case \"${API_BASE_URL:-}\" in https://*) ;; *) echo API_BASE_URL_HTTPS_REQUIS_POUR_BUILD_PRODUCTION >&2; exit 1;; esac; cd flutter_app && flutter build web --release --pwa-strategy=none --base-href /citoyen-peyi/ --dart-define=API_BASE_URL=$API_BASE_URL --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-} --dart-define=PUSH_VAPID_KEY=${PUSH_VAPID_KEY:-}"
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; case \"${API_BASE_URL:-}\" in https://*) ;; *) echo API_BASE_URL_HTTPS_REQUIS_POUR_BUILD_PRODUCTION >&2; exit 1;; esac; cd flutter_app && flutter build web --release --pwa-strategy=none --base-href /citoyen-peyi/ --dart-define=API_BASE_URL=$API_BASE_URL --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -175,7 +175,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "export PATH=\"$HOME/flutter/bin:$PATH\"; API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app}; case \"${API_BASE_URL:-}\" in https://*) ;; *) echo API_BASE_URL_HTTPS_REQUIS_POUR_BUILD_PRODUCTION_FIREBASE_HOSTING >&2; exit 1;; esac; cd flutter_app && flutter build web --release --pwa-strategy=none --base-href / --dart-define=API_BASE_URL=$API_BASE_URL --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-} --dart-define=PUSH_VAPID_KEY=${PUSH_VAPID_KEY:-}"
+        "export PATH=\"$HOME/flutter/bin:$PATH\"; API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app}; case \"${API_BASE_URL:-}\" in https://*) ;; *) echo API_BASE_URL_HTTPS_REQUIS_POUR_BUILD_PRODUCTION_FIREBASE_HOSTING >&2; exit 1;; esac; cd flutter_app && flutter build web --release --pwa-strategy=none --base-href / --dart-define=API_BASE_URL=$API_BASE_URL --dart-define=FIREBASE_API_KEY=${FIREBASE_API_KEY:-} --dart-define=FIREBASE_AUTH_DOMAIN=${FIREBASE_AUTH_DOMAIN:-} --dart-define=FIREBASE_PROJECT_ID=${FIREBASE_PROJECT_ID:-} --dart-define=FIREBASE_STORAGE_BUCKET=${FIREBASE_STORAGE_BUCKET:-} --dart-define=FIREBASE_MESSAGING_SENDER_ID=${FIREBASE_MESSAGING_SENDER_ID:-} --dart-define=FIREBASE_APP_ID=${FIREBASE_APP_ID:-}"
       ],
       "problemMatcher": [],
       "presentation": { "reveal": "always", "panel": "dedicated", "clear": true },
@@ -327,7 +327,7 @@
       "command": "bash",
       "args": [
         "-lc",
-        "cd /workspaces/citoyen-peyi && chmod +x scripts/create-test-poll.sh && API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app} PUBLISH=${PUBLISH:-1} ./scripts/create-test-poll.sh"
+        "cd /workspaces/citoyen-peyi && : \"${ADMIN_ACCESS_KEY:?ADMIN_ACCESS_KEY requis}\" && : \"${FIREBASE_API_KEY:?FIREBASE_API_KEY requis}\" && chmod +x scripts/create-test-poll.sh && API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app} PUBLISH=${PUBLISH:-1} ./scripts/create-test-poll.sh"
       ],
       "problemMatcher": [],
       "presentation": {
@@ -336,22 +336,6 @@
         "clear": true
       },
       "detail": "Cree une consultation de test via le backend et la publie par defaut (PUBLISH=1)."
-    },
-    {
-      "label": "Backend smoke auth flow",
-      "type": "shell",
-      "command": "bash",
-      "args": [
-        "-lc",
-        "cd /workspaces/citoyen-peyi && chmod +x scripts/run-auth-flow-smoke.sh && API_BASE_URL=${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app} ./scripts/run-auth-flow-smoke.sh"
-      ],
-      "problemMatcher": [],
-      "presentation": {
-        "reveal": "always",
-        "panel": "dedicated",
-        "clear": true
-      },
-      "detail": "Verifie les connexions super admin, admin communal, agent et citoyen, puis cree une consultation type."
     },
     {
       "label": "Firestore rules tests",

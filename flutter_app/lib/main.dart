@@ -6,7 +6,6 @@ import 'package:flutter/material.dart';
 import 'app.dart';
 import 'services/auth_session_store.dart';
 import 'services/firebase_auth_service.dart';
-import 'services/push_notification_service.dart';
 
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(() async {
@@ -31,13 +30,6 @@ Future<void> main() async {
       await AuthSessionStore.instance.initialize();
     } catch (error, stackTrace) {
       debugPrint('[CitoyenPeyi] Session store init failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-    }
-
-    try {
-      await PushNotificationService.instance.initialize();
-    } catch (error, stackTrace) {
-      debugPrint('[CitoyenPeyi] Push init failed: $error');
       debugPrintStack(stackTrace: stackTrace);
     }
 

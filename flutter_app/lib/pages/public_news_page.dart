@@ -4,11 +4,11 @@ import 'package:flutter/material.dart';
 import '../services/firestore_data_service.dart';
 import '../widgets/public_bottom_nav.dart';
 
-/// Page actualites / projets de la commune.
+/// Page actualités / projets de la commune.
 ///
 /// Lit la collection Firestore `public_news` (champs: title, body, communeName,
 /// publishedAt, link). Si la collection est vide ou indisponible, un empty
-/// state honnete est affiche.
+/// state honnête est affiché.
 class PublicNewsPage extends StatefulWidget {
   const PublicNewsPage({super.key});
 
@@ -55,7 +55,10 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FB),
-      appBar: AppBar(title: const Text('Actualites / Projets')),
+      appBar: AppBar(
+        title: const Text('Actualités / Projets'),
+        centerTitle: true,
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
@@ -65,13 +68,7 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
               padding: const EdgeInsets.all(20),
               children: [
                 Text(
-                  'Actualites de la plateforme',
-                  style: theme.textTheme.headlineMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Informations communales et projets soumis a consultation.',
+                  'Informations communales et projets soumis à consultation.',
                   style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
                   textAlign: TextAlign.center,
                 ),
@@ -86,10 +83,10 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
                         children: [
                           const Icon(Icons.newspaper_rounded, size: 42, color: Color(0xFF5A6573)),
                           const SizedBox(height: 12),
-                          Text('Aucune actualite pour le moment', style: theme.textTheme.titleLarge),
+                          Text('Aucune actualité pour le moment', style: theme.textTheme.titleLarge),
                           const SizedBox(height: 6),
                           const Text(
-                            'Les communes peuvent publier ici leurs actualites et projets soumis a consultation. Revenez bientot.',
+                            'Les communes peuvent publier ici leurs actualités et projets soumis à consultation. Revenez bientôt.',
                             textAlign: TextAlign.center,
                           ),
                         ],
@@ -122,20 +119,23 @@ class _NewsCard extends StatelessWidget {
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (item.communeName.isNotEmpty)
                 Text(item.communeName.toUpperCase(),
+                    textAlign: TextAlign.center,
                     style: theme.textTheme.labelSmall?.copyWith(color: const Color(0xFF5A6573))),
               const SizedBox(height: 4),
-              Text(item.title, style: theme.textTheme.titleLarge),
+              Text(item.title, textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
               if (item.publishedAt.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(item.publishedAt, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573))),
+                Text(item.publishedAt,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573))),
               ],
               if (item.body.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Text(item.body, style: theme.textTheme.bodyLarge),
+                Text(item.body, textAlign: TextAlign.center, style: theme.textTheme.bodyLarge),
               ],
             ],
           ),

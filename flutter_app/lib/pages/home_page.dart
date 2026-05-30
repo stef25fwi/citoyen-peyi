@@ -274,7 +274,7 @@ class _MainCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HeroText(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 26 : 30),
+          SizedBox(height: layout == _HomeLayout.mobile ? 52 : 60),
           _ActionCards(layout: layout),
         ],
       ),

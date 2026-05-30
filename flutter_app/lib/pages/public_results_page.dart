@@ -67,7 +67,10 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FB),
-      appBar: AppBar(title: const Text('Resultats publics')),
+      appBar: AppBar(
+        title: const Text('Résultats des consultations'),
+        centerTitle: true,
+      ),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 960),

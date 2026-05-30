@@ -41,10 +41,9 @@ class PollService {
 
   Future<List<PollModel>> loadPolls() async {
     final session = AuthSessionStore.instance.currentSession;
-    final isAuthenticated = session?.isCommuneAdmin == true ||
-        session?.isController == true ||
-        session?.isSuperAdmin == true;
-    final communeScope = isAuthenticated && session?.isSuperAdmin != true
+    final isAuthenticated =
+        session?.isCommuneAdmin == true || session?.isController == true;
+    final communeScope = isAuthenticated
         ? (session?.commune?.code ?? session?.commune?.name ?? '')
         : '';
 
@@ -62,8 +61,9 @@ class PollService {
             final polls = rawList
                 .whereType<Map<String, dynamic>>()
                 .map(PollModel.fromJson)
-                .toList();
-            _sortPollsForDisplay(polls);
+                .toList()
+              ..sort(
+                  (left, right) => right.openDate.compareTo(left.openDate));
             await _writeLocalPolls(polls);
             return _filterByCommuneScope(polls, communeScope);
           }
@@ -86,9 +86,10 @@ class PollService {
         return _filterByCommuneScope(polls, communeScope);
       }
 
-      final polls =
-          snapshot.docs.map((item) => PollModel.fromJson(item.data())).toList();
-      _sortPollsForDisplay(polls);
+      final polls = snapshot.docs
+          .map((item) => PollModel.fromJson(item.data()))
+          .toList()
+        ..sort((left, right) => right.openDate.compareTo(left.openDate));
       await _writeLocalPolls(polls);
       return _filterByCommuneScope(polls, communeScope);
     } catch (_) {
@@ -116,8 +117,6 @@ class PollService {
     required String openDate,
     required String closeDate,
     required int totalVoters,
-    String publicationMode = 'draft',
-    String scheduledPublishDate = '',
   }) async {
     final session = AuthSessionStore.instance.currentSession;
     final response = await _post('/api/polls', {
@@ -133,9 +132,6 @@ class PollService {
       'openDate': openDate,
       'closeDate': closeDate,
       'totalVoters': totalVoters,
-      'publicationMode': publicationMode,
-      if (scheduledPublishDate.trim().isNotEmpty)
-        'scheduledPublishDate': scheduledPublishDate.trim(),
       'communeId': session?.commune?.code,
       'communeName': session?.commune?.name,
     });
@@ -161,8 +157,7 @@ class PollService {
         final merged = <PollModel>[
           poll,
           ...existing.where((item) => item.id != poll.id),
-        ];
-        _sortPollsForDisplay(merged);
+        ]..sort((left, right) => right.openDate.compareTo(left.openDate));
         await _writeLocalPolls(merged);
       } catch (_) {}
       return poll;
@@ -281,7 +276,8 @@ class PollService {
       }
     } catch (error) {
       if (error is PollServiceException) rethrow;
-      throw PollServiceException('Backend injoignable: ${error.toString()}');
+      throw PollServiceException(
+          'Backend injoignable: ${error.toString()}');
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       String message = 'Opération impossible (HTTP ${response.statusCode}).';
@@ -314,23 +310,5 @@ class PollService {
       }
       return true;
     }).toList();
-  }
-
-  void _sortPollsForDisplay(List<PollModel> polls) {
-    polls.sort((left, right) {
-      final rightDate = _displayDate(right);
-      final leftDate = _displayDate(left);
-      final dateCompare = rightDate.compareTo(leftDate);
-      if (dateCompare != 0) return dateCompare;
-      return right.id.compareTo(left.id);
-    });
-  }
-
-  DateTime _displayDate(PollModel poll) {
-    for (final raw in [poll.updatedAt, poll.createdAt, poll.openDate]) {
-      final parsed = DateTime.tryParse(raw);
-      if (parsed != null) return parsed;
-    }
-    return DateTime.fromMillisecondsSinceEpoch(0, isUtc: true);
   }
 }

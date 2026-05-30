@@ -202,20 +202,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final pageTitle = switch (widget.initialSection) {
       AdminDashboardSection.overview => 'Tableau de bord commune',
       AdminDashboardSection.polls => 'Consultations communales',
-      AdminDashboardSection.controllers =>
-        'Agents de mobilisation citoyenne communaux',
+      AdminDashboardSection.controllers => 'Agents de mobilisation citoyenne communaux',
     };
 
     final activeCount = _polls.where((poll) => poll.status == 'active').length;
-    final scheduledCount =
-        _polls.where((poll) => poll.status == 'scheduled').length;
     final closedCount = _polls.where((poll) => poll.status == 'closed').length;
     final archivedCount =
         _polls.where((poll) => poll.status == 'archived').length;
     final draftCount = _polls.where((poll) => poll.status == 'draft').length;
-    final visiblePolls = widget.initialSection == AdminDashboardSection.polls
-        ? _polls
-        : _polls.take(5).toList();
 
     return Scaffold(
       backgroundColor: _DashboardTheme.background,
@@ -335,12 +329,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                         value: '$activeCount',
                         icon: Icons.bar_chart_rounded,
                         color: _DashboardTheme.success,
-                      ),
-                      _DashboardStatCard(
-                        label: 'Programmées',
-                        value: '$scheduledCount',
-                        icon: Icons.event_available_rounded,
-                        color: const Color(0xFF7C3AED),
                       ),
                       _DashboardStatCard(
                         label: 'Terminées',
@@ -632,16 +620,10 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                           Row(
                             children: [
                               Expanded(
-                                child: Text(
-                                    widget.initialSection ==
-                                            AdminDashboardSection.polls
-                                        ? 'Toutes les consultations'
-                                        : 'Consultations recentes',
+                                child: Text('Consultations recentes',
                                     style:
                                         Theme.of(context).textTheme.titleLarge),
                               ),
-                              Chip(label: Text('${_polls.length}')),
-                              const SizedBox(width: 8),
                               if (_isLoading)
                                 const SizedBox(
                                     width: 18,
@@ -655,7 +637,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             const Text(
                                 'Aucune consultation disponible pour le moment.')
                           else
-                            for (final poll in visiblePolls)
+                            for (final poll in _polls.take(5))
                               Padding(
                                 padding: const EdgeInsets.only(bottom: 12),
                                 child: InkWell(
@@ -681,7 +663,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                                                       .textTheme.titleMedium),
                                               const SizedBox(height: 4),
                                               Text(
-                                                '${poll.totalVoted}/${poll.totalVoters} votants · ${_adminPollStatusLabel(poll)}',
+                                                '${poll.totalVoted}/${poll.totalVoters} votants · ${poll.status}',
                                                 style:
                                                     theme.textTheme.bodyMedium,
                                               ),
@@ -705,25 +687,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
         ),
       ),
     );
-  }
-}
-
-String _adminPollStatusLabel(PollModel poll) {
-  switch (poll.status) {
-    case 'active':
-      return 'En cours';
-    case 'scheduled':
-      return poll.scheduledPublishDate.isEmpty
-          ? 'Programmée'
-          : 'Programmée le ${poll.scheduledPublishDate}';
-    case 'closed':
-      return 'Terminée';
-    case 'archived':
-      return 'Archivée';
-    case 'draft':
-      return 'Brouillon';
-    default:
-      return poll.status;
   }
 }
 
@@ -1136,9 +1099,7 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
                       strokeWidth: 2, color: Colors.white),
                 )
               : const Icon(Icons.check_rounded),
-          label: Text(_isSubmitting
-              ? 'Creation...'
-              : 'Creer l\'agent de mobilisation citoyenne'),
+          label: Text(_isSubmitting ? 'Creation...' : 'Creer l\'agent de mobilisation citoyenne'),
         ),
       ],
     );

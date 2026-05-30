@@ -6,17 +6,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
-import '../models/poll_models.dart';
 import '../services/auth_session_store.dart';
 import '../services/citizen_access_code_service.dart';
-import '../services/controleur_profile_service.dart';
 import '../services/firebase_auth_service.dart';
-import '../services/poll_service.dart';
 import '../services/super_admin_service.dart';
 import '../widgets/super_admin_controller_activity_tile.dart';
 import '../widgets/super_admin_duplicate_tile.dart';
 
-enum SuperAdminDashboardSection { overview, admins, controllers }
+enum SuperAdminDashboardSection { overview, admins }
 
 class SuperAdminDashboardPage extends StatefulWidget {
   const SuperAdminDashboardPage({
@@ -33,8 +30,6 @@ class SuperAdminDashboardPage extends StatefulWidget {
 
 class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
   List<AdminProfileModel> _profiles = const [];
-  List<ControleurProfileModel> _controllers = const [];
-  List<PollModel> _polls = const [];
   List<DuplicateCodeRequestModel> _duplicateRequests = const [];
   ControllerActivityAnalytics _activityAnalytics =
       const ControllerActivityAnalytics(
@@ -60,8 +55,6 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
     setState(() => _isLoading = true);
 
     List<AdminProfileModel> profiles = _profiles;
-    List<ControleurProfileModel> controllers = _controllers;
-    List<PollModel> polls = _polls;
     List<DuplicateCodeRequestModel> duplicates = _duplicateRequests;
     ControllerActivityAnalytics analytics = _activityAnalytics;
     Object? loadError;
@@ -71,20 +64,6 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
     } catch (error, stackTrace) {
       loadError = error;
       debugPrint('[SuperAdminDashboard] loadProfiles failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-    }
-
-    try {
-      controllers = await ControleurProfileService.instance.loadProfiles();
-    } catch (error, stackTrace) {
-      debugPrint('[SuperAdminDashboard] loadControllers failed: $error');
-      debugPrintStack(stackTrace: stackTrace);
-    }
-
-    try {
-      polls = await PollService.instance.loadPolls();
-    } catch (error, stackTrace) {
-      debugPrint('[SuperAdminDashboard] loadPolls failed: $error');
       debugPrintStack(stackTrace: stackTrace);
     }
 
@@ -107,8 +86,6 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
     if (!mounted) return;
     setState(() {
       _profiles = profiles;
-      _controllers = controllers;
-      _polls = polls;
       _duplicateRequests = duplicates;
       _activityAnalytics = analytics;
       _isLoading = false;
@@ -253,31 +230,14 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
     );
   }
 
-  bool _isActivePoll(PollModel poll) {
-    final today = DateTime.now().toIso8601String().split('T').first;
-    final opened = poll.openDate.isEmpty || poll.openDate.compareTo(today) <= 0;
-    final notClosed =
-        poll.closeDate.isEmpty || poll.closeDate.compareTo(today) >= 0;
-    return (poll.status == 'active' || poll.status == 'open') &&
-        opened &&
-        notClosed;
-  }
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final session = AuthSessionStore.instance.currentSession;
     final showOverviewSection =
         widget.initialSection == SuperAdminDashboardSection.overview;
-    final showControllersSection =
-        widget.initialSection == SuperAdminDashboardSection.controllers;
-    final pageTitle = switch (widget.initialSection) {
-      SuperAdminDashboardSection.overview => 'Super Administration',
-      SuperAdminDashboardSection.admins => 'Admins communaux',
-      SuperAdminDashboardSection.controllers =>
-        'Agents de mobilisation citoyenne',
-    };
-    final activePolls = _polls.where(_isActivePoll).length;
+    final pageTitle =
+        showOverviewSection ? 'Super Administration' : 'Admins communaux';
 
     return Scaffold(
       appBar: AppBar(
@@ -300,8 +260,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
               try {
                 await AuthSessionStore.instance.clear();
               } catch (error, stackTrace) {
-                debugPrint(
-                    '[SuperAdminDashboard] session clear failed: $error');
+                debugPrint('[SuperAdminDashboard] session clear failed: $error');
                 debugPrintStack(stackTrace: stackTrace);
               }
               if (!context.mounted) return;
@@ -370,13 +329,6 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                           SuperAdminDashboardSection.admins,
                       onSelected: (_) =>
                           Navigator.of(context).pushNamed('/super/admins'),
-                    ),
-                    ChoiceChip(
-                      label: const Text('Agents de mobilisation citoyenne'),
-                      selected: widget.initialSection ==
-                          SuperAdminDashboardSection.controllers,
-                      onSelected: (_) =>
-                          Navigator.of(context).pushNamed('/super/controllers'),
                     ),
                   ],
                 ),
@@ -479,439 +431,74 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                     },
                   ),
                   const SizedBox(height: 24),
-                  _SuperAdminPollsSection(
-                    polls: _polls,
-                    activeCount: activePolls,
-                  ),
-                  const SizedBox(height: 24),
                 ],
-                if (showControllersSection) ...[
-                  _SuperAdminControllersSection(
-                    controllers: _controllers,
-                    isLoading: _isLoading,
-                  ),
-                ] else ...[
-                  Row(
-                    children: [
-                      Text(
-                        'Profils administrateurs',
-                        style: theme.textTheme.headlineMedium,
-                      ),
-                      const SizedBox(width: 12),
-                      Chip(label: Text('${_profiles.length}')),
-                      const Spacer(),
-                      FilledButton.icon(
-                        style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF0F6D8F)),
-                        onPressed: () => _openCreateDialog(),
-                        icon: const Icon(Icons.person_add_rounded, size: 18),
-                        label: const Text('Nouveau profil'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Chaque profil est rattache a une commune et possede une cle de connexion unique.',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: const Color(0xFF5A6573)),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_isLoading)
-                    const Center(
-                        child: Padding(
-                            padding: EdgeInsets.all(32),
-                            child: CircularProgressIndicator()))
-                  else if (_profiles.isEmpty)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.group_outlined,
-                                size: 48, color: Color(0xFF9AA9B8)),
-                            const SizedBox(height: 12),
-                            Text(
-                              'Aucun profil administrateur cree.',
-                              style: theme.textTheme.bodyLarge
-                                  ?.copyWith(color: const Color(0xFF5A6573)),
-                            ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Utilisez le bouton + en bas a droite pour creer le premier profil.',
-                              style: theme.textTheme.bodyMedium
-                                  ?.copyWith(color: const Color(0xFF9AA9B8)),
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    for (final profile in _profiles) ...[
-                      _ProfileCard(
-                        profile: profile,
-                        onDelete: () => _deleteProfile(profile),
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                ],
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _SuperAdminPollsSection extends StatelessWidget {
-  const _SuperAdminPollsSection({
-    required this.polls,
-    required this.activeCount,
-  });
-
-  final List<PollModel> polls;
-  final int activeCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Consultations creees',
-                    style: theme.textTheme.headlineSmall,
-                  ),
-                ),
-                Chip(label: Text('${polls.length}')),
-                const SizedBox(width: 8),
-                Chip(label: Text('$activeCount en cours')),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Le super administrateur voit les brouillons et les consultations publiees, puis peut corriger le titre, la description ou la question si necessaire.',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: const Color(0xFF5A6573)),
-            ),
-            const SizedBox(height: 16),
-            if (polls.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 20),
-                child: Center(
-                  child: Column(
-                    children: [
-                      const Icon(Icons.how_to_vote_outlined,
-                          size: 46, color: Color(0xFF9AA9B8)),
-                      const SizedBox(height: 10),
-                      Text(
-                        'Aucune consultation creee.',
-                        style: theme.textTheme.bodyLarge
-                            ?.copyWith(color: const Color(0xFF5A6573)),
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              for (final poll in polls.take(8)) ...[
-                _SuperAdminActivePollRow(poll: poll),
-                const SizedBox(height: 10),
-              ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _SuperAdminActivePollRow extends StatelessWidget {
-  const _SuperAdminActivePollRow({required this.poll});
-
-  final PollModel poll;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final communeLabel = poll.communeName.isEmpty
-        ? (poll.communeId.isEmpty ? 'Commune non renseignee' : poll.communeId)
-        : poll.communeName;
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFD7E0EA)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF0F6D8F).withValues(alpha: 0.10),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: const Icon(Icons.how_to_vote_rounded,
-                    color: Color(0xFF0F6D8F), size: 20),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Row(
                   children: [
                     Text(
-                      poll.projectTitle,
-                      style: theme.textTheme.titleSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+                      'Profils administrateurs',
+                      style: theme.textTheme.headlineMedium,
                     ),
-                    const SizedBox(height: 3),
-                    Text(
-                      communeLabel,
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: const Color(0xFF5A6573)),
+                    const SizedBox(width: 12),
+                    Chip(label: Text('${_profiles.length}')),
+                    const Spacer(),
+                    FilledButton.icon(
+                      style: FilledButton.styleFrom(
+                          backgroundColor: const Color(0xFF0F6D8F)),
+                      onPressed: () => _openCreateDialog(),
+                      icon: const Icon(Icons.person_add_rounded, size: 18),
+                      label: const Text('Nouveau profil'),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(width: 8),
-              FilledButton.tonalIcon(
-                onPressed: () => Navigator.of(context)
-                    .pushNamed('/admin/polls/${poll.id}/edit'),
-                icon: const Icon(Icons.edit_rounded, size: 18),
-                label: const Text('Corriger'),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            poll.question,
-            style: theme.textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 6,
-            children: [
-              Chip(
-                  label:
-                      Text('Ouverte du ${poll.openDate} au ${poll.closeDate}')),
-              Chip(label: Text('${poll.totalVoted}/${poll.totalVoters} votes')),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _SuperAdminControllersSection extends StatelessWidget {
-  const _SuperAdminControllersSection({
-    required this.controllers,
-    required this.isLoading,
-  });
-
-  final List<ControleurProfileModel> controllers;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    'Agents de mobilisation citoyenne',
-                    style: theme.textTheme.headlineSmall,
-                  ),
-                ),
-                Chip(label: Text('${controllers.length}')),
-                const SizedBox(width: 8),
-                FilledButton.tonalIcon(
-                  onPressed: () =>
-                      Navigator.of(context).pushNamed('/super/activity'),
-                  icon: const Icon(Icons.analytics_rounded, size: 18),
-                  label: const Text('Activite'),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Liste globale des agents crees par les administrateurs communaux, toutes communes confondues.',
-              style: theme.textTheme.bodyMedium
-                  ?.copyWith(color: const Color(0xFF5A6573)),
-            ),
-            const SizedBox(height: 16),
-            if (isLoading)
-              const Center(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child: CircularProgressIndicator(),
-                ),
-              )
-            else if (controllers.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: Column(
-                    children: [
-                      const Icon(Icons.badge_outlined,
-                          size: 48, color: Color(0xFF9AA9B8)),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Aucun agent de mobilisation citoyenne cree.',
-                        style: theme.textTheme.bodyLarge
-                            ?.copyWith(color: const Color(0xFF5A6573)),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                ),
-              )
-            else
-              for (final controller in controllers) ...[
-                _ControllerProfileCard(profile: controller),
-                const SizedBox(height: 10),
-              ],
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _ControllerProfileCard extends StatelessWidget {
-  const _ControllerProfileCard({required this.profile});
-
-  final ControleurProfileModel profile;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final createdDate = () {
-      try {
-        return DateTime.parse(profile.createdAt)
-            .toLocal()
-            .toString()
-            .substring(0, 16);
-      } catch (_) {
-        return profile.createdAt;
-      }
-    }();
-    final communeLabel = [
-      profile.communeName,
-      if (profile.codePostal?.isNotEmpty == true) '(${profile.codePostal})',
-    ].where((item) => item.isNotEmpty).join(' ');
-
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFFD7E0EA)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              color: const Color(0xFF2B9F82).withValues(alpha: 0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: const Icon(Icons.fact_check_rounded,
-                color: Color(0xFF2B9F82), size: 20),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
+                const SizedBox(height: 4),
                 Text(
-                  profile.label,
-                  style: theme.textTheme.titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  communeLabel.isEmpty
-                      ? 'Commune non renseignee'
-                      : communeLabel,
-                  style: theme.textTheme.bodySmall
+                  'Chaque profil est rattache a une commune et possede une cle de connexion unique.',
+                  style: theme.textTheme.bodyMedium
                       ?.copyWith(color: const Color(0xFF5A6573)),
                 ),
-                const SizedBox(height: 6),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 6,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    Text(
-                      profile.displayCodeMasked.isEmpty
-                          ? 'Code masque'
-                          : profile.displayCodeMasked,
-                      style: const TextStyle(
-                        color: Color(0xFF9AA9B8),
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
+                const SizedBox(height: 16),
+                if (_isLoading)
+                  const Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator()))
+                else if (_profiles.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.group_outlined,
+                              size: 48, color: Color(0xFF9AA9B8)),
+                          const SizedBox(height: 12),
+                          Text(
+                            'Aucun profil administrateur cree.',
+                            style: theme.textTheme.bodyLarge
+                                ?.copyWith(color: const Color(0xFF5A6573)),
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Utilisez le bouton + en bas a droite pour creer le premier profil.',
+                            style: theme.textTheme.bodyMedium
+                                ?.copyWith(color: const Color(0xFF9AA9B8)),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
                     ),
-                    if (profile.hasBeenUsed)
-                      const Chip(
-                        label: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.check_circle_rounded, size: 13),
-                            SizedBox(width: 4),
-                            Text('Utilise', style: TextStyle(fontSize: 11)),
-                          ],
-                        ),
-                        padding: EdgeInsets.zero,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                    Text(
-                      'Cree le $createdDate',
-                      style: theme.textTheme.bodySmall
-                          ?.copyWith(color: const Color(0xFF9AA9B8)),
+                  )
+                else
+                  for (final profile in _profiles) ...[
+                    _ProfileCard(
+                      profile: profile,
+                      onDelete: () => _deleteProfile(profile),
                     ),
+                    const SizedBox(height: 12),
                   ],
-                ),
               ],
             ),
           ),
-          IconButton(
-            tooltip: 'Voir activite',
-            icon: const Icon(Icons.analytics_outlined),
-            onPressed: () => Navigator.of(context).pushNamed(
-              '/super/activity',
-              arguments: {
-                'controllerId': profile.id,
-                if (profile.communeCode?.isNotEmpty == true)
-                  'communeId': profile.communeCode,
-              },
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

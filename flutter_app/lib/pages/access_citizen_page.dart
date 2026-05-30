@@ -181,6 +181,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
         backgroundColor: _background,
         foregroundColor: _foreground,
         title: const Text('Accès citoyen'),
+        centerTitle: true,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           tooltip: 'Retour à l’accueil',
