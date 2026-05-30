@@ -5,12 +5,12 @@ import '../services/vote_access_service.dart';
 /// Page de vote citoyen.
 ///
 /// Tout le parcours s'appuie sur le backend transactionnel:
-///   POST /api/vote-access/validate -> recupere accessToken + sondages eligibles
+///   POST /api/vote-access/validate -> recupere un accessToken minimal par consultation eligible
 ///   POST /api/vote-access/submit   -> enregistre le vote en transaction Firestore
 ///
 /// Le client n'incremente plus de compteur localement et ne marque plus le code
 /// comme "vote" en deux appels separes: le backend garantit l'atomicite et
-/// empeche le double vote (poll_votes/{pollId}_{accessCodeId}).
+/// empeche le double vote via une participation consommee separee du bulletin.
 class VotePage extends StatefulWidget {
   const VotePage({
     required this.token,
@@ -37,7 +37,8 @@ class _VotePageState extends State<VotePage> {
   String? _errorMessage;
   String? _successReceipt;
 
-  VoteAccessService get _voteAccessService => widget.voteAccessService ?? VoteAccessService.instance;
+  VoteAccessService get _voteAccessService =>
+      widget.voteAccessService ?? VoteAccessService.instance;
 
   @override
   void initState() {
@@ -93,7 +94,10 @@ class _VotePageState extends State<VotePage> {
     final validation = _validation;
     final poll = _activePoll;
     final optionId = _selectedOptionId;
-    if (_isSubmitting || validation == null || poll == null || optionId == null) {
+    if (_isSubmitting ||
+        validation == null ||
+        poll == null ||
+        optionId == null) {
       if (optionId == null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Veuillez selectionner une option.')),
@@ -109,7 +113,9 @@ class _VotePageState extends State<VotePage> {
 
     try {
       final result = await _voteAccessService.submitVote(
-        accessToken: validation.accessToken,
+        accessToken: poll.accessToken.isNotEmpty
+            ? poll.accessToken
+            : validation.accessToken,
         pollId: poll.pollId,
         optionId: optionId,
       );
@@ -134,7 +140,8 @@ class _VotePageState extends State<VotePage> {
     } catch (_) {
       if (!mounted) return;
       setState(() {
-        _errorMessage = 'Reseau indisponible. Votre vote n\'a pas ete enregistre.';
+        _errorMessage =
+            'Reseau indisponible. Votre vote n\'a pas ete enregistre.';
         _isSubmitting = false;
       });
     }
@@ -146,7 +153,8 @@ class _VotePageState extends State<VotePage> {
       return const _VoteStateScaffold(
         child: _InfoCard(
           title: 'Verification securisee',
-          message: 'Validation de votre code citoyen par le serveur en cours...',
+          message:
+              'Validation de votre code citoyen par le serveur en cours...',
         ),
       );
     }
@@ -157,7 +165,8 @@ class _VotePageState extends State<VotePage> {
           title: 'Acces a la consultation indisponible',
           message: _errorMessage!,
           actionLabel: 'Retour',
-          onPressed: () => Navigator.of(context).pushReplacementNamed('/access'),
+          onPressed: () =>
+              Navigator.of(context).pushReplacementNamed('/access'),
         ),
       );
     }
@@ -170,7 +179,8 @@ class _VotePageState extends State<VotePage> {
         return _VoteStateScaffold(
           child: _InfoCard(
             title: 'Aucune consultation ouverte',
-            message: 'Aucune consultation n\'est ouverte pour votre commune actuellement.',
+            message:
+                'Aucune consultation n\'est ouverte pour votre commune actuellement.',
             actionLabel: 'Retour a l\'accueil',
             onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
           ),
@@ -184,7 +194,9 @@ class _VotePageState extends State<VotePage> {
           onSelected: (poll) {
             if (poll.hasVoted) {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Vous avez deja vote pour cette consultation.')),
+                const SnackBar(
+                    content:
+                        Text('Vous avez deja vote pour cette consultation.')),
               );
               return;
             }
@@ -203,7 +215,8 @@ class _VotePageState extends State<VotePage> {
       return _VoteStateScaffold(
         child: _InfoCard(
           title: 'Merci pour votre vote',
-          message: 'Votre vote a deja ete enregistre de maniere anonyme. Aucune trace ne relie votre identite a votre choix.',
+          message:
+              'Votre vote a deja ete enregistre de maniere anonyme. Aucune trace ne relie votre identite a votre choix.',
           actionLabel: 'Retour a l\'accueil',
           onPressed: () => Navigator.of(context).pushReplacementNamed('/'),
           icon: Icons.verified_rounded,
@@ -241,7 +254,8 @@ class _VotePageState extends State<VotePage> {
                     onPressed: _isSubmitting
                         ? null
                         : () => Navigator.of(context).pushReplacementNamed('/'),
-                    icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                    icon: const Icon(Icons.arrow_back_rounded,
+                        color: Colors.white),
                   ),
                   const SizedBox(height: 6),
                   Text(
@@ -253,14 +267,18 @@ class _VotePageState extends State<VotePage> {
                   ),
                   const SizedBox(height: 8),
                   Text(
-                    poll.question.isNotEmpty ? poll.question : 'Choisissez votre option',
-                    style: theme.textTheme.headlineMedium?.copyWith(color: Colors.white),
+                    poll.question.isNotEmpty
+                        ? poll.question
+                        : 'Choisissez votre option',
+                    style: theme.textTheme.headlineMedium
+                        ?.copyWith(color: Colors.white),
                   ),
                   if (poll.description.isNotEmpty) ...[
                     const SizedBox(height: 12),
                     Text(
                       poll.description,
-                      style: theme.textTheme.bodyMedium?.copyWith(color: Colors.white70),
+                      style: theme.textTheme.bodyMedium
+                          ?.copyWith(color: Colors.white70),
                     ),
                   ],
                 ],
@@ -286,7 +304,8 @@ class _VotePageState extends State<VotePage> {
                   poll: poll,
                   selectedOptionId: _selectedOptionId,
                   enabled: !_isSubmitting,
-                  onChanged: (value) => setState(() => _selectedOptionId = value),
+                  onChanged: (value) =>
+                      setState(() => _selectedOptionId = value),
                 ),
                 if (_errorMessage != null)
                   Padding(
@@ -327,7 +346,9 @@ class _VotePageState extends State<VotePage> {
                           child: CircularProgressIndicator(strokeWidth: 2),
                         )
                       : const Icon(Icons.send_rounded),
-                  label: Text(_isSubmitting ? 'Enregistrement...' : 'Confirmer mon vote'),
+                  label: Text(_isSubmitting
+                      ? 'Enregistrement...'
+                      : 'Confirmer mon vote'),
                 ),
               ),
               const SizedBox(height: 8),
@@ -337,7 +358,9 @@ class _VotePageState extends State<VotePage> {
               ),
               if (_successReceipt != null) ...[
                 const SizedBox(height: 6),
-                Text('Recu: $_successReceipt', style: const TextStyle(fontSize: 12, color: Colors.black54)),
+                Text('Recu: $_successReceipt',
+                    style:
+                        const TextStyle(fontSize: 12, color: Colors.black54)),
               ],
             ],
           ),
@@ -424,7 +447,8 @@ class _PollOptions extends StatelessWidget {
                         ),
                       ),
                       child: selectedOptionId == option.id
-                          ? const Icon(Icons.check_rounded, size: 18, color: Colors.white)
+                          ? const Icon(Icons.check_rounded,
+                              size: 18, color: Colors.white)
                           : null,
                     ),
                     const SizedBox(width: 16),
@@ -470,7 +494,8 @@ class _PollPicker extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text('Choisissez une consultation', style: theme.textTheme.headlineSmall),
+            Text('Choisissez une consultation',
+                style: theme.textTheme.headlineSmall),
             const SizedBox(height: 6),
             Text('Commune: $communeName', style: theme.textTheme.bodyMedium),
             const SizedBox(height: 16),
@@ -483,7 +508,9 @@ class _PollPicker extends StatelessWidget {
                     side: const BorderSide(color: Color(0xFFD7E0EA)),
                   ),
                   title: Text(poll.title),
-                  subtitle: Text(poll.question.isEmpty ? 'Consultation ouverte' : poll.question),
+                  subtitle: Text(poll.question.isEmpty
+                      ? 'Consultation ouverte'
+                      : poll.question),
                   trailing: poll.hasVoted
                       ? const Chip(label: Text('Deja vote'))
                       : const Icon(Icons.arrow_forward_rounded),
@@ -546,9 +573,12 @@ class _InfoCard extends StatelessWidget {
           children: [
             Icon(icon, size: 44, color: theme.colorScheme.primary),
             const SizedBox(height: 16),
-            Text(title, style: theme.textTheme.headlineMedium, textAlign: TextAlign.center),
+            Text(title,
+                style: theme.textTheme.headlineMedium,
+                textAlign: TextAlign.center),
             const SizedBox(height: 12),
-            Text(message, style: theme.textTheme.bodyLarge, textAlign: TextAlign.center),
+            Text(message,
+                style: theme.textTheme.bodyLarge, textAlign: TextAlign.center),
             if (actionLabel != null && onPressed != null) ...[
               const SizedBox(height: 18),
               SizedBox(

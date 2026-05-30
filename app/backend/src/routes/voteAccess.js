@@ -42,12 +42,11 @@ export const buildParticipationRecord = ({ pollId, participationHash, communeId 
   consumedAt: FieldValue.serverTimestamp(),
 });
 
-export const buildAnonymousBallotRecord = ({ pollId, optionId, communeId, source }) => ({
+export const buildAnonymousBallotRecord = ({ pollId, optionId, communeId }) => ({
   pollId,
   optionId,
   communeId,
   castAt: FieldValue.serverTimestamp(),
-  source: source === 'mobile' ? 'mobile' : 'web',
 });
 const tokenSecret = () => env.voteAccessTokenSecret;
 
@@ -77,6 +76,12 @@ export const signAccessToken = (payload) => {
   const signature = crypto.createHmac('sha256', tokenSecret()).update(body).digest('base64url');
   return `${body}.${signature}`;
 };
+
+export const signPollAccessToken = ({ pollId, communeId, participationHash }) => signAccessToken({
+  pollId,
+  communeId,
+  participationHash,
+});
 
 export const verifyAccessToken = (token) => {
   const [body, signature] = String(token || '').split('.');
@@ -207,20 +212,25 @@ router.post('/validate', async (req, res) => {
       return res.status(409).json({ ok: false, errorCode: 'NO_OPEN_POLL', message: 'Aucune consultation ouverte pour votre commune actuellement.' });
     }
 
-    const participations = Object.fromEntries(
-      eligiblePolls.map((poll) => [
-        poll.pollId,
-        createParticipationHash(poll.pollId, access.id),
-      ]),
-    );
+    const eligiblePollsWithTokens = eligiblePolls.map((poll) => {
+      const participationHash = createParticipationHash(poll.pollId, access.id);
+      return {
+        ...poll,
+        accessToken: signPollAccessToken({
+          pollId: poll.pollId,
+          communeId: access.communeId,
+          participationHash,
+        }),
+      };
+    });
+    const primaryPoll = eligiblePollsWithTokens.length === 1 ? eligiblePollsWithTokens[0] : null;
 
     return res.json({
       ok: true,
-      accessToken: signAccessToken({ communeId: access.communeId, participations }),
-      accessCodeId: access.id,
+      accessToken: primaryPoll?.accessToken || '',
       communeId: access.communeId,
       communeName: access.communeName,
-      eligiblePolls,
+      eligiblePolls: eligiblePollsWithTokens,
     });
   } catch (error) {
     logger.error({ err: error }, 'vote_access_validation_failed');
@@ -230,12 +240,63 @@ router.post('/validate', async (req, res) => {
 
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
+export const submitAnonymousVote = async ({ db, token, pollId, optionId }) => {
+  const participationHash = token?.participationHash;
+  const participationDocId = createParticipationDocId(pollId, participationHash);
+
+  return db.runTransaction(async (transaction) => {
+    const pollRef = db.collection(POLL_COLLECTION).doc(pollId);
+    const participationRef = db.collection(PARTICIPATION_COLLECTION).doc(participationDocId);
+    const ballotRef = db.collection(BALLOT_COLLECTION).doc(createAnonymousBallotId());
+    const [pollDoc, participationDoc] = await Promise.all([
+      transaction.get(pollRef),
+      transaction.get(participationRef),
+    ]);
+
+    if (!pollDoc.exists) return { status: 404, errorCode: 'POLL_CLOSED', message: 'Consultation introuvable.' };
+    const poll = { id: pollDoc.id, ...pollDoc.data() };
+    if (!isPollOpen(poll)) return { status: 409, errorCode: 'POLL_CLOSED', message: 'Cette consultation est fermee.' };
+    if (token.communeId && poll.communeId && token.communeId !== poll.communeId) {
+      return { status: 403, errorCode: 'INVALID_CODE', message: 'Ce code n’est pas rattache a cette commune.' };
+    }
+    if (!optionBelongsToPoll(poll, optionId)) {
+      return { status: 400, errorCode: 'INVALID_OPTION', message: 'Option invalide.' };
+    }
+    if (participationDoc.exists) {
+      return { status: 409, errorCode: 'ALREADY_VOTED', message: 'Vous avez deja vote pour cette consultation.' };
+    }
+
+    const options = (poll.options || []).map((option) => (
+      String(option.id || '') === optionId
+        ? { ...option, votes: Number(option.votes || 0) + 1 }
+        : option
+    ));
+
+    transaction.set(participationRef, buildParticipationRecord({
+      pollId,
+      participationHash,
+      communeId: token.communeId || poll.communeId || '',
+    }));
+    transaction.set(ballotRef, buildAnonymousBallotRecord({
+      pollId,
+      optionId,
+      communeId: token.communeId || poll.communeId || '',
+    }));
+    transaction.set(pollRef, {
+      options,
+      totalVoted: Number(poll.totalVoted || 0) + 1,
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return { status: 200 };
+  });
+};
+
 router.post('/submit', async (req, res) => {
   const token = verifyAccessToken(req.body?.accessToken);
   const pollId = typeof req.body?.pollId === 'string' ? req.body.pollId.trim() : '';
   const optionId = typeof req.body?.optionId === 'string' ? req.body.optionId.trim() : '';
-  const participationHash = token?.participations?.[pollId];
-  if (!participationHash || !pollId || !optionId) {
+  const participationHash = token?.participationHash;
+  if (!token || token.pollId !== pollId || !participationHash || !pollId || !optionId) {
     return res.status(400).json({ ok: false, errorCode: 'INVALID_REQUEST', message: 'Demande de vote incomplete.' });
   }
   if (!/^[a-f0-9]{64}$/.test(participationHash)) {
@@ -247,53 +308,7 @@ router.post('/submit', async (req, res) => {
 
   try {
     const db = getFirebaseAdminDb();
-    const participationDocId = createParticipationDocId(pollId, participationHash);
-    const result = await db.runTransaction(async (transaction) => {
-      const pollRef = db.collection(POLL_COLLECTION).doc(pollId);
-      const participationRef = db.collection(PARTICIPATION_COLLECTION).doc(participationDocId);
-      const ballotRef = db.collection(BALLOT_COLLECTION).doc(createAnonymousBallotId());
-      const [pollDoc, participationDoc] = await Promise.all([
-        transaction.get(pollRef),
-        transaction.get(participationRef),
-      ]);
-
-      if (!pollDoc.exists) return { status: 404, errorCode: 'POLL_CLOSED', message: 'Consultation introuvable.' };
-      const poll = { id: pollDoc.id, ...pollDoc.data() };
-      if (!isPollOpen(poll)) return { status: 409, errorCode: 'POLL_CLOSED', message: 'Cette consultation est fermee.' };
-      if (token.communeId && poll.communeId && token.communeId !== poll.communeId) {
-        return { status: 403, errorCode: 'INVALID_CODE', message: 'Ce code n’est pas rattache a cette commune.' };
-      }
-      if (!optionBelongsToPoll(poll, optionId)) {
-        return { status: 400, errorCode: 'INVALID_OPTION', message: 'Option invalide.' };
-      }
-      if (participationDoc.exists) {
-        return { status: 409, errorCode: 'ALREADY_VOTED', message: 'Vous avez deja vote pour cette consultation.' };
-      }
-
-      const options = (poll.options || []).map((option) => (
-        String(option.id || '') === optionId
-          ? { ...option, votes: Number(option.votes || 0) + 1 }
-          : option
-      ));
-
-      transaction.set(participationRef, buildParticipationRecord({
-        pollId,
-        participationHash,
-        communeId: token.communeId || poll.communeId || '',
-      }));
-      transaction.set(ballotRef, buildAnonymousBallotRecord({
-        pollId,
-        optionId,
-        communeId: token.communeId || poll.communeId || '',
-        source: req.body?.source,
-      }));
-      transaction.set(pollRef, {
-        options,
-        totalVoted: Number(poll.totalVoted || 0) + 1,
-        updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
-      return { status: 200 };
-    });
+    const result = await submitAnonymousVote({ db, token, pollId, optionId });
 
     if (result.status !== 200) {
       return res.status(result.status).json({ ok: false, errorCode: result.errorCode, message: result.message });

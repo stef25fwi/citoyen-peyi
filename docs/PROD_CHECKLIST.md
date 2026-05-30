@@ -43,3 +43,43 @@
       `stef25fwi.github.io`, `localhost`, `127.0.0.1` et le domaine prod custom.
 - [ ] App Check enforcement = `Enforced` pour Firestore et Authentication
       apres validation prod (sinon laisser `Unenforced`).
+
+## Anonymat production 10/10
+
+Etat repo: les briques code, tests et documentation existent. Cocher cette
+section uniquement pendant la validation de l'environnement production reel.
+
+Critere d'acceptation:
+
+> Pour une consultation donnee, la base de donnees permet de savoir qu'un droit
+> de vote a ete consomme et combien de voix chaque option a recues, mais elle ne
+> contient aucun document durable permettant de relier un code citoyen, une
+> empreinte citoyenne, un controleur ou un accessCodeId a l'option choisie.
+
+- [ ] 1. Relire le modele de menace: `docs/ANONYMITY_THREAT_MODEL.md` documente
+      les actifs, adversaires, garanties, limites et verifications production.
+- [ ] 2. Configurer `PARTICIPATION_PEPPER`: secret HMAC dedie, requis en
+      production et distinct des autres peppers.
+- [ ] 3. Verifier que les identifiants sensibles sont absents du token de vote:
+      le jeton court transporte uniquement `pollId`, `communeId`,
+      `participationHash` et `exp`.
+- [ ] 4. Verifier `poll_participations`: collection de consommation du droit de vote,
+      sans `optionId` ni donnees citoyennes.
+- [ ] 5. Verifier `poll_ballots`: collection de bulletins anonymes avec seulement
+      `pollId`, `optionId`, `communeId` et `castAt`.
+- [ ] 6. Verifier la transaction de vote: une seule transaction cree la
+      participation, cree le bulletin anonyme et incremente l'agregat public.
+- [ ] 7. Deployer et tester les regles Firestore: `poll_votes`, `poll_participations`
+      et `poll_ballots` sont fermes aux clients; les resultats publics restent
+      lisibles via `polls`.
+- [ ] 8. Lancer les tests d'anonymat: vote unique, double vote, concurrence,
+      absence de lien durable et acces public aux resultats agreges.
+- [ ] 9. Executer la strategie legacy `poll_votes`: sauvegarde controlee,
+      archive agregee uniquement, puis suppression sans migration document par document.
+- [ ] 10. Auditer logs et donnees existantes: redaction des champs sensibles,
+      absence de `optionId` dans les logs correles, et controle des exports avant prod.
+
+Niveau cryptographique superieur: pour pouvoir affirmer que meme le serveur ne
+peut pas relier l'autorisation initiale au bulletin final, planifier une phase
+dediee de jeton aveugle ou signature aveugle avec design crypto, revue externe
+et tests de non-correlation.

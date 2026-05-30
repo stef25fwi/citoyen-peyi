@@ -38,8 +38,54 @@ Frontend Flutter Web:
 3. Le backend calcule l'empreinte citoyenne HMAC et detecte un doublon.
 4. Si aucun doublon n'existe, le backend cree un code aleatoire, stocke uniquement son HMAC et retourne le code une seule fois a l'ecran controleur.
 5. Si un doublon existe, le backend cree une demande de validation sans exposer de code existant en clair.
-6. Le vote public valide le code via le backend et recoit un jeton court dedie au vote, contenant uniquement des hashes de participation par consultation.
+6. Le vote public valide le code via le backend et recoit un jeton court dedie a une consultation precise, contenant uniquement `pollId`, `communeId`, `participationHash` et `exp`.
 7. La soumission cree une participation consommee sans option choisie et un bulletin anonyme sans code citoyen ni hash de participation.
+8. Le bulletin anonyme ne conserve que `pollId`, `optionId`, `communeId` et `castAt`.
+
+## Logs applicatifs
+
+Les logs backend redigent systematiquement `accessCode`, `accessCodeId`,
+`accessCodeHash`, `citizenFingerprintHash`, `participationHash`, `accessToken`,
+`Authorization`, `x-super-admin-key` et `optionId`. `optionId` est masque pour
+eviter tout log combinant une option choisie avec un identifiant de droit de
+vote ou de code citoyen.
+
+## Retrait de `poll_votes` legacy
+
+La collection `poll_votes` est conservee temporairement en lecture/ecriture
+client interdites. Elle represente l'ancien modele pseudonymise, car un document
+pouvait contenir ou deriver le couple `accessCodeId` + `optionId`. Elle ne doit
+pas etre presentee comme une preuve d'anonymat complet.
+
+Le backend n'ecrit plus dans `poll_votes`; les nouveaux votes utilisent
+`poll_participations` et `poll_ballots`. Avant suppression de l'historique,
+faire une sauvegarde Firestore controlee, puis executer:
+
+```bash
+npm run retire:poll-votes -- --archive-summary --confirm-backup
+npm run retire:poll-votes -- --archive-summary --delete --confirm-backup
+```
+
+Le script n'archive que des metadonnees agregees et ne recopie jamais le couple
+`accessCodeId` + `optionId` dans une nouvelle collection.
+
+## Evolution cryptographique: jetons aveugles
+
+Le modele actuel separe durablement droit de vote consomme et bulletin anonyme,
+mais le serveur voit encore l'emission du jeton et la soumission du bulletin.
+Pour un niveau institutionnel superieur, etudier un protocole de jeton aveugle
+ou de signature aveugle:
+
+1. Le citoyen prouve son droit de vote avec son code.
+2. Le client genere un jeton aleatoire et l'aveugle cryptographiquement.
+3. Le serveur signe le jeton aveugle apres verification d'eligibilite, sans voir
+	le jeton final.
+4. Le client desaveugle la signature et soumet le bulletin avec ce jeton signe.
+5. Le serveur verifie que le jeton signe est valide et non consomme, sans pouvoir
+	relier l'emission initiale au bulletin final.
+
+Cette evolution doit faire l'objet d'un design separe, d'une revue crypto et de
+tests de non-correlation avant implementation production.
 
 ## Firestore
 

@@ -18,9 +18,9 @@ avant un deploiement de production.
   - `duplicate_code_requests` (workflow super admin)
   - `controller_activity_logs` (audit controleurs)
   - `controleurCodes` (codes controleurs)
-  - `poll_votes` (vote unique par {pollId}_{accessCodeId}, ecriture backend uniquement)
       - `poll_participations` (droit de vote consomme, sans option choisie)
       - `poll_ballots` (bulletin anonyme, sans code citoyen ni hash de participation)
+      - `poll_votes` (legacy pseudonymise, ferme aux clients, a retirer apres sauvegarde)
   - `public_news` (actualites communales)
 - Regles Firestore deployees depuis `firestore.rules`.
 
@@ -80,9 +80,11 @@ avant un deploiement de production.
 
 - [ ] Les regles Firestore bloquent toute lecture publique de
       `citizen_access_codes`, `citizen_fingerprints`, `poll_votes`,
+      `poll_participations`, `poll_ballots`,
       `duplicate_code_requests`, `controller_activity_logs`.
 - [ ] L'API `/api/vote-access/validate` rejette les codes inconnus, expires,
-      revoques et retourne `accessToken` HMAC-signe (TTL 30 min).
+      revoques et retourne un `accessToken` HMAC-signe minimal par consultation
+      (TTL 30 min).
 - [ ] L'API `/api/vote-access/submit` est strictement transactionnelle :
       verification token + commune + sondage ouvert + option valide + non
       duplique avant ecriture.

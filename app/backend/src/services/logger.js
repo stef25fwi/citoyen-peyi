@@ -2,11 +2,53 @@ import pino from 'pino';
 import pinoHttp from 'pino-http';
 import { env } from '../config/env.js';
 
+export const sensitiveLogFields = new Set([
+  'accesscode',
+  'accesscodeid',
+  'accesscodehash',
+  'citizenfingerprinthash',
+  'participationhash',
+  'accesstoken',
+  'optionid',
+  'authorization',
+  'xsuperadminkey',
+]);
+
+const normalizeFieldName = (field) => String(field || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+
+const isPlainObject = (value) => Object.prototype.toString.call(value) === '[object Object]';
+
+export const sanitizeLogPayload = (value) => {
+  if (Array.isArray(value)) {
+    return value.map((item) => sanitizeLogPayload(item));
+  }
+
+  if (value instanceof Error || !isPlainObject(value)) {
+    return value;
+  }
+
+  return Object.fromEntries(
+    Object.entries(value).map(([key, item]) => [
+      key,
+      sensitiveLogFields.has(normalizeFieldName(key))
+        ? '[REDACTED]'
+        : sanitizeLogPayload(item),
+    ]),
+  );
+};
+
 export const logger = pino({
   level: env.logLevel,
+  hooks: {
+    logMethod(inputArgs, method) {
+      const sanitizedArgs = inputArgs.map((arg) => sanitizeLogPayload(arg));
+      method.apply(this, sanitizedArgs);
+    },
+  },
   redact: {
     paths: [
       'req.headers.authorization',
+      'req.headers.Authorization',
       'req.headers["x-super-admin-key"]',
       'req.headers.cookie',
       'req.body',
@@ -18,6 +60,7 @@ export const logger = pino({
       'req.body.accessCodeHash',
       'req.body.citizenFingerprintHash',
       'req.body.participationHash',
+      'req.body.optionId',
       'req.body.adminAccessKey',
       'req.body.fingerprint',
       'req.body.phone',
@@ -30,6 +73,11 @@ export const logger = pino({
       'accessCodeHash',
       'citizenFingerprintHash',
       'participationHash',
+      'accessToken',
+      'optionId',
+      'authorization',
+      'Authorization',
+      'x-super-admin-key',
       'code',
       'customToken',
       'accessKey',
@@ -45,6 +93,11 @@ export const logger = pino({
       '*.accessCodeHash',
       '*.citizenFingerprintHash',
       '*.participationHash',
+      '*.accessToken',
+      '*.optionId',
+      '*.authorization',
+      '*.Authorization',
+      '*["x-super-admin-key"]',
       '*.code',
       '*.customToken',
       '*.accessKey',
@@ -75,7 +128,6 @@ export const httpLogger = pinoHttp({
     req: (req) => ({
       method: req.method,
       url: sanitizeRequestUrl(req.url),
-      remoteAddress: req.remoteAddress,
     }),
   },
 });

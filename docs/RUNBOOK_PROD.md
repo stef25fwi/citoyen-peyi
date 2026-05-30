@@ -82,6 +82,22 @@ gcloud firestore export gs://citoyen-peyi-backups/$(date +%Y%m%d) \
 
 Restauration: `gcloud firestore import gs://citoyen-peyi-backups/<date>`.
 
+## Retirer les anciens `poll_votes`
+
+Les documents `poll_votes` historiques sont pseudonymises, pas pleinement
+anonymes, s'ils contiennent ou derivent `accessCodeId` + `optionId`. Apres une
+sauvegarde Firestore controlee, archiver uniquement un resume agrege puis
+supprimer l'ancienne collection:
+
+```bash
+cd app/backend
+npm run retire:poll-votes -- --archive-summary --confirm-backup
+npm run retire:poll-votes -- --archive-summary --delete --confirm-backup
+```
+
+Ne pas migrer les anciens documents un par un vers `poll_ballots`, car cela
+recreerait une trace operationnelle du lien entre droit de vote et choix.
+
 ## Bascule deploiement
 
 1. Push sur `main` declenche en parallele:

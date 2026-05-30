@@ -35,6 +35,7 @@ class EligiblePollModel {
     required this.title,
     required this.status,
     required this.hasVoted,
+    this.accessToken = '',
     this.description = '',
     this.question = '',
     this.options = const [],
@@ -44,6 +45,7 @@ class EligiblePollModel {
   final String title;
   final String status;
   final bool hasVoted;
+  final String accessToken;
   final String description;
   final String question;
   final List<EligiblePollOption> options;
@@ -52,9 +54,12 @@ class EligiblePollModel {
     final rawOptions = json['options'] as List<dynamic>? ?? const [];
     return EligiblePollModel(
       pollId: json['pollId'] as String? ?? json['id'] as String? ?? '',
-      title: json['title'] as String? ?? json['projectTitle'] as String? ?? 'Consultation',
+      title: json['title'] as String? ??
+          json['projectTitle'] as String? ??
+          'Consultation',
       status: json['status'] as String? ?? 'open',
       hasVoted: json['hasVoted'] as bool? ?? false,
+      accessToken: json['accessToken'] as String? ?? '',
       description: json['description'] as String? ?? '',
       question: json['question'] as String? ?? '',
       options: rawOptions
@@ -96,10 +101,12 @@ class VoteAccessService {
 
   static final VoteAccessService instance = VoteAccessService();
 
-  Future<VoteAccessValidationResult> validateCode(String rawCode, {String? pollId}) async {
+  Future<VoteAccessValidationResult> validateCode(String rawCode,
+      {String? pollId}) async {
     final code = parseCodeOrQrUrl(rawCode);
     if (code == null || code.isEmpty) {
-      throw const VoteAccessException('Code citoyen requis.', errorCode: 'INVALID_CODE');
+      throw const VoteAccessException('Code citoyen requis.',
+          errorCode: 'INVALID_CODE');
     }
 
     try {
@@ -114,17 +121,20 @@ class VoteAccessService {
           )
           .timeout(const Duration(seconds: 12));
       final payload = jsonDecode(response.body) as Map<String, dynamic>;
-      if (response.statusCode < 200 || response.statusCode >= 300 || payload['ok'] != true) {
+      if (response.statusCode < 200 ||
+          response.statusCode >= 300 ||
+          payload['ok'] != true) {
         throw VoteAccessException(
           payload['message'] as String? ?? 'Code inconnu, expiré ou désactivé.',
           errorCode: payload['errorCode'] as String? ?? 'INVALID_CODE',
         );
       }
-      final eligiblePolls = (payload['eligiblePolls'] as List<dynamic>? ?? const [])
-          .whereType<Map<String, dynamic>>()
-          .map(EligiblePollModel.fromJson)
-          .where((poll) => poll.pollId.isNotEmpty)
-          .toList();
+      final eligiblePolls =
+          (payload['eligiblePolls'] as List<dynamic>? ?? const [])
+              .whereType<Map<String, dynamic>>()
+              .map(EligiblePollModel.fromJson)
+              .where((poll) => poll.pollId.isNotEmpty)
+              .toList();
 
       return VoteAccessValidationResult(
         accessToken: payload['accessToken'] as String? ?? '',
@@ -136,7 +146,9 @@ class VoteAccessService {
     } on VoteAccessException {
       rethrow;
     } catch (_) {
-      throw const VoteAccessException('Validation sécurisée indisponible. Réessayez plus tard.', errorCode: 'NETWORK_ERROR');
+      throw const VoteAccessException(
+          'Validation sécurisée indisponible. Réessayez plus tard.',
+          errorCode: 'NETWORK_ERROR');
     }
   }
 
@@ -159,7 +171,9 @@ class VoteAccessService {
           )
           .timeout(const Duration(seconds: 12));
       final payload = jsonDecode(response.body) as Map<String, dynamic>;
-      if (response.statusCode < 200 || response.statusCode >= 300 || payload['ok'] != true) {
+      if (response.statusCode < 200 ||
+          response.statusCode >= 300 ||
+          payload['ok'] != true) {
         throw VoteAccessException(
           payload['message'] as String? ?? 'Enregistrement du vote impossible.',
           errorCode: payload['errorCode'] as String? ?? 'SUBMIT_FAILED',
@@ -167,12 +181,15 @@ class VoteAccessService {
       }
       return VoteSubmitResult(
         receiptId: payload['receiptId'] as String? ?? '',
-        message: payload['message'] as String? ?? 'Votre vote est enregistre anonymement.',
+        message: payload['message'] as String? ??
+            'Votre vote est enregistre anonymement.',
       );
     } on VoteAccessException {
       rethrow;
     } catch (_) {
-      throw const VoteAccessException('Réseau indisponible. Votre vote n’a pas été enregistré.', errorCode: 'NETWORK_ERROR');
+      throw const VoteAccessException(
+          'Réseau indisponible. Votre vote n’a pas été enregistré.',
+          errorCode: 'NETWORK_ERROR');
     }
   }
 

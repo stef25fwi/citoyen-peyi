@@ -63,3 +63,34 @@ test('sanitizeRequestUrl redacts access codes from logged URLs', () => {
     '/api/vote-access/validate?code=[REDACTED]&pollId=poll-1',
   );
 });
+
+test('sanitizeLogPayload redacts sensitive vote fields and combined option context', () => {
+  const sanitized = loggerModule.sanitizeLogPayload({
+    accessCode: 'AB12CD34',
+    accessCodeId: 'cac_123',
+    accessCodeHash: 'a'.repeat(64),
+    citizenFingerprintHash: 'b'.repeat(64),
+    participationHash: 'c'.repeat(64),
+    accessToken: 'signed-token',
+    optionId: 'opt-1',
+    headers: {
+      Authorization: 'Bearer token',
+      'x-super-admin-key': 'super-secret',
+    },
+    nested: [{ optionId: 'opt-2', accessCodeId: 'cac_456' }],
+    pollId: 'poll-1',
+  });
+
+  assert.equal(sanitized.accessCode, '[REDACTED]');
+  assert.equal(sanitized.accessCodeId, '[REDACTED]');
+  assert.equal(sanitized.accessCodeHash, '[REDACTED]');
+  assert.equal(sanitized.citizenFingerprintHash, '[REDACTED]');
+  assert.equal(sanitized.participationHash, '[REDACTED]');
+  assert.equal(sanitized.accessToken, '[REDACTED]');
+  assert.equal(sanitized.optionId, '[REDACTED]');
+  assert.equal(sanitized.headers.Authorization, '[REDACTED]');
+  assert.equal(sanitized.headers['x-super-admin-key'], '[REDACTED]');
+  assert.equal(sanitized.nested[0].optionId, '[REDACTED]');
+  assert.equal(sanitized.nested[0].accessCodeId, '[REDACTED]');
+  assert.equal(sanitized.pollId, 'poll-1');
+});

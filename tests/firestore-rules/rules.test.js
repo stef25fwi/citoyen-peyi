@@ -40,6 +40,22 @@ test('public can read polls', async () => {
   await assertSucceeds(getDoc(doc(anonDb(), 'polls/poll-1')));
 });
 
+test('public results read poll aggregates, not anonymous vote collections', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'polls/poll-results'), {
+      id: 'poll-results',
+      status: 'active',
+      options: [{ id: 'opt-1', votes: 3 }],
+    });
+    await setDoc(doc(ctx.firestore(), 'poll_ballots/ballot-1'), { optionId: 'opt-1' });
+    await setDoc(doc(ctx.firestore(), 'poll_participations/poll-results_hash'), { participationHash: 'x' });
+  });
+
+  await assertSucceeds(getDoc(doc(anonDb(), 'polls/poll-results')));
+  await assertFails(getDoc(doc(anonDb(), 'poll_ballots/ballot-1')));
+  await assertFails(getDoc(doc(anonDb(), 'poll_participations/poll-results_hash')));
+});
+
 test('client cannot write polls (must go through backend)', async () => {
   const adminDb = userDb('admin-1', { role: 'commune_admin', admin: true });
   await assertFails(setDoc(doc(adminDb, 'polls/poll-bad'), { id: 'poll-bad', status: 'draft' }));
