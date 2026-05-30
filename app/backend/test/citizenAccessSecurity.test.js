@@ -12,6 +12,8 @@ process.env.FIREBASE_ADMIN_CLIENT_EMAIL = process.env.FIREBASE_ADMIN_CLIENT_EMAI
 process.env.FIREBASE_ADMIN_PRIVATE_KEY = process.env.FIREBASE_ADMIN_PRIVATE_KEY || '-----BEGIN PRIVATE KEY-----\\nTEST\\n-----END PRIVATE KEY-----\\n';
 
 const security = await import('../src/routes/citizenAccess.js');
+const authRoutes = await import('../src/routes/auth.js');
+const controllerRoutes = await import('../src/routes/controllers.js');
 const loggerModule = await import('../src/services/logger.js');
 const keyHashing = await import('../src/services/keyHashing.js');
 
@@ -51,6 +53,24 @@ test('admin/controller hashes use peppered HMAC and keep legacy compatibility ch
     keyHashing.matchesStoredHash(adminKey, keyHashing.hashLegacySha256(adminKey), adminHash),
     true,
   );
+});
+
+test('generated controller code matches agent login format', () => {
+  const code = controllerRoutes.generateControllerCode();
+
+  assert.match(code, /^[A-F0-9]{8}$/);
+  assert.equal(authRoutes.normalizeControllerLoginCode(code), code);
+  assert.equal(authRoutes.normalizeControllerLoginCode(` ctrl-${code.toLowerCase()} `), code);
+});
+
+test('commune admin generated controller code hashes to the login lookup value', () => {
+  const generatedCode = controllerRoutes.generateControllerCode();
+  const storedHash = keyHashing.hashControllerCode(generatedCode);
+  const loginCode = authRoutes.normalizeControllerLoginCode(generatedCode);
+
+  assert.equal(loginCode, generatedCode);
+  assert.equal(keyHashing.hashControllerCode(loginCode), storedHash);
+  assert.notEqual(storedHash, generatedCode);
 });
 
 test('sanitizeRequestUrl redacts access codes from logged URLs', () => {

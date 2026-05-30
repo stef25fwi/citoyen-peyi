@@ -23,7 +23,7 @@ const ensureConfigured = (_req, res, next) => {
 
 const sanitize = (value, max) => (typeof value === 'string' ? value.trim().substring(0, max) : '');
 
-const generateControllerCode = () => {
+export const generateControllerCode = () => {
   const hash = crypto.createHash('sha256').update(crypto.randomBytes(32)).digest('hex');
   return hash.substring(0, 8).toUpperCase();
 };

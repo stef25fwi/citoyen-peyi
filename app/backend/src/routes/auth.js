@@ -9,7 +9,10 @@ import { logger } from '../services/logger.js';
 
 const router = express.Router();
 
-const normalizeCode = (value) => value.trim().toUpperCase();
+export const normalizeControllerLoginCode = (value) => {
+  const upper = String(value || '').trim().toUpperCase();
+  return upper.startsWith('CTRL-') ? upper.substring(5) : upper;
+};
 
 const safeEquals = (left, right) => {
   const leftBuffer = Buffer.from(String(left || ''), 'utf8');
@@ -72,7 +75,7 @@ router.post('/controller/exchange', async (req, res) => {
     });
   }
 
-  const code = typeof req.body?.code === 'string' ? normalizeCode(req.body.code) : '';
+  const code = typeof req.body?.code === 'string' ? normalizeControllerLoginCode(req.body.code) : '';
   if (!code) {
     return res.status(400).json({ message: 'Le code controleur est requis.' });
   }
