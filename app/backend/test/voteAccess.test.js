@@ -33,6 +33,17 @@ test('createParticipationHash uses a dedicated peppered HMAC', () => {
   assert.equal(participationHash, voteAccess.createParticipationHash('poll-1', 'access-1'));
 });
 
+test('createAnonymousBallotId returns an unlinkable 128-bit random id', () => {
+  const firstId = voteAccess.createAnonymousBallotId();
+  const secondId = voteAccess.createAnonymousBallotId();
+
+  assert.match(firstId, /^[a-f0-9]{32}$/);
+  assert.match(secondId, /^[a-f0-9]{32}$/);
+  assert.notEqual(firstId, secondId);
+  assert.equal(firstId.includes('poll-1'), false);
+  assert.equal(firstId.includes('access-1'), false);
+});
+
 test('signAccessToken and verifyAccessToken roundtrip anonymous participation payload', () => {
   const participationHash = voteAccess.createParticipationHash('poll-1', 'access-1');
   const token = voteAccess.signAccessToken({

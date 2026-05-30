@@ -33,6 +33,8 @@ export const createParticipationHash = (pollId, accessCodeId) => {
 
 export const createParticipationDocId = (pollId, participationHash) => `${String(pollId || '').trim()}_${participationHash}`;
 
+export const createAnonymousBallotId = () => crypto.randomBytes(16).toString('hex');
+
 export const buildParticipationRecord = ({ pollId, participationHash, communeId }) => ({
   pollId,
   participationHash,
@@ -249,7 +251,7 @@ router.post('/submit', async (req, res) => {
     const result = await db.runTransaction(async (transaction) => {
       const pollRef = db.collection(POLL_COLLECTION).doc(pollId);
       const participationRef = db.collection(PARTICIPATION_COLLECTION).doc(participationDocId);
-      const ballotRef = db.collection(BALLOT_COLLECTION).doc(crypto.randomUUID());
+      const ballotRef = db.collection(BALLOT_COLLECTION).doc(createAnonymousBallotId());
       const [pollDoc, participationDoc] = await Promise.all([
         transaction.get(pollRef),
         transaction.get(participationRef),
