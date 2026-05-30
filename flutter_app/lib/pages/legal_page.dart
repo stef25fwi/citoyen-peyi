@@ -80,15 +80,6 @@ class LegalPage extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 18),
-                      Text(
-                        'CGU, confidentialité, anonymat et mentions légales',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: const Color(0xFF0F172A),
-                          fontWeight: FontWeight.w800,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
                       Center(
                         child: Text(
                           'CGU, confidentialité, anonymat et données personnelles',
