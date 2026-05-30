@@ -52,7 +52,14 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Accès citoyen'), findsWidgets);
-    expect(find.text('Informations légales'), findsOneWidget);
+    expect(
+      find.text('CGU, confidentialité et données personnelles'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Entrez votre code citoyen pour participer anonymement.'),
+      findsOneWidget,
+    );
 
     final disabledButton = tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, 'Valider mon code citoyen'),

@@ -87,6 +87,7 @@ export const env = {
   enableBootstrapAdmin: optional(process.env.ENABLE_BOOTSTRAP_ADMIN) === 'true',
   accessCodePepper: optional(process.env.ACCESS_CODE_PEPPER),
   citizenFingerprintPepper: optional(process.env.CITIZEN_FINGERPRINT_PEPPER),
+  participationPepper: optional(process.env.PARTICIPATION_PEPPER),
   // Fallback dev/test seulement: la validation prod (validateEnv) interdit les peppers identiques.
   adminAccessPepper: optional(process.env.ADMIN_ACCESS_PEPPER) || optional(process.env.ACCESS_CODE_PEPPER),
   controllerCodePepper: optional(process.env.CONTROLLER_CODE_PEPPER) || optional(process.env.ACCESS_CODE_PEPPER),
@@ -153,6 +154,10 @@ export const validateEnv = () => {
     errors.push('CITIZEN_FINGERPRINT_PEPPER est requis en production pour hacher les empreintes citoyennes.');
   }
 
+  if (env.isProduction && !env.participationPepper) {
+    errors.push('PARTICIPATION_PEPPER est requis en production pour separer droit de vote et bulletin.');
+  }
+
   if (env.isProduction && !env.adminAccessPepper) {
     errors.push('ADMIN_ACCESS_PEPPER est requis en production pour hacher les cles administrateur.');
   }
@@ -167,6 +172,10 @@ export const validateEnv = () => {
 
   if (env.isProduction && env.citizenFingerprintPepper && env.citizenFingerprintPepper.length < 32) {
     errors.push('CITIZEN_FINGERPRINT_PEPPER doit faire au moins 32 caracteres en production.');
+  }
+
+  if (env.isProduction && env.participationPepper && env.participationPepper.length < 32) {
+    errors.push('PARTICIPATION_PEPPER doit faire au moins 32 caracteres en production.');
   }
 
   if (env.isProduction && env.adminAccessPepper && env.adminAccessPepper.length < 32) {
@@ -194,12 +203,13 @@ export const validateEnv = () => {
     const pepperValues = [
       env.accessCodePepper,
       env.citizenFingerprintPepper,
+      env.participationPepper,
       env.adminAccessPepper,
       env.controllerCodePepper,
     ].filter(Boolean);
     if (new Set(pepperValues).size !== pepperValues.length) {
       errors.push(
-        'Les peppers ACCESS_CODE_PEPPER, CITIZEN_FINGERPRINT_PEPPER, ADMIN_ACCESS_PEPPER et CONTROLLER_CODE_PEPPER doivent etre tous distincts en production.',
+        'Les peppers ACCESS_CODE_PEPPER, CITIZEN_FINGERPRINT_PEPPER, PARTICIPATION_PEPPER, ADMIN_ACCESS_PEPPER et CONTROLLER_CODE_PEPPER doivent etre tous distincts en production.',
       );
     }
   }

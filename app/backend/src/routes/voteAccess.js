@@ -9,7 +9,8 @@ const router = express.Router();
 
 const ACCESS_COLLECTION = 'citizen_access_codes';
 const POLL_COLLECTION = 'polls';
-const POLL_VOTE_COLLECTION = 'poll_votes';
+const PARTICIPATION_COLLECTION = 'poll_participations';
+const BALLOT_COLLECTION = 'poll_ballots';
 const TOKEN_TTL_MS = 30 * 60 * 1000;
 
 export const jsonBase64Url = (value) => Buffer.from(JSON.stringify(value)).toString('base64url');
@@ -20,6 +21,32 @@ export const hashCode = (code) => {
   }
   return crypto.createHmac('sha256', env.accessCodePepper).update(normalizeCode(code)).digest('hex');
 };
+export const createParticipationHash = (pollId, accessCodeId) => {
+  if (!env.participationPepper) {
+    throw new Error('PARTICIPATION_PEPPER is required');
+  }
+  return crypto
+    .createHmac('sha256', env.participationPepper)
+    .update(`${String(pollId || '').trim()}:${String(accessCodeId || '').trim()}`)
+    .digest('hex');
+};
+
+export const createParticipationDocId = (pollId, participationHash) => `${String(pollId || '').trim()}_${participationHash}`;
+
+export const buildParticipationRecord = ({ pollId, participationHash, communeId }) => ({
+  pollId,
+  participationHash,
+  communeId,
+  consumedAt: FieldValue.serverTimestamp(),
+});
+
+export const buildAnonymousBallotRecord = ({ pollId, optionId, communeId, source }) => ({
+  pollId,
+  optionId,
+  communeId,
+  castAt: FieldValue.serverTimestamp(),
+  source: source === 'mobile' ? 'mobile' : 'web',
+});
 const tokenSecret = () => env.voteAccessTokenSecret;
 
 const toIso = (value) => {
@@ -119,9 +146,11 @@ const loadEligiblePolls = async (db, access, requestedPollId = '') => {
     return [];
   }
 
-  const voteRefs = openPollDocs.map(({ pollId }) => db.collection(POLL_VOTE_COLLECTION).doc(`${pollId}_${access.id}`));
-  const voteDocs = await db.getAll(...voteRefs);
-  const voteMap = new Map(voteDocs.map((doc, index) => [openPollDocs[index].pollId, doc.exists]));
+  const participationRefs = openPollDocs.map(({ pollId }) => db
+    .collection(PARTICIPATION_COLLECTION)
+    .doc(createParticipationDocId(pollId, createParticipationHash(pollId, access.id))));
+  const participationDocs = await db.getAll(...participationRefs);
+  const participationMap = new Map(participationDocs.map((doc, index) => [openPollDocs[index].pollId, doc.exists]));
 
   const polls = [];
   for (const { poll, pollId } of openPollDocs) {
@@ -139,7 +168,7 @@ const loadEligiblePolls = async (db, access, requestedPollId = '') => {
       description: poll.description || '',
       question: poll.question || '',
       status: 'open',
-      hasVoted: voteMap.get(pollId) === true,
+      hasVoted: participationMap.get(pollId) === true,
       options: safeOptions,
     });
   }
@@ -176,9 +205,16 @@ router.post('/validate', async (req, res) => {
       return res.status(409).json({ ok: false, errorCode: 'NO_OPEN_POLL', message: 'Aucune consultation ouverte pour votre commune actuellement.' });
     }
 
+    const participations = Object.fromEntries(
+      eligiblePolls.map((poll) => [
+        poll.pollId,
+        createParticipationHash(poll.pollId, access.id),
+      ]),
+    );
+
     return res.json({
       ok: true,
-      accessToken: signAccessToken({ accessCodeId: access.id, communeId: access.communeId }),
+      accessToken: signAccessToken({ communeId: access.communeId, participations }),
       accessCodeId: access.id,
       communeId: access.communeId,
       communeName: access.communeName,
@@ -196,8 +232,12 @@ router.post('/submit', async (req, res) => {
   const token = verifyAccessToken(req.body?.accessToken);
   const pollId = typeof req.body?.pollId === 'string' ? req.body.pollId.trim() : '';
   const optionId = typeof req.body?.optionId === 'string' ? req.body.optionId.trim() : '';
-  if (!token?.accessCodeId || !pollId || !optionId) {
+  const participationHash = token?.participations?.[pollId];
+  if (!participationHash || !pollId || !optionId) {
     return res.status(400).json({ ok: false, errorCode: 'INVALID_REQUEST', message: 'Demande de vote incomplete.' });
+  }
+  if (!/^[a-f0-9]{64}$/.test(participationHash)) {
+    return res.status(400).json({ ok: false, errorCode: 'INVALID_REQUEST', message: 'Jeton de vote invalide.' });
   }
   if (!ID_PATTERN.test(pollId) || !ID_PATTERN.test(optionId)) {
     return res.status(400).json({ ok: false, errorCode: 'INVALID_REQUEST', message: 'Identifiants invalides.' });
@@ -205,32 +245,26 @@ router.post('/submit', async (req, res) => {
 
   try {
     const db = getFirebaseAdminDb();
-    const voteDocId = `${pollId}_${token.accessCodeId}`;
+    const participationDocId = createParticipationDocId(pollId, participationHash);
     const result = await db.runTransaction(async (transaction) => {
-      const accessRef = db.collection(ACCESS_COLLECTION).doc(token.accessCodeId);
       const pollRef = db.collection(POLL_COLLECTION).doc(pollId);
-      const voteRef = db.collection(POLL_VOTE_COLLECTION).doc(voteDocId);
-      const [accessDoc, pollDoc, voteDoc] = await Promise.all([
-        transaction.get(accessRef),
+      const participationRef = db.collection(PARTICIPATION_COLLECTION).doc(participationDocId);
+      const ballotRef = db.collection(BALLOT_COLLECTION).doc(crypto.randomUUID());
+      const [pollDoc, participationDoc] = await Promise.all([
         transaction.get(pollRef),
-        transaction.get(voteRef),
+        transaction.get(participationRef),
       ]);
 
-      if (!accessDoc.exists) return { status: 404, errorCode: 'INVALID_CODE', message: 'Code citoyen introuvable.' };
-      const access = accessDoc.data() || {};
-      if (['revoked', 'replaced', 'disabled', 'expired'].includes(access.status)) {
-        return { status: 403, errorCode: 'REVOKED_CODE', message: 'Ce code n’est plus actif.' };
-      }
       if (!pollDoc.exists) return { status: 404, errorCode: 'POLL_CLOSED', message: 'Consultation introuvable.' };
       const poll = { id: pollDoc.id, ...pollDoc.data() };
       if (!isPollOpen(poll)) return { status: 409, errorCode: 'POLL_CLOSED', message: 'Cette consultation est fermee.' };
-      if (access.communeId && poll.communeId && access.communeId !== poll.communeId) {
+      if (token.communeId && poll.communeId && token.communeId !== poll.communeId) {
         return { status: 403, errorCode: 'INVALID_CODE', message: 'Ce code n’est pas rattache a cette commune.' };
       }
       if (!optionBelongsToPoll(poll, optionId)) {
         return { status: 400, errorCode: 'INVALID_OPTION', message: 'Option invalide.' };
       }
-      if (voteDoc.exists) {
+      if (participationDoc.exists) {
         return { status: 409, errorCode: 'ALREADY_VOTED', message: 'Vous avez deja vote pour cette consultation.' };
       }
 
@@ -240,22 +274,21 @@ router.post('/submit', async (req, res) => {
           : option
       ));
 
-      transaction.set(voteRef, {
+      transaction.set(participationRef, buildParticipationRecord({
         pollId,
-        accessCodeId: token.accessCodeId,
-        communeId: access.communeId || poll.communeId || '',
-        votedAt: FieldValue.serverTimestamp(),
+        participationHash,
+        communeId: token.communeId || poll.communeId || '',
+      }));
+      transaction.set(ballotRef, buildAnonymousBallotRecord({
+        pollId,
         optionId,
-        source: req.body?.source === 'mobile' ? 'mobile' : 'web',
-      });
+        communeId: token.communeId || poll.communeId || '',
+        source: req.body?.source,
+      }));
       transaction.set(pollRef, {
         options,
         totalVoted: Number(poll.totalVoted || 0) + 1,
         updatedAt: FieldValue.serverTimestamp(),
-      }, { merge: true });
-      transaction.set(accessRef, {
-        lastUsedAt: FieldValue.serverTimestamp(),
-        usedForLogin: true,
       }, { merge: true });
       return { status: 200 };
     });

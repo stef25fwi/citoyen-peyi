@@ -8,6 +8,7 @@ Derniere mise a jour: 2026-05-26
 - Les codes citoyens ne sont pas stockes en clair dans Firestore.
 - La recherche de code citoyen se fait par HMAC `accessCodeHash` avec `ACCESS_CODE_PEPPER`.
 - Les empreintes citoyennes sont separees des codes et hachees par HMAC avec `CITIZEN_FINGERPRINT_PEPPER`.
+- Le droit de vote consomme est separe du bulletin via `PARTICIPATION_PEPPER`.
 - Les demandes de doublon exposent des identifiants de dossier, pas les fragments d'identite.
 - Les jetons Firebase custom et cles d'acces ne sont pas persistés dans le stockage Flutter.
 - Les collections sensibles Firestore sont reservees aux operations backend/admin.
@@ -21,6 +22,7 @@ Backend production:
 - `ENABLE_BOOTSTRAP_ADMIN=false` sauf operation de bootstrap explicitement controlee.
 - `ACCESS_CODE_PEPPER`: secret long, aleatoire, distinct des autres secrets.
 - `CITIZEN_FINGERPRINT_PEPPER`: secret long, aleatoire, distinct des autres secrets.
+- `PARTICIPATION_PEPPER`: secret long, aleatoire, distinct des autres secrets, utilise pour empecher le lien durable entre code citoyen et bulletin.
 - `VOTE_ACCESS_TOKEN_SECRET`: secret long et aleatoire pour les jetons courts de vote.
 - Identifiants Firebase Admin: `GOOGLE_APPLICATION_CREDENTIALS` ou variables projet/client/private key selon l'environnement.
 
@@ -36,7 +38,8 @@ Frontend Flutter Web:
 3. Le backend calcule l'empreinte citoyenne HMAC et detecte un doublon.
 4. Si aucun doublon n'existe, le backend cree un code aleatoire, stocke uniquement son HMAC et retourne le code une seule fois a l'ecran controleur.
 5. Si un doublon existe, le backend cree une demande de validation sans exposer de code existant en clair.
-6. Le vote public valide le code via le backend et recoit un jeton court dedie au vote.
+6. Le vote public valide le code via le backend et recoit un jeton court dedie au vote, contenant uniquement des hashes de participation par consultation.
+7. La soumission cree une participation consommee sans option choisie et un bulletin anonyme sans code citoyen ni hash de participation.
 
 ## Firestore
 

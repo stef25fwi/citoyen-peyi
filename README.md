@@ -52,6 +52,7 @@ Le backend lit ses secrets depuis l'environnement serveur uniquement. Ne jamais 
 
 - `SUPER_ADMIN_KEY`: cle longue et aleatoire exigee dans le header `x-super-admin-key` pour les routes super administrateur.
 - `VOTE_ACCESS_TOKEN_SECRET`: secret dedie a la signature HMAC des `accessToken` citoyens temporaires. Obligatoire.
+- `PARTICIPATION_PEPPER`: secret dedie au HMAC qui separe droit de vote consomme et bulletin anonyme.
 - Firebase Admin, avec une des deux options suivantes:
 	- `GOOGLE_APPLICATION_CREDENTIALS`: chemin vers un fichier service account present sur le serveur.
 	- ou `FIREBASE_ADMIN_PROJECT_ID`, `FIREBASE_ADMIN_CLIENT_EMAIL`, `FIREBASE_ADMIN_PRIVATE_KEY`.
@@ -76,6 +77,9 @@ API_BASE_URL=https://votre-backend-prod.example
 SUPER_ADMIN_KEY=<48+ char random>
 ADMIN_ACCESS_KEY=<48+ char random>
 VOTE_ACCESS_TOKEN_SECRET=<64+ char random>
+ACCESS_CODE_PEPPER=<64+ char random>
+CITIZEN_FINGERPRINT_PEPPER=<64+ char random>
+PARTICIPATION_PEPPER=<64+ char random>
 
 # Option 1
 GOOGLE_APPLICATION_CREDENTIALS=/var/secrets/firebase-admin.json

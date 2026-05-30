@@ -30,7 +30,6 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
 
   bool hasOpenedLegalPage = false;
   bool hasAcceptedLegalTerms = false;
-  bool _acceptedFromDevice = false;
   bool _isSubmitting = false;
   String? _errorMessage;
 
@@ -60,14 +59,12 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
     setState(() {
       hasOpenedLegalPage = true;
       hasAcceptedLegalTerms = true;
-      _acceptedFromDevice = true;
     });
   }
 
   Future<void> _setAcceptedLegalTerms(bool accepted) async {
     setState(() {
       hasAcceptedLegalTerms = accepted;
-      _acceptedFromDevice = accepted && _acceptedFromDevice;
       _errorMessage = null;
     });
     final preferences = await SharedPreferences.getInstance();
@@ -209,10 +206,10 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Avant de participer, veuillez consulter les informations légales et confirmer la lecture des conditions d’utilisation.',
+                    'Entrez votre code citoyen pour participer anonymement.',
                     style: theme.textTheme.bodyLarge?.copyWith(
-                      color: _foreground,
-                      height: 1.42,
+                      color: _mutedText,
+                      height: 1.35,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -228,17 +225,16 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                     canValidate: _canValidate,
                     hasOpenedLegalPage: hasOpenedLegalPage,
                     hasAcceptedLegalTerms: hasAcceptedLegalTerms,
-                    acceptedFromDevice: _acceptedFromDevice,
                     onTermsTap: _handleTermsTap,
                     onCodeChanged: () => setState(() => _errorMessage = null),
                     onSubmit: _validateCitizenCode,
                   ),
                   const SizedBox(height: 18),
                   Text(
-                    'Citoyen Peyi garantit une consultation citoyenne confidentielle. Les réponses sont exploitées sous forme statistique ou agrégée.',
+                    'Plateforme de consultation citoyenne anonyme.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: _mutedText,
-                      height: 1.45,
+                      height: 1.25,
                     ),
                     textAlign: TextAlign.center,
                   ),
@@ -264,35 +260,48 @@ class _ConfidentialityCard extends StatelessWidget {
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(18),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              width: 52,
-              height: 52,
+              width: 46,
+              height: 46,
               decoration: BoxDecoration(
                 color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(15),
               ),
               child: const Icon(
-                Icons.verified_user_rounded,
+                Icons.lock_rounded,
                 color: Color(0xFF0D73F2),
-                size: 28,
+                size: 24,
               ),
             ),
             const SizedBox(width: 14),
             Expanded(
-              child: Text(
-                'Votre participation est traitée de manière confidentielle. Le code citoyen permet de sécuriser l’accès à la consultation et de limiter les participations multiples.',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: const Color(0xFF0F172A),
-                  height: 1.45,
-                ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Participation confidentielle',
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      color: const Color(0xFF0F172A),
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Votre code sécurise l’accès et limite les participations multiples. Vos réponses sont exploitées uniquement sous forme statistique.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: const Color(0xFF475569),
+                      height: 1.32,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
@@ -313,18 +322,19 @@ class _LegalInformationPill extends StatelessWidget {
 
     return Semantics(
       button: true,
-      label: 'Informations légales, consulter les CGU',
+      label:
+          'CGU, confidentialité et données personnelles, à consulter avant participation',
       child: Material(
         color: const Color(0xFFF0FDF9),
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         child: InkWell(
           key: const ValueKey('accessCitizenLegalPill'),
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(20),
           onTap: onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: const Color(0xFFB6ECE1)),
             ),
             child: Row(
@@ -347,7 +357,7 @@ class _LegalInformationPill extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Informations légales',
+                        'CGU, confidentialité et données personnelles',
                         style: theme.textTheme.titleSmall?.copyWith(
                           color: const Color(0xFF0F172A),
                           fontWeight: FontWeight.w800,
@@ -355,7 +365,7 @@ class _LegalInformationPill extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        'CGU, confidentialité, anonymat et données personnelles',
+                        'À consulter avant participation',
                         style: theme.textTheme.bodySmall?.copyWith(
                           color: const Color(0xFF64748B),
                           height: 1.25,
@@ -386,7 +396,6 @@ class _AccessFormCard extends StatelessWidget {
     required this.canValidate,
     required this.hasOpenedLegalPage,
     required this.hasAcceptedLegalTerms,
-    required this.acceptedFromDevice,
     required this.onTermsTap,
     required this.onCodeChanged,
     required this.onSubmit,
@@ -398,20 +407,17 @@ class _AccessFormCard extends StatelessWidget {
   final bool canValidate;
   final bool hasOpenedLegalPage;
   final bool hasAcceptedLegalTerms;
-  final bool acceptedFromDevice;
   final VoidCallback onTermsTap;
   final VoidCallback onCodeChanged;
   final VoidCallback onSubmit;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Card(
       elevation: 0,
       color: Colors.white,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20),
         side: const BorderSide(color: Color(0xFFE5E7EB)),
       ),
       child: Padding(
@@ -426,9 +432,7 @@ class _AccessFormCard extends StatelessWidget {
               textInputAction: TextInputAction.done,
               decoration: InputDecoration(
                 labelText: 'Code citoyen',
-                hintText: 'Exemple : CP-2026-XXXX',
-                helperText:
-                    'Ce code permet de vérifier votre accès sans afficher publiquement votre identité.',
+                hintText: 'Code citoyen',
                 filled: true,
                 fillColor: const Color(0xFFF8FAFC),
                 contentPadding:
@@ -447,25 +451,6 @@ class _AccessFormCard extends StatelessWidget {
               hasAcceptedLegalTerms: hasAcceptedLegalTerms,
               onTap: onTermsTap,
             ),
-            const SizedBox(height: 8),
-            if (acceptedFromDevice)
-              Text(
-                'CGU déjà acceptées sur cet appareil.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF256E4A),
-                  fontWeight: FontWeight.w600,
-                ),
-              )
-            else
-              Text(
-                hasOpenedLegalPage
-                    ? 'La validation du code est disponible après acceptation des CGU.'
-                    : 'La validation sera disponible après consultation et acceptation des CGU.',
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: const Color(0xFF64748B),
-                  height: 1.35,
-                ),
-              ),
             if (errorMessage != null) ...[
               const SizedBox(height: 10),
               Text(
@@ -505,9 +490,7 @@ class _AccessFormCard extends StatelessWidget {
                         ),
                       )
                     : const Icon(Icons.lock_open_rounded),
-                label: Text(
-                  isSubmitting ? 'Vérification...' : 'Valider mon code citoyen',
-                ),
+                label: const Text('Valider mon code citoyen'),
               ),
             ),
           ],
@@ -535,8 +518,7 @@ class _TermsAcceptanceRow extends StatelessWidget {
     return Semantics(
       button: true,
       checked: hasAcceptedLegalTerms,
-      label:
-          'Je confirme avoir consulté et accepté les conditions générales d’utilisation.',
+      label: 'J’ai lu et j’accepte les conditions d’utilisation.',
       child: Material(
         color: hasOpenedLegalPage
             ? const Color(0xFFF0FDF9)
@@ -569,7 +551,7 @@ class _TermsAcceptanceRow extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.only(top: 11),
                     child: Text(
-                      'Je confirme avoir consulté et accepté les conditions générales d’utilisation.',
+                      'J’ai lu et j’accepte les conditions d’utilisation.',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: const Color(0xFF0F172A),
                         fontWeight: FontWeight.w600,

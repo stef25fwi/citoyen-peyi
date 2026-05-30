@@ -61,6 +61,14 @@ test('poll_votes is fully closed', async () => {
   await assertFails(setDoc(doc(superDb, 'poll_votes/some-vote'), { optionId: 'opt-1' }));
 });
 
+test('anonymous vote collections are fully closed', async () => {
+  const superDb = userDb('super-1', { role: 'super_admin', super_admin: true });
+  await assertFails(getDoc(doc(superDb, 'poll_participations/poll-1_hash')));
+  await assertFails(setDoc(doc(superDb, 'poll_participations/poll-1_hash'), { participationHash: 'x' }));
+  await assertFails(getDoc(doc(superDb, 'poll_ballots/ballot-1')));
+  await assertFails(setDoc(doc(superDb, 'poll_ballots/ballot-1'), { optionId: 'opt-1' }));
+});
+
 test('communeAdmins is fully closed to clients', async () => {
   const superDb = userDb('super-1', { role: 'super_admin', super_admin: true });
   await assertFails(getDoc(doc(superDb, 'communeAdmins/admin-1')));

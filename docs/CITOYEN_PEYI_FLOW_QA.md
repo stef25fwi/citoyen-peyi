@@ -19,6 +19,8 @@ avant un deploiement de production.
   - `controller_activity_logs` (audit controleurs)
   - `controleurCodes` (codes controleurs)
   - `poll_votes` (vote unique par {pollId}_{accessCodeId}, ecriture backend uniquement)
+      - `poll_participations` (droit de vote consomme, sans option choisie)
+      - `poll_ballots` (bulletin anonyme, sans code citoyen ni hash de participation)
   - `public_news` (actualites communales)
 - Regles Firestore deployees depuis `firestore.rules`.
 
@@ -64,8 +66,8 @@ avant un deploiement de production.
       navigation directe vers `/vote/:code?poll=...`.
 - [ ] Saisir un code citoyen valide, plusieurs consultations ouvertes ->
       ecran "Choisissez la consultation".
-- [ ] Voter une fois -> le backend cree `poll_votes/{pollId}_{accessCodeId}`,
-      incremente l'option et marque le code (`lastUsedAt`).
+- [ ] Voter une fois -> le backend cree une participation consommee, cree un
+      bulletin anonyme separe et incremente l'option.
 - [ ] Tenter de voter une seconde fois pour le meme sondage -> message
       `ALREADY_VOTED` ; aucun double vote n'est possible.
 - [ ] Ouvrir deux onglets et tenter un double vote concurrent -> un seul vote

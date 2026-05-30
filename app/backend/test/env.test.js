@@ -24,6 +24,7 @@ test('validateEnv accepts a complete development configuration', async () => {
   process.env.VOTE_ACCESS_TOKEN_SECRET = 'dev-secret';
   process.env.ACCESS_CODE_PEPPER = 'dev-access-pepper';
   process.env.CITIZEN_FINGERPRINT_PEPPER = 'dev-fingerprint-pepper';
+  process.env.PARTICIPATION_PEPPER = 'dev-participation-pepper';
   process.env.ADMIN_ACCESS_PEPPER = 'dev-admin-pepper';
   process.env.CONTROLLER_CODE_PEPPER = 'dev-controller-pepper';
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
@@ -44,8 +45,9 @@ test('validateEnv accepts production boot without CORS_ORIGIN when public origin
   process.env.VOTE_ACCESS_TOKEN_SECRET = 'y'.repeat(48);
   process.env.ACCESS_CODE_PEPPER = 'a'.repeat(48);
   process.env.CITIZEN_FINGERPRINT_PEPPER = 'b'.repeat(48);
-  process.env.ADMIN_ACCESS_PEPPER = 'c'.repeat(48);
-  process.env.CONTROLLER_CODE_PEPPER = 'd'.repeat(48);
+  process.env.PARTICIPATION_PEPPER = 'c'.repeat(48);
+  process.env.ADMIN_ACCESS_PEPPER = 'd'.repeat(48);
+  process.env.CONTROLLER_CODE_PEPPER = 'e'.repeat(48);
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
   process.env.FIREBASE_ADMIN_CLIENT_EMAIL = 'demo@example.com';
   process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';
@@ -67,8 +69,9 @@ test('validateEnv refuses production boot with localhost CORS_ORIGIN', async () 
   process.env.VOTE_ACCESS_TOKEN_SECRET = 'y'.repeat(48);
   process.env.ACCESS_CODE_PEPPER = 'a'.repeat(48);
   process.env.CITIZEN_FINGERPRINT_PEPPER = 'b'.repeat(48);
-  process.env.ADMIN_ACCESS_PEPPER = 'c'.repeat(48);
-  process.env.CONTROLLER_CODE_PEPPER = 'd'.repeat(48);
+  process.env.PARTICIPATION_PEPPER = 'c'.repeat(48);
+  process.env.ADMIN_ACCESS_PEPPER = 'd'.repeat(48);
+  process.env.CONTROLLER_CODE_PEPPER = 'e'.repeat(48);
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
   process.env.FIREBASE_ADMIN_CLIENT_EMAIL = 'demo@example.com';
   process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';
@@ -87,6 +90,7 @@ test('validateEnv refuses production boot with short secrets', async () => {
   process.env.VOTE_ACCESS_TOKEN_SECRET = 'short';
   process.env.ACCESS_CODE_PEPPER = 'short';
   process.env.CITIZEN_FINGERPRINT_PEPPER = 'short';
+  process.env.PARTICIPATION_PEPPER = 'short';
   process.env.ADMIN_ACCESS_PEPPER = 'short';
   process.env.CONTROLLER_CODE_PEPPER = 'short';
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
@@ -107,6 +111,7 @@ test('validateEnv refuses production boot without access peppers', async () => {
   process.env.VOTE_ACCESS_TOKEN_SECRET = 'y'.repeat(48);
   delete process.env.ACCESS_CODE_PEPPER;
   delete process.env.CITIZEN_FINGERPRINT_PEPPER;
+  delete process.env.PARTICIPATION_PEPPER;
   delete process.env.ADMIN_ACCESS_PEPPER;
   delete process.env.CONTROLLER_CODE_PEPPER;
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
@@ -114,7 +119,7 @@ test('validateEnv refuses production boot without access peppers', async () => {
   process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';
 
   const { validateEnv } = await importFresh();
-  assert.throws(() => validateEnv(), /ACCESS_CODE_PEPPER|CITIZEN_FINGERPRINT_PEPPER|ADMIN_ACCESS_PEPPER|CONTROLLER_CODE_PEPPER/);
+  assert.throws(() => validateEnv(), /ACCESS_CODE_PEPPER|CITIZEN_FINGERPRINT_PEPPER|PARTICIPATION_PEPPER|ADMIN_ACCESS_PEPPER|CONTROLLER_CODE_PEPPER/);
 
   resetEnv(snapshot);
 });
@@ -129,8 +134,9 @@ test('validateEnv accepts Cloud Run application default credentials', async () =
   process.env.VOTE_ACCESS_TOKEN_SECRET = 'y'.repeat(48);
   process.env.ACCESS_CODE_PEPPER = 'a'.repeat(48);
   process.env.CITIZEN_FINGERPRINT_PEPPER = 'b'.repeat(48);
-  process.env.ADMIN_ACCESS_PEPPER = 'c'.repeat(48);
-  process.env.CONTROLLER_CODE_PEPPER = 'd'.repeat(48);
+  process.env.PARTICIPATION_PEPPER = 'c'.repeat(48);
+  process.env.ADMIN_ACCESS_PEPPER = 'd'.repeat(48);
+  process.env.CONTROLLER_CODE_PEPPER = 'e'.repeat(48);
   delete process.env.FIREBASE_ADMIN_PROJECT_ID;
   delete process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
   delete process.env.FIREBASE_ADMIN_PRIVATE_KEY;
@@ -150,8 +156,9 @@ test('validateEnv refuses production boot with non-HTTPS CORS origin', async () 
   process.env.VOTE_ACCESS_TOKEN_SECRET = 'y'.repeat(48);
   process.env.ACCESS_CODE_PEPPER = 'a'.repeat(48);
   process.env.CITIZEN_FINGERPRINT_PEPPER = 'b'.repeat(48);
-  process.env.ADMIN_ACCESS_PEPPER = 'c'.repeat(48);
-  process.env.CONTROLLER_CODE_PEPPER = 'd'.repeat(48);
+  process.env.PARTICIPATION_PEPPER = 'c'.repeat(48);
+  process.env.ADMIN_ACCESS_PEPPER = 'd'.repeat(48);
+  process.env.CONTROLLER_CODE_PEPPER = 'e'.repeat(48);
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
   process.env.FIREBASE_ADMIN_CLIENT_EMAIL = 'demo@example.com';
   process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';
@@ -170,6 +177,7 @@ test('validateEnv refuses production boot when peppers are not all distinct', as
   process.env.VOTE_ACCESS_TOKEN_SECRET = 'y'.repeat(48);
   process.env.ACCESS_CODE_PEPPER = 'a'.repeat(48);
   process.env.CITIZEN_FINGERPRINT_PEPPER = 'b'.repeat(48);
+  process.env.PARTICIPATION_PEPPER = 'c'.repeat(48);
   process.env.ADMIN_ACCESS_PEPPER = 'a'.repeat(48); // identique a ACCESS_CODE_PEPPER
   process.env.CONTROLLER_CODE_PEPPER = 'd'.repeat(48);
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
