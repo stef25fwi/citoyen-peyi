@@ -140,7 +140,10 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -360));
     await tester.pumpAndSettle();
     expect(find.text('Assistance'), findsWidgets);
-    expect(find.text('Contacter le support'), findsOneWidget);
+    expect(find.text('Nouveau ticket d’assistance'), findsOneWidget);
+    expect(find.text('Mes tickets'), findsOneWidget);
+    expect(find.text('Impossible de charger l’assistance pour le moment.'), findsOneWidget);
+    expect(find.text('Réessayer'), findsOneWidget);
     expect(find.text('Aucune session chargée.'), findsNothing);
   });
 

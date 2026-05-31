@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/poll_models.dart';
+import '../models/support_ticket.dart';
 import '../services/admin_analytics_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/auth_session_store.dart';
 import '../services/controleur_profile_service.dart';
 import '../services/support_ticket_service.dart';
+import '../widgets/support/ticket_card.dart';
 
 class _DashboardTheme {
   static const background = Color(0xFFF6F7F9);
@@ -444,11 +446,17 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
                 const SizedBox(height: 16),
                 if (showOverviewSection)
-                  _AdminSupportDashboardCard(
+                  _AdminSupportDashboardSection(
                     communeId: session?.commune?.code?.trim().isNotEmpty == true
                         ? session!.commune!.code!.trim()
                         : session?.commune?.name.trim() ?? '',
-                    onOpen: () => Navigator.of(context).pushNamed('/admin/support'),
+                  onCreateTicket: () =>
+                    Navigator.of(context).pushNamed('/admin/support/new'),
+                  onOpenTickets: () =>
+                    Navigator.of(context).pushNamed('/admin/support'),
+                  onOpenTicket: (ticket) => Navigator.of(context)
+                    .pushNamed('/admin/support/${ticket.ticketId}'),
+                  onRetry: _load,
                   ),
                 if (showOverviewSection) const SizedBox(height: 16),
                 if (showOverviewSection)
@@ -724,80 +732,402 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
   }
 }
 
-class _AdminSupportDashboardCard extends StatelessWidget {
-  const _AdminSupportDashboardCard({required this.communeId, required this.onOpen});
+class _AdminSupportDashboardSection extends StatelessWidget {
+  const _AdminSupportDashboardSection({
+    required this.communeId,
+    required this.onCreateTicket,
+    required this.onOpenTickets,
+    required this.onOpenTicket,
+    required this.onRetry,
+  });
 
   final String communeId;
-  final VoidCallback onOpen;
+  final VoidCallback onCreateTicket;
+  final VoidCallback onOpenTickets;
+  final ValueChanged<SupportTicket> onOpenTicket;
+  final Future<void> Function() onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return StreamBuilder(
-      stream: SupportTicketService.instance.watchUnreadTicketsForAdmin(communeId),
+      stream: SupportTicketService.instance.watchAdminTickets(communeId),
       builder: (context, snapshot) {
+        final tickets = snapshot.data ?? const <SupportTicket>[];
+        final unread = tickets.where((item) => item.unreadForAdmin).length;
+        final latestTickets = tickets.take(3).toList(growable: false);
+
         if (snapshot.hasError) {
           return Card(
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Icon(Icons.support_agent_rounded, color: _DashboardTheme.primary),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('Assistance', style: theme.textTheme.titleLarge),
-                        const SizedBox(height: 4),
-                        const Text('Le support est disponible, mais le compteur non lu ne peut pas être chargé pour le moment.'),
-                      ],
-                    ),
+                  _SupportSectionHeader(
+                    unreadCount: 0,
+                    onCreateTicket: onCreateTicket,
                   ),
-                  TextButton(onPressed: onOpen, child: const Text('Contacter le support')),
+                  const SizedBox(height: 16),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final wide = constraints.maxWidth >= 760;
+                      final createCard = _CreateSupportTicketSummaryCard(
+                        onCreateTicket: onCreateTicket,
+                      );
+                      final errorCard = _SupportTicketsErrorCard(
+                        onRetry: onRetry,
+                      );
+
+                      if (wide) {
+                        return Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(child: createCard),
+                            const SizedBox(width: 16),
+                            Expanded(child: errorCard),
+                          ],
+                        );
+                      }
+
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          createCard,
+                          const SizedBox(height: 14),
+                          errorCard,
+                        ],
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
           );
         }
-        final unread = snapshot.data?.length ?? 0;
+
         return Card(
-          child: InkWell(
-            borderRadius: BorderRadius.circular(24),
-            onTap: onOpen,
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: _DashboardTheme.primary.withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.support_agent_rounded, color: _DashboardTheme.primary),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _SupportSectionHeader(
+                  unreadCount: unread,
+                  onCreateTicket: onCreateTicket,
+                ),
+                const SizedBox(height: 18),
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final wide = constraints.maxWidth >= 760;
+                    final createCard = _CreateSupportTicketSummaryCard(
+                      onCreateTicket: onCreateTicket,
+                    );
+                    final listCard = _SupportTicketsSummaryCard(
+                      isLoading:
+                          snapshot.connectionState == ConnectionState.waiting,
+                      tickets: latestTickets,
+                      totalTickets: tickets.length,
+                      onOpenTickets: onOpenTickets,
+                      onOpenTicket: onOpenTicket,
+                    );
+
+                    if (wide) {
+                      return Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(child: createCard),
+                          const SizedBox(width: 16),
+                          Expanded(child: listCard),
+                        ],
+                      );
+                    }
+
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('Assistance', style: theme.textTheme.titleLarge),
-                        const SizedBox(height: 4),
-                        const Text('Envoyez un ticket au super administrateur.'),
+                        createCard,
+                        const SizedBox(height: 14),
+                        listCard,
                       ],
-                    ),
-                  ),
-                  if (unread > 0) Badge(label: Text('$unread')),
-                  const SizedBox(width: 8),
-                  TextButton(onPressed: onOpen, child: const Text('Contacter le support')),
-                ],
-              ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         );
       },
+    );
+  }
+}
+
+class _SupportSectionHeader extends StatelessWidget {
+  const _SupportSectionHeader({
+    required this.unreadCount,
+    required this.onCreateTicket,
+  });
+
+  final int unreadCount;
+  final VoidCallback onCreateTicket;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Wrap(
+      spacing: 14,
+      runSpacing: 14,
+      alignment: WrapAlignment.spaceBetween,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 610),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _DashboardTheme.primary.withValues(alpha: 0.10),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: const Icon(Icons.support_agent_rounded,
+                    color: _DashboardTheme.primary),
+              ),
+              const SizedBox(width: 14),
+              Flexible(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: Text('Assistance',
+                              style: theme.textTheme.titleLarge),
+                        ),
+                        if (unreadCount > 0) ...[
+                          const SizedBox(width: 8),
+                          Badge(label: Text('$unreadCount')),
+                        ],
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Envoyez un message au super administrateur en cas de problème technique, de demande de support ou de question sur une consultation.',
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        FilledButton.icon(
+          onPressed: onCreateTicket,
+          icon: const Icon(Icons.add_rounded),
+          label: const Text('Nouveau ticket'),
+        ),
+      ],
+    );
+  }
+}
+
+class _CreateSupportTicketSummaryCard extends StatelessWidget {
+  const _CreateSupportTicketSummaryCard({required this.onCreateTicket});
+
+  final VoidCallback onCreateTicket;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF8FAFC),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _DashboardTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Nouveau ticket d’assistance',
+              style: theme.textTheme.titleMedium),
+          const SizedBox(height: 8),
+          const Text(
+            'Décrivez votre demande avec un sujet, une catégorie, une priorité et un message détaillé.',
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onCreateTicket,
+              icon: const Icon(Icons.send_rounded),
+              label: const Text('Envoyer au super admin'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupportTicketsSummaryCard extends StatelessWidget {
+  const _SupportTicketsSummaryCard({
+    required this.isLoading,
+    required this.tickets,
+    required this.totalTickets,
+    required this.onOpenTickets,
+    required this.onOpenTicket,
+  });
+
+  final bool isLoading;
+  final List<SupportTicket> tickets;
+  final int totalTickets;
+  final VoidCallback onOpenTickets;
+  final ValueChanged<SupportTicket> onOpenTicket;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _DashboardTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Mes tickets', style: theme.textTheme.titleMedium),
+              ),
+              TextButton(onPressed: onOpenTickets, child: const Text('Tout voir')),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (isLoading)
+            const _SupportLoadingState()
+          else if (tickets.isEmpty)
+            const _SupportEmptyState()
+          else ...[
+            for (final ticket in tickets) ...[
+              TicketCard(
+                ticket: ticket,
+                showUnreadForAdmin: true,
+                onOpen: () => onOpenTicket(ticket),
+              ),
+              const SizedBox(height: 10),
+            ],
+            if (totalTickets > tickets.length)
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton.icon(
+                  onPressed: onOpenTickets,
+                  icon: const Icon(Icons.open_in_new_rounded),
+                  label: Text('Voir les $totalTickets tickets'),
+                ),
+              ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _SupportTicketsErrorCard extends StatelessWidget {
+  const _SupportTicketsErrorCard({required this.onRetry});
+
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _DashboardTheme.border),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Mes tickets', style: theme.textTheme.titleMedium),
+          const SizedBox(height: 10),
+          _SupportErrorState(onRetry: onRetry),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupportEmptyState extends StatelessWidget {
+  const _SupportEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Aucun ticket d’assistance pour le moment.'),
+          SizedBox(height: 4),
+          Text('Vous pouvez contacter le super administrateur en créant un ticket.'),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupportErrorState extends StatelessWidget {
+  const _SupportErrorState({required this.onRetry});
+
+  final Future<void> Function() onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFFBEB),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: const Color(0xFFFDE68A)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Impossible de charger l’assistance pour le moment.'),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Réessayer'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SupportLoadingState extends StatelessWidget {
+  const _SupportLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 22),
+      child: Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
     );
   }
 }
