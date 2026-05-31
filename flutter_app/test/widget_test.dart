@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:citoyen_peyi_flutter/app.dart';
+import 'package:citoyen_peyi_flutter/pages/admin_dashboard_page.dart';
+import 'package:citoyen_peyi_flutter/services/auth_session_store.dart';
 
 void main() {
   testWidgets('home screen renders', (WidgetTester tester) async {
@@ -57,6 +59,10 @@ void main() {
       findsOneWidget,
     );
     expect(
+      find.text('Faites défiler le texte jusqu’à la fin pour accepter'),
+      findsOneWidget,
+    );
+    expect(
       find.text('Entrez votre code citoyen pour participer anonymement.'),
       findsOneWidget,
     );
@@ -77,34 +83,23 @@ void main() {
     final termsAcceptance = find.byKey(
       const ValueKey('accessCitizenTermsAcceptance'),
     );
-    await tester.ensureVisible(termsAcceptance);
-    await tester.pumpAndSettle();
-    await tester.tap(termsAcceptance);
-    await tester.pump();
-    expect(
-      find.text(
-        'Veuillez d’abord consulter les informations légales avant de continuer.',
-      ),
-      findsOneWidget,
-    );
+    expect(termsAcceptance, findsNothing);
 
-    final legalPill = find.byKey(const ValueKey('accessCitizenLegalPill'));
-    await tester.ensureVisible(legalPill);
-    await tester.pumpAndSettle();
-    await tester.tap(legalPill);
-    await tester.pumpAndSettle();
-    expect(
-      find.text('CGU, confidentialité, anonymat et données personnelles'),
-      findsOneWidget,
+    final legalScroll = find.byKey(
+      const ValueKey('accessCitizenLegalTermsScroll'),
     );
+    await tester.ensureVisible(legalScroll);
+    await tester.pumpAndSettle();
+    final legalScrollable = find.descendant(
+      of: find.byKey(const ValueKey('accessCitizenLegalPill')),
+      matching: find.byType(Scrollable),
+    );
+    final scrollableState = tester.state<ScrollableState>(legalScrollable);
+    scrollableState.position.jumpTo(scrollableState.position.maxScrollExtent);
+    await tester.pumpAndSettle();
 
-    final acknowledgementButton = find.byKey(
-      const ValueKey('legalAcknowledgementButton'),
-    );
-    await tester.ensureVisible(acknowledgementButton);
-    await tester.pumpAndSettle();
-    tester.widget<FilledButton>(acknowledgementButton).onPressed?.call();
-    await tester.pumpAndSettle();
+    expect(termsAcceptance, findsOneWidget);
+    expect(find.text('Lecture complète effectuée'), findsOneWidget);
 
     await tester.ensureVisible(termsAcceptance);
     await tester.pumpAndSettle();
@@ -115,5 +110,36 @@ void main() {
       find.widgetWithText(FilledButton, 'Valider mon code citoyen'),
     );
     expect(enabledButton.onPressed, isNotNull);
+  });
+
+  testWidgets('commune admin dashboard renders assistance without grey screen',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await AuthSessionStore.instance.initialize();
+    await AuthSessionStore.instance.save(
+      const AuthSession(
+        role: 'commune_admin',
+        admin: true,
+        controller: false,
+        mode: 'secure',
+        id: 'admin-test',
+        label: 'Admin test',
+        commune: AuthSessionCommune(name: 'Les Abymes', code: '97101'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(home: AdminDashboardPage()),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Tableau de bord commune'), findsWidgets);
+    expect(find.text('Session admin communal'), findsOneWidget);
+    await tester.drag(find.byType(ListView), const Offset(0, -360));
+    await tester.pumpAndSettle();
+    expect(find.text('Assistance'), findsWidgets);
+    expect(find.text('Contacter le support'), findsOneWidget);
+    expect(find.text('Aucune session chargée.'), findsNothing);
   });
 }

@@ -13,7 +13,7 @@ class LegalPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final legalDocumentText = _buildFullLegalDocumentText();
+    final legalDocumentText = buildFullLegalDocumentText();
 
     Future<void> copyLegalText() async {
       await Clipboard.setData(ClipboardData(text: legalDocumentText));
@@ -162,7 +162,7 @@ class LegalPage extends StatelessWidget {
   }
 }
 
-String _buildFullLegalDocumentText() {
+String buildFullLegalDocumentText() {
   final buffer = StringBuffer()
     ..writeln('CGU, confidentialite, anonymat et mentions legales')
     ..writeln('');

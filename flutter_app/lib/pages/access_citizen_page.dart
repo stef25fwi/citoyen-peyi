@@ -28,7 +28,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
 
   final TextEditingController _codeController = TextEditingController();
 
-  bool hasOpenedLegalPage = false;
+  bool hasReadLegalTerms = false;
   bool hasAcceptedLegalTerms = false;
   bool _isSubmitting = false;
   String? _errorMessage;
@@ -57,7 +57,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
         preferences.getBool(AccessCitizenPage.legalTermsAcceptedKey) ?? false;
     if (!mounted || !accepted) return;
     setState(() {
-      hasOpenedLegalPage = true;
+      hasReadLegalTerms = true;
       hasAcceptedLegalTerms = true;
     });
   }
@@ -80,22 +80,12 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
     );
   }
 
-  Future<void> _openLegalPage() async {
+  void _markLegalTermsRead() {
+    if (hasReadLegalTerms) return;
     setState(() {
-      hasOpenedLegalPage = true;
+      hasReadLegalTerms = true;
       _errorMessage = null;
     });
-    await Navigator.of(context).pushNamed(LegalPage.routeName);
-  }
-
-  Future<void> _handleTermsTap() async {
-    if (!hasOpenedLegalPage) {
-      _showSnack(
-        'Veuillez d’abord consulter les informations légales avant de continuer.',
-      );
-      return;
-    }
-    await _setAcceptedLegalTerms(!hasAcceptedLegalTerms);
   }
 
   Future<void> _validateCitizenCode() async {
@@ -222,10 +212,11 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                     errorMessage: _errorMessage,
                     isSubmitting: _isSubmitting,
                     canValidate: _canValidate,
-                    hasOpenedLegalPage: hasOpenedLegalPage,
+                    hasReadLegalTerms: hasReadLegalTerms,
                     hasAcceptedLegalTerms: hasAcceptedLegalTerms,
-                    onOpenLegalPage: _openLegalPage,
-                    onTermsTap: _handleTermsTap,
+                    onLegalTermsRead: _markLegalTermsRead,
+                    onTermsChanged: (accepted) =>
+                      unawaited(_setAcceptedLegalTerms(accepted)),
                     onCodeChanged: () => setState(() => _errorMessage = null),
                     onSubmit: _validateCitizenCode,
                   ),
@@ -311,78 +302,163 @@ class _ConfidentialityCard extends StatelessWidget {
   }
 }
 
-class _LegalInformationPill extends StatelessWidget {
-  const _LegalInformationPill({required this.onTap});
+class _LegalTermsConsentPanel extends StatefulWidget {
+  const _LegalTermsConsentPanel({
+    required this.hasReadLegalTerms,
+    required this.hasAcceptedLegalTerms,
+    required this.onReadToEnd,
+    required this.onAcceptedChanged,
+  });
 
-  final VoidCallback onTap;
+  final bool hasReadLegalTerms;
+  final bool hasAcceptedLegalTerms;
+  final VoidCallback onReadToEnd;
+  final ValueChanged<bool> onAcceptedChanged;
+
+  @override
+  State<_LegalTermsConsentPanel> createState() => _LegalTermsConsentPanelState();
+}
+
+class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleScroll());
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    if (widget.hasReadLegalTerms || !_scrollController.hasClients) return;
+    _checkScrollMetrics(_scrollController.position);
+  }
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (!widget.hasReadLegalTerms) {
+      _checkScrollMetrics(notification.metrics);
+    }
+    return false;
+  }
+
+  void _checkScrollMetrics(ScrollMetrics metrics) {
+    if (metrics.maxScrollExtent <= 0 ||
+        metrics.pixels >= metrics.maxScrollExtent - 8) {
+      widget.onReadToEnd();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasRead = widget.hasReadLegalTerms;
 
-    return Semantics(
-      button: true,
-      label:
-          'CGU, confidentialité et données personnelles, à consulter avant participation',
-      child: Material(
+    return Container(
+      key: const ValueKey('accessCitizenLegalPill'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
         color: const Color(0xFFF0FDF9),
         borderRadius: BorderRadius.circular(20),
-        child: InkWell(
-          key: const ValueKey('accessCitizenLegalPill'),
-          borderRadius: BorderRadius.circular(20),
-          onTap: onTap,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: const Color(0xFFB6ECE1)),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.balance_rounded,
-                    color: Color(0xFF0D73F2),
-                  ),
+        border: Border.all(color: const Color(0xFFB6ECE1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'CGU, confidentialité et données personnelles',
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: const Color(0xFF0F172A),
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'À consulter avant participation',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: const Color(0xFF64748B),
-                          height: 1.25,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 10),
-                const Icon(
-                  Icons.arrow_forward_rounded,
+                child: const Icon(
+                  Icons.balance_rounded,
                   color: Color(0xFF0D73F2),
                 ),
-              ],
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'CGU, confidentialité et données personnelles',
+                      style: theme.textTheme.titleSmall?.copyWith(
+                        color: const Color(0xFF0F172A),
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      hasRead
+                          ? 'Lecture complète effectuée'
+                          : 'Faites défiler le texte jusqu’à la fin pour accepter',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: hasRead
+                            ? const Color(0xFF047857)
+                            : const Color(0xFF64748B),
+                        fontWeight: hasRead ? FontWeight.w700 : null,
+                        height: 1.25,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Container(
+            height: 176,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFE5E7EB)),
+            ),
+            child: NotificationListener<ScrollNotification>(
+              onNotification: _handleScrollNotification,
+              child: Scrollbar(
+                controller: _scrollController,
+                thumbVisibility: true,
+                child: SingleChildScrollView(
+                  key: const ValueKey('accessCitizenLegalTermsScroll'),
+                  controller: _scrollController,
+                  padding: const EdgeInsets.fromLTRB(14, 12, 22, 12),
+                  child: Text(
+                    buildFullLegalDocumentText(),
+                    style: theme.textTheme.bodySmall?.copyWith(
+                      color: const Color(0xFF334155),
+                      height: 1.45,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
-        ),
+          const SizedBox(height: 10),
+          if (hasRead)
+            _TermsAcceptanceRow(
+              hasAcceptedLegalTerms: widget.hasAcceptedLegalTerms,
+              onChanged: widget.onAcceptedChanged,
+            )
+          else
+            Text(
+              'La case d’acceptation apparaîtra à la fin du texte.',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: const Color(0xFF64748B),
+                height: 1.25,
+              ),
+              textAlign: TextAlign.center,
+            ),
+        ],
       ),
     );
   }
@@ -394,10 +470,10 @@ class _AccessFormCard extends StatelessWidget {
     required this.errorMessage,
     required this.isSubmitting,
     required this.canValidate,
-    required this.hasOpenedLegalPage,
+    required this.hasReadLegalTerms,
     required this.hasAcceptedLegalTerms,
-    required this.onOpenLegalPage,
-    required this.onTermsTap,
+    required this.onLegalTermsRead,
+    required this.onTermsChanged,
     required this.onCodeChanged,
     required this.onSubmit,
   });
@@ -406,10 +482,10 @@ class _AccessFormCard extends StatelessWidget {
   final String? errorMessage;
   final bool isSubmitting;
   final bool canValidate;
-  final bool hasOpenedLegalPage;
+  final bool hasReadLegalTerms;
   final bool hasAcceptedLegalTerms;
-  final VoidCallback onOpenLegalPage;
-  final VoidCallback onTermsTap;
+  final VoidCallback onLegalTermsRead;
+  final ValueChanged<bool> onTermsChanged;
   final VoidCallback onCodeChanged;
   final VoidCallback onSubmit;
 
@@ -448,12 +524,11 @@ class _AccessFormCard extends StatelessWidget {
               onSubmitted: (_) => onSubmit(),
             ),
             const SizedBox(height: 14),
-            _LegalInformationPill(onTap: onOpenLegalPage),
-            const SizedBox(height: 14),
-            _TermsAcceptanceRow(
-              hasOpenedLegalPage: hasOpenedLegalPage,
+            _LegalTermsConsentPanel(
+              hasReadLegalTerms: hasReadLegalTerms,
               hasAcceptedLegalTerms: hasAcceptedLegalTerms,
-              onTap: onTermsTap,
+              onReadToEnd: onLegalTermsRead,
+              onAcceptedChanged: onTermsChanged,
             ),
             if (errorMessage != null) ...[
               const SizedBox(height: 10),
@@ -506,14 +581,12 @@ class _AccessFormCard extends StatelessWidget {
 
 class _TermsAcceptanceRow extends StatelessWidget {
   const _TermsAcceptanceRow({
-    required this.hasOpenedLegalPage,
     required this.hasAcceptedLegalTerms,
-    required this.onTap,
+    required this.onChanged,
   });
 
-  final bool hasOpenedLegalPage;
   final bool hasAcceptedLegalTerms;
-  final VoidCallback onTap;
+  final ValueChanged<bool> onChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -524,20 +597,18 @@ class _TermsAcceptanceRow extends StatelessWidget {
       checked: hasAcceptedLegalTerms,
       label: 'J’ai lu et j’accepte les conditions d’utilisation.',
       child: Material(
-        color: hasOpenedLegalPage
-            ? const Color(0xFFF0FDF9)
-            : const Color(0xFFF8FAFC),
+        color: Colors.white,
         borderRadius: BorderRadius.circular(18),
         child: InkWell(
           key: const ValueKey('accessCitizenTermsAcceptance'),
           borderRadius: BorderRadius.circular(18),
-          onTap: onTap,
+          onTap: () => onChanged(!hasAcceptedLegalTerms),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(18),
               border: Border.all(
-                color: hasOpenedLegalPage
+                color: hasAcceptedLegalTerms
                     ? const Color(0xFFB6ECE1)
                     : const Color(0xFFE5E7EB),
               ),
@@ -547,7 +618,7 @@ class _TermsAcceptanceRow extends StatelessWidget {
               children: [
                 Checkbox(
                   value: hasAcceptedLegalTerms,
-                  onChanged: hasOpenedLegalPage ? (_) => onTap() : null,
+                  onChanged: (value) => onChanged(value ?? false),
                   activeColor: const Color(0xFF0D73F2),
                 ),
                 const SizedBox(width: 4),

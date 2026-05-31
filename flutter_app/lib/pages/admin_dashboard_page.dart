@@ -190,9 +190,29 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuthService.instance.signOut();
+    } catch (error, stackTrace) {
+      debugPrint('[AdminDashboard] signOut failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+    try {
+      await AuthSessionStore.instance.clear();
+    } catch (error, stackTrace) {
+      debugPrint('[AdminDashboard] session clear failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+    if (!mounted) {
+      return;
+    }
+    Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final compactAppBar = MediaQuery.sizeOf(context).width < 960;
     final session = AuthSessionStore.instance.currentSession;
     final showOverviewSection =
         widget.initialSection == AdminDashboardSection.overview;
@@ -219,48 +239,48 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pushNamed('/'),
         ),
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.dashboard_rounded,
-                color: _DashboardTheme.primary, size: 22),
-            SizedBox(width: 8),
-            Text('Tableau de bord commune'),
-          ],
-        ),
+        title: compactAppBar
+            ? const Text('Tableau de bord')
+            : const Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(Icons.dashboard_rounded,
+                      color: _DashboardTheme.primary, size: 22),
+                  SizedBox(width: 8),
+                  Text('Tableau de bord commune'),
+                ],
+              ),
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: FilledButton.icon(
+          if (compactAppBar)
+            IconButton(
+              icon: const Icon(Icons.add_rounded),
+              tooltip: 'Nouvelle consultation',
               onPressed: () =>
                   Navigator.of(context).pushNamed('/admin/polls/create'),
-              icon: const Icon(Icons.add_rounded, size: 18),
-              label: const Text('Nouvelle consultation'),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: FilledButton.icon(
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/admin/polls/create'),
+                icon: const Icon(Icons.add_rounded, size: 18),
+                label: const Text('Nouvelle consultation'),
+              ),
             ),
-          ),
-          TextButton(
-            onPressed: () async {
-              try {
-                await FirebaseAuthService.instance.signOut();
-              } catch (error, stackTrace) {
-                debugPrint('[AdminDashboard] signOut failed: $error');
-                debugPrintStack(stackTrace: stackTrace);
-              }
-              try {
-                await AuthSessionStore.instance.clear();
-              } catch (error, stackTrace) {
-                debugPrint('[AdminDashboard] session clear failed: $error');
-                debugPrintStack(stackTrace: stackTrace);
-              }
-              if (!context.mounted) {
-                return;
-              }
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
-            },
-            child: const Text('Déconnexion'),
-          ),
+          compactAppBar
+              ? IconButton(
+                  icon: const Icon(Icons.logout_rounded),
+                  tooltip: 'Déconnexion',
+                  onPressed: _signOut,
+                )
+              : TextButton(
+                  onPressed: _signOut,
+                  child: const Text('Déconnexion'),
+                ),
         ],
       ),
+
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 920),
