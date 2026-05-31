@@ -3,9 +3,15 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:citoyen_peyi_flutter/app.dart';
+import 'package:citoyen_peyi_flutter/models/support_message.dart';
+import 'package:citoyen_peyi_flutter/models/support_ticket.dart';
 import 'package:citoyen_peyi_flutter/pages/admin_dashboard_page.dart';
+import 'package:citoyen_peyi_flutter/screens/admin/support/admin_create_ticket_screen.dart';
 import 'package:citoyen_peyi_flutter/screens/admin/support/admin_support_list_screen.dart';
+import 'package:citoyen_peyi_flutter/screens/super_admin/support/super_admin_support_list_screen.dart';
 import 'package:citoyen_peyi_flutter/services/auth_session_store.dart';
+import 'package:citoyen_peyi_flutter/widgets/support/ticket_card.dart';
+import 'package:citoyen_peyi_flutter/widgets/support/ticket_message_bubble.dart';
 
 void main() {
   testWidgets('home screen renders', (WidgetTester tester) async {
@@ -180,5 +186,103 @@ void main() {
       find.text('Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('admin ticket form validates required fields',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: AdminCreateTicketScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Envoyer au super admin'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Envoyer au super admin'));
+    await tester.pump();
+
+    expect(find.text('Sujet minimum 5 caractères.'), findsOneWidget);
+    expect(find.text('Catégorie obligatoire.'), findsOneWidget);
+    expect(find.text('Message minimum 10 caractères.'), findsOneWidget);
+  });
+
+  testWidgets('super admin assistance page has clear unavailable state',
+      (WidgetTester tester) async {
+    await tester.pumpWidget(const MaterialApp(home: SuperAdminSupportListScreen()));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Tickets assistance'), findsWidgets);
+    expect(
+      find.text('Impossible de charger les tickets d’assistance pour le moment.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('ticket card displays unread support badge',
+      (WidgetTester tester) async {
+    const ticket = SupportTicket(
+      ticketId: 'ticket-1',
+      communeId: '97101',
+      communeName: 'Les Abymes',
+      createdByUserId: 'admin-1',
+      createdByName: 'Admin test',
+      createdByEmail: 'admin@example.test',
+      createdByRole: 'admin_communal',
+      assignedToRole: 'super_admin',
+      subject: 'Besoin aide consultation',
+      category: 'Problème technique',
+      priority: 'urgente',
+      status: 'ouvert',
+      lastMessage: 'Une réponse du super administrateur est disponible.',
+      lastMessageByRole: 'super_admin',
+      messagesCount: 2,
+      unreadForSuperAdmin: false,
+      unreadForAdmin: true,
+      createdAt: '2026-01-01T10:00:00Z',
+      updatedAt: '2026-01-01T11:00:00Z',
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: TicketCard(
+            ticket: ticket,
+            showUnreadForAdmin: true,
+            onOpen: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Nouveau'), findsOneWidget);
+    expect(find.text('Ouvrir'), findsOneWidget);
+  });
+
+  testWidgets('system support messages render as centered notes',
+      (WidgetTester tester) async {
+    const message = SupportMessage(
+      messageId: 'message-1',
+      ticketId: 'ticket-1',
+      senderId: 'system',
+      senderName: 'Système',
+      senderEmail: '',
+      senderRole: 'system',
+      message: 'Le ticket est passé au statut : En cours.',
+      createdAt: '2026-01-01T10:00:00Z',
+      isInternal: true,
+      readBySuperAdmin: true,
+      readByAdmin: false,
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: TicketMessageBubble(
+            message: message,
+            currentRole: 'admin_communal',
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Le ticket est passé au statut : En cours.'), findsOneWidget);
   });
 }

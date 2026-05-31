@@ -111,7 +111,7 @@ class _AdminCreateTicketScreenState extends State<AdminCreateTicketScreen> {
                           icon: _isSubmitting
                               ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
                               : const Icon(Icons.send_rounded),
-                          label: Text(_isSubmitting ? 'Envoi...' : 'Envoyer le ticket'),
+                          label: Text(_isSubmitting ? 'Envoi...' : 'Envoyer au super admin'),
                         ),
                       ],
                     ),

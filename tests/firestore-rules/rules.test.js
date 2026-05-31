@@ -4,7 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { initializeTestEnvironment, assertSucceeds, assertFails } from '@firebase/rules-unit-testing';
-import { doc, getDoc, setDoc, updateDoc, writeBatch } from 'firebase/firestore';
+import { collection, doc, getDoc, getDocs, query, setDoc, updateDoc, where, writeBatch } from 'firebase/firestore';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const RULES_PATH = path.resolve(__dirname, '../../firestore.rules');
@@ -166,6 +166,22 @@ test('commune admin can create and read own support ticket with first message', 
   await assertSucceeds(getDoc(doc(adminDb, 'support_tickets/ticket-1/messages/message-1')));
 });
 
+test('commune admin support list query must stay scoped to own commune', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'support_tickets/ticket-1'), supportTicketData());
+    await setDoc(doc(ctx.firestore(), 'support_tickets/ticket-2'), supportTicketData({
+      ticketId: 'ticket-2',
+      communeId: '97102',
+      communeName: 'Baie-Mahault',
+      createdByUserId: 'admin-2',
+    }));
+  });
+
+  const adminDb = userDb('admin-1', { role: 'commune_admin', admin: true, communeId: '97101' });
+  await assertSucceeds(getDocs(query(collection(adminDb, 'support_tickets'), where('communeId', '==', '97101'))));
+  await assertFails(getDocs(collection(adminDb, 'support_tickets')));
+});
+
 test('commune admin cannot access another commune support ticket', async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
     await setDoc(doc(ctx.firestore(), 'support_tickets/ticket-1'), supportTicketData());
@@ -257,6 +273,64 @@ test('super admin can reply and move open support ticket to in progress', async 
   });
 
   await assertSucceeds(batch.commit());
+});
+
+test('super admin can add system message when status changes', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'support_tickets/ticket-1'), supportTicketData());
+  });
+
+  const superDb = userDb('super-1', { role: 'super_admin', super_admin: true });
+  const batch = writeBatch(superDb);
+  batch.set(doc(superDb, 'support_tickets/ticket-1/messages/message-system'), supportMessageData({
+    messageId: 'message-system',
+    senderId: 'super-1',
+    senderName: 'Système',
+    senderEmail: '',
+    senderRole: 'system',
+    message: 'Le ticket a été clôturé par le super administrateur.',
+    readBySuperAdmin: true,
+    readByAdmin: false,
+  }));
+  batch.update(doc(superDb, 'support_tickets/ticket-1'), {
+    status: 'ferme',
+    lastMessage: 'Le ticket a été clôturé par le super administrateur.',
+    lastMessageByRole: 'system',
+    messagesCount: 2,
+    updatedAt: new Date('2026-01-01T11:00:00Z'),
+    unreadForSuperAdmin: false,
+    unreadForAdmin: true,
+    closedAt: new Date('2026-01-01T11:00:00Z'),
+    closedBy: 'super-1',
+  });
+
+  await assertSucceeds(batch.commit());
+});
+
+test('support messages reject empty content', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'support_tickets/ticket-1'), supportTicketData());
+  });
+
+  const adminDb = userDb('admin-1', { role: 'commune_admin', admin: true, communeId: '97101' });
+  await assertFails(setDoc(doc(adminDb, 'support_tickets/ticket-1/messages/message-empty'), supportMessageData({
+    messageId: 'message-empty',
+    message: '',
+  })));
+});
+
+test('commune admin cannot mutate immutable support ticket fields', async () => {
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    await setDoc(doc(ctx.firestore(), 'support_tickets/ticket-1'), supportTicketData());
+  });
+
+  const adminDb = userDb('admin-1', { role: 'commune_admin', admin: true, communeId: '97101' });
+  await assertFails(updateDoc(doc(adminDb, 'support_tickets/ticket-1'), {
+    communeId: '97102',
+  }));
+  await assertFails(updateDoc(doc(adminDb, 'support_tickets/ticket-1'), {
+    assignedToRole: 'admin_communal',
+  }));
 });
 
 test('commune admin cannot change support status or create super admin message', async () => {

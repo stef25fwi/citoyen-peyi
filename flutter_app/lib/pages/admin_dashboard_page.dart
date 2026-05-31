@@ -915,7 +915,7 @@ class _SupportSectionHeader extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'Envoyez un message au super administrateur en cas de problème technique, de demande de support ou de question sur une consultation.',
+                      'Contactez le super administrateur en cas de problème, demande ou besoin d’accompagnement.',
                     ),
                   ],
                 ),

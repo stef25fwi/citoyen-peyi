@@ -219,6 +219,10 @@ class SupportTicketService {
         throw const SupportTicketException('Ce ticket est fermé. Rouvrez-le avant de répondre.');
       }
       final timestamp = FieldValue.serverTimestamp();
+      final movesToInProgress = isSuperAdmin && status == 'ouvert';
+      final systemMessageRef = movesToInProgress
+          ? ticketRef.collection('messages').doc()
+          : null;
       transaction.set(
         messageRef,
         _messagePayload(
@@ -234,14 +238,31 @@ class SupportTicketService {
           timestamp: timestamp,
         ),
       );
+      if (systemMessageRef != null) {
+        transaction.set(
+          systemMessageRef,
+          _messagePayload(
+            messageId: systemMessageRef.id,
+            ticketId: ticketId,
+            senderId: senderId,
+            senderName: 'Système',
+            senderEmail: '',
+            senderRole: 'system',
+            message: 'Le ticket est passé au statut : En cours.',
+            readBySuperAdmin: true,
+            readByAdmin: false,
+            timestamp: timestamp,
+          ),
+        );
+      }
       transaction.update(ticketRef, {
         'lastMessage': normalizedMessage,
         'lastMessageByRole': role,
-        'messagesCount': FieldValue.increment(1),
+        'messagesCount': FieldValue.increment(movesToInProgress ? 2 : 1),
         'updatedAt': timestamp,
         'unreadForSuperAdmin': isAdmin,
         'unreadForAdmin': isSuperAdmin,
-        if (isSuperAdmin && status == 'ouvert') 'status': 'en_cours',
+        if (movesToInProgress) 'status': 'en_cours',
       });
     });
   }

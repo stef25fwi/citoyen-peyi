@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
+import '../models/support_ticket.dart';
 import '../services/auth_session_store.dart';
 import '../services/citizen_access_code_service.dart';
 import '../services/firebase_auth_service.dart';
@@ -523,10 +524,10 @@ class _SuperAdminSupportDashboardCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return StreamBuilder(
+    return StreamBuilder<List<SupportTicket>>(
       stream: SupportTicketService.instance.watchAllTicketsForSuperAdmin(),
       builder: (context, snapshot) {
-        final tickets = snapshot.data ?? const [];
+        final tickets = snapshot.data ?? const <SupportTicket>[];
         final unread = tickets.where((item) => item.unreadForSuperAdmin).length;
         final urgent = tickets
             .where((item) => item.priority == 'urgente' && item.status != 'ferme')
@@ -537,38 +538,66 @@ class _SuperAdminSupportDashboardCard extends StatelessWidget {
             onTap: onOpen,
             child: Padding(
               padding: const EdgeInsets.all(20),
-              child: Row(
+              child: Wrap(
+                spacing: 14,
+                runSpacing: 14,
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF0D73F2).withValues(alpha: 0.10),
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: const Icon(Icons.support_agent_rounded, color: Color(0xFF0D73F2)),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text('Tickets assistance', style: theme.textTheme.titleLarge),
-                        const SizedBox(height: 4),
-                        const Text('Suivez les demandes des administrateurs communaux.'),
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF0D73F2).withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: const Icon(Icons.support_agent_rounded, color: Color(0xFF0D73F2)),
+                        ),
+                        const SizedBox(width: 14),
+                        Flexible(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Tickets assistance', style: theme.textTheme.titleLarge),
+                              const SizedBox(height: 4),
+                              const Text('Suivez les demandes des administrateurs communaux.'),
+                              if (snapshot.hasError) ...[
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Compteurs indisponibles pour le moment.',
+                                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFB45309)),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
                       ],
                     ),
                   ),
-                  if (unread > 0) Badge(label: Text('$unread non lu(s)')),
-                  if (urgent > 0) ...[
-                    const SizedBox(width: 8),
-                    Badge(
-                      backgroundColor: const Color(0xFFDC2626),
-                      label: Text('$urgent urgent(s)'),
-                    ),
-                  ],
-                  const SizedBox(width: 8),
-                  TextButton(onPressed: onOpen, child: const Text('Voir les tickets')),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (unread > 0) Badge(label: Text('$unread non lu(s)')),
+                      if (urgent > 0)
+                        Badge(
+                          backgroundColor: const Color(0xFFDC2626),
+                          label: Text('$urgent urgent(s)'),
+                        ),
+                      TextButton.icon(
+                        onPressed: onOpen,
+                        icon: const Icon(Icons.open_in_new_rounded),
+                        label: const Text('Voir les tickets'),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
