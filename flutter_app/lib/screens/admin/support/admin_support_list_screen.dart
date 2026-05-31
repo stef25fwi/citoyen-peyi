@@ -11,6 +11,7 @@ class AdminSupportListScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final session = AuthSessionStore.instance.currentSession;
+    final compactAppBar = MediaQuery.sizeOf(context).width < 600;
     final communeId = session?.commune?.code?.trim().isNotEmpty == true
         ? session!.commune!.code!.trim()
         : session?.commune?.name.trim() ?? '';
@@ -20,14 +21,21 @@ class AdminSupportListScreen extends StatelessWidget {
         title: const Text('Assistance'),
         centerTitle: true,
         actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 12),
-            child: FilledButton.icon(
-              onPressed: () => Navigator.of(context).pushNamed('/admin/support/new'),
+          if (compactAppBar)
+            IconButton(
               icon: const Icon(Icons.add_rounded),
-              label: const Text('Nouveau ticket'),
+              tooltip: 'Nouveau ticket',
+              onPressed: () => Navigator.of(context).pushNamed('/admin/support/new'),
+            )
+          else
+            Padding(
+              padding: const EdgeInsets.only(right: 12),
+              child: FilledButton.icon(
+                onPressed: () => Navigator.of(context).pushNamed('/admin/support/new'),
+                icon: const Icon(Icons.add_rounded),
+                label: const Text('Nouveau ticket'),
+              ),
             ),
-          ),
         ],
       ),
       body: Center(

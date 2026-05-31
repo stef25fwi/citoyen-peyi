@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:citoyen_peyi_flutter/app.dart';
 import 'package:citoyen_peyi_flutter/pages/admin_dashboard_page.dart';
+import 'package:citoyen_peyi_flutter/screens/admin/support/admin_support_list_screen.dart';
 import 'package:citoyen_peyi_flutter/services/auth_session_store.dart';
 
 void main() {
@@ -141,5 +142,40 @@ void main() {
     expect(find.text('Assistance'), findsWidgets);
     expect(find.text('Contacter le support'), findsOneWidget);
     expect(find.text('Aucune session chargée.'), findsNothing);
+  });
+
+  testWidgets('commune admin assistance page renders on mobile without grey screen',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    SharedPreferences.setMockInitialValues({});
+    await AuthSessionStore.instance.initialize();
+    await AuthSessionStore.instance.save(
+      const AuthSession(
+        role: 'commune_admin',
+        admin: true,
+        controller: false,
+        mode: 'secure',
+        id: 'admin-test',
+        label: 'Admin test',
+        commune: AuthSessionCommune(name: 'Les Abymes', code: '97101'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(home: AdminSupportListScreen()),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    expect(find.text('Assistance'), findsWidgets);
+    expect(find.byTooltip('Nouveau ticket'), findsOneWidget);
+    expect(
+      find.text('Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
+      findsOneWidget,
+    );
   });
 }
