@@ -25,7 +25,14 @@ class _SuperAdminTicketDetailScreenState extends State<SuperAdminTicketDetailScr
   @override
   void initState() {
     super.initState();
-    unawaited(SupportTicketService.instance.markTicketReadBySuperAdmin(widget.ticketId));
+    unawaited(
+      SupportTicketService.instance.markTicketReadBySuperAdmin(widget.ticketId).catchError(
+        (Object error, StackTrace stackTrace) {
+          debugPrint('[SuperAdminTicketDetail] mark read failed: $error');
+          debugPrintStack(stackTrace: stackTrace);
+        },
+      ),
+    );
   }
 
   @override
@@ -69,6 +76,16 @@ class _SuperAdminTicketDetailScreenState extends State<SuperAdminTicketDetailScr
           if (ticketSnapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           }
+          if (ticketSnapshot.hasError) {
+            return const Center(
+              child: Card(
+                child: Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Text('Impossible de charger ce ticket pour le moment.'),
+                ),
+              ),
+            );
+          }
           if (ticket == null) {
             return const Center(child: Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Ticket introuvable.'))));
           }
@@ -79,6 +96,16 @@ class _SuperAdminTicketDetailScreenState extends State<SuperAdminTicketDetailScr
                 child: StreamBuilder<List<SupportMessage>>(
                   stream: SupportTicketService.instance.watchTicketMessages(widget.ticketId),
                   builder: (context, messagesSnapshot) {
+                    if (messagesSnapshot.hasError) {
+                      return const Center(
+                        child: Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text('Impossible de charger les messages pour le moment.'),
+                          ),
+                        ),
+                      );
+                    }
                     final messages = messagesSnapshot.data ?? const <SupportMessage>[];
                     return ListView(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),

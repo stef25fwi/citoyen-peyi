@@ -716,6 +716,30 @@ class _AdminSupportDashboardCard extends StatelessWidget {
     return StreamBuilder(
       stream: SupportTicketService.instance.watchUnreadTicketsForAdmin(communeId),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          return Card(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  const Icon(Icons.support_agent_rounded, color: _DashboardTheme.primary),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Assistance', style: theme.textTheme.titleLarge),
+                        const SizedBox(height: 4),
+                        const Text('Le support est disponible, mais le compteur non lu ne peut pas être chargé pour le moment.'),
+                      ],
+                    ),
+                  ),
+                  TextButton(onPressed: onOpen, child: const Text('Contacter le support')),
+                ],
+              ),
+            ),
+          );
+        }
         final unread = snapshot.data?.length ?? 0;
         return Card(
           child: InkWell(

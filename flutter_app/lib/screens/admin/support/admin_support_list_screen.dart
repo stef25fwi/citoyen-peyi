@@ -36,6 +36,24 @@ class AdminSupportListScreen extends StatelessWidget {
           child: StreamBuilder<List<SupportTicket>>(
             stream: SupportTicketService.instance.watchAdminTickets(communeId),
             builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: const [
+                    _IntroCard(unreadCount: 0),
+                    SizedBox(height: 16),
+                    Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text(
+                          'Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.',
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              }
               final tickets = snapshot.data ?? const <SupportTicket>[];
               return ListView(
                 padding: const EdgeInsets.all(20),

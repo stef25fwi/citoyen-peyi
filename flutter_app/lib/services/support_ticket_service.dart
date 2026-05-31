@@ -32,28 +32,47 @@ class SupportTicketService {
   CollectionReference<Map<String, dynamic>> get _tickets =>
       _db.collection(_collection);
 
+  CollectionReference<Map<String, dynamic>>? get _maybeTickets =>
+      FirestoreDataService.instance?.collection(_collection);
+
+  Stream<T> _supportUnavailableStream<T>() {
+    return Stream<T>.error(
+      const SupportTicketException(
+        'Service assistance indisponible. Vérifiez la configuration Firebase.',
+      ),
+    );
+  }
+
   Stream<List<SupportTicket>> watchAdminTickets(String communeId) {
-    if (communeId.trim().isEmpty) return const Stream.empty();
-    return _tickets
+    if (communeId.trim().isEmpty) return Stream.value(const <SupportTicket>[]);
+    final tickets = _maybeTickets;
+    if (tickets == null) return _supportUnavailableStream<List<SupportTicket>>();
+    return tickets
         .where('communeId', isEqualTo: communeId.trim())
         .snapshots()
         .map(_sortTickets);
   }
 
   Stream<List<SupportTicket>> watchAllTicketsForSuperAdmin() {
-    return _tickets.snapshots().map(_sortTickets);
+    final tickets = _maybeTickets;
+    if (tickets == null) return _supportUnavailableStream<List<SupportTicket>>();
+    return tickets.snapshots().map(_sortTickets);
   }
 
   Stream<List<SupportTicket>> watchUnreadTicketsForSuperAdmin() {
-    return _tickets
+    final tickets = _maybeTickets;
+    if (tickets == null) return _supportUnavailableStream<List<SupportTicket>>();
+    return tickets
         .where('unreadForSuperAdmin', isEqualTo: true)
         .snapshots()
         .map(_sortTickets);
   }
 
   Stream<List<SupportTicket>> watchUnreadTicketsForAdmin(String communeId) {
-    if (communeId.trim().isEmpty) return const Stream.empty();
-    return _tickets
+    if (communeId.trim().isEmpty) return Stream.value(const <SupportTicket>[]);
+    final tickets = _maybeTickets;
+    if (tickets == null) return _supportUnavailableStream<List<SupportTicket>>();
+    return tickets
         .where('communeId', isEqualTo: communeId.trim())
         .where('unreadForAdmin', isEqualTo: true)
         .snapshots()
@@ -61,7 +80,9 @@ class SupportTicketService {
   }
 
   Stream<SupportTicket?> watchTicket(String ticketId) {
-    return _tickets.doc(ticketId).snapshots().map((doc) {
+    final tickets = _maybeTickets;
+    if (tickets == null) return _supportUnavailableStream<SupportTicket?>();
+    return tickets.doc(ticketId).snapshots().map((doc) {
       if (!doc.exists) return null;
       return SupportTicket.fromFirestore(doc);
     });
@@ -153,7 +174,9 @@ class SupportTicketService {
   }
 
   Stream<List<SupportMessage>> watchTicketMessages(String ticketId) {
-    return _tickets
+    final tickets = _maybeTickets;
+    if (tickets == null) return _supportUnavailableStream<List<SupportMessage>>();
+    return tickets
         .doc(ticketId)
         .collection('messages')
         .orderBy('createdAt')
@@ -238,11 +261,11 @@ class SupportTicketService {
   }
 
   Future<void> markTicketReadByAdmin(String ticketId) async {
-    await _tickets.doc(ticketId).set({'unreadForAdmin': false}, SetOptions(merge: true));
+    await _tickets.doc(ticketId).update({'unreadForAdmin': false});
   }
 
   Future<void> markTicketReadBySuperAdmin(String ticketId) async {
-    await _tickets.doc(ticketId).set({'unreadForSuperAdmin': false}, SetOptions(merge: true));
+    await _tickets.doc(ticketId).update({'unreadForSuperAdmin': false});
   }
 
   Future<void> closeTicket(String ticketId) {
