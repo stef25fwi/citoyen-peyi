@@ -69,6 +69,33 @@ service cloud.firestore {
       return value in ['code_created', 'duplicate_detected', 'duplicate_request_created', 'regeneration_approved', 'regeneration_rejected', 'login_code_used'];
     }
 
+    function userCommuneId() {
+      return request.auth.token.communeId != null
+        ? request.auth.token.communeId
+        : request.auth.token.communeCode;
+    }
+
+    function isSupportPriority(value) {
+      return value in ['faible', 'normale', 'urgente'];
+    }
+
+    function isSupportStatus(value) {
+      return value in ['ouvert', 'en_cours', 'en_attente_admin', 'resolu', 'ferme'];
+    }
+
+    function isSupportCategory(value) {
+      return value in [
+        'Problème de connexion',
+        'Problème de consultation',
+        'Problème de code citoyen',
+        'Problème de vote',
+        'Demande de modification',
+        'Demande de formation',
+        'Problème technique',
+        'Autre'
+      ];
+    }
+
     function hasOnlyKeys(allowedKeys) {
       return request.resource.data.keys().hasOnly(allowedKeys);
     }
@@ -133,6 +160,113 @@ service cloud.firestore {
         'accessCodeId', 'createdAt', 'metadata', 'updatedAt'
       ]) &&
       isControllerAction(request.resource.data.actionType);
+    }
+
+    function isSupportTicketShape() {
+      return hasOnlyKeys([
+        'ticketId', 'communeId', 'communeName', 'createdByUserId', 'createdByName',
+        'createdByEmail', 'createdByRole', 'assignedToRole', 'subject', 'category',
+        'priority', 'status', 'lastMessage', 'lastMessageByRole', 'messagesCount',
+        'unreadForSuperAdmin', 'unreadForAdmin', 'createdAt', 'updatedAt',
+        'closedAt', 'closedBy'
+      ]) &&
+      request.resource.data.ticketId is string &&
+      request.resource.data.communeId is string &&
+      request.resource.data.communeName is string &&
+      request.resource.data.subject is string &&
+      request.resource.data.subject.size() >= 5 &&
+      request.resource.data.lastMessage is string &&
+      request.resource.data.lastMessage.size() >= 2 &&
+      isSupportCategory(request.resource.data.category) &&
+      isSupportPriority(request.resource.data.priority) &&
+      isSupportStatus(request.resource.data.status) &&
+      request.resource.data.messagesCount is int &&
+      request.resource.data.unreadForSuperAdmin is bool &&
+      request.resource.data.unreadForAdmin is bool;
+    }
+
+    function isSupportMessageShape(ticketId) {
+      return hasOnlyKeys([
+        'messageId', 'ticketId', 'senderId', 'senderName', 'senderEmail',
+        'senderRole', 'message', 'createdAt', 'isInternal', 'readBySuperAdmin',
+        'readByAdmin'
+      ]) &&
+      request.resource.data.messageId is string &&
+      request.resource.data.ticketId == ticketId &&
+      request.resource.data.senderId is string &&
+      request.resource.data.senderRole in ['admin_communal', 'super_admin', 'system'] &&
+      request.resource.data.message is string &&
+      request.resource.data.message.size() >= 2 &&
+      request.resource.data.isInternal == true &&
+      request.resource.data.readBySuperAdmin is bool &&
+      request.resource.data.readByAdmin is bool;
+    }
+
+    function isSupportTicketOwner() {
+      return isAdminCommune() && resource.data.communeId == userCommuneId();
+    }
+
+    function isSupportTicketCreateByAdmin(ticketId) {
+      return isAdminCommune() &&
+        isSupportTicketShape() &&
+        request.resource.data.ticketId == ticketId &&
+        request.resource.data.communeId == userCommuneId() &&
+        request.resource.data.createdByUserId == request.auth.uid &&
+        request.resource.data.createdByRole == 'admin_communal' &&
+        request.resource.data.assignedToRole == 'super_admin' &&
+        request.resource.data.status == 'ouvert' &&
+        request.resource.data.messagesCount == 1 &&
+        request.resource.data.unreadForSuperAdmin == true &&
+        request.resource.data.unreadForAdmin == false &&
+        request.resource.data.closedAt == null &&
+        request.resource.data.closedBy == null;
+    }
+
+    function supportImmutableFieldsUnchanged() {
+      return request.resource.data.ticketId == resource.data.ticketId &&
+        request.resource.data.communeId == resource.data.communeId &&
+        request.resource.data.communeName == resource.data.communeName &&
+        request.resource.data.createdByUserId == resource.data.createdByUserId &&
+        request.resource.data.createdByRole == resource.data.createdByRole &&
+        request.resource.data.assignedToRole == resource.data.assignedToRole &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isAdminSupportTicketUpdate() {
+      return isSupportTicketOwner() &&
+        isSupportTicketShape() &&
+        supportImmutableFieldsUnchanged() &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.priority == resource.data.priority &&
+        request.resource.data.category == resource.data.category &&
+        request.resource.data.closedAt == resource.data.closedAt &&
+        request.resource.data.closedBy == resource.data.closedBy &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'lastMessage', 'lastMessageByRole', 'messagesCount', 'updatedAt',
+          'unreadForSuperAdmin', 'unreadForAdmin'
+        ]);
+    }
+
+    function isSuperAdminSupportTicketUpdate() {
+      return isSuperAdmin() &&
+        isSupportTicketShape() &&
+        supportImmutableFieldsUnchanged() &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'status', 'lastMessage', 'lastMessageByRole', 'messagesCount', 'updatedAt',
+          'unreadForSuperAdmin', 'unreadForAdmin', 'closedAt', 'closedBy'
+        ]);
+    }
+
+    function canReadSupportTicket(ticketId) {
+      return isSuperAdmin() ||
+        (isAdminCommune() && get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.communeId == userCommuneId());
+    }
+
+    function canCreateAdminSupportMessage(ticketId) {
+      return isAdminCommune() &&
+        request.resource.data.senderRole == 'admin_communal' &&
+        request.resource.data.senderId == request.auth.uid &&
+        getAfter(/databases/$(database)/documents/support_tickets/$(ticketId)).data.communeId == userCommuneId();
     }
 
     function registrationCodeVoterUpdate() {
@@ -245,6 +379,25 @@ service cloud.firestore {
     match /public_news/{newsId} {
       allow read: if true;
       allow write: if false;
+    }
+
+    match /support_tickets/{ticketId} {
+      allow read: if isSuperAdmin() || isSupportTicketOwner();
+      allow create: if isSupportTicketCreateByAdmin(ticketId);
+      allow update: if isAdminSupportTicketUpdate() || isSuperAdminSupportTicketUpdate();
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if canReadSupportTicket(ticketId);
+        allow create: if isSupportMessageShape(ticketId) &&
+          (
+            (isSuperAdmin() &&
+              exists(/databases/$(database)/documents/support_tickets/$(ticketId)) &&
+              request.resource.data.senderRole in ['super_admin', 'system']) ||
+            canCreateAdminSupportMessage(ticketId)
+          );
+        allow update, delete: if false;
+      }
     }
 
     match /{document=**} {

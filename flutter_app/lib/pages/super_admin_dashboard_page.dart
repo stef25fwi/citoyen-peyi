@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 import '../services/auth_session_store.dart';
 import '../services/citizen_access_code_service.dart';
 import '../services/firebase_auth_service.dart';
+import '../services/support_ticket_service.dart';
 import '../services/super_admin_service.dart';
 import '../widgets/super_admin_controller_activity_tile.dart';
 import '../widgets/super_admin_duplicate_tile.dart';
@@ -389,7 +390,17 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                             Navigator.of(context).pushNamed('/super/activity'),
                         child: const Text('Activite'),
                       ),
+                      FilledButton.tonal(
+                        onPressed: () => Navigator.of(context)
+                            .pushNamed('/super-admin/support'),
+                        child: const Text('Tickets assistance'),
+                      ),
                     ],
+                  ),
+                  const SizedBox(height: 16),
+                  _SuperAdminSupportDashboardCard(
+                    onOpen: () => Navigator.of(context)
+                        .pushNamed('/super-admin/support'),
                   ),
                   const SizedBox(height: 16),
                   LayoutBuilder(
@@ -500,6 +511,70 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SuperAdminSupportDashboardCard extends StatelessWidget {
+  const _SuperAdminSupportDashboardCard({required this.onOpen});
+
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return StreamBuilder(
+      stream: SupportTicketService.instance.watchAllTicketsForSuperAdmin(),
+      builder: (context, snapshot) {
+        final tickets = snapshot.data ?? const [];
+        final unread = tickets.where((item) => item.unreadForSuperAdmin).length;
+        final urgent = tickets
+            .where((item) => item.priority == 'urgente' && item.status != 'ferme')
+            .length;
+        return Card(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: onOpen,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF0D73F2).withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.support_agent_rounded, color: Color(0xFF0D73F2)),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Tickets assistance', style: theme.textTheme.titleLarge),
+                        const SizedBox(height: 4),
+                        const Text('Suivez les demandes des administrateurs communaux.'),
+                      ],
+                    ),
+                  ),
+                  if (unread > 0) Badge(label: Text('$unread non lu(s)')),
+                  if (urgent > 0) ...[
+                    const SizedBox(width: 8),
+                    Badge(
+                      backgroundColor: const Color(0xFFDC2626),
+                      label: Text('$urgent urgent(s)'),
+                    ),
+                  ],
+                  const SizedBox(width: 8),
+                  TextButton(onPressed: onOpen, child: const Text('Voir les tickets')),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }

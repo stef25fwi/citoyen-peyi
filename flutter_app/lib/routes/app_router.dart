@@ -24,6 +24,11 @@ import '../pages/public_news_page.dart';
 import '../pages/public_results_page.dart';
 import '../pages/super_admin_communes_page.dart';
 import '../pages/super_admin_dashboard_page.dart';
+import '../screens/admin/support/admin_create_ticket_screen.dart';
+import '../screens/admin/support/admin_support_list_screen.dart';
+import '../screens/admin/support/admin_ticket_detail_screen.dart';
+import '../screens/super_admin/support/super_admin_support_list_screen.dart';
+import '../screens/super_admin/support/super_admin_ticket_detail_screen.dart';
 import '../pages/vote_confirmation_page.dart';
 import '../pages/super_admin_login_page.dart';
 import '../pages/vote_page.dart';
@@ -55,6 +60,10 @@ class AppRouter {
       case '/super/activity':
         return _requireRoles(settings, const ControllerActivityDashboardPage(),
             const ['super_admin']);
+      case '/super-admin/support':
+      case '/super/support':
+        return _requireRoles(
+            settings, const SuperAdminSupportListScreen(), const ['super_admin']);
       case '/super/controllers':
         return _requireRoles(
           settings,
@@ -103,6 +112,12 @@ class AppRouter {
       case '/admin/results':
         return _requireRoles(
             settings, const AdminAnalyticsPage(), const ['commune_admin']);
+      case '/admin/support':
+        return _requireRoles(
+            settings, const AdminSupportListScreen(), const ['commune_admin']);
+      case '/admin/support/new':
+        return _requireRoles(
+            settings, const AdminCreateTicketScreen(), const ['commune_admin']);
       case '/admin/settings':
         return _requireRoles(
             settings, const AdminSettingsPage(), const ['commune_admin']);
@@ -198,6 +213,26 @@ class AppRouter {
           return _requireRoles(
             settings,
             CommuneControllerActivityPage(communeId: uri.pathSegments[3]),
+            const ['super_admin'],
+          );
+        }
+
+        if (uri.pathSegments.length == 3 &&
+            uri.pathSegments[0] == 'admin' &&
+            uri.pathSegments[1] == 'support') {
+          return _requireRoles(
+            settings,
+            AdminTicketDetailScreen(ticketId: uri.pathSegments[2]),
+            const ['commune_admin'],
+          );
+        }
+
+        if (uri.pathSegments.length == 3 &&
+            uri.pathSegments[0] == 'super-admin' &&
+            uri.pathSegments[1] == 'support') {
+          return _requireRoles(
+            settings,
+            SuperAdminTicketDetailScreen(ticketId: uri.pathSegments[2]),
             const ['super_admin'],
           );
         }

@@ -6,6 +6,7 @@ import '../services/admin_analytics_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/auth_session_store.dart';
 import '../services/controleur_profile_service.dart';
+import '../services/support_ticket_service.dart';
 
 class _DashboardTheme {
   static const background = Color(0xFFF6F7F9);
@@ -395,6 +396,11 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             Navigator.of(context).pushNamed('/admin/results'),
                         child: const Text('Resultats'),
                       ),
+                      FilledButton.tonal(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/admin/support'),
+                        child: const Text('Assistance'),
+                      ),
                     ];
 
                     if (wide) {
@@ -417,6 +423,14 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                   },
                 ),
                 const SizedBox(height: 16),
+                if (showOverviewSection)
+                  _AdminSupportDashboardCard(
+                    communeId: session?.commune?.code?.trim().isNotEmpty == true
+                        ? session!.commune!.code!.trim()
+                        : session?.commune?.name.trim() ?? '',
+                    onOpen: () => Navigator.of(context).pushNamed('/admin/support'),
+                  ),
+                if (showOverviewSection) const SizedBox(height: 16),
                 if (showOverviewSection)
                   Card(
                     child: Padding(
@@ -686,6 +700,60 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _AdminSupportDashboardCard extends StatelessWidget {
+  const _AdminSupportDashboardCard({required this.communeId, required this.onOpen});
+
+  final String communeId;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return StreamBuilder(
+      stream: SupportTicketService.instance.watchUnreadTicketsForAdmin(communeId),
+      builder: (context, snapshot) {
+        final unread = snapshot.data?.length ?? 0;
+        return Card(
+          child: InkWell(
+            borderRadius: BorderRadius.circular(24),
+            onTap: onOpen,
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: _DashboardTheme.primary.withValues(alpha: 0.10),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(Icons.support_agent_rounded, color: _DashboardTheme.primary),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text('Assistance', style: theme.textTheme.titleLarge),
+                        const SizedBox(height: 4),
+                        const Text('Envoyez un ticket au super administrateur.'),
+                      ],
+                    ),
+                  ),
+                  if (unread > 0) Badge(label: Text('$unread')),
+                  const SizedBox(width: 8),
+                  TextButton(onPressed: onOpen, child: const Text('Contacter le support')),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
