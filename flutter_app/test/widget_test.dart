@@ -6,6 +6,7 @@ import 'package:citoyen_peyi_flutter/app.dart';
 import 'package:citoyen_peyi_flutter/models/support_message.dart';
 import 'package:citoyen_peyi_flutter/models/support_ticket.dart';
 import 'package:citoyen_peyi_flutter/pages/admin_dashboard_page.dart';
+import 'package:citoyen_peyi_flutter/routes/app_router.dart';
 import 'package:citoyen_peyi_flutter/screens/admin/support/admin_create_ticket_screen.dart';
 import 'package:citoyen_peyi_flutter/screens/admin/support/admin_support_list_screen.dart';
 import 'package:citoyen_peyi_flutter/screens/super_admin/support/super_admin_support_list_screen.dart';
@@ -186,6 +187,92 @@ void main() {
       find.text('Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
       findsOneWidget,
     );
+  });
+
+  testWidgets('commune admin assistance button opens support page',
+      (WidgetTester tester) async {
+    SharedPreferences.setMockInitialValues({});
+    await AuthSessionStore.instance.initialize();
+    await AuthSessionStore.instance.save(
+      const AuthSession(
+        role: 'commune_admin',
+        admin: true,
+        controller: false,
+        mode: 'secure',
+        id: 'admin-test',
+        label: 'Admin test',
+        commune: AuthSessionCommune(name: 'Les Abymes', code: '97101'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        initialRoute: '/admin',
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final assistanceButton = find.widgetWithText(FilledButton, 'Assistance');
+    await tester.scrollUntilVisible(assistanceButton, 240);
+    await tester.pumpAndSettle();
+    await tester.tap(assistanceButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Assistance'), findsWidgets);
+    expect(find.byTooltip('Nouveau ticket'), findsNothing);
+    expect(find.widgetWithText(FilledButton, 'Nouveau ticket'), findsOneWidget);
+    expect(
+      find.text('Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
+      findsOneWidget,
+    );
+    expect(find.text('Aucune session chargée.'), findsNothing);
+  });
+
+  testWidgets('commune admin assistance button opens support page on mobile',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    SharedPreferences.setMockInitialValues({});
+    await AuthSessionStore.instance.initialize();
+    await AuthSessionStore.instance.save(
+      const AuthSession(
+        role: 'commune_admin',
+        admin: true,
+        controller: false,
+        mode: 'secure',
+        id: 'admin-test',
+        label: 'Admin test',
+        commune: AuthSessionCommune(name: 'Les Abymes', code: '97101'),
+      ),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        onGenerateRoute: AppRouter.onGenerateRoute,
+        initialRoute: '/admin',
+      ),
+    );
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 50));
+
+    final assistanceButton = find.widgetWithText(FilledButton, 'Assistance');
+    await tester.scrollUntilVisible(assistanceButton, 240);
+    await tester.pumpAndSettle();
+    await tester.tap(assistanceButton);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Assistance'), findsWidgets);
+    expect(find.byTooltip('Nouveau ticket'), findsOneWidget);
+    expect(
+      find.text('Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
+      findsOneWidget,
+    );
+    expect(find.text('Réessayer'), findsOneWidget);
   });
 
   testWidgets('admin ticket form validates required fields',

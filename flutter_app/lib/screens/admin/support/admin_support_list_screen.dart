@@ -5,8 +5,19 @@ import '../../../services/auth_session_store.dart';
 import '../../../services/support_ticket_service.dart';
 import '../../../widgets/support/ticket_card.dart';
 
-class AdminSupportListScreen extends StatelessWidget {
+class AdminSupportListScreen extends StatefulWidget {
   const AdminSupportListScreen({super.key});
+
+  @override
+  State<AdminSupportListScreen> createState() => _AdminSupportListScreenState();
+}
+
+class _AdminSupportListScreenState extends State<AdminSupportListScreen> {
+  int _reloadNonce = 0;
+
+  void _retry() {
+    setState(() => _reloadNonce++);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -42,21 +53,23 @@ class AdminSupportListScreen extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 920),
           child: StreamBuilder<List<SupportTicket>>(
+            key: ValueKey(_reloadNonce),
             stream: SupportTicketService.instance.watchAdminTickets(communeId),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return ListView(
                   padding: const EdgeInsets.all(20),
-                  children: const [
-                    _IntroCard(unreadCount: 0),
-                    SizedBox(height: 16),
-                    Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
+                  children: [
+                    const _IntroCard(unreadCount: 0),
+                    const SizedBox(height: 16),
+                    _SupportStateCard(
+                      icon: Icons.cloud_off_rounded,
+                      title:
                           'Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.',
-                          textAlign: TextAlign.center,
-                        ),
+                      action: OutlinedButton.icon(
+                        onPressed: _retry,
+                        icon: const Icon(Icons.refresh_rounded),
+                        label: const Text('Réessayer'),
                       ),
                     ),
                   ],
@@ -69,16 +82,16 @@ class AdminSupportListScreen extends StatelessWidget {
                   _IntroCard(unreadCount: tickets.where((item) => item.unreadForAdmin).length),
                   const SizedBox(height: 16),
                   if (snapshot.connectionState == ConnectionState.waiting)
-                    const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
+                    const _SupportStateCard(
+                      icon: Icons.support_agent_rounded,
+                      title: 'Chargement de l’assistance...',
+                      showLoader: true,
+                    )
                   else if (tickets.isEmpty)
-                    const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text(
+                    const _SupportStateCard(
+                      icon: Icons.mark_chat_unread_outlined,
+                      title:
                           'Aucun ticket pour le moment. Vous pouvez contacter le super administrateur en cas de besoin.',
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
                     )
                   else
                     for (final ticket in tickets) ...[
@@ -93,6 +106,53 @@ class AdminSupportListScreen extends StatelessWidget {
               );
             },
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SupportStateCard extends StatelessWidget {
+  const _SupportStateCard({
+    required this.icon,
+    required this.title,
+    this.action,
+    this.showLoader = false,
+  });
+
+  final IconData icon;
+  final String title;
+  final Widget? action;
+  final bool showLoader;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (showLoader)
+              const SizedBox(
+                width: 26,
+                height: 26,
+                child: CircularProgressIndicator(strokeWidth: 2.4),
+              )
+            else
+              Icon(icon, color: const Color(0xFF0D73F2), size: 34),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: theme.textTheme.bodyLarge,
+            ),
+            if (action != null) ...[
+              const SizedBox(height: 14),
+              action!,
+            ],
+          ],
         ),
       ),
     );
