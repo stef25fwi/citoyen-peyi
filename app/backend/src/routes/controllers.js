@@ -40,6 +40,56 @@ const maskCode = (code) => {
   return `${clean.substring(0, 2)}••••${clean.substring(clean.length - 2)}`;
 };
 
+const serializeController = (doc) => {
+  const data = doc.data() || {};
+  const sanitizedId = stripLegacyPrefix(doc.id);
+  const rawMasked = typeof data.displayCodeMasked === 'string' && data.displayCodeMasked.startsWith('CTRL-')
+    ? data.displayCodeMasked.substring(5)
+    : data.displayCodeMasked;
+  return {
+    id: sanitizedId,
+    displayCodeMasked: rawMasked || (data.code ? maskCode(data.code) : ''),
+    label: data.label,
+    commune: data.commune,
+    createdAt: data.createdAt,
+    usedAt: data.usedAt,
+    enabled: data.enabled !== false,
+  };
+};
+
+const loadControllerDoc = async (db, rawCode) => {
+  const cleanCode = stripLegacyPrefix(sanitize(rawCode, 64));
+  if (!cleanCode) return null;
+  const candidates = [cleanCode, `CTRL-${cleanCode}`];
+  for (const candidate of candidates) {
+    const ref = db.collection(COLLECTION).doc(candidate);
+    const doc = await ref.get();
+    if (doc.exists) return { ref, doc, code: candidate };
+  }
+  return null;
+};
+
+const assertControllerScope = (req, res, data) => {
+  if (isSuperAdmin(req.user)) return true;
+  const scope = communeScopeFromUser(req.user);
+  if (data.commune?.code !== scope) {
+    res.status(403).json({ message: 'Ce controleur appartient a une autre commune.' });
+    return false;
+  }
+  return true;
+};
+
+const generateUnusedControllerCode = async (db) => {
+  for (let attempt = 0; attempt < 20; attempt += 1) {
+    const code = generateControllerCode();
+    const doc = await db.collection(COLLECTION).doc(code).get();
+    if (!doc.exists) return code;
+  }
+  const error = new Error('Generation de code controleur impossible.');
+  error.status = 503;
+  throw error;
+};
+
 router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin);
 
 const resolveCommuneScope = (req) => {
@@ -68,22 +118,9 @@ router.get('/', async (req, res, next) => {
     }
     const snapshot = await query.limit(500).get();
     return res.json({
-      controllers: snapshot.docs.map((doc) => {
-        const data = doc.data() || {};
-        const sanitizedId = stripLegacyPrefix(doc.id);
-        const rawMasked = typeof data.displayCodeMasked === 'string' && data.displayCodeMasked.startsWith('CTRL-')
-          ? data.displayCodeMasked.substring(5)
-          : data.displayCodeMasked;
-        return {
-          id: sanitizedId,
-          displayCodeMasked: rawMasked || (data.code ? maskCode(data.code) : ''),
-          label: data.label,
-          commune: data.commune,
-          createdAt: data.createdAt,
-          usedAt: data.usedAt,
-          enabled: data.enabled !== false,
-        };
-      }),
+      controllers: snapshot.docs
+        .filter((doc) => (doc.data() || {}).enabled !== false)
+        .map(serializeController),
     });
   } catch (error) {
     return next(error);
@@ -124,26 +161,72 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+router.post('/:controllerCode/regenerate', async (req, res, next) => {
+  try {
+    const db = getFirebaseAdminDb();
+    const loaded = await loadControllerDoc(db, req.params.controllerCode);
+    if (!loaded) return res.status(404).json({ message: 'Controleur introuvable.' });
+
+    const data = loaded.doc.data() || {};
+    if (!assertControllerScope(req, res, data)) return undefined;
+
+    const newCode = await generateUnusedControllerCode(db);
+    const newRef = db.collection(COLLECTION).doc(newCode);
+    const timestamp = FieldValue.serverTimestamp();
+    const replacementPayload = {
+      ...data,
+      id: newCode,
+      codeHash: hashControllerCode(newCode),
+      displayCodeMasked: maskCode(newCode),
+      usedAt: null,
+      enabled: true,
+      disabledAt: null,
+      regeneratedAt: timestamp,
+      regeneratedBy: req.user?.uid || 'admin',
+      replacedControllerCode: stripLegacyPrefix(loaded.code),
+      updatedAt: timestamp,
+    };
+
+    const batch = db.batch();
+    batch.set(newRef, replacementPayload);
+    batch.set(loaded.ref, {
+      enabled: false,
+      disabledAt: timestamp,
+      replacedByControllerCode: newCode,
+      updatedAt: timestamp,
+    }, { merge: true });
+    await batch.commit();
+
+    try {
+      await import('../services/firebaseAdmin.js').then(({ getFirebaseAdminAuth }) => getFirebaseAdminAuth().revokeRefreshTokens(`controller:${loaded.code}`));
+    } catch (revokeError) {
+      logger.warn({ err: revokeError, controllerCode: loaded.code }, 'controller_token_revocation_failed');
+    }
+
+    return res.json({
+      controller: {
+        ...serializeController({ id: newCode, data: () => replacementPayload }),
+        code: newCode,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 router.delete('/:controllerCode', async (req, res, next) => {
   try {
-    const code = sanitize(req.params.controllerCode, 64);
     const db = getFirebaseAdminDb();
-    const ref = db.collection(COLLECTION).doc(code);
-    const doc = await ref.get();
-    if (!doc.exists) return res.status(404).json({ message: 'Controleur introuvable.' });
-    const data = doc.data() || {};
-    if (!isSuperAdmin(req.user)) {
-      const scope = communeScopeFromUser(req.user);
-      if (data.commune?.code !== scope) {
-        return res.status(403).json({ message: 'Ce controleur appartient a une autre commune.' });
-      }
-    }
-    await ref.set({ enabled: false, disabledAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
+    const loaded = await loadControllerDoc(db, req.params.controllerCode);
+    if (!loaded) return res.status(404).json({ message: 'Controleur introuvable.' });
+    const data = loaded.doc.data() || {};
+    if (!assertControllerScope(req, res, data)) return undefined;
+    await loaded.ref.set({ enabled: false, disabledAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
     try {
-      await import('../services/firebaseAdmin.js').then(({ getFirebaseAdminAuth }) => getFirebaseAdminAuth().revokeRefreshTokens(`controller:${code}`));
+      await import('../services/firebaseAdmin.js').then(({ getFirebaseAdminAuth }) => getFirebaseAdminAuth().revokeRefreshTokens(`controller:${loaded.code}`));
     } catch (revokeError) {
       // La revocation peut echouer si l'utilisateur Firebase n'a jamais ete cree.
-      logger.warn({ err: revokeError, controllerCode: code }, 'controller_token_revocation_failed');
+      logger.warn({ err: revokeError, controllerCode: loaded.code }, 'controller_token_revocation_failed');
     }
     return res.json({ ok: true });
   } catch (error) {

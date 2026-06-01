@@ -138,6 +138,19 @@ class ControleurProfileService {
     await _authorizedRequest('DELETE', '/api/controllers/$id');
   }
 
+  Future<ControleurProfileModel> regenerateProfileCode(String id) async {
+    final response = await _authorizedRequest(
+      'POST',
+      '/api/controllers/${Uri.encodeComponent(id)}/regenerate',
+    );
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
+    final controller = ControleurProfileModel.fromJson(payload['controller']);
+    if (controller == null || controller.code.isEmpty) {
+      throw const ControleurProfileException('Réponse backend invalide.');
+    }
+    return controller;
+  }
+
   Future<http.Response> _authorizedRequest(String method, String path,
       {Object? body}) async {
     final token = await FirebaseAuthService.instance.currentIdToken();

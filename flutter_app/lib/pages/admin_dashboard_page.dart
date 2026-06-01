@@ -115,6 +115,44 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     await _load();
   }
 
+  Future<void> _regenerateControleurCode(ControleurProfileModel profile) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Régénérer le code agent ?'),
+        content: Text(
+          'Le code actuel de "${profile.label}" sera désactivé. '
+          'Un nouveau code sera affiché une seule fois.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton.icon(
+            onPressed: () => Navigator.pop(context, true),
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Régénérer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    try {
+      final regenerated = await ControleurProfileService.instance
+          .regenerateProfileCode(profile.id);
+      await _load();
+      if (!mounted) return;
+      _showCodeRevealDialog(regenerated, regenerated: true);
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
   void _openCreateControleurDialog() {
     showDialog<void>(
       context: context,
@@ -127,19 +165,28 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     );
   }
 
-  void _showCodeRevealDialog(ControleurProfileModel profile) {
+  void _showCodeRevealDialog(
+    ControleurProfileModel profile, {
+    bool regenerated = false,
+  }) {
     showDialog<void>(
       context: context,
       barrierDismissible: false,
       builder: (_) => AlertDialog(
         icon: const Icon(Icons.check_circle_rounded,
             color: Color(0xFF2B9F82), size: 40),
-        title: const Text('Agent de mobilisation citoyenne créé'),
+        title: Text(
+          regenerated
+              ? 'Nouveau code agent généré'
+              : 'Agent de mobilisation citoyenne créé',
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              'Copiez ce code maintenant pour ${profile.label}. Il ne sera plus visible en clair après fermeture.',
+              regenerated
+                  ? 'Copiez ce nouveau code maintenant pour ${profile.label}. L’ancien code ne permettra plus la connexion.'
+                  : 'Copiez ce code maintenant pour ${profile.label}. Il ne sera plus visible en clair après fermeture.',
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 20),
@@ -644,6 +691,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             for (final ctrl in _controleurs)
                               _ControleurRow(
                                 profile: ctrl,
+                                onRegenerate: () => _regenerateControleurCode(ctrl),
                                 onDelete: () => _deleteControleur(ctrl),
                               ),
                         ],
@@ -1292,9 +1340,14 @@ class _CompactPollParticipationRow extends StatelessWidget {
 // ---------- Controleur row ----------
 
 class _ControleurRow extends StatefulWidget {
-  const _ControleurRow({required this.profile, required this.onDelete});
+  const _ControleurRow({
+    required this.profile,
+    required this.onRegenerate,
+    required this.onDelete,
+  });
 
   final ControleurProfileModel profile;
+  final VoidCallback onRegenerate;
   final VoidCallback onDelete;
 
   @override
@@ -1403,6 +1456,11 @@ class _ControleurRowState extends State<_ControleurRow> {
               },
               tooltip: 'Copier',
             ),
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded, size: 20),
+            onPressed: widget.onRegenerate,
+            tooltip: 'Régénérer le code',
+          ),
           IconButton(
             icon: const Icon(Icons.delete_outline_rounded,
                 size: 20, color: Colors.red),
