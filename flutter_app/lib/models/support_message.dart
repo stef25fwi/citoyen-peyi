@@ -13,6 +13,12 @@ String _readDateString(Object? value) {
   return value.toString();
 }
 
+String _readString(Object? value, [String fallback = '']) {
+  if (value == null) return fallback;
+  if (value is String) return value;
+  return value.toString();
+}
+
 class SupportMessage {
   const SupportMessage({
     required this.messageId,
@@ -60,14 +66,25 @@ class SupportMessage {
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
     final data = doc.data() ?? const <String, dynamic>{};
+    return _fromMap(data, fallbackId: doc.id);
+  }
+
+  static SupportMessage fromJson(Map<String, dynamic> json) {
+    return _fromMap(json);
+  }
+
+  static SupportMessage _fromMap(
+    Map<String, dynamic> data, {
+    String fallbackId = '',
+  }) {
     return SupportMessage(
-      messageId: data['messageId'] as String? ?? doc.id,
-      ticketId: data['ticketId'] as String? ?? '',
-      senderId: data['senderId'] as String? ?? '',
-      senderName: data['senderName'] as String? ?? '',
-      senderEmail: data['senderEmail'] as String? ?? '',
-      senderRole: data['senderRole'] as String? ?? 'system',
-      message: data['message'] as String? ?? '',
+      messageId: _readString(data['messageId'], fallbackId),
+      ticketId: _readString(data['ticketId']),
+      senderId: _readString(data['senderId']),
+      senderName: _readString(data['senderName']),
+      senderEmail: _readString(data['senderEmail']),
+      senderRole: _readString(data['senderRole'], 'system'),
+      message: _readString(data['message']),
       createdAt: _readDateString(data['createdAt']),
       isInternal: data['isInternal'] as bool? ?? true,
       readBySuperAdmin: data['readBySuperAdmin'] as bool? ?? false,

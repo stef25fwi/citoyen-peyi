@@ -106,7 +106,27 @@ class _SuperAdminTicketDetailScreenState extends State<SuperAdminTicketDetailScr
                         ),
                       );
                     }
+                    if (messagesSnapshot.connectionState == ConnectionState.waiting && !messagesSnapshot.hasData) {
+                      return const Center(
+                        child: Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text('Chargement des messages...'),
+                          ),
+                        ),
+                      );
+                    }
                     final messages = messagesSnapshot.data ?? const <SupportMessage>[];
+                    if (messages.isEmpty) {
+                      return const Center(
+                        child: Card(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text('Aucun message dans ce ticket pour le moment.'),
+                          ),
+                        ),
+                      );
+                    }
                     return ListView(
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                       children: [

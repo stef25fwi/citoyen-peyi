@@ -13,6 +13,17 @@ String _readDateString(Object? value) {
   return value.toString();
 }
 
+String _readString(Object? value, [String fallback = '']) {
+  if (value == null) return fallback;
+  if (value is String) return value;
+  return value.toString();
+}
+
+int _readInt(Object? value) {
+  if (value is num) return value.toInt();
+  return int.tryParse(_readString(value)) ?? 0;
+}
+
 class SupportTicket {
   const SupportTicket({
     required this.ticketId,
@@ -127,28 +138,39 @@ class SupportTicket {
     DocumentSnapshot<Map<String, dynamic>> doc,
   ) {
     final data = doc.data() ?? const <String, dynamic>{};
+    return _fromMap(data, fallbackId: doc.id);
+  }
+
+  static SupportTicket fromJson(Map<String, dynamic> json) {
+    return _fromMap(json);
+  }
+
+  static SupportTicket _fromMap(
+    Map<String, dynamic> data, {
+    String fallbackId = '',
+  }) {
     return SupportTicket(
-      ticketId: data['ticketId'] as String? ?? doc.id,
-      communeId: data['communeId'] as String? ?? '',
-      communeName: data['communeName'] as String? ?? '',
-      createdByUserId: data['createdByUserId'] as String? ?? '',
-      createdByName: data['createdByName'] as String? ?? '',
-      createdByEmail: data['createdByEmail'] as String? ?? '',
-      createdByRole: data['createdByRole'] as String? ?? 'admin_communal',
-      assignedToRole: data['assignedToRole'] as String? ?? 'super_admin',
-      subject: data['subject'] as String? ?? '',
-      category: data['category'] as String? ?? '',
-      priority: data['priority'] as String? ?? 'normale',
-      status: data['status'] as String? ?? 'ouvert',
-      lastMessage: data['lastMessage'] as String? ?? '',
-      lastMessageByRole: data['lastMessageByRole'] as String? ?? '',
-      messagesCount: (data['messagesCount'] as num?)?.toInt() ?? 0,
+      ticketId: _readString(data['ticketId'], fallbackId),
+      communeId: _readString(data['communeId']),
+      communeName: _readString(data['communeName']),
+      createdByUserId: _readString(data['createdByUserId']),
+      createdByName: _readString(data['createdByName']),
+      createdByEmail: _readString(data['createdByEmail']),
+      createdByRole: _readString(data['createdByRole'], 'admin_communal'),
+      assignedToRole: _readString(data['assignedToRole'], 'super_admin'),
+      subject: _readString(data['subject']),
+      category: _readString(data['category']),
+      priority: _readString(data['priority'], 'normale'),
+      status: _readString(data['status'], 'ouvert'),
+      lastMessage: _readString(data['lastMessage']),
+      lastMessageByRole: _readString(data['lastMessageByRole']),
+      messagesCount: _readInt(data['messagesCount']),
       unreadForSuperAdmin: data['unreadForSuperAdmin'] as bool? ?? false,
       unreadForAdmin: data['unreadForAdmin'] as bool? ?? false,
       createdAt: _readDateString(data['createdAt']),
       updatedAt: _readDateString(data['updatedAt']),
       closedAt: data['closedAt'] == null ? null : _readDateString(data['closedAt']),
-      closedBy: data['closedBy'] as String?,
+      closedBy: data['closedBy'] == null ? null : _readString(data['closedBy']),
     );
   }
 }

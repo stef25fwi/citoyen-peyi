@@ -1,10 +1,14 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'dart:async';
+import 'dart:convert';
 
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:http/http.dart' as http;
+
+import '../config/app_config.dart';
 import '../models/support_message.dart';
 import '../models/support_ticket.dart';
 import 'auth_session_store.dart';
-import 'firestore_data_service.dart';
+import 'firebase_auth_service.dart';
 
 class SupportTicketException implements Exception {
   const SupportTicketException(this.message);
@@ -17,75 +21,38 @@ class SupportTicketService {
   SupportTicketService._();
 
   static final SupportTicketService instance = SupportTicketService._();
-  static const _collection = 'support_tickets';
-
-  FirebaseFirestore get _db {
-    final db = FirestoreDataService.instance;
-    if (db == null) {
-      throw const SupportTicketException(
-        'Service assistance indisponible. Vérifiez la configuration Firebase.',
-      );
-    }
-    return db;
-  }
-
-  CollectionReference<Map<String, dynamic>> get _tickets =>
-      _db.collection(_collection);
-
-  CollectionReference<Map<String, dynamic>>? get _maybeTickets =>
-      FirestoreDataService.instance?.collection(_collection);
-
-  Stream<T> _supportUnavailableStream<T>() {
-    return Stream<T>.error(
-      const SupportTicketException(
-        'Service assistance indisponible. Vérifiez la configuration Firebase.',
-      ),
-    );
-  }
+  static const _pollInterval = Duration(seconds: 8);
 
   Stream<List<SupportTicket>> watchAdminTickets(String communeId) {
-    if (communeId.trim().isEmpty) return Stream.value(const <SupportTicket>[]);
-    final tickets = _maybeTickets;
-    if (tickets == null) return _supportUnavailableStream<List<SupportTicket>>();
-    return tickets
-        .where('communeId', isEqualTo: communeId.trim())
-        .snapshots()
-        .map(_sortTickets);
+    return _poll(_fetchTickets);
   }
 
   Stream<List<SupportTicket>> watchAllTicketsForSuperAdmin() {
-    final tickets = _maybeTickets;
-    if (tickets == null) return _supportUnavailableStream<List<SupportTicket>>();
-    return tickets.snapshots().map(_sortTickets);
+    return _poll(_fetchTickets);
   }
 
   Stream<List<SupportTicket>> watchUnreadTicketsForSuperAdmin() {
-    final tickets = _maybeTickets;
-    if (tickets == null) return _supportUnavailableStream<List<SupportTicket>>();
-    return tickets
-        .where('unreadForSuperAdmin', isEqualTo: true)
-        .snapshots()
-        .map(_sortTickets);
+    return watchAllTicketsForSuperAdmin().map(
+      (tickets) => tickets
+          .where((ticket) => ticket.unreadForSuperAdmin)
+          .toList(growable: false),
+    );
   }
 
   Stream<List<SupportTicket>> watchUnreadTicketsForAdmin(String communeId) {
-    if (communeId.trim().isEmpty) return Stream.value(const <SupportTicket>[]);
-    final tickets = _maybeTickets;
-    if (tickets == null) return _supportUnavailableStream<List<SupportTicket>>();
-    return tickets
-        .where('communeId', isEqualTo: communeId.trim())
-        .where('unreadForAdmin', isEqualTo: true)
-        .snapshots()
-        .map(_sortTickets);
+    return watchAdminTickets(communeId).map(
+      (tickets) => tickets
+          .where((ticket) => ticket.unreadForAdmin)
+          .toList(growable: false),
+    );
   }
 
   Stream<SupportTicket?> watchTicket(String ticketId) {
-    final tickets = _maybeTickets;
-    if (tickets == null) return _supportUnavailableStream<SupportTicket?>();
-    return tickets.doc(ticketId).snapshots().map((doc) {
-      if (!doc.exists) return null;
-      return SupportTicket.fromFirestore(doc);
-    });
+    return _poll(() => _fetchTicket(ticketId));
+  }
+
+  Stream<List<SupportMessage>> watchTicketMessages(String ticketId) {
+    return _poll(() => _fetchMessages(ticketId));
   }
 
   Future<String> createTicket({
@@ -97,10 +64,12 @@ class SupportTicketService {
     final normalizedSubject = subject.trim();
     final normalizedMessage = message.trim();
     if (normalizedSubject.length < 5) {
-      throw const SupportTicketException('Le sujet doit contenir au moins 5 caractères.');
+      throw const SupportTicketException(
+          'Le sujet doit contenir au moins 5 caractères.');
     }
     if (normalizedMessage.length < 10) {
-      throw const SupportTicketException('Le message doit contenir au moins 10 caractères.');
+      throw const SupportTicketException(
+          'Le message doit contenir au moins 10 caractères.');
     }
     if (!supportTicketCategories.contains(category)) {
       throw const SupportTicketException('Catégorie obligatoire.');
@@ -110,80 +79,37 @@ class SupportTicketService {
     }
 
     final session = AuthSessionStore.instance.currentSession;
-    if (session?.isCommuneAdmin != true) {
-      throw const SupportTicketException('Session administrateur communal requise.');
+    if (session?.isCommuneAdmin != true || session?.isSuperAdmin == true) {
+      throw const SupportTicketException(
+          'Session administrateur communal requise.');
     }
     final communeId = (session?.commune?.code?.trim().isNotEmpty == true
             ? session!.commune!.code
             : session?.commune?.name)
         ?.trim();
-    final communeName = session?.commune?.name.trim() ?? '';
+    final communeName = session?.commune?.name.trim() ?? communeId ?? '';
     if (communeId == null || communeId.isEmpty || communeName.isEmpty) {
       throw const SupportTicketException('Commune rattachée introuvable.');
     }
 
-    final user = FirebaseAuth.instance.currentUser;
-    final ticketRef = _tickets.doc();
-    final messageRef = ticketRef.collection('messages').doc();
-    final senderId = user?.uid ?? session?.id ?? 'admin_communal';
-    final senderName = session?.label ?? user?.displayName ?? 'Administrateur communal';
-    final senderEmail = user?.email ?? '';
-    final timestamp = FieldValue.serverTimestamp();
-
-    final ticket = <String, dynamic>{
-      'ticketId': ticketRef.id,
-      'communeId': communeId,
-      'communeName': communeName,
-      'createdByUserId': senderId,
-      'createdByName': senderName,
-      'createdByEmail': senderEmail,
-      'createdByRole': 'admin_communal',
-      'assignedToRole': 'super_admin',
-      'subject': normalizedSubject,
-      'category': category,
-      'priority': priority,
-      'status': 'ouvert',
-      'lastMessage': normalizedMessage,
-      'lastMessageByRole': 'admin_communal',
-      'messagesCount': 1,
-      'unreadForSuperAdmin': true,
-      'unreadForAdmin': false,
-      'createdAt': timestamp,
-      'updatedAt': timestamp,
-      'closedAt': null,
-      'closedBy': null,
-    };
-    final firstMessage = _messagePayload(
-      messageId: messageRef.id,
-      ticketId: ticketRef.id,
-      senderId: senderId,
-      senderName: senderName,
-      senderEmail: senderEmail,
-      senderRole: 'admin_communal',
-      message: normalizedMessage,
-      readBySuperAdmin: false,
-      readByAdmin: true,
-      timestamp: timestamp,
+    final user = _currentFirebaseUser;
+    final response = await _request(
+      'POST',
+      '/api/support/tickets',
+      body: {
+        'subject': normalizedSubject,
+        'category': category,
+        'priority': priority,
+        'message': normalizedMessage,
+        'communeName': communeName,
+        'createdByName': session?.label ??
+            user?.displayName ??
+            'Administrateur communal',
+        'createdByEmail': user?.email ?? '',
+      },
     );
-
-    final batch = _db.batch();
-    batch.set(ticketRef, ticket);
-    batch.set(messageRef, firstMessage);
-    await batch.commit();
-    return ticketRef.id;
-  }
-
-  Stream<List<SupportMessage>> watchTicketMessages(String ticketId) {
-    final tickets = _maybeTickets;
-    if (tickets == null) return _supportUnavailableStream<List<SupportMessage>>();
-    return tickets
-        .doc(ticketId)
-        .collection('messages')
-        .orderBy('createdAt')
-        .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map(SupportMessage.fromFirestore)
-            .toList(growable: false));
+    final payload = _decodeMap(response.body);
+    return _readString(payload['ticketId']);
   }
 
   Future<void> sendMessage({
@@ -192,7 +118,8 @@ class SupportTicketService {
   }) async {
     final normalizedMessage = message.trim();
     if (normalizedMessage.length < 2) {
-      throw const SupportTicketException('Le message doit contenir au moins 2 caractères.');
+      throw const SupportTicketException(
+          'Le message doit contenir au moins 2 caractères.');
     }
     final session = AuthSessionStore.instance.currentSession;
     final isSuperAdmin = session?.isSuperAdmin == true;
@@ -200,71 +127,18 @@ class SupportTicketService {
     if (!isSuperAdmin && !isAdmin) {
       throw const SupportTicketException('Session authentifiée requise.');
     }
-    final role = isSuperAdmin ? 'super_admin' : 'admin_communal';
-    final user = FirebaseAuth.instance.currentUser;
-    final senderId = user?.uid ?? session?.id ?? role;
-    final senderName = session?.label ?? user?.displayName ?? (isSuperAdmin ? 'Super administrateur' : 'Administrateur communal');
-    final senderEmail = user?.email ?? '';
-    final ticketRef = _tickets.doc(ticketId);
-    final messageRef = ticketRef.collection('messages').doc();
-
-    await _db.runTransaction((transaction) async {
-      final ticket = await transaction.get(ticketRef);
-      if (!ticket.exists) {
-        throw const SupportTicketException('Ticket introuvable.');
-      }
-      final data = ticket.data() ?? const <String, dynamic>{};
-      final status = data['status'] as String? ?? 'ouvert';
-      if (status == 'ferme') {
-        throw const SupportTicketException('Ce ticket est fermé. Rouvrez-le avant de répondre.');
-      }
-      final timestamp = FieldValue.serverTimestamp();
-      final movesToInProgress = isSuperAdmin && status == 'ouvert';
-      final systemMessageRef = movesToInProgress
-          ? ticketRef.collection('messages').doc()
-          : null;
-      transaction.set(
-        messageRef,
-        _messagePayload(
-          messageId: messageRef.id,
-          ticketId: ticketId,
-          senderId: senderId,
-          senderName: senderName,
-          senderEmail: senderEmail,
-          senderRole: role,
-          message: normalizedMessage,
-          readBySuperAdmin: isSuperAdmin,
-          readByAdmin: isAdmin,
-          timestamp: timestamp,
-        ),
-      );
-      if (systemMessageRef != null) {
-        transaction.set(
-          systemMessageRef,
-          _messagePayload(
-            messageId: systemMessageRef.id,
-            ticketId: ticketId,
-            senderId: senderId,
-            senderName: 'Système',
-            senderEmail: '',
-            senderRole: 'system',
-            message: 'Le ticket est passé au statut : En cours.',
-            readBySuperAdmin: true,
-            readByAdmin: false,
-            timestamp: timestamp,
-          ),
-        );
-      }
-      transaction.update(ticketRef, {
-        'lastMessage': normalizedMessage,
-        'lastMessageByRole': role,
-        'messagesCount': FieldValue.increment(movesToInProgress ? 2 : 1),
-        'updatedAt': timestamp,
-        'unreadForSuperAdmin': isAdmin,
-        'unreadForAdmin': isSuperAdmin,
-        if (movesToInProgress) 'status': 'en_cours',
-      });
-    });
+    final user = _currentFirebaseUser;
+    await _request(
+      'POST',
+      '/api/support/tickets/${Uri.encodeComponent(ticketId)}/messages',
+      body: {
+        'message': normalizedMessage,
+        'senderName': session?.label ??
+            user?.displayName ??
+            (isSuperAdmin ? 'Super administrateur' : 'Administrateur communal'),
+        'senderEmail': user?.email ?? '',
+      },
+    );
   }
 
   Future<void> updateTicketStatus({
@@ -278,15 +152,27 @@ class SupportTicketService {
     if (session?.isSuperAdmin != true) {
       throw const SupportTicketException('Réservé au super administrateur.');
     }
-    await _writeStatusChange(ticketId: ticketId, status: status);
+    await _request(
+      'PATCH',
+      '/api/support/tickets/${Uri.encodeComponent(ticketId)}/status',
+      body: {'status': status},
+    );
   }
 
   Future<void> markTicketReadByAdmin(String ticketId) async {
-    await _tickets.doc(ticketId).update({'unreadForAdmin': false});
+    await _request(
+      'POST',
+      '/api/support/tickets/${Uri.encodeComponent(ticketId)}/read',
+      body: const <String, dynamic>{},
+    );
   }
 
   Future<void> markTicketReadBySuperAdmin(String ticketId) async {
-    await _tickets.doc(ticketId).update({'unreadForSuperAdmin': false});
+    await _request(
+      'POST',
+      '/api/support/tickets/${Uri.encodeComponent(ticketId)}/read',
+      body: const <String, dynamic>{},
+    );
   }
 
   Future<void> closeTicket(String ticketId) {
@@ -297,56 +183,24 @@ class SupportTicketService {
     return updateTicketStatus(ticketId: ticketId, status: 'en_cours');
   }
 
-  Future<void> _writeStatusChange({
-    required String ticketId,
-    required String status,
-  }) async {
-    final session = AuthSessionStore.instance.currentSession;
-    final user = FirebaseAuth.instance.currentUser;
-    final senderId = user?.uid ?? session?.id ?? 'super_admin';
-    final message = switch (status) {
-      'en_cours' => 'Le ticket est passé au statut : En cours.',
-      'en_attente_admin' => 'Le ticket est passé au statut : En attente admin.',
-      'resolu' => 'Le ticket est passé au statut : Résolu.',
-      'ferme' => 'Le ticket a été clôturé par le super administrateur.',
-      'ouvert' => 'Le ticket a été rouvert.',
-      _ => 'Le statut du ticket a été mis à jour.',
-    };
-    final ticketRef = _tickets.doc(ticketId);
-    final messageRef = ticketRef.collection('messages').doc();
-    await _db.runTransaction((transaction) async {
-      final timestamp = FieldValue.serverTimestamp();
-      transaction.set(
-        messageRef,
-        _messagePayload(
-          messageId: messageRef.id,
-          ticketId: ticketId,
-          senderId: senderId,
-          senderName: 'Système',
-          senderEmail: '',
-          senderRole: 'system',
-          message: message,
-          readBySuperAdmin: true,
-          readByAdmin: false,
-          timestamp: timestamp,
-        ),
-      );
-      transaction.update(ticketRef, {
-        'status': status,
-        'lastMessage': message,
-        'lastMessageByRole': 'system',
-        'messagesCount': FieldValue.increment(1),
-        'updatedAt': timestamp,
-        'unreadForSuperAdmin': false,
-        'unreadForAdmin': true,
-        'closedAt': status == 'ferme' ? timestamp : null,
-        'closedBy': status == 'ferme' ? senderId : null,
-      });
-    });
+  Stream<T> _poll<T>(Future<T> Function() loader) async* {
+    yield await loader();
+    await for (final _ in Stream<void>.periodic(_pollInterval)) {
+      yield await loader();
+    }
   }
 
-  List<SupportTicket> _sortTickets(QuerySnapshot<Map<String, dynamic>> snapshot) {
-    final tickets = snapshot.docs.map(SupportTicket.fromFirestore).toList();
+  Future<List<SupportTicket>> _fetchTickets() async {
+    final response = await _request('GET', '/api/support/tickets');
+    final payload = _decodeMap(response.body);
+    final rawTickets = payload['tickets'];
+    if (rawTickets is! List) return const <SupportTicket>[];
+    final tickets = rawTickets
+        .whereType<Map>()
+        .map((item) => SupportTicket.fromJson(
+              Map<String, dynamic>.from(item),
+            ))
+        .toList();
     tickets.sort((left, right) {
       final urgent = (right.isUrgent ? 1 : 0).compareTo(left.isUrgent ? 1 : 0);
       if (urgent != 0) return urgent;
@@ -355,30 +209,123 @@ class SupportTicketService {
     return tickets;
   }
 
-  Map<String, dynamic> _messagePayload({
-    required String messageId,
-    required String ticketId,
-    required String senderId,
-    required String senderName,
-    required String senderEmail,
-    required String senderRole,
-    required String message,
-    required bool readBySuperAdmin,
-    required bool readByAdmin,
-    required Object timestamp,
-  }) {
-    return {
-      'messageId': messageId,
-      'ticketId': ticketId,
-      'senderId': senderId,
-      'senderName': senderName,
-      'senderEmail': senderEmail,
-      'senderRole': senderRole,
-      'message': message,
-      'createdAt': timestamp,
-      'isInternal': true,
-      'readBySuperAdmin': readBySuperAdmin,
-      'readByAdmin': readByAdmin,
+  Future<SupportTicket?> _fetchTicket(String ticketId) async {
+    final response = await _request(
+      'GET',
+      '/api/support/tickets/${Uri.encodeComponent(ticketId)}',
+      allowNotFound: true,
+    );
+    if (response.statusCode == 404) return null;
+    final payload = _decodeMap(response.body);
+    final rawTicket = payload['ticket'];
+    if (rawTicket is! Map) return null;
+    return SupportTicket.fromJson(Map<String, dynamic>.from(rawTicket));
+  }
+
+  Future<List<SupportMessage>> _fetchMessages(String ticketId) async {
+    final response = await _request(
+      'GET',
+      '/api/support/tickets/${Uri.encodeComponent(ticketId)}/messages',
+    );
+    final payload = _decodeMap(response.body);
+    final rawMessages = payload['messages'];
+    if (rawMessages is! List) return const <SupportMessage>[];
+    return rawMessages
+        .whereType<Map>()
+        .map((item) => SupportMessage.fromJson(
+              Map<String, dynamic>.from(item),
+            ))
+        .toList(growable: false);
+  }
+
+  Future<http.Response> _request(
+    String method,
+    String path, {
+    Object? body,
+    bool allowNotFound = false,
+  }) async {
+    final base = AppConfig.apiBaseUrl.trim().replaceAll(RegExp(r'/+$'), '');
+    if (base.isEmpty) {
+      throw const SupportTicketException(
+          'Backend non configuré (API_BASE_URL vide).');
+    }
+    final token = await FirebaseAuthService.instance.currentIdToken(
+      forceRefresh: method != 'GET',
+    );
+    if (token == null || token.isEmpty) {
+      throw const SupportTicketException(
+          'Session Firebase manquante, reconnectez-vous.');
+    }
+
+    final uri = Uri.parse('$base$path');
+    final headers = {
+      'Authorization': 'Bearer $token',
+      if (body != null) 'Content-Type': 'application/json',
     };
+    late http.Response response;
+    try {
+      switch (method) {
+        case 'GET':
+          response = await http
+              .get(uri, headers: headers)
+              .timeout(const Duration(seconds: 12));
+          break;
+        case 'POST':
+          response = await http
+              .post(uri, headers: headers, body: jsonEncode(body))
+              .timeout(const Duration(seconds: 12));
+          break;
+        case 'PATCH':
+          response = await http
+              .patch(uri, headers: headers, body: jsonEncode(body))
+              .timeout(const Duration(seconds: 12));
+          break;
+        default:
+          throw SupportTicketException('Méthode HTTP non supportée: $method');
+      }
+    } catch (error) {
+      throw SupportTicketException(
+          'Service assistance indisponible: ${error.toString()}');
+    }
+
+    if (allowNotFound && response.statusCode == 404) return response;
+    if (response.statusCode == 401 || response.statusCode == 403) {
+      throw const SupportTicketException(
+          'Session expirée ou accès refusé. Reconnectez-vous.');
+    }
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw SupportTicketException(_readErrorMessage(response.body));
+    }
+    return response;
+  }
+
+  Map<String, dynamic> _decodeMap(String body) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) return decoded;
+      if (decoded is Map) return Map<String, dynamic>.from(decoded);
+    } catch (_) {}
+    return const <String, dynamic>{};
+  }
+
+  String _readErrorMessage(String body) {
+    final payload = _decodeMap(body);
+    final message = _readString(payload['message']);
+    if (message.isNotEmpty) return message;
+    return 'Service assistance indisponible. Réessayez dans un instant.';
+  }
+
+  String _readString(Object? value) {
+    if (value == null) return '';
+    if (value is String) return value;
+    return value.toString();
+  }
+
+  User? get _currentFirebaseUser {
+    try {
+      return FirebaseAuth.instance.currentUser;
+    } catch (_) {
+      return null;
+    }
   }
 }
