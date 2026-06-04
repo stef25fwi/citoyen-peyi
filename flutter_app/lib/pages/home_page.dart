@@ -76,6 +76,9 @@ class _HomeScaffold extends StatelessWidget {
 
     return Stack(
       children: [
+        const Positioned.fill(
+          child: ColoredBox(color: Color(0xFF003E82)),
+        ),
         Positioned.fill(
           child: Image.asset(
             CitoyenPeyiHomePage.backgroundPath,
