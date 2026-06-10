@@ -16,25 +16,40 @@ export const sensitiveLogFields = new Set([
 
 const normalizeFieldName = (field) => String(field || '').toLowerCase().replace(/[^a-z0-9]/g, '');
 
-const isPlainObject = (value) => Object.prototype.toString.call(value) === '[object Object]';
+const isPlainObject = (value) => {
+  if (Object.prototype.toString.call(value) !== '[object Object]') return false;
+  // N'accepte que les objets "simples" (litteraux / Object.create(null)).
+  // Les instances natives (req, res, socket...) ne sont pas parcourues: elles
+  // contiennent des references circulaires qui feraient deborder la pile.
+  const proto = Object.getPrototypeOf(value);
+  return proto === null || proto === Object.prototype;
+};
 
-export const sanitizeLogPayload = (value) => {
+export const sanitizeLogPayload = (value, seen = new WeakSet()) => {
   if (Array.isArray(value)) {
-    return value.map((item) => sanitizeLogPayload(item));
+    if (seen.has(value)) return '[Circular]';
+    seen.add(value);
+    const sanitized = value.map((item) => sanitizeLogPayload(item, seen));
+    seen.delete(value);
+    return sanitized;
   }
 
   if (value instanceof Error || !isPlainObject(value)) {
     return value;
   }
 
-  return Object.fromEntries(
+  if (seen.has(value)) return '[Circular]';
+  seen.add(value);
+  const sanitized = Object.fromEntries(
     Object.entries(value).map(([key, item]) => [
       key,
       sensitiveLogFields.has(normalizeFieldName(key))
         ? '[REDACTED]'
-        : sanitizeLogPayload(item),
+        : sanitizeLogPayload(item, seen),
     ]),
   );
+  seen.delete(value);
+  return sanitized;
 };
 
 export const logger = pino({

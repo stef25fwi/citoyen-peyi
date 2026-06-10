@@ -114,3 +114,44 @@ test('sanitizeLogPayload redacts sensitive vote fields and combined option conte
   assert.equal(sanitized.nested[0].accessCodeId, '[REDACTED]');
   assert.equal(sanitized.pollId, 'poll-1');
 });
+
+test('sanitizeLogPayload survives circular references without overflowing the stack', () => {
+  // Reproduit le scenario qui faisait crasher le backend sous charge:
+  // pino-http passe les objets req/res bruts (references circulaires) au hook
+  // logMethod -> sanitizeLogPayload. Sans garde anti-cycle, recursion infinie.
+  const node = { id: 'node-1', accessToken: 'signed-token' };
+  node.self = node;
+  const req = { method: 'GET', url: '/api/health/live' };
+  const res = { statusCode: 200, req };
+  req.res = res;
+  node.req = req;
+
+  let sanitized;
+  assert.doesNotThrow(() => {
+    sanitized = loggerModule.sanitizeLogPayload(node);
+  });
+
+  assert.equal(sanitized.id, 'node-1');
+  assert.equal(sanitized.accessToken, '[REDACTED]');
+  assert.equal(sanitized.self, '[Circular]');
+  assert.equal(sanitized.req.method, 'GET');
+  assert.equal(sanitized.req.res.req, '[Circular]');
+});
+
+test('sanitizeLogPayload does not recurse into native class instances', () => {
+  // Les instances natives (ex: sockets) portent souvent des cycles internes.
+  // Elles ne doivent pas etre parcourues: on les retourne telles quelles.
+  class FakeSocket {
+    constructor() {
+      this.remoteAddress = '127.0.0.1';
+      this.parent = this;
+    }
+  }
+  const socket = new FakeSocket();
+
+  let sanitized;
+  assert.doesNotThrow(() => {
+    sanitized = loggerModule.sanitizeLogPayload({ socket });
+  });
+  assert.equal(sanitized.socket, socket);
+});
