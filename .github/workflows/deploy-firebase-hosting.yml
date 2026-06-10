@@ -35,6 +35,7 @@ jobs:
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ secrets.GCP_DEPLOY_SERVICE_ACCOUNT }}
+          token_format: access_token
 
       - uses: subosito/flutter-action@v2
         with:
@@ -78,7 +79,7 @@ jobs:
             --project ${{ vars.FIREBASE_PROJECT_ID }} \
             --non-interactive
         env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
 
       - name: Summary
         run: |
