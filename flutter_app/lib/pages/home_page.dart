@@ -64,9 +64,9 @@ class _HomeScaffold extends StatelessWidget {
       _HomeLayout.desktop => 920.0,
     };
     final hPad = switch (layout) {
-      _HomeLayout.mobile => 12.0,
-      _HomeLayout.tablet => 36.0,
-      _HomeLayout.desktop => 48.0,
+      _HomeLayout.mobile => 6.0,
+      _HomeLayout.tablet => 6.0,
+      _HomeLayout.desktop => 6.0,
     };
     final vPad = switch (layout) {
       _HomeLayout.mobile => 12.0,

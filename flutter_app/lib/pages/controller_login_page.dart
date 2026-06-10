@@ -97,7 +97,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 460),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
               child: Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20),
@@ -132,7 +132,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                         controller: _codeController,
                         enabled: !_isSubmitting,
                         autofocus: true,
-                        maxLength: 8,
+                        maxLength: 13,
                         textAlign: TextAlign.center,
                         style: const TextStyle(
                             fontSize: 16,
@@ -152,13 +152,16 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                           ),
                         ),
                         onChanged: (value) {
-                          final upper = value.toUpperCase();
-                          if (upper != value) {
+                          var normalized = value.toUpperCase();
+                          if (normalized.startsWith('CTRL-')) {
+                            normalized = normalized.substring(5);
+                          }
+                          if (normalized != value) {
                             _codeController.value =
                                 _codeController.value.copyWith(
-                              text: upper,
-                              selection:
-                                  TextSelection.collapsed(offset: upper.length),
+                              text: normalized,
+                              selection: TextSelection.collapsed(
+                                  offset: normalized.length),
                             );
                           }
                           setState(() {});

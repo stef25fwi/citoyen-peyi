@@ -28,7 +28,7 @@ class CitizenDashboardPage extends StatelessWidget {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 860),
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
             children: [
               Card(
                 child: Padding(

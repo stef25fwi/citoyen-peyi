@@ -278,7 +278,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           child: RefreshIndicator(
             onRefresh: _loadProfiles,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 100),
+              padding: const EdgeInsets.fromLTRB(6, 20, 6, 100),
               children: [
                 // Session card
                 Card(

@@ -48,7 +48,7 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
           child: RefreshIndicator(
             onRefresh: _load,
             child: ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
                 Text(
                   commune?.name ?? 'Commune non renseignee',

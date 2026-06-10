@@ -57,7 +57,7 @@ class _AdminCreateTicketScreenState extends State<AdminCreateTicketScreen> {
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 720),
           child: ListView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
             children: [
               Card(
                 child: Padding(
