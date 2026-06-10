@@ -1,0 +1,510 @@
+
+
+
+========== PUBSPEC.YAML ==========
+INTROUVABLE
+
+
+========== ANDROID build.gradle (app) ==========
+INTROUVABLE
+
+
+========== ANDROIDMANIFEST ==========
+INTROUVABLE
+
+
+========== KEY.PROPERTIES ==========
+EXISTS: NON - keystore manquant
+
+
+========== GOOGLE-SERVICES (champs clés) ==========
+INTROUVABLE
+
+
+========== FIRESTORE.RULES ==========
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAnonymousSession() {
+      return isSignedIn() && request.auth.token.firebase.sign_in_provider == 'anonymous';
+    }
+
+    function hasRole(role) {
+      return isSignedIn() && (
+        request.auth.token.role == role ||
+        request.auth.token[role] == true
+      );
+    }
+
+    function isAdmin() {
+      return hasRole('admin');
+    }
+
+    function isSuperAdmin() {
+      return hasRole('super_admin');
+    }
+
+    function isAdminCommune() {
+      return hasRole('adminCommune') || hasRole('commune_admin') || isAdmin();
+    }
+
+    function isController() {
+      return hasRole('controller') || isAdmin();
+    }
+
+    function isControllerOwner(controllerId) {
+      return isController() && (
+        request.auth.uid == controllerId ||
+        request.auth.token.controllerId == controllerId ||
+        request.auth.token.controleurCodeId == controllerId ||
+        request.auth.token.code == controllerId
+      );
+    }
+
+    function isAccessCode(value) {
+      return value is string && value.matches('^[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]{8,10}$');
+    }
+
+    function isFingerprint(value) {
+      return value is string && value.matches('^[a-f0-9]{64}$');
+    }
+
+    function isMaskedSource(value) {
+      return value is string && value.matches('^[A-Z][A-Z][0-9]{6}$');
+    }
+
+    function isAccessStatus(value) {
+      return value in ['active', 'replaced', 'revoked'];
+    }
+
+    function isDuplicateStatus(value) {
+      return value in ['pending', 'approved', 'rejected'];
+    }
+
+    function isDuplicateReason(value) {
+      return value in ['lost_code', 'unreadable_code', 'citizen_claims_no_access', 'controller_error', 'other'];
+    }
+
+    function isControllerAction(value) {
+      return value in ['code_created', 'duplicate_detected', 'duplicate_request_created', 'regeneration_approved', 'regeneration_rejected', 'login_code_used'];
+    }
+
+    function userCommuneId() {
+      return request.auth.token.communeId != null
+        ? request.auth.token.communeId
+        : request.auth.token.communeCode;
+    }
+
+    function isSupportPriority(value) {
+      return value in ['faible', 'normale', 'urgente'];
+    }
+
+    function isSupportStatus(value) {
+      return value in ['ouvert', 'en_cours', 'en_attente_admin', 'resolu', 'ferme'];
+    }
+
+    function isSupportCategory(value) {
+      return value in [
+        'Problème de connexion',
+        'Problème de consultation',
+        'Problème de code citoyen',
+        'Problème de vote',
+        'Demande de modification',
+        'Demande de formation',
+        'Problème technique',
+        'Autre'
+      ];
+    }
+
+    function hasOnlyKeys(allowedKeys) {
+      return request.resource.data.keys().hasOnly(allowedKeys);
+    }
+
+    function isAdminProfileShape() {
+      return hasOnlyKeys(['commune', 'updatedAt']);
+    }
+
+    function isPollShape() {
+      return hasOnlyKeys(['id', 'projectTitle', 'question', 'options', 'openDate', 'closeDate', 'status', 'totalVoters', 'totalVoted', 'updatedAt']);
+    }
+
+    function isRegistrationCodeShape() {
+      return hasOnlyKeys(['id', 'code', 'pollId', 'createdAt', 'usedBy', 'status', 'documentType', 'validatedAt', 'expiresAt', 'communeName', 'qrPayload', 'activatedAt', 'votedAt', 'verifiedByControleurCode', 'verifiedByControleurLabel', 'updatedAt']);
+    }
+
+    function isControleurCodeShape() {
+      return hasOnlyKeys(['id', 'code', 'label', 'commune', 'createdAt', 'usedAt', 'updatedAt']);
+    }
+
+    function isControleurActivityShape() {
+      return hasOnlyKeys(['id', 'controleurCode', 'controleurLabel', 'registrationCode', 'verifiedAt', 'createdAt']);
+    }
+
+    function isCitizenAccessCodeShape() {
+      return hasOnlyKeys([
+        'id', 'accessCodeHash', 'displayCodeMasked', 'citizenFingerprintHash', 'communeId',
+        'communeName', 'createdByControllerId', 'createdByControllerName', 'createdAt',
+        'status', 'usedForLogin', 'regeneratedFromCodeId', 'regenerationIndex',
+        'approvedBySuperAdminId', 'approvedAt', 'updatedAt', 'metadata'
+      ]) &&
+      isFingerprint(request.resource.data.accessCodeHash) &&
+      isFingerprint(request.resource.data.citizenFingerprintHash) &&
+      isAccessStatus(request.resource.data.status) &&
+      request.resource.data.regenerationIndex is int;
+    }
+
+    function isCitizenFingerprintShape() {
+      return hasOnlyKeys([
+        'citizenFingerprintHash', 'firstAccessCodeId', 'latestAccessCodeId', 'communeId',
+        'createdAt', 'updatedAt', 'regenerationCount'
+      ]) &&
+      isFingerprint(request.resource.data.citizenFingerprintHash) &&
+      request.resource.data.regenerationCount is int;
+    }
+
+    function isDuplicateCodeRequestShape() {
+      return hasOnlyKeys([
+        'id', 'citizenFingerprintHash', 'existingAccessCodeId', 'requestedByControllerId',
+        'requestedByControllerName', 'communeId', 'communeName', 'requestedAt', 'status',
+        'duplicateReason', 'controllerComment', 'reviewedBySuperAdminId', 'reviewedAt',
+        'rejectionReason', 'newAccessCodeId', 'updatedAt'
+      ]) &&
+      isFingerprint(request.resource.data.citizenFingerprintHash) &&
+      isDuplicateStatus(request.resource.data.status) &&
+      isDuplicateReason(request.resource.data.duplicateReason);
+    }
+
+    function isControllerActivityLogShape() {
+      return hasOnlyKeys([
+        'id', 'communeId', 'communeName', 'controllerId', 'controllerName', 'actionType',
+        'accessCodeId', 'createdAt', 'metadata', 'updatedAt'
+      ]) &&
+      isControllerAction(request.resource.data.actionType);
+    }
+
+    function isSupportTicketShape() {
+      return hasOnlyKeys([
+        'ticketId', 'communeId', 'communeName', 'createdByUserId', 'createdByName',
+        'createdByEmail', 'createdByRole', 'assignedToRole', 'subject', 'category',
+        'priority', 'status', 'lastMessage', 'lastMessageByRole', 'messagesCount',
+        'unreadForSuperAdmin', 'unreadForAdmin', 'createdAt', 'updatedAt',
+        'closedAt', 'closedBy'
+      ]) &&
+      request.resource.data.ticketId is string &&
+      request.resource.data.communeId is string &&
+      request.resource.data.communeName is string &&
+      request.resource.data.subject is string &&
+      request.resource.data.subject.size() >= 5 &&
+      request.resource.data.lastMessage is string &&
+      request.resource.data.lastMessage.size() >= 2 &&
+      isSupportCategory(request.resource.data.category) &&
+      isSupportPriority(request.resource.data.priority) &&
+      isSupportStatus(request.resource.data.status) &&
+      request.resource.data.messagesCount is int &&
+      request.resource.data.unreadForSuperAdmin is bool &&
+      request.resource.data.unreadForAdmin is bool;
+    }
+
+    function isSupportMessageShape(ticketId) {
+      return hasOnlyKeys([
+        'messageId', 'ticketId', 'senderId', 'senderName', 'senderEmail',
+        'senderRole', 'message', 'createdAt', 'isInternal', 'readBySuperAdmin',
+        'readByAdmin'
+      ]) &&
+      request.resource.data.messageId is string &&
+      request.resource.data.ticketId == ticketId &&
+      request.resource.data.senderId is string &&
+      request.resource.data.senderRole in ['admin_communal', 'super_admin', 'system'] &&
+      request.resource.data.message is string &&
+      request.resource.data.message.size() >= 2 &&
+      request.resource.data.isInternal == true &&
+      request.resource.data.readBySuperAdmin is bool &&
+      request.resource.data.readByAdmin is bool;
+    }
+
+    function isSupportTicketOwner() {
+      return isAdminCommune() && resource.data.communeId == userCommuneId();
+    }
+
+    function isSupportTicketCreateByAdmin(ticketId) {
+      return isAdminCommune() &&
+        isSupportTicketShape() &&
+        request.resource.data.ticketId == ticketId &&
+        request.resource.data.communeId == userCommuneId() &&
+        request.resource.data.createdByUserId == request.auth.uid &&
+        request.resource.data.createdByRole == 'admin_communal' &&
+        request.resource.data.assignedToRole == 'super_admin' &&
+        request.resource.data.status == 'ouvert' &&
+        request.resource.data.messagesCount == 1 &&
+        request.resource.data.unreadForSuperAdmin == true &&
+        request.resource.data.unreadForAdmin == false &&
+        request.resource.data.closedAt == null &&
+        request.resource.data.closedBy == null;
+    }
+
+    function supportImmutableFieldsUnchanged() {
+      return request.resource.data.ticketId == resource.data.ticketId &&
+        request.resource.data.communeId == resource.data.communeId &&
+        request.resource.data.communeName == resource.data.communeName &&
+        request.resource.data.createdByUserId == resource.data.createdByUserId &&
+        request.resource.data.createdByRole == resource.data.createdByRole &&
+        request.resource.data.assignedToRole == resource.data.assignedToRole &&
+        request.resource.data.createdAt == resource.data.createdAt;
+    }
+
+    function isAdminSupportTicketUpdate() {
+      return isSupportTicketOwner() &&
+        isSupportTicketShape() &&
+        supportImmutableFieldsUnchanged() &&
+        request.resource.data.status == resource.data.status &&
+        request.resource.data.priority == resource.data.priority &&
+        request.resource.data.category == resource.data.category &&
+        request.resource.data.closedAt == resource.data.closedAt &&
+        request.resource.data.closedBy == resource.data.closedBy &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'lastMessage', 'lastMessageByRole', 'messagesCount', 'updatedAt',
+          'unreadForSuperAdmin', 'unreadForAdmin'
+        ]);
+    }
+
+    function isSuperAdminSupportTicketUpdate() {
+      return isSuperAdmin() &&
+        isSupportTicketShape() &&
+        supportImmutableFieldsUnchanged() &&
+        request.resource.data.diff(resource.data).changedKeys().hasOnly([
+          'status', 'lastMessage', 'lastMessageByRole', 'messagesCount', 'updatedAt',
+          'unreadForSuperAdmin', 'unreadForAdmin', 'closedAt', 'closedBy'
+        ]);
+    }
+
+    function canReadSupportTicket(ticketId) {
+      return isSuperAdmin() ||
+        (isAdminCommune() && get(/databases/$(database)/documents/support_tickets/$(ticketId)).data.communeId == userCommuneId());
+    }
+
+    function canCreateAdminSupportMessage(ticketId) {
+      return isAdminCommune() &&
+        request.resource.data.senderRole == 'admin_communal' &&
+        request.resource.data.senderId == request.auth.uid &&
+        getAfter(/databases/$(database)/documents/support_tickets/$(ticketId)).data.communeId == userCommuneId();
+    }
+
+    function registrationCodeVoterUpdate() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['activatedAt', 'votedAt', 'updatedAt']);
+    }
+
+    function pollVoterUpdate() {
+      return request.resource.data.diff(resource.data).changedKeys().hasOnly(['options', 'totalVoted', 'updatedAt']);
+    }
+
+    match /adminProfiles/{document=**} {
+      allow read: if isSuperAdmin();
+      allow write: if false;
+    }
+
+    // communeAdmins is fully backend-managed. Clients never read the
+    // hashed access keys, never create or rotate admin profiles, only
+    // the Admin SDK does.
+    match /communeAdmins/{adminId} {
+      allow read, write: if false;
+    }
+
+    // polls: public read, but writes are reserved to the Admin SDK so
+    // the backend can scope updates to the right commune and audit
+    // them. The previous "anonymous voter update" rule is gone because
+    // votes now flow only through /api/vote-access/submit.
+    match /polls/{document=**} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    // registrationCodes is the legacy citizen access pipeline. Migrate
+    // documents into citizen_access_codes via the backend migration
+    // script, then keep this rule denying everything client-side.
+    match /registrationCodes/{document=**} {
+      allow read, write: if false;
+    }
+
+    // controleurCodes: only the Admin SDK manages controller codes.
+    // Reads need to be restricted because the document holds the raw
+    // controller code that grants access to the controller dashboard.
+    match /controleurCodes/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /controleurActivities/{document=**} {
+      allow read, write: if false;
+    }
+
+    match /citizen_access_codes/{accessCode} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    match /citizen_fingerprints/{fingerprint} {
+      allow read: if false;
+      allow create, update: if false;
+      allow delete: if false;
+    }
+
+    match /duplicate_code_requests/{requestId} {
+      allow read: if false;
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    match /controller_activity_logs/{logId} {
+      allow read: if isSuperAdmin()
+        || (isAdminCommune() && resource.data.communeId == request.auth.token.communeId)
+        || (isController() && resource.data.controllerId == request.auth.token.controleurCodeId);
+      allow create: if false;
+      allow update: if false;
+      allow delete: if false;
+    }
+
+    // Legacy: anciens votes pseudonymises. Aucun acces client.
+    match /poll_votes/{voteId} {
+      allow read, write: if false;
+    }
+
+    // Participation consommee: preuve de vote unique par consultation,
+    // sans option choisie ni identifiant citoyen brut.
+    match /poll_participations/{participationId} {
+      allow read, write: if false;
+    }
+
+    // Bulletin anonyme: option exprimee sans code citoyen, fingerprint,
+    // controleur ni hash de participation.
+    match /poll_ballots/{ballotId} {
+      allow read, write: if false;
+    }
+
+    // Cache public d'horodatage des votes pour le tableau de bord citoyen.
+    // Le backend reste la source de verite. Le client n'ecrit pas.
+    match /citizen_poll_access/{document=**} {
+      allow read: if isAdminCommune() || isSuperAdmin();
+      allow write: if false;
+    }
+
+    // Abonnements push FCM: associes par le backend a une commune apres
+    // validation du code citoyen. Aucun acces client direct.
+    match /notification_subscriptions/{subscriptionId} {
+      allow read, write: if false;
+    }
+
+    // Actualites publiques publiees par les administrateurs communaux.
+    // Lecture libre, ecriture exclusivement via /api/news (Admin SDK).
+    match /public_news/{newsId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /support_tickets/{ticketId} {
+      allow read: if isSuperAdmin() || isSupportTicketOwner();
+      allow create: if isSupportTicketCreateByAdmin(ticketId);
+      allow update: if isAdminSupportTicketUpdate() || isSuperAdminSupportTicketUpdate();
+      allow delete: if false;
+
+      match /messages/{messageId} {
+        allow read: if canReadSupportTicket(ticketId);
+        allow create: if isSupportMessageShape(ticketId) &&
+          (
+            (isSuperAdmin() &&
+              exists(/databases/$(database)/documents/support_tickets/$(ticketId)) &&
+              request.resource.data.senderRole in ['super_admin', 'system']) ||
+            canCreateAdminSupportMessage(ticketId)
+          );
+        allow update, delete: if false;
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+
+========== STORAGE.RULES ==========
+INTROUVABLE
+
+
+========== FIRESTORE.INDEXES.JSON ==========
+INTROUVABLE
+
+
+========== MAIN.DART ==========
+INTROUVABLE
+
+
+========== ROUTER ==========
+
+
+========== PROGUARD ==========
+ABSENT
+
+
+========== FIREBASE.JSON ==========
+{
+  "firestore": {
+    "rules": "firestore.rules"
+  },
+  "emulators": {
+    "firestore": {
+      "port": 8088
+    },
+    "ui": {
+      "enabled": false
+    },
+    "singleProjectMode": true
+  },
+  "hosting": {
+    "public": "flutter_app/build/web",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          }
+        ]
+      }
+    ]
+  }
+}
+
+
+========== ENV ==========
+
+
+========== FLUTTER VERSION ==========
+Flutter 3.44.0 • channel stable • https://github.com/flutter/flutter.git
+Framework • revision 559ffa3f75 (4 weeks ago) • 2026-05-15 14:13:13 -0700
+Engine • hash fcf463a2242790d1fdcd9d044f533080f5022e18 (revision 4c525dac5e) (26 days ago) • 2026-05-15 19:00:04.000Z
+Tools • Dart 3.12.0 • DevTools 2.57.0
+
+
+========== FLUTTER ANALYZE ==========
+Analyzing citoyen-peyi...                                       
+No issues found! (ran in 5.8s)
+
+
+========== STRUCTURE LIB ==========
