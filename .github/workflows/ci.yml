@@ -23,6 +23,23 @@ jobs:
       - run: |
           set -euo pipefail
 
+          echo "=== Configuration env CI backend ==="
+          cat > /tmp/firebase-admin.json <<'JSON'
+          ${{ secrets.FIREBASE_SERVICE_ACCOUNT }}
+          JSON
+
+          # Nettoyage indentation éventuelle du heredoc YAML
+          sed -i 's/^          //' /tmp/firebase-admin.json
+
+          if ! grep -q '"client_email"' /tmp/firebase-admin.json; then
+            echo "❌ Secret FIREBASE_SERVICE_ACCOUNT absent ou invalide"
+            exit 1
+          fi
+
+          export GOOGLE_APPLICATION_CREDENTIALS="/tmp/firebase-admin.json"
+          export SUPER_ADMIN_KEY="ci-super-admin-key-for-load-smoke"
+          export VOTE_ACCESS_TOKEN_SECRET="ci-vote-access-token-secret-for-load-smoke-123456789"
+
           echo "=== Start backend local pour load-smoke ==="
           PORT=4000 NODE_ENV=test npm run start --workspace app/backend > /tmp/citoyen-backend.log 2>&1 &
           BACKEND_PID=$!
