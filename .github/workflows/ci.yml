@@ -20,7 +20,42 @@ jobs:
       - run: npm run test --workspace app/backend
         env:
           NODE_ENV: test
-      - run: npm run test:load --workspace app/backend
+      - run: |
+          set -euo pipefail
+
+          echo "=== Start backend local pour load-smoke ==="
+          PORT=4000 NODE_ENV=test npm run start --workspace app/backend > /tmp/citoyen-backend.log 2>&1 &
+          BACKEND_PID=$!
+          echo "$BACKEND_PID" > /tmp/citoyen-backend.pid
+
+          echo "=== Attente healthcheck backend ==="
+          for i in {1..40}; do
+            if curl -fsS http://127.0.0.1:4000/api/health/live >/dev/null; then
+              echo "✅ Backend prêt"
+              break
+            fi
+
+            if ! kill -0 "$BACKEND_PID" >/dev/null 2>&1; then
+              echo "❌ Backend arrêté avant healthcheck"
+              cat /tmp/citoyen-backend.log || true
+              exit 1
+            fi
+
+            echo "⏳ Backend pas encore prêt ($i/40)"
+            sleep 2
+          done
+
+          if ! curl -fsS http://127.0.0.1:4000/api/health/live >/dev/null; then
+            echo "❌ Healthcheck impossible"
+            cat /tmp/citoyen-backend.log || true
+            exit 1
+          fi
+
+          echo "=== Run load-smoke ==="
+          npm run test:load --workspace app/backend
+
+          echo "=== Stop backend ==="
+          kill "$BACKEND_PID" || true
         env:
           NODE_ENV: test
 
