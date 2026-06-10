@@ -61,16 +61,6 @@
       ]
     },
     {
-      "collectionGroup": "public_news",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "publishedAt",
-          "order": "DESCENDING"
-        }
-      ]
-    },
-    {
       "collectionGroup": "citizen_access_codes",
       "queryScope": "COLLECTION",
       "fields": [
