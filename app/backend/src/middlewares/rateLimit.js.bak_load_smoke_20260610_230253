@@ -44,7 +44,6 @@ const withStore = (options) => ({
 });
 
 export const authRateLimiter = rateLimit({
-  skip: (req) => req.path.startsWith('/api/health'),
   ...withStore({
   windowMs: 60 * 1000,
   max: 10,
@@ -53,7 +52,6 @@ export const authRateLimiter = rateLimit({
 });
 
 export const voteAccessRateLimiter = rateLimit({
-  skip: (req) => req.path.startsWith('/api/health'),
   ...withStore({
   windowMs: 60 * 1000,
   max: 30,
@@ -62,7 +60,6 @@ export const voteAccessRateLimiter = rateLimit({
 });
 
 export const writeRateLimiter = rateLimit({
-  skip: (req) => req.path.startsWith('/api/health'),
   ...withStore({
   windowMs: 60 * 1000,
   max: 60,
