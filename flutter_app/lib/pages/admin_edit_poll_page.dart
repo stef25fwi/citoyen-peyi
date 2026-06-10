@@ -220,7 +220,7 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
           child: Form(
             key: _formKey,
             child: ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
                 if (!_canEditOptions)
                   Card(

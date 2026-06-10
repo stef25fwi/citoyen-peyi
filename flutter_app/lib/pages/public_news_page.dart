@@ -65,7 +65,7 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
           child: RefreshIndicator(
             onRefresh: _load,
             child: ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
                 Text(
                   'Informations communales et projets soumis à consultation.',

@@ -123,7 +123,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 460),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
               child: Card(
                 child: Padding(
                   padding: const EdgeInsets.all(20),

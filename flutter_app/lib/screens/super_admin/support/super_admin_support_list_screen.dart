@@ -33,7 +33,7 @@ class _SuperAdminSupportListScreenState extends State<SuperAdminSupportListScree
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return ListView(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
                   children: const [
                     _IntroCard(),
                     SizedBox(height: 16),
@@ -51,7 +51,7 @@ class _SuperAdminSupportListScreenState extends State<SuperAdminSupportListScree
               }
               final tickets = _applyFilters(snapshot.data ?? const <SupportTicket>[]);
               return ListView(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
                 children: [
                   const _IntroCard(),
                   const SizedBox(height: 16),
@@ -143,7 +143,7 @@ class _IntroCard extends StatelessWidget {
     return Card(
       color: const Color(0xFFEFF6FF),
       child: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
         child: Row(
           children: [
             const Icon(Icons.support_agent_rounded, color: Color(0xFF0D73F2), size: 34),

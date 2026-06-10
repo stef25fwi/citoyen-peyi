@@ -279,7 +279,7 @@ class _ControllerCitizenAccessPageState
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
-                    padding: const EdgeInsets.all(20),
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
                     children: [
                       Card(
                         child: Padding(

@@ -336,7 +336,7 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
           child: RefreshIndicator(
             onRefresh: _load,
             child: ListView(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
                 Row(
                   children: [

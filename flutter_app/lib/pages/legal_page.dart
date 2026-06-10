@@ -49,7 +49,7 @@ class LegalPage extends StatelessWidget {
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 18),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 820),
               child: Card(

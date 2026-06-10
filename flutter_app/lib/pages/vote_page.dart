@@ -236,7 +236,7 @@ class _VotePageState extends State<VotePage> {
         children: [
           Container(
             width: double.infinity,
-            padding: const EdgeInsets.fromLTRB(20, 48, 20, 24),
+            padding: const EdgeInsets.fromLTRB(6, 48, 6, 24),
             decoration: const BoxDecoration(
               gradient: LinearGradient(
                 begin: Alignment.topLeft,
@@ -287,7 +287,7 @@ class _VotePageState extends State<VotePage> {
           ),
           Expanded(
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 28),
+              padding: const EdgeInsets.fromLTRB(6, 20, 6, 28),
               children: [
                 Card(
                   color: const Color(0xFFF0F5F9),
