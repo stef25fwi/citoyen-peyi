@@ -22,17 +22,25 @@ class _ControllerHistoryPageState extends State<ControllerHistoryPage> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final results = await Future.wait([
-      CitizenAccessCodeService.instance.loadAccessCodesForCurrentController(),
-      CitizenAccessCodeService.instance.getDuplicateRequestsForCurrentController(status: 'all'),
-    ]);
+    List<CitizenAccessCodeModel> codes = const [];
+    List<DuplicateCodeRequestModel> requests = const [];
+    try {
+      final results = await Future.wait([
+        CitizenAccessCodeService.instance.loadAccessCodesForCurrentController(),
+        CitizenAccessCodeService.instance.getDuplicateRequestsForCurrentController(status: 'all'),
+      ]).timeout(const Duration(seconds: 15));
+      codes = results[0] as List<CitizenAccessCodeModel>;
+      requests = results[1] as List<DuplicateCodeRequestModel>;
+    } catch (_) {
+      // Affichage vide plutot qu'un loader infini en cas d'erreur backend.
+    }
     if (!mounted) {
       return;
     }
 
     setState(() {
-      _codes = results[0] as List<CitizenAccessCodeModel>;
-      _requests = results[1] as List<DuplicateCodeRequestModel>;
+      _codes = codes;
+      _requests = requests;
       _isLoading = false;
     });
   }

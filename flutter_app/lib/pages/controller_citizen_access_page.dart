@@ -59,20 +59,48 @@ class _ControllerCitizenAccessPageState
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final polls = await PollService.instance.loadPolls();
-    final results = await Future.wait([
-      CitizenAccessCodeService.instance.loadAccessCodesForCurrentController(),
-      CitizenAccessCodeService.instance
-          .getDuplicateRequestsForCurrentController(status: 'all'),
-    ]);
+
+    List<PollModel> polls = const [];
+    List<CitizenAccessCodeModel> codes = const [];
+    List<DuplicateCodeRequestModel> duplicates = const [];
+    String? errorMessage;
+
+    // Consultations ouvertes : necessaires au formulaire. En cas d'echec on
+    // affiche quand meme l'ecran (portee "toutes consultations" par defaut).
+    try {
+      polls = await PollService.instance
+          .loadPolls()
+          .timeout(const Duration(seconds: 15));
+    } catch (_) {
+      errorMessage =
+          'Impossible de charger les consultations. Verifiez votre connexion, puis reessayez.';
+    }
+
+    // Historique et demandes de regeneration : non bloquants pour la
+    // generation. Une erreur ici ne doit jamais figer l'ecran sur un loader.
+    try {
+      final results = await Future.wait([
+        CitizenAccessCodeService.instance.loadAccessCodesForCurrentController(),
+        CitizenAccessCodeService.instance
+            .getDuplicateRequestsForCurrentController(status: 'all'),
+      ]).timeout(const Duration(seconds: 15));
+      codes = results[0] as List<CitizenAccessCodeModel>;
+      duplicates = results[1] as List<DuplicateCodeRequestModel>;
+    } catch (_) {
+      // L'historique pourra se recharger; le formulaire reste utilisable.
+    }
+
     if (!mounted) {
       return;
     }
 
     setState(() {
       _openPolls = polls.where(_isOpenPoll).toList();
-      _codes = results[0] as List<CitizenAccessCodeModel>;
-      _duplicateRequests = results[1] as List<DuplicateCodeRequestModel>;
+      _codes = codes;
+      _duplicateRequests = duplicates;
+      if (errorMessage != null) {
+        _lastMessage = errorMessage;
+      }
       _isLoading = false;
     });
   }

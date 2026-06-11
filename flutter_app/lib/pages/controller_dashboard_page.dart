@@ -24,14 +24,23 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final results = await Future.wait([
-      CitizenAccessCodeService.instance.loadAccessCodesForCurrentController(),
-      CitizenAccessCodeService.instance.getDuplicateRequestsForCurrentController(status: 'all'),
-    ]);
+    List<CitizenAccessCodeModel> codes = const [];
+    List<DuplicateCodeRequestModel> duplicates = const [];
+    try {
+      final results = await Future.wait([
+        CitizenAccessCodeService.instance.loadAccessCodesForCurrentController(),
+        CitizenAccessCodeService.instance.getDuplicateRequestsForCurrentController(status: 'all'),
+      ]).timeout(const Duration(seconds: 15));
+      codes = results[0] as List<CitizenAccessCodeModel>;
+      duplicates = results[1] as List<DuplicateCodeRequestModel>;
+    } catch (_) {
+      // Ne jamais figer le tableau de bord sur un loader infini si le backend
+      // (historique / demandes de regeneration) est indisponible.
+    }
     if (!mounted) return;
     setState(() {
-      _codes = results[0] as List<CitizenAccessCodeModel>;
-      _duplicates = results[1] as List<DuplicateCodeRequestModel>;
+      _codes = codes;
+      _duplicates = duplicates;
       _isLoading = false;
     });
   }
