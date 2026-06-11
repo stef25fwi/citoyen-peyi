@@ -45,6 +45,19 @@ class FirebaseAuthService {
       await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
     }
 
+    // Garder la session connectee tant que l'utilisateur ne se deconnecte pas
+    // explicitement, meme apres fermeture de l'onglet/app (web). Sur mobile la
+    // persistance est deja locale par defaut.
+    if (kIsWeb) {
+      try {
+        await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
+      } catch (error) {
+        if (kDebugMode) {
+          debugPrint('[FirebaseAuthService] setPersistence(LOCAL) failed: $error');
+        }
+      }
+    }
+
     if (AppConfig.shouldActivateAppCheck) {
       try {
         await FirebaseAppCheck.instance.activate(

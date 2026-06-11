@@ -169,9 +169,28 @@ class SuperAdminService {
   static const _profilesKey = 'super_admin_profiles_v1';
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
+  static const _superAdminKeyStorageKey = 'super_admin_runtime_key_v1';
+
   String? _runtimeSuperAdminKey;
 
   String? get runtimeSuperAdminKey => _runtimeSuperAdminKey;
+
+  /// Restaure la cle super admin persistee afin de rester connecte apres
+  /// fermeture de l'app, jusqu'a une deconnexion explicite.
+  Future<void> restoreRuntimeSuperAdminKey() async {
+    if (_runtimeSuperAdminKey != null && _runtimeSuperAdminKey!.isNotEmpty) {
+      return;
+    }
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString(_superAdminKeyStorageKey);
+      if (stored != null && stored.trim().isNotEmpty) {
+        _runtimeSuperAdminKey = stored.trim();
+      }
+    } catch (_) {
+      // Pas de cle restauree : l'utilisateur devra se reconnecter.
+    }
+  }
 
   void _debugLog(String message) {
     if (kDebugMode) {
@@ -229,6 +248,12 @@ class SuperAdminService {
     await _firebaseIdTokenFromCustomToken(customToken);
 
     _runtimeSuperAdminKey = trimmed;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString(_superAdminKeyStorageKey, trimmed);
+    } catch (_) {
+      // Persistance best-effort : la session reste valable pour cette execution.
+    }
 
     await AuthSessionStore.instance.save(AuthSession(
       role: 'super_admin',

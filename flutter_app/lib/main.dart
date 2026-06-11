@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'app.dart';
 import 'services/auth_session_store.dart';
 import 'services/firebase_auth_service.dart';
+import 'services/super_admin_service.dart';
 
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(() async {
@@ -31,6 +32,17 @@ Future<void> main() async {
     } catch (error, stackTrace) {
       debugPrint('[CitoyenPeyi] Session store init failed: $error');
       debugPrintStack(stackTrace: stackTrace);
+    }
+
+    // Restaure la cle super admin persistee si la session restauree est
+    // super_admin (rester connecte apres fermeture, jusqu'a deconnexion).
+    if (AuthSessionStore.instance.currentSession?.isSuperAdmin == true) {
+      try {
+        await SuperAdminService.instance.restoreRuntimeSuperAdminKey();
+      } catch (error, stackTrace) {
+        debugPrint('[CitoyenPeyi] Super admin key restore failed: $error');
+        debugPrintStack(stackTrace: stackTrace);
+      }
     }
 
     runApp(const CitoyenPeyiApp());

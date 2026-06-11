@@ -148,6 +148,7 @@ class AuthSessionStore {
     _preferences ??= await SharedPreferences.getInstance();
     _currentSession = null;
     await _preferences?.remove(_storageKey);
+    await _preferences?.remove('super_admin_runtime_key_v1');
     await _preferences?.remove('citizen_access_codes_v1');
     await _preferences?.remove('citizen_fingerprints_v1');
     await _preferences?.remove('duplicate_code_requests_v1');
