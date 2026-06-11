@@ -119,6 +119,8 @@ const normalizeAccessDoc = (doc) => {
     communeId: data.communeId || '',
     communeName: data.communeName || '',
     status: data.status || 'active',
+    pollScope: data.pollScope || 'all_open_polls',
+    eligiblePollIds: Array.isArray(data.eligiblePollIds) ? data.eligiblePollIds : [],
     createdAt: toIso(data.createdAt),
     lastUsedAt: data.lastUsedAt ? toIso(data.lastUsedAt) : null,
     data,
@@ -139,12 +141,20 @@ const loadEligiblePolls = async (db, access, requestedPollId = '') => {
     ? await db.collection(POLL_COLLECTION).where('id', '==', requestedPollId).limit(1).get()
     : await db.collection(POLL_COLLECTION).where('communeId', '==', access.communeId).limit(50).get();
 
+  // Portee du code : si "single_poll", on restreint aux consultations eligibles.
+  const scopedIds = access.pollScope === 'single_poll'
+    && Array.isArray(access.eligiblePollIds)
+    && access.eligiblePollIds.length > 0
+    ? new Set(access.eligiblePollIds.map((value) => String(value)))
+    : null;
+
   const openPollDocs = snapshot.docs
     .map((doc) => {
       const poll = { id: doc.id, ...doc.data() };
       const pollId = poll.id || doc.id;
       const sameCommune = !access.communeId || !poll.communeId || poll.communeId === access.communeId;
       if (!sameCommune || !isPollOpen(poll)) return null;
+      if (scopedIds && !scopedIds.has(String(pollId)) && !scopedIds.has(String(doc.id))) return null;
       return { poll, pollId };
     })
     .filter(Boolean);

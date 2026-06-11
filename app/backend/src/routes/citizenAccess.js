@@ -143,6 +143,8 @@ const serializeAccess = (data) => ({
   status: data.status,
   usedForLogin: data.usedForLogin,
   regenerationIndex: data.regenerationIndex,
+  pollScope: data.pollScope || 'all_open_polls',
+  eligiblePollIds: Array.isArray(data.eligiblePollIds) ? data.eligiblePollIds : [],
   createdAt: toIso(data.createdAt),
   approvedAt: data.approvedAt ? toIso(data.approvedAt) : undefined,
   updatedAt: data.updatedAt ? toIso(data.updatedAt) : undefined,
@@ -246,6 +248,14 @@ const createCitizenAccessCodeHandler = async (req, res) => {
       ? req.body.controllerComment.trim().substring(0, 500)
       : null;
     const verification = typeof req.body?.verification === 'object' && req.body.verification != null ? req.body.verification : {};
+    // Portee du code : "single_poll" (limite aux consultations choisies) ou
+    // "all_open_polls" (toutes les consultations ouvertes de la commune).
+    const rawConsultationIds = Array.isArray(req.body?.consultationIds) ? req.body.consultationIds : [];
+    const requestedPollIds = rawConsultationIds.map((value) => String(value || '').trim()).filter(Boolean).slice(0, 50);
+    const pollScope = req.body?.consultationScope === 'single_poll' && requestedPollIds.length > 0
+      ? 'single_poll'
+      : 'all_open_polls';
+    const eligiblePollIds = pollScope === 'single_poll' ? requestedPollIds : [];
     const citizenFingerprintHash = createCitizenFingerprint(source.sourceKeyMasked);
     const accessCode = generateSecureAccessCode(10);
     const accessCodeHash = hashAccessCode(accessCode);
@@ -325,6 +335,8 @@ const createCitizenAccessCodeHandler = async (req, res) => {
         replacedAt: null,
         lastUsedAt: null,
         regenerationIndex: 0,
+        pollScope,
+        eligiblePollIds,
         metadata: {
           verification: {
             identityDocumentType: verification.identityDocumentType || null,
@@ -433,6 +445,17 @@ router.post('/duplicates/:requestId/approve', requireSuperAdminKey, async (req, 
       const newCode = generateSecureAccessCode(10);
       const newAccessRef = newAccessCodeRef(db);
       const previousCodeId = fingerprint.latestAccessCodeId || request.existingAccessCodeId;
+      // Heriter la portee (consultations eligibles) de l'ancien code.
+      let inheritedPollScope = 'all_open_polls';
+      let inheritedEligiblePollIds = [];
+      if (previousCodeId) {
+        const previousAccessDoc = await transaction.get(db.collection(ACCESS_COLLECTION).doc(previousCodeId));
+        if (previousAccessDoc.exists) {
+          const previous = previousAccessDoc.data() || {};
+          inheritedPollScope = previous.pollScope || 'all_open_polls';
+          inheritedEligiblePollIds = Array.isArray(previous.eligiblePollIds) ? previous.eligiblePollIds : [];
+        }
+      }
       const newAccess = {
         id: newAccessRef.id,
         accessCodeHash: hashAccessCode(newCode),
@@ -450,6 +473,8 @@ router.post('/duplicates/:requestId/approve', requireSuperAdminKey, async (req, 
         lastUsedAt: null,
         regeneratedFromCodeId: previousCodeId,
         regenerationIndex: nextIndex,
+        pollScope: inheritedPollScope,
+        eligiblePollIds: inheritedEligiblePollIds,
         approvedBySuperAdminId: req.user.uid,
         approvedAt: FieldValue.serverTimestamp(),
       };
