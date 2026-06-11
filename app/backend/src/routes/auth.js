@@ -21,6 +21,25 @@ const safeEquals = (left, right) => {
   return crypto.timingSafeEqual(leftBuffer, rightBuffer);
 };
 
+// createCustomToken() echoue souvent en prod (Cloud Run avec credentials par
+// defaut) lorsque le compte de service runtime n'a pas le role
+// "Service Account Token Creator" : firebase-admin ne peut alors pas signer le
+// JWT via l'API IAM signBlob. On detecte ce cas pour renvoyer un message
+// actionnable plutot qu'un 500 opaque. Les details (jamais des secrets) restent
+// dans les logs.
+const isTokenSigningPermissionError = (error) => {
+  const code = String(error?.code || '');
+  const message = String(error?.message || '').toLowerCase();
+  return (
+    code === 'auth/insufficient-permission'
+    || message.includes('signblob')
+    || message.includes('iam.serviceaccounts.signblob')
+    || message.includes('serviceaccounttokencreator')
+    || message.includes('token creator')
+    || (message.includes('permission') && message.includes('sign'))
+  );
+};
+
 const loadControleurRecordByCode = async (code) => {
   const db = getFirebaseAdminDb();
   const codeHash = hashControllerCode(code);
@@ -118,6 +137,14 @@ router.post('/controller/exchange', async (req, res) => {
     });
   } catch (error) {
     logger.error({ err: error }, 'controller_exchange_failed');
+    if (isTokenSigningPermissionError(error)) {
+      return res.status(500).json({
+        error: 'CUSTOM_TOKEN_SIGN_FAILED',
+        message: 'Le backend ne peut pas signer le token controleur. '
+          + 'Accordez le role "Service Account Token Creator" '
+          + '(roles/iam.serviceAccountTokenCreator) au compte de service runtime Cloud Run.',
+      });
+    }
     return res.status(500).json({ message: 'Echange de code controleur impossible.' });
   }
 });
@@ -193,6 +220,14 @@ router.post('/admin/exchange', async (req, res) => {
     });
   } catch (error) {
     logger.error({ err: error }, 'admin_token_exchange_failed');
+    if (isTokenSigningPermissionError(error)) {
+      return res.status(500).json({
+        error: 'CUSTOM_TOKEN_SIGN_FAILED',
+        message: 'Le backend ne peut pas signer le token administrateur. '
+          + 'Accordez le role "Service Account Token Creator" '
+          + '(roles/iam.serviceAccountTokenCreator) au compte de service runtime Cloud Run.',
+      });
+    }
     return res.status(500).json({ message: 'Emission du token administrateur impossible.' });
   }
 });
@@ -224,6 +259,14 @@ router.post('/super/exchange', requireSuperAdminKey, async (req, res) => {
     });
   } catch (error) {
     logger.error({ err: error }, 'super_admin_token_exchange_failed');
+    if (isTokenSigningPermissionError(error)) {
+      return res.status(500).json({
+        error: 'CUSTOM_TOKEN_SIGN_FAILED',
+        message: 'Le backend ne peut pas signer le token super administrateur. '
+          + 'Accordez le role "Service Account Token Creator" '
+          + '(roles/iam.serviceAccountTokenCreator) au compte de service runtime Cloud Run.',
+      });
+    }
     return res.status(500).json({ message: 'Emission du token super administrateur impossible.' });
   }
 });

@@ -3,6 +3,11 @@ dist/
 .env
 .env.*
 !.env.example
+.env.local
+# Fichiers swap d'editeurs (vim/nano), y compris ..env.local.swp non couvert par .env.*
+*.swp
+*.swo
+*~
 secrets/
 firebase-admin.json
 service-account*.json
