@@ -183,12 +183,18 @@ class _ControllerCitizenAccessPageState
         _lastMessage =
             error.message?.toString() ?? 'Informations minimales invalides.';
       });
-    } catch (_) {
+    } catch (error) {
       if (!mounted) {
         return;
       }
+      // Faire remonter le message reel du backend (ex. controleur desactive,
+      // generation reservee aux controleurs, validation) au lieu d'un texte
+      // generique opaque.
+      final detail = error is StateError ? error.message : '';
       setState(() {
-        _lastMessage = 'Impossible de generer le code citoyen pour le moment.';
+        _lastMessage = detail.isNotEmpty
+            ? detail
+            : 'Impossible de generer le code citoyen pour le moment.';
       });
     } finally {
       if (mounted) {
