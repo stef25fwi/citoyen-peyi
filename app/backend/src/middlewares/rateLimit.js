@@ -32,9 +32,17 @@ if (env.rateLimitRedisUrl) {
 }
 
 if (env.isProduction && !sharedStore) {
-  // Le memory store n'est pas partage entre instances Cloud Run et peut etre
-  // sature trivialement; on refuse le boot pour eviter une fausse protection.
-  throw new Error('RATE_LIMIT_REDIS_URL est requis en production pour partager le rate limiter entre instances.');
+  // Sans Redis, le store memoire n'est pas partage entre instances Cloud Run
+  // et le compteur repart a zero a chaque cold start : la protection est plus
+  // faible mais reste fonctionnelle (max-instances volontairement bas). On
+  // prefere demarrer avec un avertissement explicite plutot que de refuser le
+  // boot et laisser tout le backend injoignable. Definir RATE_LIMIT_REDIS_URL
+  // pour un rate limiting partage et robuste.
+  logger.warn(
+    'rate_limit_memory_store_fallback: RATE_LIMIT_REDIS_URL absent en production; '
+    + 'rate limiting en memoire (par instance, non partage). '
+    + 'Definir RATE_LIMIT_REDIS_URL (Memorystore/Upstash) pour un rate limiting partage.',
+  );
 }
 
 const withStore = (options) => ({

@@ -68,6 +68,34 @@ jobs:
             exit 1
           fi
 
+      - name: Validate runtime service account impersonation (actAs)
+        run: |
+          # Deployer un service Cloud Run avec --service-account exige que le SA
+          # de deploiement puisse "actAs" le SA runtime (roles/iam.serviceAccountUser).
+          # Sans ce role, "gcloud run deploy" echoue avec PERMISSION_DENIED et le
+          # backend reste bloque sur une ancienne revision. On verifie tot et on
+          # affiche la commande exacte de remediation.
+          fix_cmd="gcloud iam service-accounts add-iam-policy-binding $GCP_RUNTIME_SERVICE_ACCOUNT --member=\"serviceAccount:$GCP_DEPLOY_SERVICE_ACCOUNT\" --role=\"roles/iam.serviceAccountUser\" --project=$GCP_PROJECT_ID"
+          if ! policy="$(gcloud iam service-accounts get-iam-policy "$GCP_RUNTIME_SERVICE_ACCOUNT" --format=json 2>/dev/null)"; then
+            echo "::warning::Impossible de lire la policy IAM du SA runtime (permission de lecture manquante). Le deploiement echouera si le role actAs n'est pas deja accorde. Remediation : $fix_cmd"
+            exit 0
+          fi
+          if echo "$policy" | grep -q 'roles/iam.serviceAccountUser' && \
+             echo "$policy" | grep -q "serviceAccount:$GCP_DEPLOY_SERVICE_ACCOUNT"; then
+            echo "OK: le SA de deploiement peut actAs le SA runtime."
+          else
+            echo "::error::Le SA de deploiement n'a pas roles/iam.serviceAccountUser sur le SA runtime. 'gcloud run deploy' va echouer (PERMISSION_DENIED actAs)." >&2
+            echo "Remediation :" >&2
+            echo "  $fix_cmd" >&2
+            exit 1
+          fi
+
+      - name: Warn if RATE_LIMIT_REDIS_URL is not configured
+        run: |
+          if [ -z "$RATE_LIMIT_REDIS_URL" ]; then
+            echo "::warning::RATE_LIMIT_REDIS_URL absent : le backend demarrera avec un rate limiter en memoire (par instance, non partage entre instances Cloud Run). Definir la variable de depot RATE_LIMIT_REDIS_URL pour un rate limiting partage."
+          fi
+
       - name: Configure docker for Artifact Registry
         run: gcloud auth configure-docker "$GCP_REGION-docker.pkg.dev" --quiet
 
@@ -105,7 +133,8 @@ jobs:
             fi
           done
 
-          gcloud run deploy citoyen-peyi-backend \
+          set +e
+          deploy_output="$(gcloud run deploy citoyen-peyi-backend \
             --image="$IMAGE" \
             --region="$GCP_REGION" \
             --platform=managed \
@@ -116,7 +145,16 @@ jobs:
             --max-instances=5 \
             --concurrency=80 \
             --cpu=1 \
-            --memory=512Mi
+            --memory=512Mi 2>&1)"
+          deploy_status=$?
+          echo "$deploy_output"
+          if [ "$deploy_status" -ne 0 ]; then
+            if echo "$deploy_output" | grep -qi 'iam.serviceaccounts.actAs'; then
+              echo "::error::Deploiement refuse : le SA de deploiement ne peut pas actAs le SA runtime. Remediation :" >&2
+              echo "  gcloud iam service-accounts add-iam-policy-binding $GCP_RUNTIME_SERVICE_ACCOUNT --member=\"serviceAccount:$GCP_DEPLOY_SERVICE_ACCOUNT\" --role=\"roles/iam.serviceAccountUser\" --project=$GCP_PROJECT_ID" >&2
+            fi
+            exit "$deploy_status"
+          fi
 
       - name: Report backend URL
         run: |
