@@ -63,17 +63,17 @@ class _ControllerCitizenAccessPageState
     List<PollModel> polls = const [];
     List<CitizenAccessCodeModel> codes = const [];
     List<DuplicateCodeRequestModel> duplicates = const [];
-    String? errorMessage;
 
-    // Consultations ouvertes : necessaires au formulaire. En cas d'echec on
-    // affiche quand meme l'ecran (portee "toutes consultations" par defaut).
+    // Consultations ouvertes : en cas d'echec on affiche quand meme l'ecran
+    // (portee "toutes consultations ouvertes" par defaut). On ne pose aucun
+    // message sur la carte resultat au chargement (sinon faux "Doublon detecte"
+    // a l'ouverture).
     try {
       polls = await PollService.instance
           .loadPolls()
           .timeout(const Duration(seconds: 15));
     } catch (_) {
-      errorMessage =
-          'Impossible de charger les consultations. Verifiez votre connexion, puis reessayez.';
+      // Non bloquant : le formulaire reste utilisable avec la portee par defaut.
     }
 
     // Historique et demandes de regeneration : non bloquants pour la
@@ -98,9 +98,6 @@ class _ControllerCitizenAccessPageState
       _openPolls = polls.where(_isOpenPoll).toList();
       _codes = codes;
       _duplicateRequests = duplicates;
-      if (errorMessage != null) {
-        _lastMessage = errorMessage;
-      }
       _isLoading = false;
     });
   }
@@ -751,16 +748,29 @@ class _ResultCard extends StatelessWidget {
     final createdCode = result?.accessCode;
     final duplicateRequest = result?.duplicateRequest;
     final isSuccess = createdCode != null;
+    final isDuplicate = duplicateRequest != null;
+    // Un simple message (erreur de generation, info) ne doit PAS s'afficher
+    // comme un doublon. Titre/couleur selon l'etat reel.
+    final String title = isSuccess
+        ? 'Code citoyen disponible'
+        : isDuplicate
+            ? 'Doublon detecte'
+            : 'Information';
+    final Color cardColor = isSuccess
+        ? const Color(0xFFE8F5E9)
+        : isDuplicate
+            ? const Color(0xFFFFF8E1)
+            : const Color(0xFFEFF3F8);
 
     return Card(
-      color: isSuccess ? const Color(0xFFE8F5E9) : const Color(0xFFFFF8E1),
+      color: cardColor,
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isSuccess ? 'Code citoyen disponible' : 'Doublon detecte',
+              title,
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
