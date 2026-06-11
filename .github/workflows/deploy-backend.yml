@@ -58,6 +58,19 @@ jobs:
         with:
           project_id: ${{ vars.GCP_PROJECT_ID }}
 
+      - name: Sanitize runtime service account
+        run: |
+          # Defense contre un secret GCP_RUNTIME_SERVICE_ACCOUNT contenant un
+          # espace ou un saut de ligne parasite (copier-coller) : Cloud Run
+          # rejette alors la valeur avec "Unsupported service account". On
+          # retire tout caractere d'espacement avant utilisation.
+          clean="$(printf '%s' "$GCP_RUNTIME_SERVICE_ACCOUNT" | tr -d '[:space:]')"
+          if [ -z "$clean" ]; then
+            echo "::error::GCP_RUNTIME_SERVICE_ACCOUNT est vide apres nettoyage." >&2
+            exit 1
+          fi
+          echo "GCP_RUNTIME_SERVICE_ACCOUNT=$clean" >> "$GITHUB_ENV"
+
       - name: Validate required Secret Manager secrets
         run: |
           missing=0
