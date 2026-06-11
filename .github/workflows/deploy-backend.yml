@@ -1,3 +1,4 @@
+# Artifact Registry repo: europe-west1/citoyen-peyi (docker)
 name: Deploy backend (Cloud Run)
 
 on:
