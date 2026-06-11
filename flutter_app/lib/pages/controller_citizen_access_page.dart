@@ -123,7 +123,7 @@ class _ControllerCitizenAccessPageState
         _addressChecked &&
         _residencyChecked &&
         RegExp(r'^[A-Z]$').hasMatch(firstInitial) &&
-        RegExp(r'^[A-Z]$').hasMatch(lastInitial) &&
+        RegExp(r'^[A-Z]{2}$').hasMatch(lastInitial) &&
         RegExp(r'^\d{4}$').hasMatch(birthYear) &&
         RegExp(r'^\d{2}$').hasMatch(phoneSuffix);
 
@@ -485,13 +485,14 @@ class _ControllerCitizenAccessPageState
                                       controller: _lastInitialController,
                                       textCapitalization:
                                           TextCapitalization.characters,
-                                      maxLength: 1,
+                                      maxLength: 2,
                                       inputFormatters: [
                                         FilteringTextInputFormatter.allow(
                                             RegExp(r'[a-zA-Z]'))
                                       ],
                                       decoration: const InputDecoration(
-                                        labelText: 'Premiere lettre du nom',
+                                        labelText:
+                                            'Deux premieres lettres du nom',
                                         counterText: '',
                                       ),
                                       onChanged: (_) => setState(() {}),

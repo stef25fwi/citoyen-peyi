@@ -53,6 +53,11 @@ const normalizeInitial = (value) => {
   return trimmed ? Array.from(trimmed)[0] : '';
 };
 
+const normalizeLetters = (value, count) => {
+  const chars = Array.from(String(value || '').trim().toUpperCase());
+  return chars.slice(0, count).join('');
+};
+
 const normalizeDigits = (value, expectedLength, keepLast = false) => {
   const digits = String(value || '').replace(/\D/g, '');
   if (digits.length < expectedLength) return digits;
@@ -61,20 +66,22 @@ const normalizeDigits = (value, expectedLength, keepLast = false) => {
 
 const buildSource = ({ firstName, lastName, birthYear, phoneSuffix }) => {
   const firstNameInitial = normalizeInitial(firstName);
-  const lastNameInitial = normalizeInitial(lastName);
+  // 2 premieres lettres du nom de famille (au lieu de l'initiale seule) pour
+  // augmenter la finesse de l'empreinte et reduire les faux doublons.
+  const lastNamePrefix = normalizeLetters(lastName, 2);
   const year = normalizeDigits(birthYear, 4);
   const suffix = normalizeDigits(phoneSuffix, 2, true);
 
-  if (!firstNameInitial || !lastNameInitial || year.length !== 4 || suffix.length !== 2) {
+  if (!firstNameInitial || lastNamePrefix.length < 2 || year.length !== 4 || suffix.length !== 2) {
     const error = new Error('Informations minimales invalides.');
     error.status = 400;
     throw error;
   }
 
   return {
-    sourceKeyMasked: `${firstNameInitial}${lastNameInitial}${year}${suffix}`,
+    sourceKeyMasked: `${firstNameInitial}${lastNamePrefix}${year}${suffix}`,
     firstNameInitial,
-    lastNameInitial,
+    lastNamePrefix,
     birthYear: year,
     phoneSuffix: suffix,
   };
