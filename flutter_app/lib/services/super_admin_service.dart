@@ -169,28 +169,9 @@ class SuperAdminService {
   static const _profilesKey = 'super_admin_profiles_v1';
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
-  static const _superAdminKeyStorageKey = 'super_admin_runtime_key_v1';
-
   String? _runtimeSuperAdminKey;
 
   String? get runtimeSuperAdminKey => _runtimeSuperAdminKey;
-
-  /// Restaure la cle super admin persistee afin de rester connecte apres
-  /// fermeture de l'app, jusqu'a une deconnexion explicite.
-  Future<void> restoreRuntimeSuperAdminKey() async {
-    if (_runtimeSuperAdminKey != null && _runtimeSuperAdminKey!.isNotEmpty) {
-      return;
-    }
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final stored = prefs.getString(_superAdminKeyStorageKey);
-      if (stored != null && stored.trim().isNotEmpty) {
-        _runtimeSuperAdminKey = stored.trim();
-      }
-    } catch (_) {
-      // Pas de cle restauree : l'utilisateur devra se reconnecter.
-    }
-  }
 
   void _debugLog(String message) {
     if (kDebugMode) {
@@ -248,12 +229,6 @@ class SuperAdminService {
     await _firebaseIdTokenFromCustomToken(customToken);
 
     _runtimeSuperAdminKey = trimmed;
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(_superAdminKeyStorageKey, trimmed);
-    } catch (_) {
-      // Persistance best-effort : la session reste valable pour cette execution.
-    }
 
     await AuthSessionStore.instance.save(AuthSession(
       role: 'super_admin',
@@ -276,13 +251,14 @@ class SuperAdminService {
       _debugLog('loadProfiles: token indisponible: $error');
     }
 
-    if (superKey != null && superKey.isNotEmpty && token != null) {
+    if (token != null) {
       try {
         final response = await http.get(
           Uri.parse('${AppConfig.apiBaseUrl}/api/admins'),
           headers: {
             'Authorization': 'Bearer $token',
-            'x-super-admin-key': superKey,
+            if (superKey != null && superKey.isNotEmpty)
+              'x-super-admin-key': superKey,
           },
         ).timeout(const Duration(seconds: 12));
         _debugLog('loadProfiles HTTP ${response.statusCode}');
@@ -394,11 +370,9 @@ class SuperAdminService {
       throw SuperAdminAuthException(configIssue);
     }
 
+    // La cle n'est plus requise apres login : le token Firebase (claim
+    // super_admin) autorise cote backend. La cle reste envoyee si presente.
     final superKey = _runtimeSuperAdminKey;
-    if (superKey == null || superKey.isEmpty) {
-      throw const SuperAdminAuthException(
-          'Session super administrateur expirée ou non autorisée. Reconnectez-vous.');
-    }
 
     final url = '${AppConfig.apiBaseUrl}$path';
     _debugLog('Endpoint appelé: $url');
@@ -431,7 +405,8 @@ class SuperAdminService {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $token',
-              'x-super-admin-key': superKey,
+              if (superKey != null && superKey.isNotEmpty)
+                'x-super-admin-key': superKey,
             },
             body: jsonEncode(body),
           )
@@ -455,20 +430,17 @@ class SuperAdminService {
 
   Future<void> _authorizedDelete(String path) async {
     final superKey = _runtimeSuperAdminKey;
-    if (superKey == null || superKey.isEmpty) {
-      throw const SuperAdminAuthException(
-          'Session super admin expiree, reconnectez-vous.');
-    }
     final token = await _superAdminIdToken();
     if (token == null) {
       throw const SuperAdminAuthException(
-          'Session Firebase manquante, reconnectez-vous.');
+          'Session super administrateur expiree, reconnectez-vous.');
     }
     final response = await http.delete(
       Uri.parse('${AppConfig.apiBaseUrl}$path'),
       headers: {
         'Authorization': 'Bearer $token',
-        'x-super-admin-key': superKey,
+        if (superKey != null && superKey.isNotEmpty)
+          'x-super-admin-key': superKey,
       },
     ).timeout(const Duration(seconds: 12));
     if (response.statusCode < 200 || response.statusCode >= 300) {

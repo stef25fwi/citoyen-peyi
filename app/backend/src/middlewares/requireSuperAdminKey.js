@@ -19,6 +19,15 @@ export const hasValidSuperAdminKey = (req) => {
 };
 
 export const requireSuperAdminKey = (req, res, next) => {
+  // Un super administrateur deja authentifie via Firebase (claim super_admin
+  // verifie par requireFirebaseAuth) est autorise sans en-tete cle : la cle
+  // n'est utilisee qu'une fois, au login (/super/exchange). On garde l'en-tete
+  // comme repli (login initial, outils externes sans session Firebase).
+  const user = req.user;
+  if (user && (user.super_admin === true || user.role === 'super_admin')) {
+    return next();
+  }
+
   if (!isSuperAdminConfigured()) {
     return res.status(503).json({ message: 'SUPER_ADMIN_KEY est absent sur le backend.' });
   }
