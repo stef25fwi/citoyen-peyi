@@ -2,6 +2,9 @@
 # NB: le secret GCP_RUNTIME_SERVICE_ACCOUNT doit pointer vers un SA existant que
 # GCP_DEPLOY_SERVICE_ACCOUNT peut "actAs" (roles/iam.serviceAccountUser), sinon
 # "gcloud run deploy" echoue avec PERMISSION_DENIED iam.serviceAccounts.actAs.
+# Ce SA runtime doit aussi avoir roles/secretmanager.secretAccessor sur tous les
+# secrets montes (SUPER_ADMIN_KEY, VOTE_ACCESS_TOKEN_SECRET, ACCESS_CODE_PEPPER,
+# CITIZEN_FINGERPRINT_PEPPER + optionnels ADMIN_ACCESS_KEY/PEPPER, CONTROLLER_CODE_PEPPER).
 name: Deploy backend (Cloud Run)
 
 on:
