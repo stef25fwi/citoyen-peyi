@@ -8,6 +8,7 @@ on:
       - 'flutter_app/**'
       - 'firebase.json'
       - 'firestore.rules'
+      - 'firestore.indexes.json'
       - 'storage.rules'
       - '.github/workflows/deploy-firebase-hosting.yml'
   workflow_dispatch:
