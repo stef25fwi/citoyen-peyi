@@ -105,7 +105,7 @@ jobs:
             fi
           done
 
-          gcloud run deploy citoyen-peyi-api \
+          gcloud run deploy citoyen-peyi-backend \
             --image="$IMAGE" \
             --region="$GCP_REGION" \
             --platform=managed \
@@ -120,7 +120,7 @@ jobs:
 
       - name: Report backend URL
         run: |
-          SERVICE_URL="$(gcloud run services describe citoyen-peyi-api --region="$GCP_REGION" --format='value(status.url)')"
+          SERVICE_URL="$(gcloud run services describe citoyen-peyi-backend --region="$GCP_REGION" --format='value(status.url)')"
           echo "Backend deployed: $SERVICE_URL"
           {
             echo "### Backend Cloud Run"
