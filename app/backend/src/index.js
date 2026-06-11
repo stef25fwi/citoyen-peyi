@@ -21,40 +21,6 @@ registerProcessHandlers();
 
 const app = express();
 
-// CITOYEN-PEYI FORCE CORS GITHUB PAGES
-// Important : GitHub Pages envoie Origin uniquement avec le domaine, sans le chemin /citoyen-peyi.
-const citoyenPeyiCorsAllowedOrigins = new Set(
-  (process.env.CORS_ORIGIN || process.env.CORS_ORIGINS || "https://stef25fwi.github.io")
-    .split(",")
-    .map((origin) => origin.trim())
-    .filter(Boolean)
-);
-
-citoyenPeyiCorsAllowedOrigins.add("https://stef25fwi.github.io");
-citoyenPeyiCorsAllowedOrigins.add("http://localhost:3000");
-citoyenPeyiCorsAllowedOrigins.add("http://localhost:5173");
-
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-
-  if (origin && citoyenPeyiCorsAllowedOrigins.has(origin)) {
-    res.setHeader("Access-Control-Allow-Origin", origin);
-    res.setHeader("Vary", "Origin");
-    res.setHeader("Access-Control-Allow-Credentials", "true");
-  }
-
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PATCH,DELETE,OPTIONS");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type,Authorization,x-super-admin-key");
-  res.setHeader("Access-Control-Max-Age", "86400");
-
-  if (req.method === "OPTIONS") {
-    return res.status(204).send();
-  }
-
-  return next();
-});
-// FIN CITOYEN-PEYI FORCE CORS GITHUB PAGES
-
 app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
@@ -62,6 +28,7 @@ app.use(httpLogger);
 app.use(helmet());
 app.use(cors({
   origin: env.corsOrigins,
+  credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-super-admin-key'],
   maxAge: 86400,

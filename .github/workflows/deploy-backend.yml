@@ -21,7 +21,21 @@ permissions:
   id-token: write
 
 jobs:
+  test:
+    name: Backend tests (gate)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --workspace app/backend
+      - run: npm run test --workspace app/backend
+        env:
+          NODE_ENV: test
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
     environment: production
     env:
@@ -77,7 +91,7 @@ jobs:
       - name: Validate required Secret Manager secrets
         run: |
           missing=0
-          for secret in SUPER_ADMIN_KEY VOTE_ACCESS_TOKEN_SECRET ACCESS_CODE_PEPPER CITIZEN_FINGERPRINT_PEPPER; do
+          for secret in SUPER_ADMIN_KEY VOTE_ACCESS_TOKEN_SECRET ACCESS_CODE_PEPPER CITIZEN_FINGERPRINT_PEPPER PARTICIPATION_PEPPER; do
             if ! gcloud secrets describe "$secret" >/dev/null 2>&1; then
               echo "Missing required Secret Manager secret: $secret" >&2
               missing=1
@@ -145,7 +159,7 @@ jobs:
             ENV_VARS="$ENV_VARS@RATE_LIMIT_REDIS_URL=$RATE_LIMIT_REDIS_URL"
           fi
 
-          SECRET_BINDINGS="SUPER_ADMIN_KEY=SUPER_ADMIN_KEY:latest,VOTE_ACCESS_TOKEN_SECRET=VOTE_ACCESS_TOKEN_SECRET:latest,ACCESS_CODE_PEPPER=ACCESS_CODE_PEPPER:latest,CITIZEN_FINGERPRINT_PEPPER=CITIZEN_FINGERPRINT_PEPPER:latest"
+          SECRET_BINDINGS="SUPER_ADMIN_KEY=SUPER_ADMIN_KEY:latest,VOTE_ACCESS_TOKEN_SECRET=VOTE_ACCESS_TOKEN_SECRET:latest,ACCESS_CODE_PEPPER=ACCESS_CODE_PEPPER:latest,CITIZEN_FINGERPRINT_PEPPER=CITIZEN_FINGERPRINT_PEPPER:latest,PARTICIPATION_PEPPER=PARTICIPATION_PEPPER:latest"
           for optional_secret in ADMIN_ACCESS_KEY ADMIN_ACCESS_PEPPER CONTROLLER_CODE_PEPPER; do
             if gcloud secrets describe "$optional_secret" >/dev/null 2>&1; then
               SECRET_BINDINGS="$SECRET_BINDINGS,$optional_secret=$optional_secret:latest"
@@ -161,6 +175,7 @@ jobs:
             --service-account="$GCP_RUNTIME_SERVICE_ACCOUNT" \
             --set-env-vars="$ENV_VARS" \
             --set-secrets="$SECRET_BINDINGS" \
+            --min-instances=1 \
             --max-instances=5 \
             --concurrency=80 \
             --cpu=1 \

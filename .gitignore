@@ -8,6 +8,9 @@ dist/
 *.swp
 *.swo
 *~
+# Sauvegardes ad hoc (scripts de patch) a ne jamais committer
+*.bak
+build_logs/
 secrets/
 firebase-admin.json
 service-account*.json
