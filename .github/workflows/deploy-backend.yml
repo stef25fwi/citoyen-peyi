@@ -1,4 +1,7 @@
 # Artifact Registry repo: europe-west1/citoyen-peyi (docker)
+# NB: le secret GCP_RUNTIME_SERVICE_ACCOUNT doit pointer vers un SA existant que
+# GCP_DEPLOY_SERVICE_ACCOUNT peut "actAs" (roles/iam.serviceAccountUser), sinon
+# "gcloud run deploy" echoue avec PERMISSION_DENIED iam.serviceAccounts.actAs.
 name: Deploy backend (Cloud Run)
 
 on:
