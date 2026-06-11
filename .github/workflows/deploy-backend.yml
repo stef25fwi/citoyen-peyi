@@ -5,6 +5,8 @@
 # Ce SA runtime doit aussi avoir roles/secretmanager.secretAccessor sur tous les
 # secrets montes (SUPER_ADMIN_KEY, VOTE_ACCESS_TOKEN_SECRET, ACCESS_CODE_PEPPER,
 # CITIZEN_FINGERPRINT_PEPPER + optionnels ADMIN_ACCESS_KEY/PEPPER, CONTROLLER_CODE_PEPPER).
+# Les secrets sont montes en ":latest" : une rotation (nouvelle version) n'est prise
+# en compte qu'au prochain deploiement (nouvelle revision).
 name: Deploy backend (Cloud Run)
 
 on:
