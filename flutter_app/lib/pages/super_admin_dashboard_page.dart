@@ -1,18 +1,18 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:http/http.dart' as http;
 
 import '../models/support_ticket.dart';
 import '../services/auth_session_store.dart';
 import '../services/citizen_access_code_service.dart';
+import '../services/commune_lookup_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/push_notification_service.dart';
 import '../services/support_ticket_service.dart';
 import '../services/super_admin_service.dart';
+import '../widgets/commune_autocomplete_field.dart';
 import '../widgets/super_admin_controller_activity_tile.dart';
 import '../widgets/super_admin_duplicate_tile.dart';
 
@@ -784,25 +784,6 @@ class _ProfileCardState extends State<_ProfileCard> {
   }
 }
 
-// ---------- Commune suggestion model ----------
-
-class _CommuneSuggestion {
-  const _CommuneSuggestion({
-    required this.nom,
-    required this.code,
-    required this.codesPostaux,
-  });
-
-  final String nom;
-  final String code;
-  final List<String> codesPostaux;
-
-  String get firstPostal => codesPostaux.isNotEmpty ? codesPostaux.first : '';
-
-  String get displayLabel =>
-      codesPostaux.isEmpty ? nom : '$nom (${codesPostaux.join(', ')})';
-}
-
 // ---------- Create profile dialog ----------
 
 class _CreateProfileDialog extends StatefulWidget {
@@ -822,10 +803,6 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
   final _postalCtrl = TextEditingController();
   bool _isSubmitting = false;
 
-  Timer? _debounce;
-  List<_CommuneSuggestion> _suggestions = [];
-  bool _searching = false;
-
   void _debugLog(String message) {
     if (kDebugMode) {
       debugPrint('[CreateProfileDialog] $message');
@@ -834,7 +811,6 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
 
   @override
   void dispose() {
-    _debounce?.cancel();
     _labelCtrl.dispose();
     _communeCtrl.dispose();
     _codeCtrl.dispose();
@@ -842,62 +818,11 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
     super.dispose();
   }
 
-  Future<List<_CommuneSuggestion>> _fetchCommunes(String query) async {
-    final q = query.trim();
-    if (q.length < 2) return [];
-
-    final isPostal = RegExp(r'^\d{2,5}$').hasMatch(q);
-    final url = isPostal
-        ? 'https://geo.api.gouv.fr/communes?codePostal=$q&fields=nom,code,codesPostaux,population&limit=10'
-        : 'https://geo.api.gouv.fr/communes?nom=${Uri.encodeComponent(q)}&fields=nom,code,codesPostaux,population&boost=population&limit=10';
-
-    try {
-      final response =
-          await http.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
-      if (response.statusCode != 200) return [];
-      final data = jsonDecode(response.body) as List<dynamic>;
-      return data.map((e) {
-        final m = e as Map<String, dynamic>;
-        return _CommuneSuggestion(
-          nom: m['nom'] as String? ?? '',
-          code: m['code'] as String? ?? '',
-          codesPostaux: (m['codesPostaux'] as List<dynamic>?)
-                  ?.map((c) => c as String)
-                  .toList() ??
-              [],
-        );
-      }).toList();
-    } catch (error) {
-      _debugLog('Erreur catchée: $error');
-      if (mounted) _showErrorSnackBar(error.toString());
-      return [];
-    }
-  }
-
-  void _onCommuneChanged(String value) {
-    _debounce?.cancel();
-    if (value.trim().length < 2) {
-      setState(() => _suggestions = []);
-      return;
-    }
-    setState(() => _searching = true);
-    _debounce = Timer(const Duration(milliseconds: 280), () async {
-      final results = await _fetchCommunes(value);
-      if (mounted) {
-        setState(() {
-          _suggestions = results;
-          _searching = false;
-        });
-      }
-    });
-  }
-
-  void _selectCommune(_CommuneSuggestion commune) {
+  void _selectCommune(CommuneSuggestion commune) {
     setState(() {
       _communeCtrl.text = commune.nom;
       _postalCtrl.text = commune.firstPostal;
       _codeCtrl.text = commune.code;
-      _suggestions = [];
       // Pré-remplit le libellé si encore vide ou générique
       if (_labelCtrl.text.trim().isEmpty ||
           _labelCtrl.text.trim().toLowerCase().startsWith('mairie de ')) {
@@ -941,10 +866,10 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
       _debugLog('Tentative de création profil administrateur.');
       debugPrint('[CreateProfileDialog] appel createAdminProfile');
       final profile = await SuperAdminService.instance.createAdminProfile(
-        label: _labelCtrl.text,
-        communeName: _communeCtrl.text,
-        communeCode: _codeCtrl.text,
-        codePostal: _postalCtrl.text,
+        label: _labelCtrl.text.trim(),
+        communeName: CommuneLookupService.normalizeCommuneName(_communeCtrl.text),
+        communeCode: CommuneLookupService.normalizeInsee(_codeCtrl.text),
+        codePostal: CommuneLookupService.normalizePostal(_postalCtrl.text),
       );
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -980,72 +905,12 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
             mainAxisSize: MainAxisSize.min,
             children: [
               // ---------- Commune avec autocomplétion ----------
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    controller: _communeCtrl,
-                    enabled: !_isSubmitting,
-                    decoration: InputDecoration(
-                      labelText: 'Commune *',
-                      hintText: 'Tapez le nom ou le code postal…',
-                      suffixIcon: _searching
-                          ? const Padding(
-                              padding: EdgeInsets.all(12),
-                              child: SizedBox(
-                                width: 18,
-                                height: 18,
-                                child:
-                                    CircularProgressIndicator(strokeWidth: 2),
-                              ),
-                            )
-                          : const Icon(Icons.location_on_outlined),
-                    ),
-                    onChanged: _onCommuneChanged,
-                    validator: (v) => (v == null || v.trim().isEmpty)
-                        ? 'Champ requis.'
-                        : null,
-                  ),
-                  if (_suggestions.isNotEmpty)
-                    Container(
-                      constraints: const BoxConstraints(maxHeight: 200),
-                      margin: const EdgeInsets.only(top: 2),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFFD7E0EA)),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
-                          ),
-                        ],
-                      ),
-                      child: ListView.separated(
-                        shrinkWrap: true,
-                        padding: EdgeInsets.zero,
-                        itemCount: _suggestions.length,
-                        separatorBuilder: (_, __) => const Divider(height: 1),
-                        itemBuilder: (context, i) {
-                          final c = _suggestions[i];
-                          return ListTile(
-                            dense: true,
-                            leading: const Icon(Icons.location_city_rounded,
-                                size: 18, color: Color(0xFF0F6D8F)),
-                            title: Text(c.nom,
-                                style: const TextStyle(
-                                    fontWeight: FontWeight.w600)),
-                            subtitle: Text(
-                              '${c.codesPostaux.join(', ')}  •  INSEE ${c.code}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            onTap: () => _selectCommune(c),
-                          );
-                        },
-                      ),
-                    ),
-                ],
+              CommuneAutocompleteField(
+                controller: _communeCtrl,
+                enabled: !_isSubmitting,
+                onSelected: _selectCommune,
+                validator: (v) =>
+                    (v == null || v.trim().isEmpty) ? 'Champ requis.' : null,
               ),
               const SizedBox(height: 14),
               // ---------- Code postal + INSEE (auto-remplis, modifiables) ----------
