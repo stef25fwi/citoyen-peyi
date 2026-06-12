@@ -133,6 +133,116 @@ const disableInvalidTokens = async (subscriptions, responses) => {
   await Promise.allSettled(writes);
 };
 
+// ---------- Notifications push super administrateur (tickets assistance) ----------
+
+export const SUPER_ADMIN_SUBSCRIPTION_COLLECTION = 'super_admin_push_subscriptions';
+
+export const registerSuperAdminSubscription = async ({
+  db,
+  token,
+  uid = '',
+  platform = 'web',
+  userAgent = '',
+}) => {
+  const normalizedToken = normalizeFcmToken(token);
+  if (!normalizedToken) {
+    const error = new Error('Token FCM requis.');
+    error.status = 400;
+    throw error;
+  }
+
+  const id = notificationSubscriptionDocId(normalizedToken);
+  await db.collection(SUPER_ADMIN_SUBSCRIPTION_COLLECTION).doc(id).set({
+    id,
+    token: normalizedToken,
+    tokenHash: id,
+    uid: sanitizeString(uid, 128),
+    platform: sanitizeString(platform, 40) || 'web',
+    userAgent: sanitizeString(userAgent, 500),
+    enabled: true,
+    updatedAt: FieldValue.serverTimestamp(),
+    lastRegisteredAt: FieldValue.serverTimestamp(),
+    createdAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+
+  return { id };
+};
+
+export const buildNewTicketNotification = (ticket) => {
+  const ticketId = sanitizeString(ticket?.ticketId, 128);
+  const communeName = sanitizeString(ticket?.communeName, 200) || 'une commune';
+  const subject = sanitizeString(ticket?.subject, 120) || 'Nouveau ticket';
+  const priority = sanitizeString(ticket?.priority, 20);
+  const urgentPrefix = priority === 'urgente' ? '[URGENT] ' : '';
+
+  return {
+    notification: {
+      title: `${urgentPrefix}Nouveau ticket assistance`,
+      body: `${communeName} : ${subject}`,
+    },
+    data: {
+      type: 'new_support_ticket',
+      ticketId,
+      route: '/super-admin/support',
+    },
+    webpush: {
+      notification: {
+        icon: '/icons/Icon-192.png',
+        badge: '/icons/Icon-192.png',
+        tag: ticketId ? `ticket-${ticketId}` : 'citoyen-peyi-ticket',
+        renotify: true,
+      },
+      fcmOptions: {
+        link: '/#/super-admin/support',
+      },
+    },
+  };
+};
+
+const querySuperAdminSubscriptions = async (db) => {
+  const snapshot = await db.collection(SUPER_ADMIN_SUBSCRIPTION_COLLECTION).limit(500).get();
+  return snapshot.docs
+    .map((doc) => ({ ref: doc.ref, id: doc.id, ...doc.data() }))
+    .filter((subscription) => subscription.enabled !== false)
+    .filter((subscription) => normalizeFcmToken(subscription.token));
+};
+
+export const notifySuperAdminsNewTicket = async ({ db, ticket }) => {
+  try {
+    const subscriptions = await querySuperAdminSubscriptions(db);
+    if (subscriptions.length === 0) {
+      return { attempted: 0, sent: 0, failed: 0 };
+    }
+
+    const message = buildNewTicketNotification(ticket);
+    const messaging = getFirebaseAdminMessaging();
+    let sent = 0;
+    let failed = 0;
+
+    for (let index = 0; index < subscriptions.length; index += 500) {
+      const chunk = subscriptions.slice(index, index + 500);
+      const response = await messaging.sendEachForMulticast({
+        ...message,
+        tokens: chunk.map((subscription) => subscription.token),
+      });
+      sent += response.successCount;
+      failed += response.failureCount;
+      await disableInvalidTokens(chunk, response.responses);
+    }
+
+    logger.info({
+      ticketId: ticket?.ticketId,
+      attempted: subscriptions.length,
+      sent,
+      failed,
+    }, 'ticket_push_notifications_sent');
+    return { attempted: subscriptions.length, sent, failed };
+  } catch (error) {
+    logger.warn({ err: error, ticketId: ticket?.ticketId }, 'ticket_push_notification_failed');
+    return { attempted: 0, sent: 0, failed: 0 };
+  }
+};
+
 export const notifyCommunePollPublished = async ({ db, poll }) => {
   if (!isPollVisibleForNotification(poll)) {
     return { attempted: 0, sent: 0, failed: 0 };

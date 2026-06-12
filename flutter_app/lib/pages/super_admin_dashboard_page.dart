@@ -10,6 +10,7 @@ import '../models/support_ticket.dart';
 import '../services/auth_session_store.dart';
 import '../services/citizen_access_code_service.dart';
 import '../services/firebase_auth_service.dart';
+import '../services/push_notification_service.dart';
 import '../services/support_ticket_service.dart';
 import '../services/super_admin_service.dart';
 import '../widgets/super_admin_controller_activity_tile.dart';
@@ -51,6 +52,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
   void initState() {
     super.initState();
     _loadProfiles();
+    // Enregistre le navigateur du super admin pour les push "nouveau ticket".
+    unawaited(PushNotificationService.instance.registerForSuperAdmin());
   }
 
   Future<void> _loadProfiles() async {
@@ -250,6 +253,10 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
             color: Color(0xFF0F6D8F)),
         leadingWidth: 56,
         actions: [
+          _SupportNavBadge(
+            onTap: () =>
+                Navigator.of(context).pushNamed('/super-admin/support'),
+          ),
           TextButton(
             onPressed: () async {
               SuperAdminService.instance.clearRuntimeSuperAdminKey();
@@ -512,6 +519,34 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _SupportNavBadge extends StatelessWidget {
+  const _SupportNavBadge({required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return StreamBuilder<List<SupportTicket>>(
+      stream: SupportTicketService.instance.watchUnreadTicketsForSuperAdmin(),
+      builder: (context, snapshot) {
+        final count = snapshot.data?.length ?? 0;
+        return IconButton(
+          tooltip: count > 0
+              ? '$count ticket(s) non lu(s)'
+              : 'Tickets assistance',
+          onPressed: onTap,
+          icon: Badge(
+            isLabelVisible: count > 0,
+            label: Text('$count'),
+            child: const Icon(Icons.support_agent_rounded,
+                color: Color(0xFF0F6D8F)),
+          ),
+        );
+      },
     );
   }
 }

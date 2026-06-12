@@ -25,6 +25,60 @@ class PushNotificationService {
     });
   }
 
+  /// Enregistre le token FCM du super administrateur afin qu'il recoive une
+  /// notification push a chaque nouveau ticket assistance.
+  Future<void> registerForSuperAdmin() async {
+    if (!AppConfig.isFirebaseConfigured) return;
+    if (kIsWeb && AppConfig.pushVapidKey.trim().isEmpty) return;
+
+    try {
+      await FirebaseAuthService.instance.initialize();
+      final settings = await FirebaseMessaging.instance.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+      if (settings.authorizationStatus == AuthorizationStatus.denied) return;
+      if (settings.authorizationStatus == AuthorizationStatus.notDetermined) {
+        return;
+      }
+
+      final token = await FirebaseMessaging.instance.getToken(
+        vapidKey: kIsWeb ? AppConfig.pushVapidKey.trim() : null,
+      );
+      if (token == null || token.trim().isEmpty) return;
+
+      final authToken =
+          await FirebaseAuthService.instance.currentIdToken(forceRefresh: true);
+      if (authToken == null || authToken.isEmpty) return;
+
+      final base = AppConfig.apiBaseUrl.trim();
+      if (base.isEmpty) return;
+      await _client
+          .post(
+            Uri.parse('$base/api/support/subscribe'),
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': 'Bearer $authToken',
+            },
+            body: jsonEncode({
+              'token': token.trim(),
+              'platform': kIsWeb ? 'web' : defaultTargetPlatform.name,
+            }),
+          )
+          .timeout(const Duration(seconds: 10));
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[PushNotificationService] super admin registration '
+            'skipped: $error');
+      }
+    }
+  }
+
   Future<void> registerForCitizenCommune({
     required String rawCode,
     required String communeId,

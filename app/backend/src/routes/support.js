@@ -8,6 +8,8 @@ import {
   requireCommuneAdmin,
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
+import { notifySuperAdminsNewTicket, registerSuperAdminSubscription } from '../services/notificationService.js';
+import { logger } from '../services/logger.js';
 
 const router = express.Router();
 const TICKET_COLLECTION = 'support_tickets';
@@ -242,8 +244,47 @@ router.post('/tickets', async (req, res, next) => {
     }));
     await batch.commit();
 
+    // Notification push aux super administrateurs abonnes (best-effort, ne
+    // bloque jamais la creation du ticket).
+    await notifySuperAdminsNewTicket({
+      db,
+      ticket: {
+        ticketId: ticketRef.id,
+        communeName,
+        subject,
+        priority,
+      },
+    });
+
     return res.status(201).json({ ok: true, ticketId: ticketRef.id });
   } catch (error) {
+    return next(error);
+  }
+});
+
+// Abonnement push du super administrateur (token FCM de son navigateur/app).
+router.post('/subscribe', async (req, res, next) => {
+  try {
+    if (!isSuperAdmin(req.user)) {
+      return res.status(403).json({ message: 'Reserve au super administrateur.' });
+    }
+    const token = sanitize(req.body?.token, 4096);
+    const platform = sanitize(req.body?.platform, 40) || 'web';
+    if (!token) {
+      return res.status(400).json({ message: 'Token FCM requis.' });
+    }
+
+    const db = getFirebaseAdminDb();
+    await registerSuperAdminSubscription({
+      db,
+      token,
+      uid: req.user?.uid || '',
+      platform,
+      userAgent: req.get('user-agent') || '',
+    });
+    return res.status(201).json({ ok: true });
+  } catch (error) {
+    logger.warn({ err: error }, 'super_admin_subscription_failed');
     return next(error);
   }
 });
@@ -423,4 +464,4 @@ router.post('/tickets/:ticketId/read', async (req, res, next) => {
 });
 
 export default router;
-export { serializeMessage, serializeTicket, statusMessage };
+export { canAccessTicket, serializeMessage, serializeTicket, sortTickets, statusMessage };
