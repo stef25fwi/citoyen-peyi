@@ -6,8 +6,10 @@ import '../models/support_ticket.dart';
 import '../services/admin_analytics_service.dart';
 import '../services/firebase_auth_service.dart';
 import '../services/auth_session_store.dart';
+import '../services/commune_lookup_service.dart';
 import '../services/controleur_profile_service.dart';
 import '../services/support_ticket_service.dart';
+import '../widgets/commune_autocomplete_field.dart';
 import '../widgets/support/ticket_card.dart';
 
 class _DashboardTheme {
@@ -1490,6 +1492,7 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
   final _labelCtrl = TextEditingController();
   final _communeCtrl = TextEditingController();
   final _postalCtrl = TextEditingController();
+  final _codeCtrl = TextEditingController();
   bool _isSubmitting = false;
 
   @override
@@ -1497,18 +1500,30 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
     _labelCtrl.dispose();
     _communeCtrl.dispose();
     _postalCtrl.dispose();
+    _codeCtrl.dispose();
     super.dispose();
+  }
+
+  void _selectCommune(CommuneSuggestion commune) {
+    setState(() {
+      _communeCtrl.text = commune.nom;
+      _postalCtrl.text = commune.firstPostal;
+      _codeCtrl.text = commune.code;
+    });
   }
 
   Future<void> _submit() async {
     if (!(_formKey.currentState?.validate() ?? false)) return;
     setState(() => _isSubmitting = true);
 
+    final communeCode = CommuneLookupService.normalizeInsee(_codeCtrl.text);
+    final codePostal = CommuneLookupService.normalizePostal(_postalCtrl.text);
     try {
       final profile = await ControleurProfileService.instance.createProfile(
-        label: _labelCtrl.text,
-        communeName: _communeCtrl.text,
-        codePostal: _postalCtrl.text.isEmpty ? null : _postalCtrl.text,
+        label: _labelCtrl.text.trim(),
+        communeName: CommuneLookupService.normalizeCommuneName(_communeCtrl.text),
+        communeCode: communeCode.isEmpty ? null : communeCode,
+        codePostal: codePostal.isEmpty ? null : codePostal,
       );
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -1552,27 +1567,42 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
                     (v == null || v.trim().isEmpty) ? 'Champ requis.' : null,
               ),
               const SizedBox(height: 14),
-              TextFormField(
+              CommuneAutocompleteField(
                 controller: _communeCtrl,
                 enabled: !_isSubmitting,
-                decoration: const InputDecoration(
-                  labelText: 'Commune *',
-                  hintText: 'Ex : Baie-Mahault',
-                  prefixIcon: Icon(Icons.location_city_rounded),
-                ),
+                hintText: 'Ex : Baie-Mahault ou 97122',
+                onSelected: _selectCommune,
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Champ requis.' : null,
               ),
               const SizedBox(height: 14),
-              TextFormField(
-                controller: _postalCtrl,
-                enabled: !_isSubmitting,
-                keyboardType: TextInputType.number,
-                decoration: const InputDecoration(
-                  labelText: 'Code postal',
-                  hintText: '97122',
-                  prefixIcon: Icon(Icons.markunread_mailbox_outlined),
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      controller: _postalCtrl,
+                      enabled: !_isSubmitting,
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Code postal',
+                        hintText: '97122',
+                        prefixIcon: Icon(Icons.markunread_mailbox_outlined),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: TextFormField(
+                      controller: _codeCtrl,
+                      enabled: !_isSubmitting,
+                      decoration: const InputDecoration(
+                        labelText: 'Code INSEE',
+                        hintText: '97101',
+                        prefixIcon: Icon(Icons.tag_rounded),
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
               const Text(
