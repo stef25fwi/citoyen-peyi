@@ -1090,10 +1090,10 @@ class CitizenAccessCodeService {
       // Messages deja explicites (session, token, reponse backend) : on remonte.
       rethrow;
     } catch (error) {
-      // Erreur reseau/timeout/CORS : message clair plutot qu'un texte opaque.
+      // Erreur reseau/timeout/CORS : on remonte le texte reel de l'exception
+      // (runtimeType est minifie en release et donc inexploitable).
       if (_secureBackendMode) {
-        throw StateError(
-            'Connexion au serveur impossible (${error.runtimeType}). Verifiez votre connexion, puis reessayez.');
+        throw StateError('Echec de l\'appel au serveur : $error');
       }
       return null;
     }
