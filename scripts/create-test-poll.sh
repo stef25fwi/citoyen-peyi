@@ -1,14 +1,15 @@
 #!/usr/bin/env bash
 # Cree une consultation de test via l'API backend.
 #
-# Variables requises :
-#   ADMIN_ACCESS_KEY  Cle administrateur communal (ou bootstrap).
-#   FIREBASE_API_KEY  Cle web Firebase (echange customToken -> idToken).
+# Auth (au choix) :
+#   ADMIN_ACCESS_KEY  Cle administrateur communal -> consultation dans SA commune.
+#   SUPER_ADMIN_KEY   Cle super admin -> consultation pour COMMUNE_ID (obligatoire).
+#   FIREBASE_API_KEY  Cle web Firebase (echange customToken -> idToken). Requise.
 #
 # Variables optionnelles :
 #   API_BASE_URL      Defaut: https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app
-#   COMMUNE_ID        Defaut: lu depuis la reponse admin/exchange.
-#   COMMUNE_NAME      Defaut: lu depuis la reponse admin/exchange.
+#   COMMUNE_ID        Mode admin: lu depuis admin/exchange. Mode super admin: REQUIS (ex 97109).
+#   COMMUNE_NAME      Defaut: lu depuis admin/exchange, sinon COMMUNE_ID.
 #   PROJECT_TITLE     Defaut: "Test pipeline <date>"
 #   QUESTION          Defaut: "Approuvez-vous le deploiement test ?"
 #   OPEN_DATE         Defaut: aujourd'hui (YYYY-MM-DD)
@@ -17,8 +18,11 @@
 
 set -euo pipefail
 
-: "${ADMIN_ACCESS_KEY:?ADMIN_ACCESS_KEY requis}"
 : "${FIREBASE_API_KEY:?FIREBASE_API_KEY requis}"
+if [[ -z "${ADMIN_ACCESS_KEY:-}" && -z "${SUPER_ADMIN_KEY:-}" ]]; then
+  echo "ADMIN_ACCESS_KEY ou SUPER_ADMIN_KEY requis (mode super admin: definir aussi COMMUNE_ID)." >&2
+  exit 1
+fi
 API_BASE_URL="${API_BASE_URL:-https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app}"
 
 command -v jq >/dev/null || { echo "jq requis (sudo apt-get install -y jq)" >&2; exit 1; }
@@ -44,21 +48,34 @@ QUESTION="${QUESTION:-Approuvez-vous le deploiement test ?}"
 OPEN_DATE="${OPEN_DATE:-$today}"
 CLOSE_DATE="${CLOSE_DATE:-$plus7}"
 
-echo "==> 1/4 Echange cle admin -> customToken"
-exchange_payload="$(jq -nc --arg k "$ADMIN_ACCESS_KEY" '{accessKey:$k}')"
-exchange_resp="$(curl -sS -X POST "$API_BASE_URL/api/auth/admin/exchange" \
-  -H 'Content-Type: application/json' \
-  -d "$exchange_payload")"
-
-custom_token="$(jq -r '.customToken // empty' <<<"$exchange_resp")"
-if [[ -z "$custom_token" ]]; then
-  fail_with_payload "ADMIN_EXCHANGE" "$exchange_resp"
+if [[ -n "${SUPER_ADMIN_KEY:-}" ]]; then
+  echo "==> 1/4 Echange cle super admin -> customToken"
+  : "${COMMUNE_ID:?COMMUNE_ID requis en mode super admin (ex: 97109)}"
+  exchange_resp="$(curl -sS -X POST "$API_BASE_URL/api/auth/super/exchange" \
+    -H 'Content-Type: application/json' \
+    -H "x-super-admin-key: $SUPER_ADMIN_KEY" \
+    -d '{}')"
+  custom_token="$(jq -r '.customToken // empty' <<<"$exchange_resp")"
+  if [[ -z "$custom_token" ]]; then
+    fail_with_payload "SUPER_EXCHANGE" "$exchange_resp"
+  fi
+  COMMUNE_NAME="${COMMUNE_NAME:-$COMMUNE_ID}"
+else
+  echo "==> 1/4 Echange cle admin -> customToken"
+  exchange_payload="$(jq -nc --arg k "$ADMIN_ACCESS_KEY" '{accessKey:$k}')"
+  exchange_resp="$(curl -sS -X POST "$API_BASE_URL/api/auth/admin/exchange" \
+    -H 'Content-Type: application/json' \
+    -d "$exchange_payload")"
+  custom_token="$(jq -r '.customToken // empty' <<<"$exchange_resp")"
+  if [[ -z "$custom_token" ]]; then
+    fail_with_payload "ADMIN_EXCHANGE" "$exchange_resp"
+  fi
+  COMMUNE_ID="${COMMUNE_ID:-$(jq -r '.profile.communeId // ""' <<<"$exchange_resp")}"
+  COMMUNE_NAME="${COMMUNE_NAME:-$(jq -r '.profile.communeName // ""' <<<"$exchange_resp")}"
 fi
-COMMUNE_ID="${COMMUNE_ID:-$(jq -r '.profile.communeId // ""' <<<"$exchange_resp")}"
-COMMUNE_NAME="${COMMUNE_NAME:-$(jq -r '.profile.communeName // ""' <<<"$exchange_resp")}"
 
 if [[ -z "$COMMUNE_ID" ]]; then
-  echo "COMMUNE_ID introuvable (profil bootstrap ?). Renseignez COMMUNE_ID=... avant de relancer." >&2
+  echo "COMMUNE_ID introuvable. Renseignez COMMUNE_ID=... avant de relancer." >&2
   exit 2
 fi
 
