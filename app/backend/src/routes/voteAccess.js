@@ -216,10 +216,10 @@ router.post('/validate', async (req, res) => {
 
     const eligiblePolls = await loadEligiblePolls(db, access, pollId);
     if (pollId && eligiblePolls.length === 0) {
-      return res.status(409).json({ ok: false, errorCode: 'POLL_CLOSED', message: 'Cette consultation n’est pas ouverte pour ce code.' });
+      return res.status(409).json({ ok: false, errorCode: 'POLL_CLOSED', message: 'Cette consultation n’est pas ouverte pour ce code.', communeId: access.communeId, communeName: access.communeName });
     }
     if (!pollId && eligiblePolls.length === 0) {
-      return res.status(409).json({ ok: false, errorCode: 'NO_OPEN_POLL', message: 'Aucune consultation ouverte pour votre commune actuellement.' });
+      return res.status(409).json({ ok: false, errorCode: 'NO_OPEN_POLL', message: 'Aucune consultation ouverte pour votre commune actuellement.', communeId: access.communeId, communeName: access.communeName });
     }
 
     const eligiblePollsWithTokens = eligiblePolls.map((poll) => {
