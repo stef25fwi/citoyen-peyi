@@ -21,11 +21,12 @@
     ],
     "headers": [
       {
+        "comment": "Le bundle Flutter (main.dart.js, flutter_bootstrap.js, flutter.js) garde le meme nom a chaque build : il NE DOIT PAS etre immutable, sinon les navigateurs gardent l'ancienne version a vie. On revalide a chaque chargement (304 si inchange).",
         "source": "**/*.js",
         "headers": [
           {
             "key": "Cache-Control",
-            "value": "public, max-age=31536000, immutable"
+            "value": "no-cache, must-revalidate"
           }
         ]
       },
