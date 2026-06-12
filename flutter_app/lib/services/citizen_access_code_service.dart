@@ -1086,9 +1086,14 @@ class CitizenAccessCodeService {
         throw StateError(_readBackendError(response.body));
       }
       return jsonDecode(response.body) as Map<String, dynamic>;
+    } on StateError {
+      // Messages deja explicites (session, token, reponse backend) : on remonte.
+      rethrow;
     } catch (error) {
+      // Erreur reseau/timeout/CORS : message clair plutot qu'un texte opaque.
       if (_secureBackendMode) {
-        rethrow;
+        throw StateError(
+            'Connexion au serveur impossible (${error.runtimeType}). Verifiez votre connexion, puis reessayez.');
       }
       return null;
     }
