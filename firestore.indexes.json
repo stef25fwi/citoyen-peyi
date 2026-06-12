@@ -239,7 +239,12 @@
     {
       "collectionGroup": "citizen_access_codes",
       "fieldPath": "accessCodeHash",
-      "indexes": []
+      "indexes": [
+        {
+          "order": "ASCENDING",
+          "queryScope": "COLLECTION"
+        }
+      ]
     },
     {
       "collectionGroup": "citizen_access_codes",
