@@ -128,10 +128,14 @@ if [[ "${PUBLISH:-0}" == "1" ]]; then
   echo "==> 4/4 Publication"
   publish_resp="$(curl -sS -X POST "$API_BASE_URL/api/polls/$poll_id/publish" \
     -H "Authorization: Bearer $id_token")"
-  publish_status="$(jq -r '.poll.status // empty' <<<"$publish_resp")"
-  if [[ -z "$publish_status" ]]; then
+  # L'endpoint /publish renvoie {ok,status} a plat (pas .poll.status). On accepte
+  # les deux formes pour eviter un faux ECHEC quand la publication a reussi.
+  publish_status="$(jq -r '.poll.status // .status // empty' <<<"$publish_resp")"
+  publish_ok="$(jq -r '.ok // false' <<<"$publish_resp")"
+  if [[ -z "$publish_status" && "$publish_ok" != "true" ]]; then
     fail_with_payload "PUBLISH_POLL" "$publish_resp"
   fi
+  publish_status="${publish_status:-active}"
   echo "    statut: $publish_status"
 else
   echo "==> 4/4 Publication ignoree (PUBLISH=1 pour activer)"
