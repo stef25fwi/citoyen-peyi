@@ -25,7 +25,12 @@ app.disable('x-powered-by');
 app.set('trust proxy', 1);
 
 app.use(httpLogger);
-app.use(helmet());
+// API consommee en cross-origin (web.app / github.io -> Cloud Run). Le defaut
+// helmet "Cross-Origin-Resource-Policy: same-origin" fait que Safari bloque la
+// lecture des reponses cross-origin (fetch -> TypeError). On autorise cross-origin.
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}));
 app.use(cors({
   origin: env.corsOrigins,
   credentials: true,
