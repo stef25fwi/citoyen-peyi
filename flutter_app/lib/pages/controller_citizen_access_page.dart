@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 
+import '../config/deep_links.dart';
 import '../models/poll_models.dart';
 import '../services/auth_session_store.dart';
 import '../services/citizen_access_code_service.dart';
@@ -220,7 +221,8 @@ class _ControllerCitizenAccessPageState
     }
 
     try {
-      final bytes = await _buildQrPngBytes(createdCode.accessCode);
+      final bytes =
+          await _buildQrPngBytes(DeepLinks.citizenAccess(createdCode.accessCode));
       await QrDownloadService.instance.downloadPng(
         bytes: bytes,
         fileName: 'code-citoyen-${createdCode.accessCode.toLowerCase()}.png',
@@ -790,7 +792,8 @@ class _ResultCard extends StatelessWidget {
                       child: Column(
                         children: [
                           QrImageView(
-                              data: createdCode.accessCode,
+                              data: DeepLinks.citizenAccess(
+                                  createdCode.accessCode),
                               size: 150,
                               backgroundColor: Colors.white),
                           const SizedBox(height: 10),

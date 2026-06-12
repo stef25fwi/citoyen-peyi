@@ -12,7 +12,10 @@ import '../widgets/public_bottom_nav.dart';
 import 'legal_page.dart';
 
 class AccessCitizenPage extends StatefulWidget {
-  const AccessCitizenPage({super.key});
+  const AccessCitizenPage({super.key, this.initialCode});
+
+  /// Code citoyen prerempli (issu d'un QR scanne : `/#/access?code=...`).
+  final String? initialCode;
 
   static const routeName = '/access-citizen';
   static const legalTermsAcceptedKey = 'citoyen_peyi_legal_terms_accepted_v1';
@@ -41,6 +44,10 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
   @override
   void initState() {
     super.initState();
+    final prefilled = widget.initialCode?.trim();
+    if (prefilled != null && prefilled.isNotEmpty) {
+      _codeController.text = prefilled.toUpperCase();
+    }
     NewPollBadgeService.instance.markAllSeen();
     _loadStoredLegalAcceptance();
   }

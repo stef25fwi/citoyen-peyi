@@ -157,7 +157,10 @@ class AppRouter {
       case '/participer':
       case '/espace-citoyen':
       case AccessCitizenPage.routeName:
-        return _page(const AccessCitizenPage(), settings);
+        return _page(
+          AccessCitizenPage(initialCode: uri.queryParameters['code']),
+          settings,
+        );
       case LegalPage.routeName:
         return _page(const LegalPage(), settings);
       case '/citizen':
