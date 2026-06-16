@@ -403,6 +403,11 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                             .pushNamed('/super-admin/support'),
                         child: const Text('Tickets assistance'),
                       ),
+                      FilledButton.tonal(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/super/backups'),
+                        child: const Text('Sauvegardes'),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 16),

@@ -24,6 +24,7 @@ import '../pages/public_news_page.dart';
 import '../pages/public_results_page.dart';
 import '../pages/super_admin_communes_page.dart';
 import '../pages/super_admin_dashboard_page.dart';
+import '../pages/super_admin_backup_page.dart';
 import '../screens/admin/support/admin_create_ticket_screen.dart';
 import '../screens/admin/support/admin_support_list_screen.dart';
 import '../screens/admin/support/admin_ticket_detail_screen.dart';
@@ -74,6 +75,9 @@ class AppRouter {
       case '/super/communes':
         return _requireRoles(
             settings, const SuperAdminCommunesPage(), const ['super_admin']);
+      case '/super/backups':
+        return _requireRoles(
+            settings, const SuperAdminBackupPage(), const ['super_admin']);
       case '/super/admins':
         return _requireRoles(
           settings,

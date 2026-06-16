@@ -2,6 +2,7 @@ import { applicationDefault, cert, getApps, initializeApp } from 'firebase-admin
 import { getAuth } from 'firebase-admin/auth';
 import { getFirestore } from 'firebase-admin/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
+import { getStorage } from 'firebase-admin/storage';
 import { env, getFirebaseAdminPrivateKey } from '../config/env.js';
 
 const cloudRunProjectId = () =>
@@ -49,3 +50,5 @@ export const getFirebaseAdminAuth = () => getAuth(initializeFirebaseAdmin());
 export const getFirebaseAdminDb = () => getFirestore(initializeFirebaseAdmin());
 
 export const getFirebaseAdminMessaging = () => getMessaging(initializeFirebaseAdmin());
+
+export const getFirebaseAdminStorage = () => getStorage(initializeFirebaseAdmin());

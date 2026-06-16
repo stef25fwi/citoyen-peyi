@@ -10,6 +10,7 @@ import adminRoutes from './routes/admins.js';
 import controllerRoutes from './routes/controllers.js';
 import notificationRoutes from './routes/notifications.js';
 import supportRoutes from './routes/support.js';
+import backupRoutes from './routes/backups.js';
 import { env, isFirebaseAdminConfigured, isSuperAdminConfigured, validateEnv } from './config/env.js';
 import { logger, httpLogger } from './services/logger.js';
 import { errorHandler, notFoundHandler, registerProcessHandlers } from './middlewares/errorHandler.js';
@@ -93,6 +94,7 @@ app.use('/api/notifications', voteAccessRateLimiter, notificationRoutes);
 app.use('/api/admins', writeRateLimiter, adminRoutes);
 app.use('/api/controllers', writeRateLimiter, controllerRoutes);
 app.use('/api/support', writeRateLimiter, supportRoutes);
+app.use('/api/backups', writeRateLimiter, backupRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
