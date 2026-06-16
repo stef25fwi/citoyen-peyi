@@ -1,42 +1,13 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import 'auth_session_store.dart';
+import 'firebase_auth_service.dart';
 import 'firestore_data_service.dart';
 import 'super_admin_service.dart';
-
-
-Future<String> requireFreshIdToken({bool forceRefresh = true}) async {
-  final user = FirebaseAuth.instance.currentUser;
-
-  if (user == null) {
-    throw StateError('Utilisateur non connecté.');
-  }
-
-  try {
-    final token = await user.getIdToken(forceRefresh);
-
-    if (token == null || token.isEmpty) {
-      throw StateError('Jeton Firebase Auth indisponible.');
-    }
-
-    return token;
-  } on StateError {
-    rethrow;
-  } on FirebaseAuthException catch (e) {
-    throw StateError(
-      'Impossible de récupérer le jeton Firebase Auth : ${e.message ?? e.code}',
-    );
-  } catch (e) {
-    throw StateError(
-      'Impossible de récupérer un jeton Firebase Auth valide : $e',
-    );
-  }
-}
 
 enum DuplicateReason {
   lostCode('lost_code', 'Code perdu'),
@@ -1053,14 +1024,16 @@ class CitizenAccessCodeService {
     }
 
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) {
+      // Utilise le resolveur robuste (gere le repli REST Safari/iPad ou
+      // FirebaseAuth.currentUser est null mais un jeton ID valide existe).
+      final token =
+          await FirebaseAuthService.instance.currentIdToken(forceRefresh: true);
+      if (token == null || token.isEmpty) {
         if (_secureBackendMode) {
           throw StateError('Session Firebase requise pour cette opération.');
         }
         return null;
       }
-      final token = await requireFreshIdToken(forceRefresh: true);
       var uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
       if (query.isNotEmpty) {
         uri = uri.replace(queryParameters: query);

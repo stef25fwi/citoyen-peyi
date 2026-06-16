@@ -12,6 +12,7 @@ process.env.FIREBASE_ADMIN_CLIENT_EMAIL = process.env.FIREBASE_ADMIN_CLIENT_EMAI
 process.env.FIREBASE_ADMIN_PRIVATE_KEY = process.env.FIREBASE_ADMIN_PRIVATE_KEY || '-----BEGIN PRIVATE KEY-----\\nTEST\\n-----END PRIVATE KEY-----\\n';
 
 const security = await import('../src/routes/citizenAccess.js');
+const voteAccess = await import('../src/routes/voteAccess.js');
 const authRoutes = await import('../src/routes/auth.js');
 const controllerRoutes = await import('../src/routes/controllers.js');
 const loggerModule = await import('../src/services/logger.js');
@@ -71,6 +72,18 @@ test('commune admin generated controller code hashes to the login lookup value',
   assert.equal(loginCode, generatedCode);
   assert.equal(keyHashing.hashControllerCode(loginCode), storedHash);
   assert.notEqual(storedHash, generatedCode);
+});
+
+test('citizen access code hashes identically at generation and at vote-access validation', () => {
+  // Invariant de connexion citoyen: le hash calcule a la generation du code
+  // (citizenAccess.hashAccessCode) doit etre strictement egal au hash utilise
+  // a la validation du code (voteAccess.hashCode), sinon un code valide est
+  // rejete a la connexion. Les deux modules doivent rester synchronises.
+  const code = security.generateSecureAccessCode();
+
+  assert.equal(security.hashAccessCode(code), voteAccess.hashCode(code));
+  // Normalisation identique (espaces / casse) des deux cotes.
+  assert.equal(security.hashAccessCode(` ${code.toLowerCase()} `), voteAccess.hashCode(code));
 });
 
 test('sanitizeRequestUrl redacts access codes from logged URLs', () => {
