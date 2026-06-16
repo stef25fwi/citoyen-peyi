@@ -93,6 +93,9 @@ export const env = {
   controllerCodePepper: optional(process.env.CONTROLLER_CODE_PEPPER) || optional(process.env.ACCESS_CODE_PEPPER),
   voteAccessTokenSecret: optional(process.env.VOTE_ACCESS_TOKEN_SECRET),
   rateLimitRedisUrl: optional(process.env.RATE_LIMIT_REDIS_URL),
+  // Bucket GCS prive dedie aux snapshots applicatifs (Niveau 2). Defaut:
+  // <projectId>-backups, resolu a l'execution si non defini.
+  backupBucket: optional(process.env.BACKUP_BUCKET),
   googleApplicationCredentials: optional(process.env.GOOGLE_APPLICATION_CREDENTIALS),
   firebaseAdminProjectId: optional(process.env.FIREBASE_ADMIN_PROJECT_ID),
   firebaseAdminClientEmail: optional(process.env.FIREBASE_ADMIN_CLIENT_EMAIL),

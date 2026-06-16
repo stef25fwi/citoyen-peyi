@@ -8,6 +8,8 @@
     "start": "node src/index.js",
     "migrate:registration-codes": "node src/scripts/migrateRegistrationCodesToCitizenAccessCodes.js",
     "retire:poll-votes": "node src/scripts/retireLegacyPollVotes.js",
+    "backup": "node src/scripts/backupFirestore.js",
+    "restore": "node src/scripts/restoreFirestore.js",
     "test": "node --test",
     "test:load": "node src/scripts/loadSmokeTest.js"
   },

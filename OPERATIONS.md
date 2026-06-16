@@ -178,7 +178,66 @@ avec un seuil (ex. lignes ≥ 70 % sur `src/routes` et `src/middlewares`).
 
 ---
 
-## 7. Dépannage rapide (erreurs déjà rencontrées)
+## 7. Sauvegarde & restauration (anti-perte profils + sondages)
+
+Deux niveaux complémentaires. **Aucun snapshot ne contient de secret/pepper** :
+les codes y figurent seulement sous forme de hash. ⚠️ Restaurer ces hash ne
+rétablit les connexions que si les **mêmes peppers** (Secret Manager) sont
+encore configurés — une rotation de pepper invalide les logins indépendamment
+de toute sauvegarde.
+
+### 7.1 Niveau 1 — managé GCP (filet catastrophe)
+Bucket privé + sauvegardes Firestore natives (point-in-time) + export à la demande.
+```bash
+GCP_PROJECT_ID=citoyen-peyi GCP_REGION=europe-west1 \
+  bash scripts/setup-firestore-backups.sh
+# Export ponctuel : gcloud firestore export gs://citoyen-peyi-backups/exports/$(date +%F)
+# Import (tout-ou-rien) : gcloud firestore import gs://citoyen-peyi-backups/exports/<DOSSIER>
+```
+
+### 7.2 Niveau 2 — snapshots applicatifs JSON (sélectifs, restauration fine)
+Module backend **super-admin** (`/api/backups`) + CLI. Snapshots stockés dans le
+bucket privé (`BACKUP_BUCKET`, défaut `<projectId>-backups`).
+
+API (header `x-super-admin-key` ou session super admin Firebase) :
+| Méthode | Route | Effet |
+|---|---|---|
+| `POST` | `/api/backups` | Crée un snapshot `{scope?, collections?}` → stocké en GCS |
+| `GET` | `/api/backups` | Liste les snapshots (métadonnées) |
+| `GET` | `/api/backups/:id` | URL signée (10 min) pour télécharger le JSON |
+| `POST` | `/api/backups/:id/restore` | Restaure `{mode, dryRun, force, collections?}` |
+| `DELETE` | `/api/backups/:id` | Supprime un snapshot |
+
+CLI ops (depuis `app/backend`) :
+```bash
+npm run backup -- --gcs                       # snapshot complet -> GCS
+npm run backup -- --communeId=97211 --gcs     # snapshot d'une commune
+npm run restore -- --id=<snapshot> # dry-run (n'écrit RIEN, rapporte le plan)
+npm run restore -- --id=<snapshot> --apply    # restauration (merge, idempotent)
+npm run restore -- --id=<snapshot> --mode=mirror --apply --force  # miroir (supprime les orphelins)
+```
+
+**Sémantique de restauration (sûreté d'abord) :**
+- `dryRun` par défaut (aucune écriture, renvoie le plan créés/maj/ignorés) ;
+- `merge` (défaut) : upsert idempotent, ne supprime jamais, **ignore** un document plus récent que le snapshot (garde anti-écrasement) ;
+- `mirror` : supprime les documents absents du snapshot → exige `force` ;
+- restauration sélective par `collections` et par `scope` (commune/sondages) ;
+- les votes (`poll_participations` + `poll_ballots`) sont restaurés avec les `polls` pour garder compteurs et anti-double-vote cohérents.
+
+**Automatisation (Cloud Scheduler → snapshot quotidien) :**
+```bash
+gcloud scheduler jobs create http citoyen-peyi-backup-daily \
+  --location=europe-west1 --schedule="0 2 * * *" \
+  --uri="https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app/api/backups" \
+  --http-method=POST --headers="x-super-admin-key=<CLE>,Content-Type=application/json" \
+  --message-body='{}' --project=citoyen-peyi
+```
+> Préférer un secret OIDC/Secret Manager plutôt que la clé en clair dans le job ;
+> le rate-limiter `writeRateLimiter` (60/min) s'applique à `/api/backups`.
+
+---
+
+## 8. Dépannage rapide (erreurs déjà rencontrées)
 
 | Symptôme (log) | Cause | Correctif |
 |---|---|---|
