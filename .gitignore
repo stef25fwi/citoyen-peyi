@@ -1,4 +1,6 @@
 node_modules/
+# Lockfile redondant du workspace backend (le lockfile racine fait foi).
+app/backend/package-lock.json
 dist/
 .env
 .env.*
