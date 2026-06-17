@@ -183,27 +183,50 @@ class SupportTicketService {
     return updateTicketStatus(ticketId: ticketId, status: 'en_cours');
   }
 
-  Stream<T> _poll<T>(Future<T> Function() loader) async* {
-    // Flux resilient : une erreur transitoire (cold start backend, jeton en
-    // cours de rafraichissement, micro-coupure reseau) ne doit PAS terminer le
-    // flux en erreur — sinon le StreamBuilder reste bloque (« compteurs
-    // indisponibles ») jusqu'au prochain rebuild. On conserve la derniere
-    // valeur connue et on reessaie a l'intervalle suivant.
-    T? last;
+  Stream<T> _poll<T>(Future<T> Function() loader) {
+    // Flux resilient base sur un StreamController (un async* ne peut pas emettre
+    // une erreur sans se terminer) :
+    //  - echec du TOUT PREMIER chargement -> on propage l'erreur pour que
+    //    l'ecran affiche son etat « indisponible / reessayer » ;
+    //  - apres au moins un succes, un incident transitoire (cold start, jeton en
+    //    refresh, micro-coupure) est ignore : on garde la derniere valeur a
+    //    l'ecran (pas de clignotement « indisponible ») ;
+    //  - dans tous les cas le flux reste ouvert et continue d'interroger, donc
+    //    il se retablit automatiquement des que le backend repond.
+    late StreamController<T> controller;
+    Timer? timer;
     var hasValue = false;
-    while (true) {
+    var loading = false;
+
+    Future<void> tick() async {
+      if (loading || controller.isClosed) return;
+      loading = true;
       try {
         final value = await loader();
-        last = value;
-        hasValue = true;
-        yield value;
-      } catch (_) {
-        // Echec transitoire : on reemet la derniere valeur connue (si on en a
-        // une) plutot que de terminer le flux en erreur.
-        if (hasValue) yield last as T;
+        if (!controller.isClosed) {
+          hasValue = true;
+          controller.add(value);
+        }
+      } catch (error, stackTrace) {
+        if (!hasValue && !controller.isClosed) {
+          controller.addError(error, stackTrace);
+        }
+      } finally {
+        loading = false;
       }
-      await Future<void>.delayed(_pollInterval);
     }
+
+    controller = StreamController<T>(
+      onListen: () {
+        tick();
+        timer = Timer.periodic(_pollInterval, (_) => tick());
+      },
+      onCancel: () {
+        timer?.cancel();
+        timer = null;
+      },
+    );
+    return controller.stream;
   }
 
   Future<List<SupportTicket>> _fetchTickets() async {
