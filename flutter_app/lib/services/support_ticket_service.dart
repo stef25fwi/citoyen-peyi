@@ -188,24 +188,21 @@ class SupportTicketService {
     // cours de rafraichissement, micro-coupure reseau) ne doit PAS terminer le
     // flux en erreur — sinon le StreamBuilder reste bloque (« compteurs
     // indisponibles ») jusqu'au prochain rebuild. On conserve la derniere
-    // valeur connue et on reessaie au tick suivant.
+    // valeur connue et on reessaie a l'intervalle suivant.
     T? last;
     var hasValue = false;
-    try {
-      last = await loader();
-      hasValue = true;
-      yield last as T;
-    } catch (_) {
-      // Premier chargement en echec : on n'emet rien et on reessaiera.
-    }
-    await for (final _ in Stream<void>.periodic(_pollInterval)) {
+    while (true) {
       try {
-        last = await loader();
+        final value = await loader();
+        last = value;
         hasValue = true;
-        yield last as T;
+        yield value;
       } catch (_) {
+        // Echec transitoire : on reemet la derniere valeur connue (si on en a
+        // une) plutot que de terminer le flux en erreur.
         if (hasValue) yield last as T;
       }
+      await Future<void>.delayed(_pollInterval);
     }
   }
 
