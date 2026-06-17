@@ -1023,62 +1023,103 @@ class CitizenAccessCodeService {
       return null;
     }
 
+    // Jeton robuste (gere le repli REST Safari/iPad ou FirebaseAuth.currentUser
+    // est null mais un jeton ID valide existe).
+    String? token;
     try {
-      // Utilise le resolveur robuste (gere le repli REST Safari/iPad ou
-      // FirebaseAuth.currentUser est null mais un jeton ID valide existe).
-      final token =
+      token =
           await FirebaseAuthService.instance.currentIdToken(forceRefresh: true);
-      if (token == null || token.isEmpty) {
-        if (_secureBackendMode) {
-          throw StateError('Session Firebase requise pour cette opération.');
-        }
-        return null;
-      }
-      var uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
-      if (query.isNotEmpty) {
-        uri = uri.replace(queryParameters: query);
-      }
-
-      final headers = {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-        if (SuperAdminService.instance.runtimeSuperAdminKey?.isNotEmpty == true)
-          'x-super-admin-key': SuperAdminService.instance.runtimeSuperAdminKey!,
-      };
-      final response = method == 'GET'
-          ? await http
-              .get(uri, headers: headers)
-              .timeout(const Duration(seconds: 12))
-          : await http
-              .post(uri,
-                  headers: headers,
-                  body: jsonEncode(body ?? const <String, dynamic>{}))
-              .timeout(const Duration(seconds: 12));
-
-      if (response.statusCode < 200 || response.statusCode >= 300) {
-        throw StateError(_readBackendError(response.body));
-      }
-      return jsonDecode(response.body) as Map<String, dynamic>;
-    } on StateError {
-      // Messages deja explicites (session, token, reponse backend) : on remonte.
-      rethrow;
-    } catch (error) {
-      // Erreur reseau/timeout/CORS : on remonte le texte reel de l'exception
-      // (runtimeType est minifie en release et donc inexploitable).
+    } catch (_) {
+      token = null;
+    }
+    if (token == null || token.isEmpty) {
       if (_secureBackendMode) {
-        throw StateError('Echec de l\'appel au serveur : $error');
+        throw StateError(
+            'Session expirée. Reconnectez-vous (espace agent) puis réessayez.');
       }
       return null;
     }
+
+    var uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
+    if (query.isNotEmpty) {
+      uri = uri.replace(queryParameters: query);
+    }
+    final headers = {
+      'Authorization': 'Bearer $token',
+      'Content-Type': 'application/json',
+      if (SuperAdminService.instance.runtimeSuperAdminKey?.isNotEmpty == true)
+        'x-super-admin-key': SuperAdminService.instance.runtimeSuperAdminKey!,
+    };
+
+    // Cold start Cloud Run : apres inactivite, la 1re requete peut renvoyer 503
+    // (aucune instance disponible) AVANT d'atteindre le handler -> le code n'est
+    // pas cree, le reessai est donc sûr. Timeout large pour absorber le
+    // demarrage a froid. Un POST n'est PAS rejoue sur erreur reseau/timeout
+    // (risque de double creation) : seul le 503 declenche un reessai.
+    const maxAttempts = 3;
+    const timeout = Duration(seconds: 25);
+    StateError? pendingError;
+
+    for (var attempt = 1; attempt <= maxAttempts; attempt += 1) {
+      late http.Response response;
+      try {
+        response = method == 'GET'
+            ? await http.get(uri, headers: headers).timeout(timeout)
+            : await http
+                .post(uri,
+                    headers: headers,
+                    body: jsonEncode(body ?? const <String, dynamic>{}))
+                .timeout(timeout);
+      } catch (error) {
+        // Erreur reseau/timeout/CORS. GET : rejouable ; POST : on remonte.
+        if (method == 'GET' && attempt < maxAttempts) {
+          await Future.delayed(Duration(milliseconds: 500 * attempt));
+          continue;
+        }
+        if (_secureBackendMode) {
+          throw StateError('Service momentanément injoignable. Réessayez dans '
+              'un instant. ($error)');
+        }
+        return null;
+      }
+
+      // 503 = cold start / instance indisponible : requete non traitee -> sûr.
+      if (response.statusCode == 503 && attempt < maxAttempts) {
+        pendingError =
+            StateError(_readBackendError(response.body, response.statusCode));
+        await Future.delayed(Duration(milliseconds: 600 * attempt));
+        continue;
+      }
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw StateError(_readBackendError(response.body, response.statusCode));
+      }
+      try {
+        return jsonDecode(response.body) as Map<String, dynamic>;
+      } catch (_) {
+        throw StateError('Réponse backend illisible (HTTP ${response.statusCode}).');
+      }
+    }
+
+    if (pendingError != null) throw pendingError;
+    if (_secureBackendMode) {
+      throw StateError('Service indisponible (réessayez dans un instant).');
+    }
+    return null;
   }
 
-  String _readBackendError(String body) {
+  String _readBackendError(String body, [int? status]) {
     try {
       final payload = jsonDecode(body) as Map<String, dynamic>;
-      return payload['message'] as String? ?? 'Opération backend impossible.';
+      final message =
+          (payload['message'] as String?) ?? (payload['error'] as String?);
+      if (message != null && message.trim().isNotEmpty) return message;
     } catch (_) {
-      return 'Opération backend impossible.';
+      // Corps non JSON : on retombe sur un message generique avec le statut.
     }
+    return status != null
+        ? 'Opération backend impossible (HTTP $status).'
+        : 'Opération backend impossible.';
   }
 }
 
