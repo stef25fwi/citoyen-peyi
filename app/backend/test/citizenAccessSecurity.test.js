@@ -100,6 +100,13 @@ test('regenerated admin access key matches the login hash lookup', () => {
   assert.equal(keyHashing.matchesStoredHash(key, stored, stored), true);
 });
 
+test('admin referenceEmail is normalized and validated', () => {
+  assert.equal(adminRoutes.normalizeEmail('  Maire@Ville.FR '), 'maire@ville.fr');
+  assert.equal(adminRoutes.normalizeEmail('pas-un-email'), '');
+  assert.equal(adminRoutes.normalizeEmail(''), '');
+  assert.equal(adminRoutes.normalizeEmail(null), '');
+});
+
 test('sanitizeRequestUrl redacts access codes from logged URLs', () => {
   assert.equal(
     loggerModule.sanitizeRequestUrl('/api/citizen-access/codes/AB12CD34/revoke'),

@@ -22,6 +22,7 @@ import '../pages/poll_detail_page.dart';
 import '../pages/placeholder_page.dart';
 import '../pages/public_news_page.dart';
 import '../pages/public_results_page.dart';
+import '../pages/super_admin_agents_page.dart';
 import '../pages/super_admin_communes_page.dart';
 import '../pages/super_admin_dashboard_page.dart';
 import '../pages/super_admin_backup_page.dart';
@@ -67,11 +68,7 @@ class AppRouter {
             settings, const SuperAdminSupportListScreen(), const ['super_admin']);
       case '/super/controllers':
         return _requireRoles(
-          settings,
-          const SuperAdminDashboardPage(
-              initialSection: SuperAdminDashboardSection.admins),
-          const ['super_admin'],
-        );
+            settings, const SuperAdminAgentsPage(), const ['super_admin']);
       case '/super/communes':
         return _requireRoles(
             settings, const SuperAdminCommunesPage(), const ['super_admin']);

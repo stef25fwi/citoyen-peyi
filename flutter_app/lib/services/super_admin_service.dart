@@ -25,6 +25,7 @@ class AdminProfileModel {
     required this.communeName,
     this.communeCode,
     this.codePostal,
+    this.referenceEmail = '',
     required this.accessKey,
     required this.createdAt,
   });
@@ -34,6 +35,7 @@ class AdminProfileModel {
   final String communeName;
   final String? communeCode;
   final String? codePostal;
+  final String referenceEmail;
   final String accessKey;
   final String createdAt;
 
@@ -43,6 +45,7 @@ class AdminProfileModel {
         'communeName': communeName,
         'communeCode': communeCode,
         'codePostal': codePostal,
+        'referenceEmail': referenceEmail,
         'createdAt': createdAt,
       };
 
@@ -52,6 +55,7 @@ class AdminProfileModel {
         communeName: communeName,
         communeCode: communeCode,
         codePostal: codePostal,
+        referenceEmail: referenceEmail,
         accessKey: '',
         createdAt: createdAt,
       );
@@ -74,6 +78,7 @@ class AdminProfileModel {
       communeName: communeName,
       communeCode: raw['communeCode'] as String?,
       codePostal: raw['codePostal'] as String?,
+      referenceEmail: raw['referenceEmail'] as String? ?? '',
       accessKey: '',
       createdAt: createdAt,
     );
@@ -272,6 +277,7 @@ class SuperAdminService {
                     communeName: item['communeName'] as String? ?? '',
                     communeCode: item['communeCode'] as String?,
                     codePostal: item['codePostal'] as String?,
+                    referenceEmail: item['referenceEmail'] as String? ?? '',
                     accessKey: '',
                     createdAt: item['createdAt']?.toString() ??
                         DateTime.now().toIso8601String(),
@@ -311,11 +317,13 @@ class SuperAdminService {
     required String communeName,
     String? communeCode,
     String? codePostal,
+    String? referenceEmail,
   }) async {
     final trimmedLabel = label.trim();
     final trimmedCommuneName = communeName.trim();
     final trimmedCommuneCode = communeCode?.trim() ?? '';
     final trimmedCodePostal = codePostal?.trim() ?? '';
+    final trimmedEmail = referenceEmail?.trim() ?? '';
 
     if (trimmedCommuneName.isEmpty) {
       throw const SuperAdminAuthException('Le nom de la commune est requis.');
@@ -337,6 +345,7 @@ class SuperAdminService {
       'communeName': trimmedCommuneName,
       'communeCode': trimmedCommuneCode,
       'codePostal': trimmedCodePostal,
+      if (trimmedEmail.isNotEmpty) 'referenceEmail': trimmedEmail,
     });
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
@@ -346,6 +355,7 @@ class SuperAdminService {
       communeName: payload['communeName'] as String? ?? trimmedCommuneName,
       communeCode: payload['communeCode'] as String?,
       codePostal: payload['codePostal'] as String?,
+      referenceEmail: payload['referenceEmail'] as String? ?? trimmedEmail,
       accessKey: payload['accessKey'] as String? ?? '',
       createdAt: DateTime.now().toIso8601String(),
     );

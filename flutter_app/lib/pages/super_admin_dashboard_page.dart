@@ -129,8 +129,22 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
       ),
     );
     if (confirmed != true) return;
-    await SuperAdminService.instance.deleteProfile(profile.id);
-    await _loadProfiles();
+    try {
+      await SuperAdminService.instance.deleteProfile(profile.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Profil "${profile.label}" supprimé.')),
+      );
+      await _loadProfiles();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red.shade700,
+          content: Text('Suppression impossible : ${error.toString()}'),
+        ),
+      );
+    }
   }
 
   Future<void> _openCreateDialog() async {
@@ -223,6 +237,14 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                 ],
               ),
             ),
+            if (profile.referenceEmail.isNotEmpty) ...[
+              const SizedBox(height: 12),
+              Text(
+                'À transmettre à : ${profile.referenceEmail}',
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Color(0xFF5A6573)),
+              ),
+            ],
           ],
         ),
         actions: [
@@ -650,6 +672,16 @@ class _SuperAdminSupportDashboardCard extends StatelessWidget {
 
 // ---------- Profile card ----------
 
+/// Format jj/mm/aa hh:mm (heure locale) pour l'affichage des profils.
+String _formatFrenchDateTime(String iso) {
+  final date = DateTime.tryParse(iso);
+  if (date == null) return iso;
+  final d = date.toLocal();
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${two(d.day)}/${two(d.month)}/${two(d.year % 100)} '
+      '${two(d.hour)}:${two(d.minute)}';
+}
+
 class _ProfileCard extends StatefulWidget {
   const _ProfileCard({required this.profile, required this.onDelete});
 
@@ -730,16 +762,7 @@ class _ProfileCardState extends State<_ProfileCard> {
     final theme = Theme.of(context);
     final profile = widget.profile;
 
-    final createdDate = () {
-      try {
-        return DateTime.parse(profile.createdAt)
-            .toLocal()
-            .toString()
-            .substring(0, 16);
-      } catch (_) {
-        return profile.createdAt;
-      }
-    }();
+    final createdDate = _formatFrenchDateTime(profile.createdAt);
 
     return Card(
       child: Padding(
@@ -774,6 +797,22 @@ class _ProfileCardState extends State<_ProfileCard> {
                         style: theme.textTheme.bodyMedium
                             ?.copyWith(color: const Color(0xFF5A6573)),
                       ),
+                      if (profile.referenceEmail.isNotEmpty)
+                        Row(
+                          children: [
+                            const Icon(Icons.alternate_email_rounded,
+                                size: 14, color: Color(0xFF5A6573)),
+                            const SizedBox(width: 4),
+                            Flexible(
+                              child: Text(
+                                profile.referenceEmail,
+                                style: theme.textTheme.bodySmall
+                                    ?.copyWith(color: const Color(0xFF5A6573)),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
                     ],
                   ),
                 ),
@@ -875,6 +914,7 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
   final _communeCtrl = TextEditingController();
   final _codeCtrl = TextEditingController();
   final _postalCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   bool _isSubmitting = false;
 
   void _debugLog(String message) {
@@ -889,6 +929,7 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
     _communeCtrl.dispose();
     _codeCtrl.dispose();
     _postalCtrl.dispose();
+    _emailCtrl.dispose();
     super.dispose();
   }
 
@@ -944,6 +985,7 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
         communeName: CommuneLookupService.normalizeCommuneName(_communeCtrl.text),
         communeCode: CommuneLookupService.normalizeInsee(_codeCtrl.text),
         codePostal: CommuneLookupService.normalizePostal(_postalCtrl.text),
+        referenceEmail: _emailCtrl.text.trim(),
       );
       if (!mounted) return;
       Navigator.of(context).pop();
@@ -1034,6 +1076,26 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                 ),
                 validator: (v) =>
                     (v == null || v.trim().isEmpty) ? 'Champ requis.' : null,
+              ),
+              const SizedBox(height: 14),
+              // ---------- E-mail de reference (optionnel) ----------
+              TextFormField(
+                controller: _emailCtrl,
+                enabled: !_isSubmitting,
+                keyboardType: TextInputType.emailAddress,
+                decoration: const InputDecoration(
+                  labelText: 'E-mail de référence (optionnel)',
+                  hintText: 'mairie@exemple.fr',
+                  prefixIcon: Icon(Icons.alternate_email_rounded),
+                  helperText:
+                      'Adresse à qui transmettre la clé (aucun envoi automatique).',
+                ),
+                validator: (v) {
+                  final value = v?.trim() ?? '';
+                  if (value.isEmpty) return null; // optionnel
+                  final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value);
+                  return ok ? null : 'E-mail invalide.';
+                },
               ),
               const SizedBox(height: 8),
               const Text(
