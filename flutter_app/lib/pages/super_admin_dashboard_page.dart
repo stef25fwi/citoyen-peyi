@@ -662,6 +662,68 @@ class _ProfileCard extends StatefulWidget {
 
 class _ProfileCardState extends State<_ProfileCard> {
   bool _keyVisible = false;
+  bool _busy = false;
+  String? _revealedKey;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.profile.accessKey.isNotEmpty) {
+      _revealedKey = widget.profile.accessKey;
+    }
+  }
+
+  String get _key => _revealedKey ?? '';
+
+  Future<void> _onEyePressed() async {
+    if (_key.isNotEmpty) {
+      setState(() => _keyVisible = !_keyVisible);
+      return;
+    }
+    await _regenerateAndReveal();
+  }
+
+  Future<void> _regenerateAndReveal() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Afficher la clé ?'),
+        content: const Text(
+          'Pour des raisons de sécurité, la clé d\'origine est chiffrée et ne '
+          'peut pas être réaffichée. Générer une nouvelle clé pour cet '
+          'administrateur ? L\'ancienne clé sera immédiatement invalidée.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler')),
+          FilledButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Générer & afficher'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _busy = true);
+    try {
+      final key =
+          await SuperAdminService.instance.regenerateAdminKey(widget.profile.id);
+      if (!mounted) return;
+      setState(() {
+        _revealedKey = key;
+        _keyVisible = true;
+        _busy = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Régénération impossible : ${error.toString()}')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -729,9 +791,9 @@ class _ProfileCardState extends State<_ProfileCard> {
             Row(
               children: [
                 Expanded(
-                  child: _keyVisible && profile.accessKey.isNotEmpty
+                  child: _keyVisible && _key.isNotEmpty
                       ? SelectableText(
-                          profile.accessKey,
+                          _key,
                           style: const TextStyle(
                             fontFamily: 'monospace',
                             fontWeight: FontWeight.w700,
@@ -741,9 +803,9 @@ class _ProfileCardState extends State<_ProfileCard> {
                           ),
                         )
                       : Text(
-                          profile.accessKey.isEmpty
-                              ? 'Clé masquée'
-                              : '•' * profile.accessKey.length,
+                          _key.isEmpty
+                              ? 'Clé chiffrée — cliquez sur l\'œil pour en générer une nouvelle'
+                              : '•' * _key.length,
                           style: const TextStyle(
                             fontSize: 14,
                             color: Color(0xFF9AA9B8),
@@ -752,21 +814,28 @@ class _ProfileCardState extends State<_ProfileCard> {
                         ),
                 ),
                 const SizedBox(width: 8),
-                IconButton(
-                  icon: Icon(_keyVisible
-                      ? Icons.visibility_off_outlined
-                      : Icons.visibility_outlined),
-                  tooltip: _keyVisible ? 'Masquer la clé' : 'Afficher la clé',
-                  onPressed: profile.accessKey.isEmpty
-                      ? null
-                      : () => setState(() => _keyVisible = !_keyVisible),
-                ),
-                if (_keyVisible && profile.accessKey.isNotEmpty)
+                if (_busy)
+                  const SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                else
+                  IconButton(
+                    icon: Icon(_keyVisible && _key.isNotEmpty
+                        ? Icons.visibility_off_outlined
+                        : Icons.visibility_outlined),
+                    tooltip: _key.isEmpty
+                        ? 'Générer et afficher la clé'
+                        : (_keyVisible ? 'Masquer la clé' : 'Afficher la clé'),
+                    onPressed: _onEyePressed,
+                  ),
+                if (_keyVisible && _key.isNotEmpty)
                   IconButton(
                     icon: const Icon(Icons.copy_rounded),
                     tooltip: 'Copier la clé',
                     onPressed: () {
-                      Clipboard.setData(ClipboardData(text: profile.accessKey));
+                      Clipboard.setData(ClipboardData(text: _key));
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                             content:

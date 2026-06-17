@@ -356,6 +356,19 @@ class SuperAdminService {
     return profile;
   }
 
+  /// Regenere la cle d'acces d'un admin communal. Les cles d'origine sont
+  /// hachees (irrecuperables) : le backend en emet une nouvelle, retournee une
+  /// seule fois, et invalide l'ancienne.
+  Future<String> regenerateAdminKey(String id) async {
+    final response = await _authorizedPost('/api/admins/$id/regenerate', const {});
+    final payload = jsonDecode(response.body) as Map<String, dynamic>;
+    final key = payload['accessKey'] as String?;
+    if (key == null || key.isEmpty) {
+      throw const SuperAdminAuthException('Cle regeneree indisponible.');
+    }
+    return key;
+  }
+
   /// Supprime un profil admin par ID via l'API backend.
   Future<void> deleteProfile(String id) async {
     await _authorizedDelete('/api/admins/$id');

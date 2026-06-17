@@ -18,7 +18,7 @@ const ensureConfigured = (_req, res, next) => {
 };
 
 const sanitize = (value, max) => (typeof value === 'string' ? value.trim().substring(0, max) : '');
-const generateAccessKey = () => {
+export const generateAccessKey = () => {
   const buf = crypto.randomBytes(16);
   const part1 = Array.from(buf.slice(0, 8)).map((b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
   const part2 = Array.from(buf.slice(8, 12)).map((b) => CODE_ALPHABET[b % CODE_ALPHABET.length]).join('');
@@ -82,6 +82,46 @@ router.post('/', async (req, res, next) => {
       communeName,
       communeCode,
       codePostal,
+      accessKey,
+    });
+  } catch (error) {
+    return next(error);
+  }
+});
+
+// Regenere la cle d'acces d'un admin communal. Les cles sont hachees (jamais
+// stockees en clair) : l'originale est irrecuperable, on en emet donc une
+// nouvelle (affichee une seule fois) et l'ancienne est invalidee.
+router.post('/:adminId/regenerate', async (req, res, next) => {
+  try {
+    const db = getFirebaseAdminDb();
+    const ref = db.collection(COLLECTION).doc(req.params.adminId);
+    const doc = await ref.get();
+    if (!doc.exists) return res.status(404).json({ message: 'Profil introuvable.' });
+
+    const accessKey = generateAccessKey();
+    await ref.set({
+      accessKeyHash: hashAdminAccessKey(accessKey),
+      keyRegeneratedAt: FieldValue.serverTimestamp(),
+      keyRegeneratedBy: req.user?.uid || 'super_admin',
+      updatedAt: FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    // Invalide les sessions Firebase eventuellement actives pour cet admin.
+    try {
+      const { getFirebaseAdminAuth } = await import('../services/firebaseAdmin.js');
+      await getFirebaseAdminAuth().revokeRefreshTokens(`admin:${req.params.adminId}`);
+    } catch (_) {
+      // L'utilisateur Firebase peut ne jamais avoir ete cree : ignore.
+    }
+
+    const data = doc.data() || {};
+    return res.json({
+      id: doc.id,
+      label: data.label,
+      communeName: data.communeName,
+      communeCode: data.communeCode,
+      codePostal: data.codePostal,
       accessKey,
     });
   } catch (error) {

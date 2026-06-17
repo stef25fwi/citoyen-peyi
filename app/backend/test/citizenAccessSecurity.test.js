@@ -14,6 +14,7 @@ process.env.FIREBASE_ADMIN_PRIVATE_KEY = process.env.FIREBASE_ADMIN_PRIVATE_KEY 
 const security = await import('../src/routes/citizenAccess.js');
 const voteAccess = await import('../src/routes/voteAccess.js');
 const authRoutes = await import('../src/routes/auth.js');
+const adminRoutes = await import('../src/routes/admins.js');
 const controllerRoutes = await import('../src/routes/controllers.js');
 const loggerModule = await import('../src/services/logger.js');
 const keyHashing = await import('../src/services/keyHashing.js');
@@ -84,6 +85,19 @@ test('citizen access code hashes identically at generation and at vote-access va
   assert.equal(security.hashAccessCode(code), voteAccess.hashCode(code));
   // Normalisation identique (espaces / casse) des deux cotes.
   assert.equal(security.hashAccessCode(` ${code.toLowerCase()} `), voteAccess.hashCode(code));
+});
+
+test('regenerated admin access key matches the login hash lookup', () => {
+  // La regeneration (icone oeil super admin) emet une nouvelle cle au format
+  // attendu, dont le hash peppered correspond a celui utilise au login admin.
+  const key = adminRoutes.generateAccessKey();
+  assert.match(key, /^ADM-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]+-[ABCDEFGHJKLMNPQRSTUVWXYZ23456789]+$/);
+
+  const stored = keyHashing.hashAdminAccessKey(key);
+  assert.match(stored, /^[a-f0-9]{64}$/);
+  // Normalisation casse: la saisie au login (meme en minuscules) retombe sur le meme hash.
+  assert.equal(keyHashing.hashAdminAccessKey(key.toLowerCase()), stored);
+  assert.equal(keyHashing.matchesStoredHash(key, stored, stored), true);
 });
 
 test('sanitizeRequestUrl redacts access codes from logged URLs', () => {
