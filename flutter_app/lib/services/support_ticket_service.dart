@@ -184,9 +184,28 @@ class SupportTicketService {
   }
 
   Stream<T> _poll<T>(Future<T> Function() loader) async* {
-    yield await loader();
+    // Flux resilient : une erreur transitoire (cold start backend, jeton en
+    // cours de rafraichissement, micro-coupure reseau) ne doit PAS terminer le
+    // flux en erreur — sinon le StreamBuilder reste bloque (« compteurs
+    // indisponibles ») jusqu'au prochain rebuild. On conserve la derniere
+    // valeur connue et on reessaie au tick suivant.
+    T? last;
+    var hasValue = false;
+    try {
+      last = await loader();
+      hasValue = true;
+      yield last as T;
+    } catch (_) {
+      // Premier chargement en echec : on n'emet rien et on reessaiera.
+    }
     await for (final _ in Stream<void>.periodic(_pollInterval)) {
-      yield await loader();
+      try {
+        last = await loader();
+        hasValue = true;
+        yield last as T;
+      } catch (_) {
+        if (hasValue) yield last as T;
+      }
     }
   }
 
