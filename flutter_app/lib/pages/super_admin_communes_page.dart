@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../models/poll_models.dart';
 import '../services/citizen_access_code_service.dart';
+import '../services/poll_service.dart';
 
 class SuperAdminCommunesPage extends StatefulWidget {
   const SuperAdminCommunesPage({super.key});
@@ -12,6 +14,7 @@ class SuperAdminCommunesPage extends StatefulWidget {
 class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
   bool _isLoading = true;
   List<CommuneAnalyticsModel> _communes = const [];
+  List<PollModel> _polls = const [];
 
   @override
   void initState() {
@@ -21,12 +24,68 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final communes = await CitizenAccessCodeService.instance.getCommuneAnalyticsForSuperAdmin();
+    List<CommuneAnalyticsModel> communes = _communes;
+    List<PollModel> polls = _polls;
+    try {
+      communes = await CitizenAccessCodeService.instance
+          .getCommuneAnalyticsForSuperAdmin();
+    } catch (_) {
+      // Conserve l'etat precedent en cas d'echec.
+    }
+    try {
+      polls = await PollService.instance.loadPolls();
+    } catch (_) {
+      // Conserve l'etat precedent en cas d'echec.
+    }
     if (!mounted) return;
     setState(() {
       _communes = communes;
+      _polls = polls;
       _isLoading = false;
     });
+  }
+
+  Future<void> _editPoll(PollModel poll) async {
+    await Navigator.of(context).pushNamed('/admin/polls/${poll.id}/edit');
+    if (!mounted) return;
+    await _load();
+  }
+
+  Future<void> _deletePoll(PollModel poll) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Supprimer cette consultation ?'),
+        content: Text(
+          'La consultation "${poll.projectTitle}" sera supprimée définitivement. '
+          'Une consultation contenant déjà des votes ne peut pas être supprimée.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await PollService.instance.deletePoll(poll.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Consultation supprimée.')),
+      );
+      await _load();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
   }
 
   @override
@@ -148,8 +207,139 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                       ),
                     ),
                 ],
+                if (!_isLoading) ...[
+                  const SizedBox(height: 28),
+                  Text('Consultations en ligne',
+                      style: theme.textTheme.headlineSmall),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Toutes les consultations publiées, toutes communes confondues. '
+                    'Cliquez pour les modifier ou les supprimer.',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: const Color(0xFF64748B)),
+                  ),
+                  const SizedBox(height: 12),
+                  if (_polls.isEmpty)
+                    const Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('Aucune consultation en ligne pour le moment.'),
+                      ),
+                    )
+                  else
+                    for (final poll in _polls)
+                      _PollAdminCard(
+                        poll: poll,
+                        onEdit: () => _editPoll(poll),
+                        onDelete: () => _deletePoll(poll),
+                      ),
+                ],
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PollAdminCard extends StatelessWidget {
+  const _PollAdminCard({
+    required this.poll,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  final PollModel poll;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+
+  static (String, Color) _statusBadge(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+      case 'open':
+        return ('En ligne', const Color(0xFF15803D));
+      case 'scheduled':
+        return ('Programmée', const Color(0xFF0891B2));
+      case 'closed':
+        return ('Clôturée', const Color(0xFFB45309));
+      case 'archived':
+        return ('Archivée', const Color(0xFF6B7280));
+      default:
+        return ('Brouillon', const Color(0xFF6B7280));
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final (label, color) = _statusBadge(poll.status);
+    final commune = poll.communeName.isNotEmpty
+        ? poll.communeName
+        : (poll.communeId.isNotEmpty ? poll.communeId : 'Commune non renseignée');
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      poll.projectTitle.isEmpty
+                          ? 'Consultation'
+                          : poll.projectTitle,
+                      style: theme.textTheme.titleMedium
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: Text(label,
+                        style: TextStyle(
+                            color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text('$commune · ${poll.totalVoted} vote(s)',
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: const Color(0xFF64748B))),
+              if (poll.question.isNotEmpty) ...[
+                const SizedBox(height: 6),
+                Text(poll.question,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.textTheme.bodyMedium),
+              ],
+              const SizedBox(height: 12),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined),
+                    label: const Text('Modifier'),
+                  ),
+                  const SizedBox(width: 8),
+                  TextButton.icon(
+                    onPressed: onDelete,
+                    style: TextButton.styleFrom(foregroundColor: Colors.red),
+                    icon: const Icon(Icons.delete_outline_rounded),
+                    label: const Text('Supprimer'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),

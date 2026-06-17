@@ -41,9 +41,13 @@ class PollService {
 
   Future<List<PollModel>> loadPolls() async {
     final session = AuthSessionStore.instance.currentSession;
-    final isAuthenticated =
-        session?.isCommuneAdmin == true || session?.isController == true;
-    final communeScope = isAuthenticated
+    final isSuperAdmin = session?.isSuperAdmin == true;
+    final isAuthenticated = session?.isCommuneAdmin == true ||
+        session?.isController == true ||
+        isSuperAdmin;
+    // Le super admin n'est rattache a aucune commune : portee vide => toutes
+    // les consultations (toutes communes) lui sont retournees.
+    final communeScope = isAuthenticated && !isSuperAdmin
         ? (session?.commune?.code ?? session?.commune?.name ?? '')
         : '';
 
