@@ -1,3 +1,4 @@
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../services/citizen_access_code_service.dart';
@@ -258,6 +259,8 @@ class _ControllerActivityDashboardPageState
                     ],
                   ),
                   const SizedBox(height: 20),
+                  _ActionTypePieChart(analytics: _analytics),
+                  const SizedBox(height: 20),
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final wide = constraints.maxWidth >= 850;
@@ -341,6 +344,111 @@ class _ControllerActivityDashboardPageState
 
 String _formatDate(DateTime value) =>
     '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
+
+class _ActionTypePieChart extends StatelessWidget {
+  const _ActionTypePieChart({required this.analytics});
+
+  final ControllerActivityAnalytics analytics;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final data = <(String, int, Color)>[
+      ('Codes générés', analytics.totalCodesGenerated, const Color(0xFF0F6D8F)),
+      ('Doublons détectés', analytics.duplicatesDetected, const Color(0xFFEAB308)),
+      ('Demandes régén.', analytics.regenerationRequests, const Color(0xFF8B5CF6)),
+      ('Régén. validées', analytics.regenerationsApproved, const Color(0xFF15803D)),
+      ('Régén. refusées', analytics.regenerationsRejected, const Color(0xFFDC2626)),
+      ('Codes utilisés', analytics.loginCodesUsed, const Color(0xFF0891B2)),
+    ];
+    final total = data.fold<int>(0, (sum, item) => sum + item.$2);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Répartition des actions', style: theme.textTheme.titleMedium),
+            const SizedBox(height: 12),
+            if (total == 0)
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 24),
+                child: Center(child: Text('Aucune activité sur la période.')),
+              )
+            else
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final pie = SizedBox(
+                    height: 200,
+                    child: PieChart(
+                      PieChartData(
+                        sectionsSpace: 2,
+                        centerSpaceRadius: 46,
+                        sections: [
+                          for (final item in data)
+                            if (item.$2 > 0)
+                              PieChartSectionData(
+                                value: item.$2.toDouble(),
+                                color: item.$3,
+                                title: '${((item.$2 / total) * 100).round()}%',
+                                radius: 56,
+                                titleStyle: const TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w700,
+                                  color: Colors.white,
+                                ),
+                              ),
+                        ],
+                      ),
+                    ),
+                  );
+                  final legend = Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      for (final item in data)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 3),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 12,
+                                height: 12,
+                                decoration: BoxDecoration(
+                                  color: item.$3,
+                                  borderRadius: BorderRadius.circular(3),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text('${item.$1} : ${item.$2}',
+                                  style: theme.textTheme.bodySmall),
+                            ],
+                          ),
+                        ),
+                    ],
+                  );
+                  if (constraints.maxWidth < 520) {
+                    return Column(
+                        children: [pie, const SizedBox(height: 12), legend]);
+                  }
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Expanded(child: pie),
+                      const SizedBox(width: 16),
+                      Expanded(child: legend),
+                    ],
+                  );
+                },
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
 
 class _ActivityBreakdownCard extends StatelessWidget {
   const _ActivityBreakdownCard({

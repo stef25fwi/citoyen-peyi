@@ -25,6 +25,14 @@ export const generateAccessKey = () => {
   return `ADM-${part1}-${part2}`;
 };
 
+// E-mail de reference (optionnel) : normalise + valide grossierement. Renvoie ''
+// si vide ou format invalide.
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+export const normalizeEmail = (value) => {
+  const email = sanitize(value, 200).toLowerCase();
+  return email && EMAIL_PATTERN.test(email) ? email : '';
+};
+
 router.use(ensureConfigured, requireFirebaseAuth, requireSuperAdmin, requireSuperAdminKey);
 
 router.get('/', async (_req, res, next) => {
@@ -40,6 +48,7 @@ router.get('/', async (_req, res, next) => {
           communeName: data.communeName,
           communeCode: data.communeCode,
           codePostal: data.codePostal,
+          referenceEmail: data.referenceEmail || '',
           createdAt: data.createdAt,
           lastUsedAt: data.lastUsedAt,
         };
@@ -56,9 +65,16 @@ router.post('/', async (req, res, next) => {
     const communeName = sanitize(req.body?.communeName, 200);
     const communeCode = sanitize(req.body?.communeCode, 64);
     const codePostal = sanitize(req.body?.codePostal, 16);
+    const rawEmail = sanitize(req.body?.referenceEmail, 200);
+    const referenceEmail = normalizeEmail(rawEmail);
 
     if (!label || !communeName) {
       return res.status(400).json({ message: 'Libelle et commune sont requis.' });
+    }
+    // E-mail optionnel : s'il est fourni mais mal forme, on refuse plutot que
+    // d'enregistrer une adresse inexploitable.
+    if (rawEmail && !referenceEmail) {
+      return res.status(400).json({ message: 'E-mail de reference invalide.' });
     }
 
     const accessKey = generateAccessKey();
@@ -71,6 +87,7 @@ router.post('/', async (req, res, next) => {
       communeName,
       communeCode,
       codePostal,
+      referenceEmail,
       accessKeyHash: hashAdminAccessKey(accessKey),
       createdAt: FieldValue.serverTimestamp(),
       createdBy: req.user?.uid || 'super_admin',
@@ -82,6 +99,7 @@ router.post('/', async (req, res, next) => {
       communeName,
       communeCode,
       codePostal,
+      referenceEmail,
       accessKey,
     });
   } catch (error) {
@@ -122,6 +140,7 @@ router.post('/:adminId/regenerate', async (req, res, next) => {
       communeName: data.communeName,
       communeCode: data.communeCode,
       codePostal: data.codePostal,
+      referenceEmail: data.referenceEmail || '',
       accessKey,
     });
   } catch (error) {
