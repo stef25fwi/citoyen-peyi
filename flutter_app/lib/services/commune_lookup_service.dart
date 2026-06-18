@@ -53,6 +53,13 @@ class CommuneLookupService {
 
   static const _fields = 'nom,code,codesPostaux,population';
 
+  // Cache memoire borne (LRU simple via l'ordre d'insertion d'une Map) : evite
+  // de rappeler l'API a chaque frappe ou requete deja vue. Le client HTTP est
+  // DEDIE et sans intercepteur : aucun jeton Firebase n'est jamais envoye a
+  // api.gouv.fr.
+  final Map<String, List<CommuneSuggestion>> _cache = {};
+  static const _maxCacheEntries = 64;
+
   /// Nom de commune : trim + espaces multiples reduits.
   static String normalizeCommuneName(String? value) =>
       (value ?? '').trim().replaceAll(RegExp(r'\s+'), ' ');
@@ -72,20 +79,36 @@ class CommuneLookupService {
   Future<List<CommuneSuggestion>> search(String query) async {
     final q = query.trim();
     if (q.length < 2) return const [];
+    final cacheKey = q.toLowerCase();
+
+    final cached = _cache.remove(cacheKey);
+    if (cached != null) {
+      _cache[cacheKey] = cached; // reinsere -> marque comme recemment utilise
+      return cached;
+    }
 
     final isPostal = RegExp(r'^\d{2,5}$').hasMatch(q);
     final url = isPostal
         ? 'https://geo.api.gouv.fr/communes?codePostal=$q&fields=$_fields&limit=10'
         : 'https://geo.api.gouv.fr/communes?nom=${Uri.encodeComponent(q)}&fields=$_fields&boost=population&limit=10';
 
+    // En cas d'erreur (timeout/non-200/JSON invalide) on NE met PAS en cache :
+    // la prochaine frappe pourra reessayer. Les champs restent editables a la
+    // main, la soumission n'est jamais bloquee par l'API.
     final response =
         await _client.get(Uri.parse(url)).timeout(const Duration(seconds: 5));
     if (response.statusCode != 200) return const [];
     final data = jsonDecode(response.body);
     if (data is! List) return const [];
-    return data
+    final results = data
         .map(CommuneSuggestion.fromApi)
         .whereType<CommuneSuggestion>()
         .toList(growable: false);
+
+    _cache[cacheKey] = results;
+    if (_cache.length > _maxCacheEntries) {
+      _cache.remove(_cache.keys.first); // evince l'entree la plus ancienne
+    }
+    return results;
   }
 }
