@@ -274,7 +274,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
     final pageTitle = switch (widget.initialSection) {
       AdminDashboardSection.overview => 'Tableau de bord commune',
       AdminDashboardSection.polls => 'Consultations communales',
-      AdminDashboardSection.controllers => 'Agents de mobilisation citoyenne communaux',
+      AdminDashboardSection.controllers =>
+        'Agents de mobilisation citoyenne communaux',
     };
 
     final activeCount = _polls.where((poll) => poll.status == 'active').length;
@@ -331,7 +332,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ),
         ],
       ),
-
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 920),
@@ -499,13 +499,13 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                     communeId: session?.commune?.code?.trim().isNotEmpty == true
                         ? session!.commune!.code!.trim()
                         : session?.commune?.name.trim() ?? '',
-                  onCreateTicket: () =>
-                    Navigator.of(context).pushNamed('/admin/support/new'),
-                  onOpenTickets: () =>
-                    Navigator.of(context).pushNamed('/admin/support'),
-                  onOpenTicket: (ticket) => Navigator.of(context)
-                    .pushNamed('/admin/support/${ticket.ticketId}'),
-                  onRetry: _load,
+                    onCreateTicket: () =>
+                        Navigator.of(context).pushNamed('/admin/support/new'),
+                    onOpenTickets: () =>
+                        Navigator.of(context).pushNamed('/admin/support'),
+                    onOpenTicket: (ticket) => Navigator.of(context)
+                        .pushNamed('/admin/support/${ticket.ticketId}'),
+                    onRetry: _load,
                   ),
                 if (showOverviewSection) const SizedBox(height: 16),
                 if (showOverviewSection)
@@ -693,7 +693,8 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                             for (final ctrl in _controleurs)
                               _ControleurRow(
                                 profile: ctrl,
-                                onRegenerate: () => _regenerateControleurCode(ctrl),
+                                onRegenerate: () =>
+                                    _regenerateControleurCode(ctrl),
                                 onDelete: () => _deleteControleur(ctrl),
                               ),
                         ],
@@ -1055,7 +1056,8 @@ class _SupportTicketsSummaryCard extends StatelessWidget {
               Expanded(
                 child: Text('Mes tickets', style: theme.textTheme.titleMedium),
               ),
-              TextButton(onPressed: onOpenTickets, child: const Text('Tout voir')),
+              TextButton(
+                  onPressed: onOpenTickets, child: const Text('Tout voir')),
             ],
           ),
           const SizedBox(height: 8),
@@ -1127,7 +1129,8 @@ class _SupportEmptyState extends StatelessWidget {
         children: [
           Text('Aucun ticket d’assistance pour le moment.'),
           SizedBox(height: 4),
-          Text('Vous pouvez contacter le super administrateur en créant un ticket.'),
+          Text(
+              'Vous pouvez contacter le super administrateur en créant un ticket.'),
         ],
       ),
     );
@@ -1521,7 +1524,8 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
     try {
       final profile = await ControleurProfileService.instance.createProfile(
         label: _labelCtrl.text.trim(),
-        communeName: CommuneLookupService.normalizeCommuneName(_communeCtrl.text),
+        communeName:
+            CommuneLookupService.normalizeCommuneName(_communeCtrl.text),
         communeCode: communeCode.isEmpty ? null : communeCode,
         codePostal: codePostal.isEmpty ? null : codePostal,
       );
@@ -1629,7 +1633,9 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
                       strokeWidth: 2, color: Colors.white),
                 )
               : const Icon(Icons.check_rounded),
-          label: Text(_isSubmitting ? 'Creation...' : 'Creer l\'agent de mobilisation citoyenne'),
+          label: Text(_isSubmitting
+              ? 'Creation...'
+              : 'Creer l\'agent de mobilisation citoyenne'),
         ),
       ],
     );

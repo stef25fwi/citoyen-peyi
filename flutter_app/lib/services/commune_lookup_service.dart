@@ -28,7 +28,8 @@ class CommuneSuggestion {
 
   static CommuneSuggestion? fromApi(Object? raw) {
     if (raw is! Map<String, dynamic>) return null;
-    final nom = CommuneLookupService.normalizeCommuneName(raw['nom'] as String?);
+    final nom =
+        CommuneLookupService.normalizeCommuneName(raw['nom'] as String?);
     final code = CommuneLookupService.normalizeInsee(raw['code'] as String?);
     if (nom.isEmpty || code.isEmpty) return null;
     final codesPostaux = (raw['codesPostaux'] as List<dynamic>?)
