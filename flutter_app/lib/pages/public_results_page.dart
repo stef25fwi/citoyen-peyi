@@ -38,8 +38,17 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
     });
   }
 
+  /// Statuts visibles publiquement : les brouillons et les consultations
+  /// programmees (non encore publiees) ne doivent jamais apparaitre cote
+  /// citoyen, meme si la lecture Firestore renvoie toute la collection.
+  static const _publicStatuses = {'active', 'closed', 'archived'};
+
+  /// Consultations reellement publiables (exclut draft / scheduled).
+  List<PollModel> get _publicPolls =>
+      _polls.where((poll) => _publicStatuses.contains(poll.status)).toList();
+
   List<PollModel> get _filtered {
-    return _polls.where((poll) {
+    return _publicPolls.where((poll) {
       if (_communeFilter != null && _communeFilter!.isNotEmpty) {
         final matchById = poll.communeId == _communeFilter;
         final matchByName = poll.communeName.toLowerCase() == _communeFilter!.toLowerCase();
@@ -54,7 +63,7 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
 
   Set<String> get _communes {
     final values = <String>{};
-    for (final poll in _polls) {
+    for (final poll in _publicPolls) {
       if (poll.communeName.isNotEmpty) values.add(poll.communeName);
     }
     return values;
