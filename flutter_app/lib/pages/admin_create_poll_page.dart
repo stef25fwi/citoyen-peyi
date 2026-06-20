@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../services/poll_ai_draft_service.dart';
+import '../services/poll_photo_upload_service.dart';
 import '../services/poll_service.dart';
 
 class AdminCreatePollPage extends StatefulWidget {
@@ -27,6 +29,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
   bool _isSubmitting = false;
   bool _isRewritingWithAi = false;
   bool _aiProposalAccepted = false;
+  bool _isUploadingPhotos = false;
+  final List<XFile> _photos = <XFile>[];
 
   @override
   void dispose() {
@@ -312,6 +316,125 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     );
   }
 
+  Future<void> _pickPhotos() async {
+    if (_isSubmitting || _isUploadingPhotos) {
+      return;
+    }
+
+    try {
+      final updated =
+          await PollPhotoUploadService.instance.pickPhotos(current: _photos);
+      if (!mounted) {
+        return;
+      }
+      setState(() {
+        _photos
+          ..clear()
+          ..addAll(updated);
+      });
+    } on PollPhotoUploadException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange.shade800,
+          content: Text(error.message),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange.shade800,
+          content: Text('Selection de photos impossible: ${error.toString()}'),
+        ),
+      );
+    }
+  }
+
+  void _removePhoto(int index) {
+    if (index < 0 || index >= _photos.length) {
+      return;
+    }
+    setState(() {
+      _photos.removeAt(index);
+    });
+  }
+
+  Widget _buildPhotosSection(ThemeData theme) {
+    final canAdd = !_isSubmitting &&
+        !_isUploadingPhotos &&
+        _photos.length < PollPhotoUploadService.maxPhotos;
+
+    return _FormSection(
+      title: 'Photos de la consultation',
+      action: TextButton.icon(
+        onPressed: canAdd ? _pickPhotos : null,
+        icon: const Icon(Icons.add_photo_alternate_outlined),
+        label: const Text('Ajouter'),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Ajoutez jusqu a ${PollPhotoUploadService.maxPhotos} photos (JPG, PNG ou WebP, 10 Mo max). La premiere photo sert d illustration principale aux citoyens.',
+            style: theme.textTheme.bodyMedium,
+          ),
+          const SizedBox(height: 14),
+          if (_photos.isEmpty)
+            InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: canAdd ? _pickPhotos : null,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 28),
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(
+                    color: theme.dividerColor.withValues(alpha: 0.6),
+                  ),
+                  color: theme.colorScheme.surfaceContainerHighest
+                      .withValues(alpha: 0.35),
+                ),
+                child: Column(
+                  children: [
+                    Icon(
+                      Icons.image_outlined,
+                      size: 36,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Aucune photo ajoutee. Cliquez pour en selectionner.',
+                      style: theme.textTheme.bodyMedium,
+                    ),
+                  ],
+                ),
+              ),
+            )
+          else
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                for (var index = 0; index < _photos.length; index++)
+                  _PhotoThumbnail(
+                    photo: _photos[index],
+                    isMain: index == 0,
+                    onRemove: _isSubmitting || _isUploadingPhotos
+                        ? null
+                        : () => _removePhoto(index),
+                  ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (_isSubmitting) {
       return;
@@ -338,11 +461,27 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     });
 
     try {
+      var photoUrls = const <String>[];
+      if (_photos.isNotEmpty) {
+        setState(() => _isUploadingPhotos = true);
+        try {
+          photoUrls = await PollPhotoUploadService.instance.uploadPhotos(
+            photos: _photos,
+            draftId: 'draft-${DateTime.now().millisecondsSinceEpoch}',
+          );
+        } finally {
+          if (mounted) {
+            setState(() => _isUploadingPhotos = false);
+          }
+        }
+      }
+
       await PollService.instance.createPoll(
         projectTitle: _titleController.text,
         description: _descriptionController.text,
         question: _questionController.text,
         options: _optionControllers.map((item) => item.text).toList(),
+        photoUrls: photoUrls,
         targetPopulation: _targetPopulationController.text,
         openDate: _formatDate(openDate),
         closeDate: _formatDate(closeDate ?? openDate),
@@ -358,6 +497,16 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
       );
       Navigator.of(context).pushNamedAndRemoveUntil(
           '/admin', (route) => route.settings.name == '/');
+    } on PollPhotoUploadException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange.shade800,
+          content: Text('Photos non televersees: ${error.message}'),
+        ),
+      );
     } catch (error, stackTrace) {
       debugPrint('[AdminCreatePoll] createPoll failed: $error');
       debugPrintStack(stackTrace: stackTrace);
@@ -507,6 +656,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                 const SizedBox(height: 16),
                 _buildAiAssistantTopCard(theme),
                 const SizedBox(height: 16),
+                _buildPhotosSection(theme),
+                const SizedBox(height: 16),
                 _FormSection(
                   title: 'Options de vote',
                   action: TextButton.icon(
@@ -627,9 +778,11 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.save_rounded),
-                      label: Text(_isSubmitting
-                          ? 'Creation...'
-                          : 'Creer la consultation'),
+                      label: Text(_isUploadingPhotos
+                          ? 'Televersement des photos...'
+                          : _isSubmitting
+                              ? 'Creation...'
+                              : 'Creer la consultation'),
                     ),
                   ],
                 ),
@@ -803,6 +956,81 @@ class _PreviewLine extends StatelessWidget {
           Text(label, style: theme.textTheme.labelLarge),
           const SizedBox(height: 2),
           SelectableText(cleaned),
+        ],
+      ),
+    );
+  }
+}
+
+class _PhotoThumbnail extends StatelessWidget {
+  const _PhotoThumbnail({
+    required this.photo,
+    required this.isMain,
+    required this.onRemove,
+  });
+
+  final XFile photo;
+  final bool isMain;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SizedBox(
+      width: 104,
+      height: 104,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(14),
+            child: Image.network(
+              photo.path,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                alignment: Alignment.center,
+                child: const Icon(Icons.broken_image_outlined),
+              ),
+            ),
+          ),
+          if (isMain)
+            Positioned(
+              left: 0,
+              bottom: 0,
+              right: 0,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 3),
+                color: theme.colorScheme.primary.withValues(alpha: 0.85),
+                alignment: Alignment.center,
+                child: Text(
+                  'Principale',
+                  style: theme.textTheme.labelSmall?.copyWith(
+                    color: theme.colorScheme.onPrimary,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+          if (onRemove != null)
+            Positioned(
+              top: 2,
+              right: 2,
+              child: Material(
+                color: Colors.black54,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onRemove,
+                  child: const Padding(
+                    padding: EdgeInsets.all(4),
+                    child: Icon(Icons.close_rounded,
+                        size: 16, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
