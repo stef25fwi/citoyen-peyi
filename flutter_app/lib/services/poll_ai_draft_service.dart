@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -61,16 +62,16 @@ class PollAiDraftService {
   static final PollAiDraftService instance = PollAiDraftService._();
 
   Future<PollAiDraft> rewriteDraft(PollAiDraft draft) async {
-    String? token;
+    late final String token;
     try {
-      token = await FirebaseAuthService.instance.currentIdToken();
+      token = await FirebaseAuthService.instance.requireFreshIdToken();
     } catch (error) {
       throw PollAiDraftServiceException(
         'Session Firebase indisponible: ${error.toString()}',
       );
     }
 
-    if (token == null || token.isEmpty) {
+    if (token.isEmpty) {
       throw const PollAiDraftServiceException(
         'Session Firebase manquante, reconnectez-vous.',
       );
