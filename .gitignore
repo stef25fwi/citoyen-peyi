@@ -27,3 +27,4 @@ github-deploy-*.json
 *.service-account.json
 *.bak_*
 **/*.bak_*
+repair_logs/

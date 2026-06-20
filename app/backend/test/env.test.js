@@ -12,8 +12,11 @@ const resetEnv = (snapshot) => {
   Object.assign(process.env, snapshot);
 };
 
+let importSequence = 0;
+
 const importFresh = async () => {
-  const path = `../src/config/env.js?t=${Date.now()}`;
+  importSequence += 1;
+  const path = `../src/config/env.js?t=${Date.now()}-${importSequence}`;
   return import(path);
 };
 
@@ -186,6 +189,28 @@ test('validateEnv refuses production boot when peppers are not all distinct', as
 
   const { validateEnv } = await importFresh();
   assert.throws(() => validateEnv(), /tous distincts/);
+
+  resetEnv(snapshot);
+});
+
+test('validateEnv accepts test boot without Firebase credentials', async () => {
+  const snapshot = baseEnv();
+
+  process.env.NODE_ENV = 'test';
+  process.env.SUPER_ADMIN_KEY = 'ci-super-admin-key';
+  process.env.VOTE_ACCESS_TOKEN_SECRET = 'ci-vote-access-token-secret';
+
+  process.env.GOOGLE_APPLICATION_CREDENTIALS = '';
+  process.env.FIREBASE_ADMIN_PROJECT_ID = '';
+  process.env.FIREBASE_ADMIN_CLIENT_EMAIL = '';
+  process.env.FIREBASE_ADMIN_PRIVATE_KEY = '';
+  process.env.K_SERVICE = '';
+  process.env.GOOGLE_CLOUD_PROJECT = '';
+  process.env.GCLOUD_PROJECT = '';
+  process.env.FIREBASE_PROJECT_ID = '';
+
+  const { validateEnv } = await importFresh();
+  assert.doesNotThrow(() => validateEnv());
 
   resetEnv(snapshot);
 });

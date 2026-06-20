@@ -135,7 +135,7 @@ export const validateEnv = () => {
     errors.push('SUPER_ADMIN_KEY doit faire au moins 32 caracteres en production.');
   }
 
-  if (!isFirebaseAdminConfigured()) {
+  if (!isFirebaseAdminConfigured() && env.nodeEnv !== 'test') {
     errors.push(
       'Firebase Admin doit etre configure avec GOOGLE_APPLICATION_CREDENTIALS pointant vers un fichier existant, ou avec FIREBASE_ADMIN_PROJECT_ID, FIREBASE_ADMIN_CLIENT_EMAIL et FIREBASE_ADMIN_PRIVATE_KEY.',
     );

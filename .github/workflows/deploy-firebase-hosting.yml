@@ -79,7 +79,7 @@ jobs:
             --project ${{ vars.FIREBASE_PROJECT_ID }} \
             --non-interactive
         env:
-          FIREBASE_TOKEN: ${{ secrets.FIREBASE_TOKEN }}
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
 
       - name: Summary
         run: |
