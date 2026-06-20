@@ -28,3 +28,8 @@ github-deploy-*.json
 *.bak_*
 **/*.bak_*
 repair_logs/
+
+# Backups temporaires générés par scripts ChatGPT
+backup_poll_photos_*/
+.last_poll_photos_backup
+analyze_photos_*.log

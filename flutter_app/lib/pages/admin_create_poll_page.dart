@@ -104,7 +104,9 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     final closeDate = _closeDate;
     if (closeDate != null && !closeDate.isAfter(openDate)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La date de fermeture doit etre posterieure a la date d\'ouverture.')),
+        const SnackBar(
+            content: Text(
+                'La date de fermeture doit etre posterieure a la date d\'ouverture.')),
       );
       return;
     }
@@ -255,7 +257,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                         controller: _descriptionController,
                         decoration: const InputDecoration(
                           labelText: 'Description',
-                          hintText: 'Contexte, objectifs et informations utiles pour les citoyens',
+                          hintText:
+                              'Contexte, objectifs et informations utiles pour les citoyens',
                         ),
                         minLines: 3,
                         maxLines: 5,
@@ -289,22 +292,29 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                   ),
                   child: Column(
                     children: [
-                      for (var index = 0; index < _optionControllers.length; index++)
+                      for (var index = 0;
+                          index < _optionControllers.length;
+                          index++)
                         Padding(
-                          padding: EdgeInsets.only(bottom: index == _optionControllers.length - 1 ? 0 : 12),
+                          padding: EdgeInsets.only(
+                              bottom: index == _optionControllers.length - 1
+                                  ? 0
+                                  : 12),
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               CircleAvatar(
                                 radius: 16,
-                                backgroundColor: theme.colorScheme.primaryContainer,
+                                backgroundColor:
+                                    theme.colorScheme.primaryContainer,
                                 child: Text('${index + 1}'),
                               ),
                               const SizedBox(width: 12),
                               Expanded(
                                 child: TextFormField(
                                   controller: _optionControllers[index],
-                                  decoration: InputDecoration(labelText: 'Option ${index + 1}'),
+                                  decoration: InputDecoration(
+                                      labelText: 'Option ${index + 1}'),
                                   validator: (value) {
                                     if (value == null || value.trim().isEmpty) {
                                       return 'Toutes les options doivent etre remplies.';
@@ -317,7 +327,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                                 const SizedBox(width: 8),
                                 IconButton(
                                   onPressed: () => _removeOption(index),
-                                  icon: const Icon(Icons.delete_outline_rounded),
+                                  icon:
+                                      const Icon(Icons.delete_outline_rounded),
                                   tooltip: 'Supprimer cette option',
                                 ),
                               ],
@@ -359,7 +370,9 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                   runSpacing: 12,
                   children: [
                     OutlinedButton(
-                      onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       child: const Text('Annuler'),
                     ),
                     FilledButton.icon(
@@ -371,7 +384,9 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                               child: CircularProgressIndicator(strokeWidth: 2),
                             )
                           : const Icon(Icons.save_rounded),
-                      label: Text(_isSubmitting ? 'Creation...' : 'Creer la consultation'),
+                      label: Text(_isSubmitting
+                          ? 'Creation...'
+                          : 'Creer la consultation'),
                     ),
                   ],
                 ),

@@ -38,6 +38,20 @@ class PollOptionModel {
   }
 }
 
+List<String> _readStringList(Object? value) {
+  if (value is List) {
+    return value
+        .whereType<String>()
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList(growable: false);
+  }
+  if (value is String && value.trim().isNotEmpty) {
+    return <String>[value.trim()];
+  }
+  return const <String>[];
+}
+
 String _readDateString(Object? value) {
   if (value == null) return '';
   if (value is String) return value;
@@ -66,6 +80,7 @@ class PollModel {
     this.description = '',
     required this.question,
     required this.options,
+    this.photoUrls = const <String>[],
     this.targetPopulation = '',
     this.communeId = '',
     this.communeName = '',
@@ -85,6 +100,8 @@ class PollModel {
   final String description;
   final String question;
   final List<PollOptionModel> options;
+  final List<String> photoUrls;
+  String get mainPhotoUrl => photoUrls.isEmpty ? '' : photoUrls.first;
   final String targetPopulation;
   final String communeId;
   final String communeName;
@@ -104,6 +121,7 @@ class PollModel {
     String? description,
     String? question,
     List<PollOptionModel>? options,
+    List<String>? photoUrls,
     String? targetPopulation,
     String? communeId,
     String? communeName,
@@ -123,6 +141,7 @@ class PollModel {
       description: description ?? this.description,
       question: question ?? this.question,
       options: options ?? this.options,
+      photoUrls: photoUrls ?? this.photoUrls,
       targetPopulation: targetPopulation ?? this.targetPopulation,
       communeId: communeId ?? this.communeId,
       communeName: communeName ?? this.communeName,
@@ -145,6 +164,8 @@ class PollModel {
         'description': description,
         'question': question,
         'options': options.map((item) => item.toJson()).toList(),
+        'photoUrls': photoUrls,
+        'mainPhotoUrl': mainPhotoUrl,
         'targetPopulation': targetPopulation,
         'communeId': communeId,
         'communeName': communeName,
@@ -178,6 +199,12 @@ class PollModel {
           .entries
           .map((entry) => PollOptionModel.fromJson(entry.value, entry.key))
           .toList(),
+      photoUrls: _readStringList(
+        json['photoUrls'] ??
+            json['photos'] ??
+            json['imageUrls'] ??
+            json['mainPhotoUrl'],
+      ),
       targetPopulation: json['targetPopulation'] as String? ?? '',
       communeId: json['communeId'] as String? ?? '',
       communeName: json['communeName'] as String? ?? '',

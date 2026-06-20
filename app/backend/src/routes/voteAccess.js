@@ -184,6 +184,9 @@ const loadEligiblePolls = async (db, access, requestedPollId = '') => {
       title: poll.projectTitle || poll.title || 'Consultation',
       description: poll.description || '',
       question: poll.question || '',
+      photoUrls: Array.isArray(poll.photoUrls)
+        ? poll.photoUrls.filter((url) => typeof url === 'string').slice(0, 6)
+        : [],
       status: 'open',
       hasVoted: participationMap.get(pollId) === true,
       options: safeOptions,

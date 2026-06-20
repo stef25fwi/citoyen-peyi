@@ -38,6 +38,7 @@ class EligiblePollModel {
     this.accessToken = '',
     this.description = '',
     this.question = '',
+    this.photoUrls = const <String>[],
     this.options = const [],
   });
 
@@ -48,6 +49,7 @@ class EligiblePollModel {
   final String accessToken;
   final String description;
   final String question;
+  final List<String> photoUrls;
   final List<EligiblePollOption> options;
 
   static EligiblePollModel fromJson(Map<String, dynamic> json) {
@@ -62,6 +64,11 @@ class EligiblePollModel {
       accessToken: json['accessToken'] as String? ?? '',
       description: json['description'] as String? ?? '',
       question: json['question'] as String? ?? '',
+      photoUrls: (json['photoUrls'] as List<dynamic>? ?? const <dynamic>[])
+          .whereType<String>()
+          .map((url) => url.trim())
+          .where((url) => url.isNotEmpty)
+          .toList(growable: false),
       options: rawOptions
           .whereType<Map<String, dynamic>>()
           .map(EligiblePollOption.fromJson)

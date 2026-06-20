@@ -289,6 +289,10 @@ class _VotePageState extends State<VotePage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(6, 20, 6, 28),
               children: [
+                if (poll.photoUrls.isNotEmpty) ...[
+                  _VotePollPhotoGallery(photoUrls: poll.photoUrls),
+                  const SizedBox(height: 16),
+                ],
                 Card(
                   color: const Color(0xFFF0F5F9),
                   child: const Padding(
@@ -364,6 +368,107 @@ class _VotePageState extends State<VotePage> {
               ],
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _VotePollPhotoGallery extends StatefulWidget {
+  const _VotePollPhotoGallery({required this.photoUrls});
+
+  final List<String> photoUrls;
+
+  @override
+  State<_VotePollPhotoGallery> createState() => _VotePollPhotoGalleryState();
+}
+
+class _VotePollPhotoGalleryState extends State<_VotePollPhotoGallery> {
+  int _selectedIndex = 0;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedUrl = widget.photoUrls[_selectedIndex];
+
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ClipRRect(
+              borderRadius: BorderRadius.circular(18),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: Image.network(
+                  selectedUrl,
+                  fit: BoxFit.cover,
+                  loadingBuilder: (context, child, loadingProgress) {
+                    if (loadingProgress == null) return child;
+                    return const ColoredBox(
+                      color: Color(0xFFE2E8F0),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  },
+                  errorBuilder: (context, error, stackTrace) =>
+                      const ColoredBox(
+                    color: Color(0xFFE2E8F0),
+                    child: Center(child: Icon(Icons.broken_image_outlined)),
+                  ),
+                ),
+              ),
+            ),
+            if (widget.photoUrls.length > 1) ...[
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    for (var index = 0;
+                        index < widget.photoUrls.length;
+                        index++)
+                      Padding(
+                        padding: EdgeInsets.only(
+                          right: index == widget.photoUrls.length - 1 ? 0 : 10,
+                        ),
+                        child: InkWell(
+                          borderRadius: BorderRadius.circular(12),
+                          onTap: () => setState(() => _selectedIndex = index),
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 160),
+                            width: 78,
+                            height: 58,
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: _selectedIndex == index
+                                    ? const Color(0xFF0F6D8F)
+                                    : const Color(0xFFD7E0EA),
+                                width: _selectedIndex == index ? 3 : 1,
+                              ),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.network(
+                                widget.photoUrls[index],
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    const ColoredBox(
+                                  color: Color(0xFFE2E8F0),
+                                  child: Icon(Icons.broken_image_outlined),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );

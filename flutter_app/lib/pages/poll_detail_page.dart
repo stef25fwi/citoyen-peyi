@@ -351,6 +351,10 @@ class _PollHeroCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (poll.photoUrls.isNotEmpty) ...[
+              _PollPhotoGallery(photoUrls: poll.photoUrls),
+              const SizedBox(height: 20),
+            ],
             Text(
               poll.projectTitle,
               style:
@@ -379,6 +383,115 @@ class _PollHeroCard extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _PollPhotoGallery extends StatefulWidget {
+  const _PollPhotoGallery({required this.photoUrls});
+
+  final List<String> photoUrls;
+
+  @override
+  State<_PollPhotoGallery> createState() => _PollPhotoGalleryState();
+}
+
+class _PollPhotoGalleryState extends State<_PollPhotoGallery> {
+  int _selectedIndex = 0;
+
+  @override
+  void didUpdateWidget(covariant _PollPhotoGallery oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (_selectedIndex >= widget.photoUrls.length) {
+      _selectedIndex = 0;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedUrl = widget.photoUrls[_selectedIndex];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(20),
+          child: AspectRatio(
+            aspectRatio: 16 / 9,
+            child: Image.network(
+              selectedUrl,
+              fit: BoxFit.cover,
+              loadingBuilder: (context, child, loadingProgress) {
+                if (loadingProgress == null) return child;
+                return const ColoredBox(
+                  color: Color(0x22000000),
+                  child: Center(child: CircularProgressIndicator()),
+                );
+              },
+              errorBuilder: (context, error, stackTrace) => const ColoredBox(
+                color: Color(0x33000000),
+                child: Center(
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: Colors.white,
+                    size: 42,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        if (widget.photoUrls.length > 1) ...[
+          const SizedBox(height: 12),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                for (var index = 0; index < widget.photoUrls.length; index++)
+                  Padding(
+                    padding: EdgeInsets.only(
+                      right: index == widget.photoUrls.length - 1 ? 0 : 10,
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(12),
+                      onTap: () => setState(() => _selectedIndex = index),
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 160),
+                        width: 84,
+                        height: 62,
+                        padding: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: _selectedIndex == index
+                                ? Colors.white
+                                : Colors.white.withValues(alpha: 0.36),
+                            width: _selectedIndex == index ? 3 : 1,
+                          ),
+                        ),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.network(
+                            widget.photoUrls[index],
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const ColoredBox(
+                              color: Color(0x33000000),
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                color: Colors.white70,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

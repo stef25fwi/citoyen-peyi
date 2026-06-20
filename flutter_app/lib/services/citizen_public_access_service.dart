@@ -89,6 +89,7 @@ class CitizenPublicAccessService {
                 .map((e) => PollOptionModel(
                     id: e.value.id, label: e.value.label, votes: 0))
                 .toList(),
+            photoUrls: p.photoUrls,
             openDate: '',
             closeDate: '',
             status: 'open',
