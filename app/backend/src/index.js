@@ -40,7 +40,16 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization', 'x-super-admin-key'],
   maxAge: 86400,
 }));
-app.use(express.json({ limit: '100kb' }));
+// Parser JSON global limite a 100kb pour toutes les routes, SAUF l'upload de
+// photos de consultation qui envoie des images base64 volumineuses et utilise
+// son propre parser elargi dans la route /api/polls/photos.
+const defaultJsonParser = express.json({ limit: '100kb' });
+app.use((req, res, next) => {
+  if (req.method === 'POST' && req.path === '/api/polls/photos') {
+    return next();
+  }
+  return defaultJsonParser(req, res, next);
+});
 
 // Garde-fou: limite la duree maximale d'une requete pour eviter les sockets bloques.
 app.use((req, res, next) => {
