@@ -1682,6 +1682,9 @@ class _CreateControleurDialogState extends State<_CreateControleurDialog> {
 
     final communeReady = await _ensureCommunePostalConsistency();
     if (!communeReady) {
+      // Cohérence ville / CP invalide : on réactive le formulaire pour que
+      // l'utilisateur puisse corriger via l'autocomplétion API Gouv.
+      if (mounted) setState(() => _isSubmitting = false);
       return;
     }
 
