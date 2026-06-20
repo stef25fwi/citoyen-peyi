@@ -25,3 +25,5 @@ app-release.zip
 .auth-flow-smoke.local.json
 github-deploy-*.json
 *.service-account.json
+*.bak_*
+**/*.bak_*
