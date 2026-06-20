@@ -210,6 +210,108 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     }
   }
 
+  Widget _buildAiAssistantTopCard(ThemeData theme) {
+    return Card(
+      elevation: 0,
+      color: theme.colorScheme.primaryContainer.withValues(alpha: 0.55),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: BorderSide(
+          color: theme.colorScheme.primary.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(18),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final compact = constraints.maxWidth < 620;
+
+            final textContent = Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.auto_awesome_rounded,
+                      color: theme.colorScheme.primary,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Assistant de redaction IA disponible',
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: theme.colorScheme.onPrimaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Remplissez les champs de la consultation, puis cliquez ici pour proposer une reformulation claire, neutre et professionnelle avant la creation.',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onPrimaryContainer,
+                  ),
+                ),
+                if (_aiProposalAccepted) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    'Proposition IA appliquee. Vous pouvez maintenant creer la consultation.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ],
+              ],
+            );
+
+            final button = FilledButton.icon(
+              onPressed: _isSubmitting || _isRewritingWithAi
+                  ? null
+                  : _requestAiRewrite,
+              icon: _isRewritingWithAi
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.auto_awesome_rounded),
+              label: Text(
+                _isRewritingWithAi
+                    ? 'Reformulation IA...'
+                    : _aiProposalAccepted
+                        ? 'Relancer l assistant IA'
+                        : 'Assistant de redaction IA',
+              ),
+            );
+
+            if (compact) {
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  textContent,
+                  const SizedBox(height: 14),
+                  button,
+                ],
+              );
+            }
+
+            return Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                Expanded(child: textContent),
+                const SizedBox(width: 16),
+                button,
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+
   Future<void> _submit() async {
     if (_isSubmitting) {
       return;
@@ -402,6 +504,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                     ],
                   ),
                 ),
+                const SizedBox(height: 16),
+                _buildAiAssistantTopCard(theme),
                 const SizedBox(height: 16),
                 _FormSection(
                   title: 'Options de vote',
