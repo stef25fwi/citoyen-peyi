@@ -21,6 +21,186 @@
     ],
     "headers": [
       {
+        "comment": "Routes Flutter SPA : ne jamais cacher le shell HTML, sinon les anciennes versions restent visibles.",
+        "source": "/",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "comment": "Routes Flutter SPA : ne jamais cacher le shell HTML, sinon les anciennes versions restent visibles.",
+        "source": "/admin",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "comment": "Routes Flutter SPA : ne jamais cacher le shell HTML, sinon les anciennes versions restent visibles.",
+        "source": "/admin/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "comment": "Routes Flutter SPA : ne jamais cacher le shell HTML, sinon les anciennes versions restent visibles.",
+        "source": "/super",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "comment": "Routes Flutter SPA : ne jamais cacher le shell HTML, sinon les anciennes versions restent visibles.",
+        "source": "/super/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "comment": "Routes Flutter SPA : ne jamais cacher le shell HTML, sinon les anciennes versions restent visibles.",
+        "source": "/access",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "comment": "Routes Flutter SPA : ne jamais cacher le shell HTML, sinon les anciennes versions restent visibles.",
+        "source": "/access/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "comment": "Routes Flutter SPA : ne jamais cacher le shell HTML, sinon les anciennes versions restent visibles.",
+        "source": "/vote/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "comment": "Routes Flutter SPA : ne jamais cacher le shell HTML, sinon les anciennes versions restent visibles.",
+        "source": "/citizen",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
+        "comment": "Routes Flutter SPA : ne jamais cacher le shell HTML, sinon les anciennes versions restent visibles.",
+        "source": "/citizen/**",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "no-cache, no-store, must-revalidate"
+          },
+          {
+            "key": "Pragma",
+            "value": "no-cache"
+          },
+          {
+            "key": "Expires",
+            "value": "0"
+          }
+        ]
+      },
+      {
         "comment": "Le bundle Flutter (main.dart.js, flutter_bootstrap.js, flutter.js) garde le meme nom a chaque build : il NE DOIT PAS etre immutable, sinon les navigateurs gardent l'ancienne version a vie. On revalide a chaque chargement (304 si inchange).",
         "source": "**/*.js",
         "headers": [
