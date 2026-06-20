@@ -1,7 +1,8 @@
 import express from 'express';
 import crypto from 'crypto';
 import { FieldValue } from 'firebase-admin/firestore';
-import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
+import { env } from '../config/env.js';
+import { getFirebaseAdminDb, getFirebaseAdminStorage, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 import {
   communeScopeFromUser,
   isCommuneAdmin,
@@ -161,6 +162,87 @@ router.post('/', requireMatchingCommune, async (req, res, next) => {
     res.status(201).json({ poll: responsePoll });
   } catch (error) {
     next(error);
+  }
+});
+
+// ---------------------------------------------------------------------------
+// Upload d'une photo de consultation via l'Admin SDK.
+//
+// Pourquoi cote backend et non via le SDK Storage client ? Sur Safari/iPad,
+// l'app utilise le repli REST pour l'auth Firebase : FirebaseAuth.currentUser
+// est null, donc un upload Storage cote client part non authentifie et les
+// regles le refusent (erreur opaque "Null check operator"). En passant par le
+// backend (jeton REST dans l'en-tete Authorization + Admin SDK), l'upload
+// fonctionne sur tous les navigateurs. Une photo par requete (<= 10 Mo).
+// ---------------------------------------------------------------------------
+const ALLOWED_PHOTO_TYPES = { 'image/jpeg': 'jpg', 'image/png': 'png', 'image/webp': 'webp' };
+const MAX_PHOTO_BYTES = 10 * 1024 * 1024;
+const photoBodyParser = express.json({ limit: '15mb' });
+
+const safePhotoSegment = (value) => {
+  const safe = String(value || '').trim().replace(/[^A-Za-z0-9_-]+/g, '_');
+  return safe || 'commune';
+};
+
+const resolveStorageBucketName = () => {
+  if (env.storageBucket) return env.storageBucket;
+  const projectId = process.env.GOOGLE_CLOUD_PROJECT
+    || process.env.GCLOUD_PROJECT
+    || process.env.FIREBASE_PROJECT_ID
+    || env.firebaseAdminProjectId
+    || '';
+  return projectId ? `${projectId}.firebasestorage.app` : '';
+};
+
+router.post('/photos', photoBodyParser, requireMatchingCommune, async (req, res, next) => {
+  try {
+    const contentType = sanitizeString(req.body?.contentType, 40).toLowerCase();
+    const extension = ALLOWED_PHOTO_TYPES[contentType];
+    if (!extension) {
+      return res.status(400).json({ message: 'Format de photo non supporte (JPG, PNG ou WebP).' });
+    }
+
+    const rawData = typeof req.body?.data === 'string' ? req.body.data : '';
+    const base64 = rawData.includes(',') ? rawData.substring(rawData.indexOf(',') + 1) : rawData;
+    if (!base64) {
+      return res.status(400).json({ message: 'Donnees de photo manquantes.' });
+    }
+
+    const buffer = Buffer.from(base64, 'base64');
+    if (buffer.length === 0 || buffer.length > MAX_PHOTO_BYTES) {
+      return res.status(400).json({ message: 'Photo vide ou superieure a 10 Mo.' });
+    }
+
+    const bucketName = resolveStorageBucketName();
+    if (!bucketName) {
+      return res.status(503).json({ message: 'Bucket Storage non configure cote backend.' });
+    }
+
+    const communeId = safePhotoSegment(req.communeScope || sanitizeString(req.body?.communeId, 64));
+    const draftId = safePhotoSegment(sanitizeString(req.body?.draftId, 80));
+    const fileName = `${Date.now()}_${crypto.randomBytes(4).toString('hex')}.${extension}`;
+    const objectPath = `poll_assets/${communeId}/${draftId}/${fileName}`;
+    const downloadToken = crypto.randomUUID();
+
+    const file = getFirebaseAdminStorage().bucket(bucketName).file(objectPath);
+    await file.save(buffer, {
+      resumable: false,
+      contentType,
+      metadata: {
+        contentType,
+        cacheControl: 'public, max-age=31536000',
+        metadata: {
+          module: 'polls',
+          firebaseStorageDownloadTokens: downloadToken,
+        },
+      },
+    });
+
+    const url = `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucketName)}`
+      + `/o/${encodeURIComponent(objectPath)}?alt=media&token=${downloadToken}`;
+    return res.status(201).json({ url });
+  } catch (error) {
+    return next(error);
   }
 });
 

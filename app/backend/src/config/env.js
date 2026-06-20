@@ -98,6 +98,9 @@ export const env = {
   // Bucket GCS prive dedie aux snapshots applicatifs (Niveau 2). Defaut:
   // <projectId>-backups, resolu a l'execution si non defini.
   backupBucket: optional(process.env.BACKUP_BUCKET),
+  // Bucket Storage par defaut (photos de consultation). Defaut resolu a
+  // l'execution: <projectId>.firebasestorage.app si non defini.
+  storageBucket: optional(process.env.FIREBASE_STORAGE_BUCKET),
   googleApplicationCredentials: optional(process.env.GOOGLE_APPLICATION_CREDENTIALS),
   firebaseAdminProjectId: optional(process.env.FIREBASE_ADMIN_PROJECT_ID),
   firebaseAdminClientEmail: optional(process.env.FIREBASE_ADMIN_CLIENT_EMAIL),
