@@ -166,7 +166,7 @@ jobs:
           fi
 
           SECRET_BINDINGS="SUPER_ADMIN_KEY=SUPER_ADMIN_KEY:latest,VOTE_ACCESS_TOKEN_SECRET=VOTE_ACCESS_TOKEN_SECRET:latest,ACCESS_CODE_PEPPER=ACCESS_CODE_PEPPER:latest,CITIZEN_FINGERPRINT_PEPPER=CITIZEN_FINGERPRINT_PEPPER:latest,PARTICIPATION_PEPPER=PARTICIPATION_PEPPER:latest"
-          for optional_secret in ADMIN_ACCESS_KEY ADMIN_ACCESS_PEPPER CONTROLLER_CODE_PEPPER; do
+          for optional_secret in ADMIN_ACCESS_KEY ADMIN_ACCESS_PEPPER CONTROLLER_CODE_PEPPER GEMINI_API_KEY; do
             if gcloud secrets describe "$optional_secret" >/dev/null 2>&1; then
               SECRET_BINDINGS="$SECRET_BINDINGS,$optional_secret=$optional_secret:latest"
             fi

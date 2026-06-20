@@ -66,8 +66,7 @@ class PollService {
                 .whereType<Map<String, dynamic>>()
                 .map(PollModel.fromJson)
                 .toList()
-              ..sort(
-                  (left, right) => right.openDate.compareTo(left.openDate));
+              ..sort((left, right) => right.openDate.compareTo(left.openDate));
             await _writeLocalPolls(polls);
             return _filterByCommuneScope(polls, communeScope);
           }
@@ -117,6 +116,7 @@ class PollService {
     String description = '',
     required String question,
     required List<String> options,
+    List<String> photoUrls = const <String>[],
     String targetPopulation = '',
     required String openDate,
     required String closeDate,
@@ -133,6 +133,10 @@ class PollService {
           .map((label) => {'label': label})
           .toList(),
       'targetPopulation': targetPopulation.trim(),
+      'photoUrls': photoUrls
+          .map((url) => url.trim())
+          .where((url) => url.isNotEmpty)
+          .toList(),
       'openDate': openDate,
       'closeDate': closeDate,
       'totalVoters': totalVoters,
@@ -177,6 +181,7 @@ class PollService {
     String description = '',
     required String question,
     required List<String> options,
+    List<String>? photoUrls,
     String targetPopulation = '',
     required String openDate,
     required String closeDate,
@@ -191,6 +196,11 @@ class PollService {
       'description': description.trim(),
       'question': question.trim(),
       'targetPopulation': targetPopulation.trim(),
+      if (photoUrls != null)
+        'photoUrls': photoUrls
+            .map((url) => url.trim())
+            .where((url) => url.isNotEmpty)
+            .toList(),
       'openDate': openDate,
       'closeDate': closeDate,
       'totalVoters': totalVoters,
@@ -280,8 +290,7 @@ class PollService {
       }
     } catch (error) {
       if (error is PollServiceException) rethrow;
-      throw PollServiceException(
-          'Backend injoignable: ${error.toString()}');
+      throw PollServiceException('Backend injoignable: ${error.toString()}');
     }
     if (response.statusCode < 200 || response.statusCode >= 300) {
       String message = 'Opération impossible (HTTP ${response.statusCode}).';

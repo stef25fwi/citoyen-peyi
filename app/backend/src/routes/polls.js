@@ -22,6 +22,13 @@ const ensureConfigured = (_req, res, next) => {
 };
 
 const sanitizeString = (value, max) => (typeof value === 'string' ? value.trim().substring(0, max) : '');
+const sanitizePhotoUrls = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((url) => sanitizeString(url, 1000))
+    .filter((url) => /^https:\/\//i.test(url))
+    .slice(0, 6);
+};
 export const sanitizeDate = (value) => {
   if (typeof value !== 'string') return '';
   const trimmed = value.trim();
@@ -134,6 +141,7 @@ router.post('/', requireMatchingCommune, async (req, res, next) => {
       question,
       options,
       targetPopulation: sanitizeString(req.body?.targetPopulation, 300),
+      photoUrls: sanitizePhotoUrls(req.body?.photoUrls),
       openDate,
       closeDate,
       status: publication.status,
@@ -183,6 +191,7 @@ router.patch('/:pollId', async (req, res, next) => {
     if (typeof req.body?.description === 'string') update.description = sanitizeString(req.body.description, 2000);
     if (typeof req.body?.question === 'string') update.question = sanitizeString(req.body.question, 300);
     if (typeof req.body?.targetPopulation === 'string') update.targetPopulation = sanitizeString(req.body.targetPopulation, 300);
+    if (Array.isArray(req.body?.photoUrls)) update.photoUrls = sanitizePhotoUrls(req.body.photoUrls);
     if (req.body?.openDate) update.openDate = sanitizeDate(req.body.openDate) || data.openDate;
     if (req.body?.closeDate) update.closeDate = sanitizeDate(req.body.closeDate) || data.closeDate;
     if (typeof req.body?.scheduledPublishDate === 'string') update.scheduledPublishDate = sanitizeDate(req.body.scheduledPublishDate);
