@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -58,8 +59,11 @@ class _ControllerCitizenAccessPageState
     super.dispose();
   }
 
-  Future<void> _load() async {
-    setState(() => _isLoading = true);
+  Future<void> _load({bool silent = false}) async {
+    // `silent` : rafraichissement en arriere-plan qui ne doit PAS basculer la
+    // page en plein ecran de chargement (sinon il masque le QR qui vient d'etre
+    // genere).
+    if (!silent) setState(() => _isLoading = true);
 
     List<PollModel> polls = const [];
     List<CitizenAccessCodeModel> codes = const [];
@@ -99,7 +103,7 @@ class _ControllerCitizenAccessPageState
       _openPolls = polls.where(_isOpenPoll).toList();
       _codes = codes;
       _duplicateRequests = duplicates;
-      _isLoading = false;
+      if (!silent) _isLoading = false;
     });
   }
 
@@ -158,11 +162,12 @@ class _ControllerCitizenAccessPageState
         session: AuthSessionStore.instance.currentSession,
       );
 
-      await _load();
       if (!mounted) {
         return;
       }
 
+      // Affiche immediatement le QR / code (ou le statut doublon) : on NE bloque
+      // PAS l'affichage derriere le rechargement de l'historique.
       setState(() {
         _lastResult = result;
         if (result.created) {
@@ -173,6 +178,9 @@ class _ControllerCitizenAccessPageState
               'Un acces existe deja pour cette empreinte. La demande de regeneration est en attente de validation super administrateur.';
         }
       });
+
+      // Rafraichit l'historique en arriere-plan, sans masquer le resultat.
+      unawaited(_load(silent: true));
     } on ArgumentError catch (error) {
       if (!mounted) {
         return;
