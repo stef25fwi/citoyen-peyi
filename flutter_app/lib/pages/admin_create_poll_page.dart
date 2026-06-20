@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../services/poll_ai_draft_service.dart';
 import '../services/poll_service.dart';
 
 class AdminCreatePollPage extends StatefulWidget {
@@ -24,6 +25,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
   DateTime? _openDate;
   DateTime? _closeDate;
   bool _isSubmitting = false;
+  bool _isRewritingWithAi = false;
+  bool _aiProposalAccepted = false;
 
   @override
   void dispose() {
@@ -88,6 +91,123 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
       final controller = _optionControllers.removeAt(index);
       controller.dispose();
     });
+  }
+
+  PollAiDraft _currentAiDraft() {
+    return PollAiDraft(
+      projectTitle: _titleController.text,
+      description: _descriptionController.text,
+      question: _questionController.text,
+      targetPopulation: _targetPopulationController.text,
+      options: _optionControllers.map((item) => item.text).toList(),
+    );
+  }
+
+  void _applyAiDraft(PollAiDraft draft) {
+    final options = draft.options
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toList();
+
+    if (options.length < 2) {
+      return;
+    }
+
+    setState(() {
+      _titleController.text = draft.projectTitle;
+      _descriptionController.text = draft.description;
+      _questionController.text = draft.question;
+      _targetPopulationController.text = draft.targetPopulation;
+
+      for (final controller in _optionControllers) {
+        controller.dispose();
+      }
+
+      _optionControllers
+        ..clear()
+        ..addAll(options.map((label) => TextEditingController(text: label)));
+
+      _aiProposalAccepted = true;
+    });
+  }
+
+  Future<void> _requestAiRewrite() async {
+    if (_isSubmitting || _isRewritingWithAi) {
+      return;
+    }
+
+    final formValid = _formKey.currentState?.validate() ?? false;
+    if (!formValid) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+              'Completez les champs obligatoires avant de lancer l assistant IA.'),
+        ),
+      );
+      return;
+    }
+
+    final original = _currentAiDraft();
+
+    setState(() {
+      _isRewritingWithAi = true;
+    });
+
+    try {
+      final proposal = await PollAiDraftService.instance.rewriteDraft(original);
+
+      if (!mounted) {
+        return;
+      }
+
+      final accepted = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => _PollAiProposalDialog(
+          original: original,
+          proposal: proposal,
+        ),
+      );
+
+      if (accepted == true) {
+        _applyAiDraft(proposal);
+        if (!mounted) {
+          return;
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Proposition IA appliquee. Vous pouvez maintenant creer la consultation.'),
+          ),
+        );
+      }
+    } on PollAiDraftServiceException catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange.shade800,
+          content: Text(error.message),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) {
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange.shade800,
+          content: Text('Assistant IA indisponible: ${error.toString()}'),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isRewritingWithAi = false;
+        });
+      }
+    }
   }
 
   Future<void> _submit() async {
@@ -375,6 +495,25 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                           : () => Navigator.of(context).pop(),
                       child: const Text('Annuler'),
                     ),
+                    OutlinedButton.icon(
+                      onPressed: _isSubmitting || _isRewritingWithAi
+                          ? null
+                          : _requestAiRewrite,
+                      icon: _isRewritingWithAi
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                          : const Icon(Icons.auto_awesome_rounded),
+                      label: Text(
+                        _isRewritingWithAi
+                            ? 'Reformulation IA...'
+                            : _aiProposalAccepted
+                                ? 'Proposition IA appliquee'
+                                : 'Assistant de redaction IA',
+                      ),
+                    ),
                     FilledButton.icon(
                       onPressed: _isSubmitting ? null : _submit,
                       icon: _isSubmitting
@@ -394,6 +533,173 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _PollAiProposalDialog extends StatelessWidget {
+  const _PollAiProposalDialog({
+    required this.original,
+    required this.proposal,
+  });
+
+  final PollAiDraft original;
+  final PollAiDraft proposal;
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Proposition de l assistant IA'),
+      content: SizedBox(
+        width: 760,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              const Text(
+                'Comparez votre texte avec la proposition IA. Vous pouvez appliquer la proposition ou revenir a votre version.',
+              ),
+              const SizedBox(height: 16),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final wide = constraints.maxWidth >= 680;
+                  if (wide) {
+                    return Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _PollDraftPreview(
+                            title: 'Votre version',
+                            draft: original,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: _PollDraftPreview(
+                            title: 'Proposition IA',
+                            draft: proposal,
+                            highlighted: true,
+                          ),
+                        ),
+                      ],
+                    );
+                  }
+
+                  return Column(
+                    children: [
+                      _PollDraftPreview(
+                        title: 'Votre version',
+                        draft: original,
+                      ),
+                      const SizedBox(height: 12),
+                      _PollDraftPreview(
+                        title: 'Proposition IA',
+                        draft: proposal,
+                        highlighted: true,
+                      ),
+                    ],
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(false),
+          child: const Text('Revenir a ma version'),
+        ),
+        FilledButton.icon(
+          onPressed: () => Navigator.of(context).pop(true),
+          icon: const Icon(Icons.check_rounded),
+          label: const Text('Valider la proposition IA'),
+        ),
+      ],
+    );
+  }
+}
+
+class _PollDraftPreview extends StatelessWidget {
+  const _PollDraftPreview({
+    required this.title,
+    required this.draft,
+    this.highlighted = false,
+  });
+
+  final String title;
+  final PollAiDraft draft;
+  final bool highlighted;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: highlighted
+            ? theme.colorScheme.primaryContainer.withValues(alpha: 0.34)
+            : theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.45),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: highlighted
+              ? theme.colorScheme.primary.withValues(alpha: 0.45)
+              : theme.dividerColor.withValues(alpha: 0.45),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: theme.textTheme.titleSmall),
+          const SizedBox(height: 12),
+          _PreviewLine(label: 'Titre', value: draft.projectTitle),
+          _PreviewLine(label: 'Description', value: draft.description),
+          _PreviewLine(label: 'Question', value: draft.question),
+          _PreviewLine(
+              label: 'Population cible', value: draft.targetPopulation),
+          const SizedBox(height: 8),
+          Text('Options', style: theme.textTheme.labelLarge),
+          const SizedBox(height: 4),
+          for (var index = 0; index < draft.options.length; index++)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 4),
+              child: Text('${index + 1}. ${draft.options[index]}'),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PreviewLine extends StatelessWidget {
+  const _PreviewLine({
+    required this.label,
+    required this.value,
+  });
+
+  final String label;
+  final String value;
+
+  @override
+  Widget build(BuildContext context) {
+    final cleaned = value.trim();
+    if (cleaned.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    final theme = Theme.of(context);
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(label, style: theme.textTheme.labelLarge),
+          const SizedBox(height: 2),
+          SelectableText(cleaned),
+        ],
       ),
     );
   }
