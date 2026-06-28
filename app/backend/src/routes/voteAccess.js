@@ -241,6 +241,7 @@ router.post('/validate', async (req, res) => {
     return res.json({
       ok: true,
       accessToken: primaryPoll?.accessToken || '',
+      accessCodeId: access.id,
       communeId: access.communeId,
       communeName: access.communeName,
       eligiblePolls: eligiblePollsWithTokens,

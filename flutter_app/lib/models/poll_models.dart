@@ -357,7 +357,7 @@ String? resolveVoteAccessCode(String rawValue) {
         return code.trim().toUpperCase();
       }
     } catch (_) {
-      return null;
+      // Not valid JSON — fall through to plain-text handling below.
     }
   }
 

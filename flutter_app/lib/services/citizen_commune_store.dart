@@ -57,9 +57,13 @@ class CitizenCommuneStore {
     );
     if (!context.hasScope) return;
     _cachedContext = context;
-    await BrowserStorageService.instance.writeJsonMap(
-      _storageKey,
-      context.toJson(),
-    );
+    try {
+      await BrowserStorageService.instance.writeJsonMap(
+        _storageKey,
+        context.toJson(),
+      );
+    } catch (_) {
+      // Cache is already set above; storage failure is non-fatal.
+    }
   }
 }

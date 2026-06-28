@@ -130,8 +130,12 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
         communeId: session.communeId,
         communeName: session.communeName,
       );
-      await NewPollBadgeService.instance.startListening();
-      await NewPollBadgeService.instance.markAllSeen();
+      try {
+        await NewPollBadgeService.instance.startListening();
+        await NewPollBadgeService.instance.markAllSeen();
+      } catch (_) {
+        // Badge service failures must not block navigation.
+      }
       if (!mounted) return;
       unawaited(PushNotificationService.instance.registerForCitizenCommune(
         rawCode: rawCode,
