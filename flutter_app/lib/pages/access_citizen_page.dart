@@ -25,8 +25,8 @@ class AccessCitizenPage extends StatefulWidget {
 }
 
 class _AccessCitizenPageState extends State<AccessCitizenPage> {
-  static const _background = Color(0xFFBFE8FF);
-  static const _foreground = Color(0xFF0F172A);
+  static const _background = Colors.white;
+  static const _foreground = Color(0xFF374151);
   static const _mutedText = Color(0xFF64748B);
 
   final TextEditingController _codeController = TextEditingController();

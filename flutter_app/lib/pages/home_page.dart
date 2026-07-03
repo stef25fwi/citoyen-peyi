@@ -76,7 +76,7 @@ class _HomeScaffold extends StatelessWidget {
     return Stack(
       children: [
         const Positioned.fill(
-          child: ColoredBox(color: Color(0xFFBFE8FF)),
+          child: ColoredBox(color: Colors.white),
         ),
         SafeArea(
           child: LayoutBuilder(
@@ -241,13 +241,13 @@ class _MainCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: const Color(0xFF77BFE4),
+          color: const Color(0xFFE5E7EB),
           width: 1.5,
         ),
-        color: const Color(0xFFAEE3FF),
+        color: Colors.white,
         boxShadow: const [
           BoxShadow(
-            color: Color(0x22003E82),
+            color: Color(0x14000000),
             blurRadius: 24,
             offset: Offset(0, 12),
           ),
@@ -304,29 +304,29 @@ class _HeroText extends StatelessWidget {
         ? const [
             TextSpan(
               text: 'Votre collectivité place ',
-              style: TextStyle(color: Color(0xFF005098)),
+              style: TextStyle(color: Color(0xFF4B5563)),
             ),
             TextSpan(
               text: 'votre parole\n',
-              style: TextStyle(color: Color(0xFF0E5A8A)),
+              style: TextStyle(color: Color(0xFF374151)),
             ),
             TextSpan(
               text: 'au cœur de l\'action publique',
-              style: TextStyle(color: Color(0xFF005098)),
+              style: TextStyle(color: Color(0xFF4B5563)),
             ),
           ]
         : const [
             TextSpan(
               text: 'Votre collectivité place ',
-              style: TextStyle(color: Color(0xFF005098)),
+              style: TextStyle(color: Color(0xFF4B5563)),
             ),
             TextSpan(
               text: 'votre parole',
-              style: TextStyle(color: Color(0xFF0E5A8A)),
+              style: TextStyle(color: Color(0xFF374151)),
             ),
             TextSpan(
               text: ' au cœur de l\'action publique',
-              style: TextStyle(color: Color(0xFF005098)),
+              style: TextStyle(color: Color(0xFF4B5563)),
             ),
           ];
 

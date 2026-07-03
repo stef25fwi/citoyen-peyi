@@ -20,7 +20,8 @@ class LegalPage extends StatelessWidget {
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Texte copié. Vous pouvez le conserver hors application.'),
+          content:
+              Text('Texte copié. Vous pouvez le conserver hors application.'),
         ),
       );
     }
@@ -40,9 +41,9 @@ class LegalPage extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: const Color(0xFFBFE8FF),
+      backgroundColor: Colors.white,
       appBar: AppBar(
-        backgroundColor: const Color(0xFFBFE8FF),
+        backgroundColor: Colors.white,
         foregroundColor: const Color(0xFF0F172A),
         title: const Text('Informations légales'),
       ),

@@ -16,7 +16,7 @@ class CitizenDashboardPage extends StatelessWidget {
     final session = initialSession;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFBFE8FF),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Espace citoyen'),
         leading: session == null

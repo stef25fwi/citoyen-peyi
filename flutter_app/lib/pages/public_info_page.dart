@@ -25,7 +25,7 @@ class PublicInfoPage extends StatelessWidget {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFBFE8FF),
+      backgroundColor: Colors.white,
       appBar: AppBar(title: Text(title)),
       body: Center(
         child: SingleChildScrollView(

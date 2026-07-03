@@ -75,7 +75,7 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
     final filtered = _filtered;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFBFE8FF),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Résultats des consultations'),
         centerTitle: true,

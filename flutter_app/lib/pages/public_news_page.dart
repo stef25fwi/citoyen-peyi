@@ -54,7 +54,7 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFBFE8FF),
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: const Text('Actualités / Projets'),
         centerTitle: true,

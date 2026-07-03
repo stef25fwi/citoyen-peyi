@@ -3,8 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static ThemeData light() {
-    const background = Color(0xFFBFE8FF);
-    const foreground = Color(0xFF0F172A);
+    const background = Colors.white;
+    const foreground = Color(0xFF374151);
     const primary = Color(0xFF0D73F2);
     const accent = Color(0xFF20B69C);
     const success = Color(0xFF2BA66A);
@@ -61,7 +61,7 @@ class AppTheme {
         centerTitle: false,
         titleTextStyle: textTheme.titleLarge?.copyWith(fontSize: 18),
         iconTheme: const IconThemeData(color: foreground),
-        shape: const Border(bottom: BorderSide(color: Color(0xFF9FD5F2))),
+        shape: const Border(bottom: BorderSide(color: border)),
       ),
       cardTheme: CardThemeData(
         elevation: 0,
