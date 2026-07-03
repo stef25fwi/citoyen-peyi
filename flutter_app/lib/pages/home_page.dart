@@ -22,7 +22,11 @@ class CitoyenPeyiHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Scaffold(
       body: ResponsiveHomeLayout(),
-      bottomNavigationBar: PublicBottomNav(currentTab: PublicTab.home),
+      bottomNavigationBar: PublicBottomNav(
+        currentTab: PublicTab.home,
+        backgroundColor: Color(0xFFEAF7FF),
+        indicatorColor: Color(0xFFCAE9FB),
+      ),
     );
   }
 }
@@ -62,11 +66,7 @@ class _HomeScaffold extends StatelessWidget {
       _HomeLayout.tablet => 720.0,
       _HomeLayout.desktop => 920.0,
     };
-    final hPad = switch (layout) {
-      _HomeLayout.mobile => 6.0,
-      _HomeLayout.tablet => 6.0,
-      _HomeLayout.desktop => 6.0,
-    };
+    const hPad = 6.0;
     final vPad = switch (layout) {
       _HomeLayout.mobile => 12.0,
       _HomeLayout.tablet => 18.0,
@@ -76,7 +76,7 @@ class _HomeScaffold extends StatelessWidget {
     return Stack(
       children: [
         const Positioned.fill(
-          child: ColoredBox(color: Colors.white),
+          child: ColoredBox(color: Color(0xFFBFE8FF)),
         ),
         SafeArea(
           child: LayoutBuilder(
@@ -86,6 +86,7 @@ class _HomeScaffold extends StatelessWidget {
                 maxWidth: maxWidth,
                 horizontalPadding: hPad,
                 verticalPadding: vPad,
+                pinAdministrationToBottom: _isMobile,
               );
 
               if (_isMobile) {
@@ -94,12 +95,10 @@ class _HomeScaffold extends StatelessWidget {
                   height: viewport.maxHeight,
                   child: Align(
                     alignment: Alignment.topCenter,
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      child: SizedBox(
-                        width: viewport.maxWidth,
-                        child: content,
-                      ),
+                    child: SizedBox(
+                      width: viewport.maxWidth,
+                      height: viewport.maxHeight,
+                      child: content,
                     ),
                   ),
                 );
@@ -125,12 +124,14 @@ class _HomeContent extends StatelessWidget {
     required this.maxWidth,
     required this.horizontalPadding,
     required this.verticalPadding,
+    required this.pinAdministrationToBottom,
   });
 
   final _HomeLayout layout;
   final double maxWidth;
   final double horizontalPadding;
   final double verticalPadding;
+  final bool pinAdministrationToBottom;
 
   bool get _isMobile => layout == _HomeLayout.mobile;
   bool get _isDesktop => layout == _HomeLayout.desktop;
@@ -155,11 +156,13 @@ class _HomeContent extends StatelessWidget {
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxWidth),
           child: Column(
-            mainAxisSize: MainAxisSize.min,
+            mainAxisSize:
+                pinAdministrationToBottom ? MainAxisSize.max : MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _MainCard(layout: layout),
               SizedBox(height: _isMobile ? 16 : (_isDesktop ? 24 : 20)),
+              if (pinAdministrationToBottom) const Spacer(),
               _AdministrationAccess(layout: layout),
             ],
           ),
@@ -200,6 +203,7 @@ class _HomeLogo extends StatelessWidget {
         .scale(targetHeight)
         .clamp(minHeight, maxHeight)
         .toDouble();
+
     return Semantics(
       label: 'Citoyen Peyi',
       image: true,
@@ -216,8 +220,6 @@ class _HomeLogo extends StatelessWidget {
     );
   }
 }
-
-// ── Carte centrale transparente ─────────────────────────────────────────────
 
 class _MainCard extends StatelessWidget {
   const _MainCard({required this.layout});
@@ -241,13 +243,13 @@ class _MainCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: const Color(0xFFE5E7EB),
+          color: const Color(0xFF77BFE4),
           width: 1.5,
         ),
-        color: Colors.white,
+        color: const Color(0xFFAEE3FF),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x14000000),
+            color: Color(0x22003E82),
             blurRadius: 24,
             offset: Offset(0, 12),
           ),
@@ -279,9 +281,12 @@ class _ActionCards extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return _ActionCard(
-      icon: Icons.chat_bubble_outline_rounded,
+      icon: Icons.group_rounded,
       title: 'Je participe',
-      subtitle: 'Partagez vos avis en toute confidentialité',
+      subtitle: 'Exprimez-vous et contribuez',
+      secondaryIcon: Icons.chat_bubble_outline_rounded,
+      secondaryTitle: 'Plateforme de consultation citoyenne anonyme',
+      secondarySubtitle: 'Partagez vos avis en toute confidentialité',
       layout: layout,
       onTap: () => Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
     );
@@ -304,29 +309,29 @@ class _HeroText extends StatelessWidget {
         ? const [
             TextSpan(
               text: 'Votre collectivité place ',
-              style: TextStyle(color: Color(0xFF4B5563)),
+              style: TextStyle(color: Color(0xFF005098)),
             ),
             TextSpan(
               text: 'votre parole\n',
-              style: TextStyle(color: Color(0xFF374151)),
+              style: TextStyle(color: Color(0xFF0E5A8A)),
             ),
             TextSpan(
               text: 'au cœur de l\'action publique',
-              style: TextStyle(color: Color(0xFF4B5563)),
+              style: TextStyle(color: Color(0xFF005098)),
             ),
           ]
         : const [
             TextSpan(
               text: 'Votre collectivité place ',
-              style: TextStyle(color: Color(0xFF4B5563)),
+              style: TextStyle(color: Color(0xFF005098)),
             ),
             TextSpan(
               text: 'votre parole',
-              style: TextStyle(color: Color(0xFF374151)),
+              style: TextStyle(color: Color(0xFF0E5A8A)),
             ),
             TextSpan(
               text: ' au cœur de l\'action publique',
-              style: TextStyle(color: Color(0xFF4B5563)),
+              style: TextStyle(color: Color(0xFF005098)),
             ),
           ];
 
@@ -352,6 +357,9 @@ class _ActionCard extends StatelessWidget {
     required this.subtitle,
     required this.layout,
     required this.onTap,
+    this.secondaryIcon,
+    this.secondaryTitle,
+    this.secondarySubtitle,
   });
 
   final IconData icon;
@@ -359,15 +367,21 @@ class _ActionCard extends StatelessWidget {
   final String subtitle;
   final _HomeLayout layout;
   final VoidCallback onTap;
+  final IconData? secondaryIcon;
+  final String? secondaryTitle;
+  final String? secondarySubtitle;
 
   static const _blue = Color(0xFF005098);
+
+  bool get _hasSecondaryContent =>
+      secondaryTitle != null && secondarySubtitle != null;
 
   @override
   Widget build(BuildContext context) {
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 64.0,
-      _HomeLayout.tablet => 92.0,
-      _HomeLayout.desktop => 116.0,
+      _HomeLayout.mobile => _hasSecondaryContent ? 132.0 : 64.0,
+      _HomeLayout.tablet => _hasSecondaryContent ? 164.0 : 92.0,
+      _HomeLayout.desktop => _hasSecondaryContent ? 188.0 : 116.0,
     };
     final horizontalPadding = switch (layout) {
       _HomeLayout.mobile => 8.0,
@@ -375,9 +389,9 @@ class _ActionCard extends StatelessWidget {
       _HomeLayout.desktop => 16.0,
     };
     final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 6.0,
-      _HomeLayout.tablet => 11.0,
-      _HomeLayout.desktop => 12.0,
+      _HomeLayout.mobile => 8.0,
+      _HomeLayout.tablet => 12.0,
+      _HomeLayout.desktop => 14.0,
     };
 
     return Semantics(
@@ -396,14 +410,57 @@ class _ActionCard extends StatelessWidget {
               horizontal: horizontalPadding,
               vertical: verticalPadding,
             ),
-            child: _decoratedContent(),
+            child: _hasSecondaryContent ? _mergedContent() : _decoratedContent(),
           ),
         ),
       ),
     );
   }
 
+  Widget _mergedContent() {
+    final gap = layout == _HomeLayout.mobile ? 10.0 : 14.0;
+
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _actionRow(
+          icon: icon,
+          title: title,
+          subtitle: subtitle,
+          showArrow: false,
+        ),
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: gap),
+          child: Divider(
+            color: const Color(0xFF77BFE4).withValues(alpha: 0.55),
+          ),
+        ),
+        _actionRow(
+          icon: secondaryIcon ?? Icons.chat_bubble_outline_rounded,
+          title: secondaryTitle!,
+          subtitle: secondarySubtitle!,
+          showArrow: true,
+        ),
+      ],
+    );
+  }
+
   Widget _decoratedContent() {
+    return _actionRow(
+      icon: icon,
+      title: title,
+      subtitle: subtitle,
+      showArrow: true,
+    );
+  }
+
+  Widget _actionRow({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required bool showArrow,
+  }) {
     final iconSize = switch (layout) {
       _HomeLayout.mobile => 36.0,
       _HomeLayout.tablet => 46.0,
@@ -457,25 +514,27 @@ class _ActionCard extends StatelessWidget {
           ),
         ),
         SizedBox(width: layout == _HomeLayout.mobile ? 6 : 8),
-        Container(
+        SizedBox(
           width: layout == _HomeLayout.mobile ? 28 : 32,
           height: layout == _HomeLayout.mobile ? 28 : 32,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: _blue,
-          ),
-          child: const Icon(
-            Icons.arrow_forward_rounded,
-            color: Colors.white,
-            size: 16,
-          ),
+          child: showArrow
+              ? Container(
+                  decoration: const BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: _blue,
+                  ),
+                  child: const Icon(
+                    Icons.arrow_forward_rounded,
+                    color: Colors.white,
+                    size: 16,
+                  ),
+                )
+              : const SizedBox.shrink(),
         ),
       ],
     );
   }
 }
-
-// ── Accès administration ─────────────────────────────────────────────────────
 
 class _AdministrationAccess extends StatelessWidget {
   const _AdministrationAccess({required this.layout});
@@ -575,17 +634,17 @@ class _AdministrationAccess extends StatelessWidget {
                     ?.copyWith(fontWeight: FontWeight.w800),
               ),
               const SizedBox(height: 12),
-              _AdminChoice(
+              const _AdminChoice(
                 label: 'Commune',
                 icon: Icons.admin_panel_settings_rounded,
                 routeName: '/admin-communal',
               ),
-              _AdminChoice(
+              const _AdminChoice(
                 label: 'Agent de mobilisation citoyenne',
                 icon: Icons.fact_check_rounded,
                 routeName: '/controleur-accueil',
               ),
-              _AdminChoice(
+              const _AdminChoice(
                 label: 'Super administration',
                 icon: Icons.workspace_premium_rounded,
                 routeName: '/super-admin',
@@ -599,8 +658,11 @@ class _AdministrationAccess extends StatelessWidget {
 }
 
 class _AdminChoice extends StatelessWidget {
-  const _AdminChoice(
-      {required this.label, required this.icon, required this.routeName});
+  const _AdminChoice({
+    required this.label,
+    required this.icon,
+    required this.routeName,
+  });
 
   final String label;
   final IconData icon;

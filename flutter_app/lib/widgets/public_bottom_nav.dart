@@ -7,10 +7,14 @@ enum PublicTab { home, news, vote, results }
 class PublicBottomNav extends StatefulWidget {
   const PublicBottomNav({
     required this.currentTab,
+    this.backgroundColor = Colors.white,
+    this.indicatorColor = const Color(0xFFF1F5F9),
     super.key,
   });
 
   final PublicTab currentTab;
+  final Color backgroundColor;
+  final Color indicatorColor;
 
   @override
   State<PublicBottomNav> createState() => _PublicBottomNavState();
@@ -45,7 +49,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
     final baseTheme = Theme.of(context);
 
     return Material(
-      color: Colors.white,
+      color: widget.backgroundColor,
       borderRadius: const BorderRadius.vertical(top: Radius.circular(34)),
       elevation: 10,
       shadowColor: Colors.black38,
@@ -62,7 +66,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
             overlayColor:
                 const WidgetStatePropertyAll<Color>(Colors.transparent),
             backgroundColor: Colors.transparent,
-            indicatorColor: const Color(0xFFF1F5F9),
+            indicatorColor: widget.indicatorColor,
             iconTheme: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
               return IconThemeData(
