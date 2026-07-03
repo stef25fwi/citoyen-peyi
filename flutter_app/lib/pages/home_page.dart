@@ -79,7 +79,7 @@ class _HomeScaffold extends StatelessWidget {
           child: DecoratedBox(
             decoration: BoxDecoration(
               gradient: LinearGradient(
-                colors: [Color(0xFF031633), Color(0xFF0B2F5B), Color(0xFF123F78)],
+                colors: [Color(0xFF9BE4FF), Color(0xFF44B7FF), Color(0xFF167DDB)],
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
               ),
@@ -251,17 +251,17 @@ class _MainCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: const Color(0xFF8FB4E8),
+          color: const Color(0xFF7FCBFF),
           width: 1.5,
         ),
         gradient: const LinearGradient(
-          colors: [Color(0xFF113A70), Color(0xFF0A274D)],
+          colors: [Color(0xFF5BD1FF), Color(0xFF168DE3)],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x33010B19),
+            color: Color(0x2D0A3566),
             blurRadius: 24,
             offset: Offset(0, 12),
           ),
@@ -325,7 +325,7 @@ class _HeroText extends StatelessWidget {
             ),
             TextSpan(
               text: 'votre parole\n',
-              style: TextStyle(color: Color(0xFFBFD8FF)),
+              style: TextStyle(color: Color(0xFFFFE36E)),
             ),
             TextSpan(
               text: 'au cœur de l\'action publique',
@@ -339,7 +339,7 @@ class _HeroText extends StatelessWidget {
             ),
             TextSpan(
               text: 'votre parole',
-              style: TextStyle(color: Color(0xFFBFD8FF)),
+              style: TextStyle(color: Color(0xFFFFE36E)),
             ),
             TextSpan(
               text: ' au cœur de l\'action publique',
@@ -472,8 +472,8 @@ class _ActionCard extends StatelessWidget {
   }
 
   Widget _buttonLeadText() {
-    final titleSize = layout == _HomeLayout.mobile ? 13.0 : 14.0;
-    final subtitleSize = layout == _HomeLayout.mobile ? 15.0 : 16.0;
+    final titleSize = layout == _HomeLayout.mobile ? 26.0 : 28.0;
+    final subtitleSize = layout == _HomeLayout.mobile ? 30.0 : 32.0;
 
     return Column(
       children: [

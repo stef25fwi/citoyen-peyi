@@ -195,15 +195,6 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
                   Text(
-                    'Accès citoyen',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: _foreground,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
                     'Entrez votre code citoyen pour participer anonymement.',
                     style: theme.textTheme.bodyLarge?.copyWith(
                       color: _mutedText,
@@ -231,6 +222,15 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                   Text(
                     'Plateforme de consultation citoyenne anonyme.',
                     style: theme.textTheme.bodyMedium?.copyWith(
+                      color: _mutedText,
+                      height: 1.25,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'En se connectant à son compte, l’utilisateur accepte les CGU et la politique de confidentialité.',
+                    style: theme.textTheme.bodySmall?.copyWith(
                       color: _mutedText,
                       height: 1.25,
                     ),
