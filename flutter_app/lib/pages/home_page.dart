@@ -76,7 +76,15 @@ class _HomeScaffold extends StatelessWidget {
     return Stack(
       children: [
         const Positioned.fill(
-          child: ColoredBox(color: Color(0xFFBFE8FF)),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Color(0xFF031633), Color(0xFF0B2F5B), Color(0xFF123F78)],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+          ),
         ),
         SafeArea(
           child: LayoutBuilder(
@@ -243,13 +251,17 @@ class _MainCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: const Color(0xFF77BFE4),
+          color: const Color(0xFF8FB4E8),
           width: 1.5,
         ),
-        color: const Color(0xFFAEE3FF),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF113A70), Color(0xFF0A274D)],
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+        ),
         boxShadow: const [
           BoxShadow(
-            color: Color(0x22003E82),
+            color: Color(0x33010B19),
             blurRadius: 24,
             offset: Offset(0, 12),
           ),
@@ -309,29 +321,29 @@ class _HeroText extends StatelessWidget {
         ? const [
             TextSpan(
               text: 'Votre collectivité place ',
-              style: TextStyle(color: Color(0xFF005098)),
+              style: TextStyle(color: Color(0xFFE6EEF9)),
             ),
             TextSpan(
               text: 'votre parole\n',
-              style: TextStyle(color: Color(0xFF0E5A8A)),
+              style: TextStyle(color: Color(0xFFBFD8FF)),
             ),
             TextSpan(
               text: 'au cœur de l\'action publique',
-              style: TextStyle(color: Color(0xFF005098)),
+              style: TextStyle(color: Color(0xFFE6EEF9)),
             ),
           ]
         : const [
             TextSpan(
               text: 'Votre collectivité place ',
-              style: TextStyle(color: Color(0xFF005098)),
+              style: TextStyle(color: Color(0xFFE6EEF9)),
             ),
             TextSpan(
               text: 'votre parole',
-              style: TextStyle(color: Color(0xFF0E5A8A)),
+              style: TextStyle(color: Color(0xFFBFD8FF)),
             ),
             TextSpan(
               text: ' au cœur de l\'action publique',
-              style: TextStyle(color: Color(0xFF005098)),
+              style: TextStyle(color: Color(0xFFE6EEF9)),
             ),
           ];
 
@@ -379,9 +391,9 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => _hasSecondaryContent ? 132.0 : 64.0,
-      _HomeLayout.tablet => _hasSecondaryContent ? 164.0 : 92.0,
-      _HomeLayout.desktop => _hasSecondaryContent ? 188.0 : 116.0,
+      _HomeLayout.mobile => _hasSecondaryContent ? 184.0 : 64.0,
+      _HomeLayout.tablet => _hasSecondaryContent ? 220.0 : 92.0,
+      _HomeLayout.desktop => _hasSecondaryContent ? 244.0 : 116.0,
     };
     final horizontalPadding = switch (layout) {
       _HomeLayout.mobile => 8.0,
@@ -394,78 +406,89 @@ class _ActionCard extends StatelessWidget {
       _HomeLayout.desktop => 14.0,
     };
 
-    return Semantics(
-      button: true,
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        shadowColor: Colors.black.withValues(alpha: 0.18),
-        elevation: 4,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(22),
-          onTap: onTap,
-          child: Container(
-            constraints: BoxConstraints(minHeight: minHeight),
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: verticalPadding,
-            ),
-            child: _hasSecondaryContent ? _mergedContent() : _decoratedContent(),
-          ),
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(22),
+      shadowColor: Colors.black.withValues(alpha: 0.18),
+      elevation: 4,
+      child: Container(
+        constraints: BoxConstraints(minHeight: minHeight),
+        padding: EdgeInsets.symmetric(
+          horizontal: horizontalPadding,
+          vertical: verticalPadding,
         ),
+        child: _hasSecondaryContent ? _mergedContent(context) : _decoratedContent(),
       ),
     );
   }
 
-  Widget _mergedContent() {
+  Widget _mergedContent(BuildContext context) {
     final gap = layout == _HomeLayout.mobile ? 10.0 : 14.0;
+    final buttonHeight = layout == _HomeLayout.mobile ? 38.0 : 42.0;
+    final buttonWidth = layout == _HomeLayout.mobile ? 196.0 : 224.0;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _actionRow(
-          icon: icon,
           title: title,
           subtitle: subtitle,
-          showArrow: false,
         ),
-        Padding(
-          padding: EdgeInsets.symmetric(vertical: gap),
-          child: Divider(
-            color: const Color(0xFF77BFE4).withValues(alpha: 0.55),
-          ),
+        SizedBox(height: gap),
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            Divider(
+              color: const Color(0xFF77BFE4).withValues(alpha: 0.55),
+              thickness: 1,
+            ),
+            SizedBox(
+              height: buttonHeight,
+              width: buttonWidth,
+              child: FilledButton(
+                onPressed: onTap,
+                style: FilledButton.styleFrom(
+                  backgroundColor: const Color(0xFF0B2F5B),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(999),
+                    side: const BorderSide(color: Color(0xFFBFD8FF)),
+                  ),
+                  textStyle: TextStyle(
+                    fontSize: layout == _HomeLayout.mobile ? 12.0 : 13.0,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                child: const Text('Connexion citoyenne'),
+              ),
+            ),
+          ],
         ),
+        SizedBox(height: gap),
         _actionRow(
-          icon: secondaryIcon ?? Icons.chat_bubble_outline_rounded,
           title: secondaryTitle!,
           subtitle: secondarySubtitle!,
-          showArrow: true,
         ),
       ],
     );
   }
 
   Widget _decoratedContent() {
-    return _actionRow(
-      icon: icon,
-      title: title,
-      subtitle: subtitle,
-      showArrow: true,
+    return InkWell(
+      borderRadius: BorderRadius.circular(22),
+      onTap: onTap,
+      child: _actionRow(
+        title: title,
+        subtitle: subtitle,
+      ),
     );
   }
 
   Widget _actionRow({
-    required IconData icon,
     required String title,
     required String subtitle,
-    required bool showArrow,
   }) {
-    final iconSize = switch (layout) {
-      _HomeLayout.mobile => 36.0,
-      _HomeLayout.tablet => 46.0,
-      _HomeLayout.desktop => 48.0,
-    };
     final titleSize = switch (layout) {
       _HomeLayout.mobile => 14.0,
       _HomeLayout.tablet => 16.0,
@@ -475,16 +498,6 @@ class _ActionCard extends StatelessWidget {
 
     return Row(
       children: [
-        Container(
-          width: iconSize,
-          height: iconSize,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: Color(0xFFE8F0FE),
-          ),
-          child: Icon(icon, color: _blue, size: iconSize * 0.52),
-        ),
-        SizedBox(width: layout == _HomeLayout.mobile ? 10 : 12),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
@@ -505,31 +518,13 @@ class _ActionCard extends StatelessWidget {
                 subtitle,
                 textAlign: TextAlign.center,
                 style: TextStyle(
-                  color: Colors.grey.shade600,
+                  color: const Color(0xFF52627A),
                   fontSize: subtitleSize,
                   height: 1.3,
                 ),
               ),
             ],
           ),
-        ),
-        SizedBox(width: layout == _HomeLayout.mobile ? 6 : 8),
-        SizedBox(
-          width: layout == _HomeLayout.mobile ? 28 : 32,
-          height: layout == _HomeLayout.mobile ? 28 : 32,
-          child: showArrow
-              ? Container(
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: _blue,
-                  ),
-                  child: const Icon(
-                    Icons.arrow_forward_rounded,
-                    color: Colors.white,
-                    size: 16,
-                  ),
-                )
-              : const SizedBox.shrink(),
         ),
       ],
     );
