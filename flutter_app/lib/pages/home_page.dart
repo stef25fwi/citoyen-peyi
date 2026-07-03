@@ -391,9 +391,9 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => _hasSecondaryContent ? 184.0 : 64.0,
-      _HomeLayout.tablet => _hasSecondaryContent ? 220.0 : 92.0,
-      _HomeLayout.desktop => _hasSecondaryContent ? 244.0 : 116.0,
+      _HomeLayout.mobile => _hasSecondaryContent ? 228.0 : 64.0,
+      _HomeLayout.tablet => _hasSecondaryContent ? 264.0 : 92.0,
+      _HomeLayout.desktop => _hasSecondaryContent ? 288.0 : 116.0,
     };
     final horizontalPadding = switch (layout) {
       _HomeLayout.mobile => 8.0,
@@ -424,17 +424,14 @@ class _ActionCard extends StatelessWidget {
 
   Widget _mergedContent(BuildContext context) {
     final gap = layout == _HomeLayout.mobile ? 10.0 : 14.0;
-    final buttonHeight = layout == _HomeLayout.mobile ? 38.0 : 42.0;
+    final buttonHeight = layout == _HomeLayout.mobile ? 76.0 : 84.0;
     final buttonWidth = layout == _HomeLayout.mobile ? 196.0 : 224.0;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _actionRow(
-          title: title,
-          subtitle: subtitle,
-        ),
+        _buttonLeadText(),
         SizedBox(height: gap),
         Stack(
           alignment: Alignment.center,
@@ -456,11 +453,11 @@ class _ActionCard extends StatelessWidget {
                     side: const BorderSide(color: Color(0xFFBFD8FF)),
                   ),
                   textStyle: TextStyle(
-                    fontSize: layout == _HomeLayout.mobile ? 12.0 : 13.0,
+                    fontSize: layout == _HomeLayout.mobile ? 15.0 : 16.0,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                child: const Text('Connexion citoyenne'),
+                child: const Text('Je participe'),
               ),
             ),
           ],
@@ -469,6 +466,37 @@ class _ActionCard extends StatelessWidget {
         _actionRow(
           title: secondaryTitle!,
           subtitle: secondarySubtitle!,
+        ),
+      ],
+    );
+  }
+
+  Widget _buttonLeadText() {
+    final titleSize = layout == _HomeLayout.mobile ? 13.0 : 14.0;
+    final subtitleSize = layout == _HomeLayout.mobile ? 15.0 : 16.0;
+
+    return Column(
+      children: [
+        Text(
+          'EXPRIMEZ VOUS',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: _blue,
+            fontSize: titleSize,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'et CONTRIBUEZ.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: _blue,
+            fontSize: subtitleSize,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 0.6,
+          ),
         ),
       ],
     );
