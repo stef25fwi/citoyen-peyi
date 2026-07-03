@@ -424,14 +424,6 @@ class _ControllerCitizenAccessPageState
     return Scaffold(
       appBar: AppBar(
         title: const Text('Acces citoyen'),
-        actions: [
-          TextButton.icon(
-            onPressed: () =>
-                Navigator.of(context).pushNamed('/controleur/historique'),
-            icon: const Icon(Icons.history_rounded),
-            label: const Text('Historique'),
-          ),
-        ],
       ),
       body: Center(
         child: ConstrainedBox(
@@ -996,23 +988,6 @@ class _ResultCard extends StatelessWidget {
                           ),
                         ],
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: [
-                        FilledButton.tonalIcon(
-                          onPressed: () => onCopy(createdCode.accessCode),
-                          icon: const Icon(Icons.copy_rounded),
-                          label: const Text('Copier'),
-                        ),
-                        FilledButton.tonalIcon(
-                          onPressed: onDownload,
-                          icon: const Icon(Icons.download_rounded),
-                          label: const Text('Telecharger PNG'),
-                        ),
-                      ],
                     ),
                   ],
                 ),

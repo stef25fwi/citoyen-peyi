@@ -45,7 +45,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
     final baseTheme = Theme.of(context);
 
     return Material(
-      color: Colors.white,
+      color: const Color(0xFFEAF7FF),
       borderRadius: const BorderRadius.vertical(top: Radius.circular(34)),
       elevation: 10,
       shadowColor: Colors.black38,
@@ -62,7 +62,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
             overlayColor:
                 const WidgetStatePropertyAll<Color>(Colors.transparent),
             backgroundColor: Colors.transparent,
-            indicatorColor: const Color(0xFFCDE4F7),
+            indicatorColor: const Color(0xFFCAE9FB),
             iconTheme: WidgetStateProperty.resolveWith((states) {
               final selected = states.contains(WidgetState.selected);
               return IconThemeData(

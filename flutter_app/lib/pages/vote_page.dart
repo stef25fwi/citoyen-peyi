@@ -231,7 +231,7 @@ class _VotePageState extends State<VotePage> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: const Color(0xFFBFE8FF),
       body: Column(
         children: [
           Container(
@@ -637,7 +637,7 @@ class _VoteStateScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: const Color(0xFFBFE8FF),
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(20),

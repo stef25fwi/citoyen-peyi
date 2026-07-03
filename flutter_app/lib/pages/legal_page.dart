@@ -40,9 +40,9 @@ class LegalPage extends StatelessWidget {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFBFE8FF),
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFFBFE8FF),
         foregroundColor: const Color(0xFF0F172A),
         title: const Text('Informations légales'),
       ),

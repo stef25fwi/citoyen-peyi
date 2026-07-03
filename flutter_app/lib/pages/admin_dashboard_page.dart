@@ -303,23 +303,6 @@ class _AdminDashboardPageState extends State<AdminDashboardPage> {
                 ],
               ),
         actions: [
-          if (compactAppBar)
-            IconButton(
-              icon: const Icon(Icons.add_rounded),
-              tooltip: 'Nouvelle consultation',
-              onPressed: () =>
-                  Navigator.of(context).pushNamed('/admin/polls/create'),
-            )
-          else
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: FilledButton.icon(
-                onPressed: () =>
-                    Navigator.of(context).pushNamed('/admin/polls/create'),
-                icon: const Icon(Icons.add_rounded, size: 18),
-                label: const Text('Nouvelle consultation'),
-              ),
-            ),
           compactAppBar
               ? IconButton(
                   icon: const Icon(Icons.logout_rounded),

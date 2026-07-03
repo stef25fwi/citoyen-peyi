@@ -15,7 +15,6 @@ class HomePage extends StatelessWidget {
 class CitoyenPeyiHomePage extends StatelessWidget {
   const CitoyenPeyiHomePage({super.key});
 
-  static const String backgroundPath = 'assets/images/fondecran.png';
   static const String logoPath =
       'assets/citoyen_peyi/logo_citoyen_peyi_transparent.webp';
 
@@ -77,27 +76,7 @@ class _HomeScaffold extends StatelessWidget {
     return Stack(
       children: [
         const Positioned.fill(
-          child: ColoredBox(color: Color(0xFF003E82)),
-        ),
-        Positioned.fill(
-          child: Image.asset(
-            CitoyenPeyiHomePage.backgroundPath,
-            fit: BoxFit.cover,
-            errorBuilder: (_, __, ___) => const DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Color(0xFF003E82), Color(0xFF0477A8)],
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                ),
-              ),
-            ),
-          ),
-        ),
-        Positioned.fill(
-          child: ColoredBox(
-            color: const Color(0xFF001E4A).withValues(alpha: 0.40),
-          ),
+          child: ColoredBox(color: Color(0xFFBFE8FF)),
         ),
         SafeArea(
           child: LayoutBuilder(
@@ -179,8 +158,6 @@ class _HomeContent extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              _HomeLogo(layout: layout),
-              SizedBox(height: _isMobile ? 12 : (_isDesktop ? 16 : 12)),
               _MainCard(layout: layout),
               SizedBox(height: _isMobile ? 16 : (_isDesktop ? 24 : 20)),
               _AdministrationAccess(layout: layout),
@@ -264,10 +241,17 @@ class _MainCard extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: const Color(0xFF4A9FD4).withValues(alpha: 0.55),
+          color: const Color(0xFF77BFE4),
           width: 1.5,
         ),
-        color: Colors.white.withValues(alpha: 0.07),
+        color: const Color(0xFFAEE3FF),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x22003E82),
+            blurRadius: 24,
+            offset: Offset(0, 12),
+          ),
+        ],
       ),
       padding: EdgeInsets.symmetric(
         horizontal: horizontalPadding,
@@ -276,6 +260,8 @@ class _MainCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          _HomeLogo(layout: layout),
+          SizedBox(height: layout == _HomeLayout.mobile ? 16 : 20),
           _HeroText(layout: layout),
           SizedBox(height: layout == _HomeLayout.mobile ? 52 : 60),
           _ActionCards(layout: layout),
@@ -292,39 +278,12 @@ class _ActionCards extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final participationCard = _ActionCard(
-      icon: Icons.group_rounded,
-      title: 'Je participe',
-      subtitle: 'Exprimez-vous et contribuez',
-      layout: layout,
-      onTap: () => Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
-    );
-    final consultationCard = _ActionCard(
+    return _ActionCard(
       icon: Icons.chat_bubble_outline_rounded,
-      title: 'Plateforme de consultation citoyenne anonyme',
+      title: 'Je participe',
       subtitle: 'Partagez vos avis en toute confidentialité',
       layout: layout,
-      showDecorations: false,
       onTap: () => Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
-    );
-
-    if (layout == _HomeLayout.desktop) {
-      return Row(
-        children: [
-          Expanded(child: participationCard),
-          const SizedBox(width: 30),
-          Expanded(child: consultationCard),
-        ],
-      );
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        participationCard,
-        SizedBox(height: layout == _HomeLayout.mobile ? 16 : 22),
-        consultationCard,
-      ],
     );
   }
 }
@@ -345,29 +304,29 @@ class _HeroText extends StatelessWidget {
         ? const [
             TextSpan(
               text: 'Votre collectivité place ',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Color(0xFF005098)),
             ),
             TextSpan(
               text: 'votre parole\n',
-              style: TextStyle(color: Color(0xFFFFD740)),
+              style: TextStyle(color: Color(0xFF0E5A8A)),
             ),
             TextSpan(
               text: 'au cœur de l\'action publique',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Color(0xFF005098)),
             ),
           ]
         : const [
             TextSpan(
               text: 'Votre collectivité place ',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Color(0xFF005098)),
             ),
             TextSpan(
               text: 'votre parole',
-              style: TextStyle(color: Color(0xFFFFD740)),
+              style: TextStyle(color: Color(0xFF0E5A8A)),
             ),
             TextSpan(
               text: ' au cœur de l\'action publique',
-              style: TextStyle(color: Colors.white),
+              style: TextStyle(color: Color(0xFF005098)),
             ),
           ];
 
@@ -393,7 +352,6 @@ class _ActionCard extends StatelessWidget {
     required this.subtitle,
     required this.layout,
     required this.onTap,
-    this.showDecorations = true,
   });
 
   final IconData icon;
@@ -401,7 +359,6 @@ class _ActionCard extends StatelessWidget {
   final String subtitle;
   final _HomeLayout layout;
   final VoidCallback onTap;
-  final bool showDecorations;
 
   static const _blue = Color(0xFF005098);
 
@@ -439,7 +396,7 @@ class _ActionCard extends StatelessWidget {
               horizontal: horizontalPadding,
               vertical: verticalPadding,
             ),
-            child: showDecorations ? _decoratedContent() : _plainContent(),
+            child: _decoratedContent(),
           ),
         ),
       ),
@@ -511,42 +468,6 @@ class _ActionCard extends StatelessWidget {
             Icons.arrow_forward_rounded,
             color: Colors.white,
             size: 16,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _plainContent() {
-    final titleSize = switch (layout) {
-      _HomeLayout.mobile => 14.5,
-      _HomeLayout.tablet => 17.0,
-      _HomeLayout.desktop => 18.0,
-    };
-    final subtitleSize = layout == _HomeLayout.mobile ? 11.0 : 13.0;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.center,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text(
-          title,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: _blue,
-            fontSize: titleSize,
-            fontWeight: FontWeight.w800,
-            height: 1.3,
-          ),
-        ),
-        SizedBox(height: layout == _HomeLayout.mobile ? 3 : 5),
-        Text(
-          subtitle,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.grey.shade600,
-            fontSize: subtitleSize,
-            height: 1.35,
           ),
         ),
       ],

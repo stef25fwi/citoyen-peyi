@@ -653,11 +653,6 @@ class _SuperAdminSupportDashboardCard extends StatelessWidget {
                           backgroundColor: const Color(0xFFDC2626),
                           label: Text('$urgent urgent(s)'),
                         ),
-                      TextButton.icon(
-                        onPressed: onOpen,
-                        icon: const Icon(Icons.open_in_new_rounded),
-                        label: const Text('Voir les tickets'),
-                      ),
                     ],
                   ),
                 ],
