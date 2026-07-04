@@ -19,9 +19,9 @@ class CitoyenPeyiHomePage extends StatelessWidget {
   static const String logoPath =
       'assets/citoyen_peyi/logo_citoyen_peyi_transparent.webp';
 
-  // Status bar couleur du gradient de la page d'accueil.
+  // Status bar transparente pour laisser voir le fond de la page d'accueil.
   static const _statusBarStyle = SystemUiOverlayStyle(
-    statusBarColor: Color(0xFF9BE4FF),
+    statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
     statusBarBrightness: Brightness.light,
   );
@@ -97,14 +97,6 @@ class _HomeScaffold extends StatelessWidget {
             ),
           ),
         ),
-        // Bande couleur gradient derriere la status bar.
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          height: MediaQuery.paddingOf(context).top,
-          child: const ColoredBox(color: Color(0xFF9BE4FF)),
-        ),
         SafeArea(
           child: LayoutBuilder(
             builder: (context, viewport) {
@@ -167,8 +159,8 @@ class _HomeContent extends StatelessWidget {
   Widget build(BuildContext context) {
     final topPadding = switch (layout) {
       _HomeLayout.mobile => 0.0,
-      _HomeLayout.tablet => 6.0,
-      _HomeLayout.desktop => 8.0,
+      _HomeLayout.tablet => 4.0,
+      _HomeLayout.desktop => 6.0,
     };
 
     return Padding(
@@ -187,6 +179,10 @@ class _HomeContent extends StatelessWidget {
                 pinAdministrationToBottom ? MainAxisSize.max : MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              _TransparentHeader(layout: layout),
+              SizedBox(height: _isMobile ? 10 : (_isDesktop ? 16 : 14)),
+              _HeroCard(layout: layout),
+              SizedBox(height: _isMobile ? 10 : (_isDesktop ? 18 : 14)),
               _MainCard(layout: layout),
               SizedBox(height: _isMobile ? 16 : (_isDesktop ? 24 : 20)),
               if (pinAdministrationToBottom) const Spacer(),
@@ -248,6 +244,75 @@ class _HomeLogo extends StatelessWidget {
   }
 }
 
+class _TransparentHeader extends StatelessWidget {
+  const _TransparentHeader({required this.layout});
+
+  final _HomeLayout layout;
+
+  @override
+  Widget build(BuildContext context) {
+    final padding = switch (layout) {
+      _HomeLayout.mobile => const EdgeInsets.fromLTRB(10, 0, 10, 0),
+      _HomeLayout.tablet => const EdgeInsets.fromLTRB(18, 0, 18, 0),
+      _HomeLayout.desktop => const EdgeInsets.fromLTRB(24, 0, 24, 0),
+    };
+
+    return Container(
+      padding: padding,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.18),
+        ),
+      ),
+      child: _HomeLogo(layout: layout),
+    );
+  }
+}
+
+class _HeroCard extends StatelessWidget {
+  const _HeroCard({required this.layout});
+
+  final _HomeLayout layout;
+
+  @override
+  Widget build(BuildContext context) {
+    final horizontalPadding = switch (layout) {
+      _HomeLayout.mobile => 14.0,
+      _HomeLayout.tablet => 24.0,
+      _HomeLayout.desktop => 30.0,
+    };
+    final verticalPadding = switch (layout) {
+      _HomeLayout.mobile => 14.0,
+      _HomeLayout.tablet => 18.0,
+      _HomeLayout.desktop => 22.0,
+    };
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.24),
+        ),
+        boxShadow: const [
+          BoxShadow(
+            color: Color(0x180A3566),
+            blurRadius: 18,
+            offset: Offset(0, 8),
+          ),
+        ],
+      ),
+      padding: EdgeInsets.symmetric(
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
+      ),
+      child: _HeroText(layout: layout),
+    );
+  }
+}
+
 class _MainCard extends StatelessWidget {
   const _MainCard({required this.layout});
 
@@ -257,13 +322,13 @@ class _MainCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontalPadding = switch (layout) {
       _HomeLayout.mobile => 8.0,
-      _HomeLayout.tablet => 24.0,
-      _HomeLayout.desktop => 28.0,
+      _HomeLayout.tablet => 20.0,
+      _HomeLayout.desktop => 24.0,
     };
     final topPad = switch (layout) {
-      _HomeLayout.mobile => 4.0,
-      _HomeLayout.tablet => 8.0,
-      _HomeLayout.desktop => 10.0,
+      _HomeLayout.mobile => 10.0,
+      _HomeLayout.tablet => 14.0,
+      _HomeLayout.desktop => 16.0,
     };
     final bottomPad = switch (layout) {
       _HomeLayout.mobile => 12.0,
@@ -300,10 +365,6 @@ class _MainCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          _HomeLogo(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 4 : 12),
-          _HeroText(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 10 : 36),
           _ActionCards(layout: layout),
         ],
       ),
