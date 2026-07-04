@@ -68,9 +68,9 @@ class _HomeScaffold extends StatelessWidget {
     };
     const hPad = 6.0;
     final vPad = switch (layout) {
-      _HomeLayout.mobile => 12.0,
-      _HomeLayout.tablet => 18.0,
-      _HomeLayout.desktop => 24.0,
+      _HomeLayout.mobile => 6.0,
+      _HomeLayout.tablet => 12.0,
+      _HomeLayout.desktop => 16.0,
     };
 
     return Stack(
@@ -188,19 +188,19 @@ class _HomeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final targetHeight = switch (layout) {
-      _HomeLayout.mobile => 198.0,
-      _HomeLayout.tablet => 279.0,
-      _HomeLayout.desktop => 310.5,
+      _HomeLayout.mobile => 260.0,
+      _HomeLayout.tablet => 340.0,
+      _HomeLayout.desktop => 380.0,
     };
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 171.0,
-      _HomeLayout.tablet => 252.0,
-      _HomeLayout.desktop => 274.5,
+      _HomeLayout.mobile => 240.0,
+      _HomeLayout.tablet => 320.0,
+      _HomeLayout.desktop => 360.0,
     };
     final maxHeight = switch (layout) {
-      _HomeLayout.mobile => 216.0,
-      _HomeLayout.tablet => 319.5,
-      _HomeLayout.desktop => 351.0,
+      _HomeLayout.mobile => 280.0,
+      _HomeLayout.tablet => 360.0,
+      _HomeLayout.desktop => 400.0,
     };
     final verticalPadding = switch (layout) {
       _HomeLayout.mobile => 0.0,
@@ -238,13 +238,13 @@ class _MainCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontalPadding = switch (layout) {
       _HomeLayout.mobile => 8.0,
-      _HomeLayout.tablet => 28.0,
-      _HomeLayout.desktop => 32.0,
+      _HomeLayout.tablet => 24.0,
+      _HomeLayout.desktop => 28.0,
     };
     final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 12.0,
-      _HomeLayout.tablet => 20.0,
-      _HomeLayout.desktop => 24.0,
+      _HomeLayout.mobile => 8.0,
+      _HomeLayout.tablet => 14.0,
+      _HomeLayout.desktop => 18.0,
     };
 
     return Container(
@@ -275,9 +275,9 @@ class _MainCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HomeLogo(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 16 : 20),
+          SizedBox(height: layout == _HomeLayout.mobile ? 8 : 12),
           _HeroText(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 52 : 60),
+          SizedBox(height: layout == _HomeLayout.mobile ? 28 : 36),
           _ActionCards(layout: layout),
         ],
       ),
