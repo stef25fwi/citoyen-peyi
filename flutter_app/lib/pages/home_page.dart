@@ -19,9 +19,9 @@ class CitoyenPeyiHomePage extends StatelessWidget {
   static const String logoPath =
       'assets/citoyen_peyi/logo_citoyen_peyi_transparent.webp';
 
-  // Status bar blanche + texte/icones noirs, uniquement sur la page d'accueil.
+  // Status bar couleur du gradient de la page d'accueil.
   static const _statusBarStyle = SystemUiOverlayStyle(
-    statusBarColor: Colors.white,
+    statusBarColor: Color(0xFF9BE4FF),
     statusBarIconBrightness: Brightness.dark,
     statusBarBrightness: Brightness.light,
   );
@@ -97,14 +97,13 @@ class _HomeScaffold extends StatelessWidget {
             ),
           ),
         ),
-        // Bande blanche derriere la status bar (necessaire sur iOS ou elle est
-        // transparente et laisse voir le fond de la page en dessous).
+        // Bande couleur gradient derriere la status bar.
         Positioned(
           top: 0,
           left: 0,
           right: 0,
           height: MediaQuery.paddingOf(context).top,
-          child: const ColoredBox(color: Colors.white),
+          child: const ColoredBox(color: Color(0xFF9BE4FF)),
         ),
         SafeArea(
           child: LayoutBuilder(
@@ -208,19 +207,19 @@ class _HomeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final targetHeight = switch (layout) {
-      _HomeLayout.mobile => 228.0,
-      _HomeLayout.tablet => 340.0,
-      _HomeLayout.desktop => 380.0,
+      _HomeLayout.mobile => 267.0,
+      _HomeLayout.tablet => 377.0,
+      _HomeLayout.desktop => 419.0,
     };
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 208.0,
-      _HomeLayout.tablet => 320.0,
-      _HomeLayout.desktop => 360.0,
+      _HomeLayout.mobile => 231.0,
+      _HomeLayout.tablet => 340.0,
+      _HomeLayout.desktop => 371.0,
     };
     final maxHeight = switch (layout) {
-      _HomeLayout.mobile => 248.0,
-      _HomeLayout.tablet => 360.0,
-      _HomeLayout.desktop => 400.0,
+      _HomeLayout.mobile => 292.0,
+      _HomeLayout.tablet => 431.0,
+      _HomeLayout.desktop => 474.0,
     };
     final verticalPadding = switch (layout) {
       _HomeLayout.mobile => 0.0,
@@ -261,10 +260,15 @@ class _MainCard extends StatelessWidget {
       _HomeLayout.tablet => 24.0,
       _HomeLayout.desktop => 28.0,
     };
-    final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 6.0,
-      _HomeLayout.tablet => 14.0,
-      _HomeLayout.desktop => 18.0,
+    final topPad = switch (layout) {
+      _HomeLayout.mobile => 4.0,
+      _HomeLayout.tablet => 8.0,
+      _HomeLayout.desktop => 10.0,
+    };
+    final bottomPad = switch (layout) {
+      _HomeLayout.mobile => 12.0,
+      _HomeLayout.tablet => 20.0,
+      _HomeLayout.desktop => 24.0,
     };
 
     return Container(
@@ -287,9 +291,11 @@ class _MainCard extends StatelessWidget {
           ),
         ],
       ),
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
+      padding: EdgeInsets.fromLTRB(
+        horizontalPadding,
+        topPad,
+        horizontalPadding,
+        bottomPad,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -438,7 +444,7 @@ class _ActionCard extends StatelessWidget {
 
   Widget _mergedContent(BuildContext context) {
     final gap = layout == _HomeLayout.mobile ? 6.0 : 14.0;
-    final buttonHeight = layout == _HomeLayout.mobile ? 48.0 : 60.0;
+    final buttonHeight = layout == _HomeLayout.mobile ? 108.0 : 120.0;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -457,7 +463,7 @@ class _ActionCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(999),
               ),
               textStyle: TextStyle(
-                fontSize: layout == _HomeLayout.mobile ? 16.0 : 18.0,
+                fontSize: layout == _HomeLayout.mobile ? 34.0 : 38.0,
                 fontWeight: FontWeight.w800,
               ),
             ),
@@ -474,8 +480,7 @@ class _ActionCard extends StatelessWidget {
   }
 
   Widget _buttonLeadText() {
-    final titleSize = layout == _HomeLayout.mobile ? 18.0 : 20.0;
-    final subtitleSize = layout == _HomeLayout.mobile ? 22.0 : 24.0;
+    final sharedSize = layout == _HomeLayout.mobile ? 22.0 : 24.0;
 
     return Column(
       children: [
@@ -484,7 +489,7 @@ class _ActionCard extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: _blue,
-            fontSize: titleSize,
+            fontSize: sharedSize,
             fontWeight: FontWeight.w700,
             letterSpacing: 1.2,
           ),
@@ -495,7 +500,7 @@ class _ActionCard extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: _blue,
-            fontSize: subtitleSize,
+            fontSize: sharedSize,
             fontWeight: FontWeight.w800,
             letterSpacing: 0.6,
           ),
