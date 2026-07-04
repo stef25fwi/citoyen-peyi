@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../widgets/public_bottom_nav.dart';
 import 'access_citizen_page.dart';
@@ -18,14 +19,24 @@ class CitoyenPeyiHomePage extends StatelessWidget {
   static const String logoPath =
       'assets/citoyen_peyi/logo_citoyen_peyi_transparent.webp';
 
+  // Status bar blanche + texte/icones noirs, uniquement sur la page d'accueil.
+  static const _statusBarStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.white,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+  );
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: ResponsiveHomeLayout(),
-      bottomNavigationBar: PublicBottomNav(
-        currentTab: PublicTab.home,
-        backgroundColor: Color(0xFFEAF7FF),
-        indicatorColor: Color(0xFFCAE9FB),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _statusBarStyle,
+      child: Scaffold(
+        body: const ResponsiveHomeLayout(),
+        bottomNavigationBar: PublicBottomNav(
+          currentTab: PublicTab.home,
+          backgroundColor: const Color(0xFFEAF7FF),
+          indicatorColor: const Color(0xFFCAE9FB),
+        ),
       ),
     );
   }
@@ -85,6 +96,15 @@ class _HomeScaffold extends StatelessWidget {
               ),
             ),
           ),
+        ),
+        // Bande blanche derriere la status bar (necessaire sur iOS ou elle est
+        // transparente et laisse voir le fond de la page en dessous).
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: MediaQuery.paddingOf(context).top,
+          child: const ColoredBox(color: Colors.white),
         ),
         SafeArea(
           child: LayoutBuilder(
