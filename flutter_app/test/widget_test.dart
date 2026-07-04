@@ -58,6 +58,12 @@ void main() {
     await tester.pumpWidget(const CitoyenPeyiApp());
     await tester.pumpAndSettle();
 
+    // Sur la largeur de test par defaut (800x600, palier tablette), la page
+    // d'accueil est dans un SingleChildScrollView : le bouton peut etre hors
+    // du viewport initial. On le rend visible avant de taper dessus, comme le
+    // ferait un utilisateur reel en faisant defiler la page.
+    await tester.ensureVisible(find.text('Je participe'));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Je participe'));
     await tester.pumpAndSettle();
 
