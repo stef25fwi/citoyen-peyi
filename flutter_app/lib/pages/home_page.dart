@@ -520,22 +520,39 @@ class _ActionCard extends StatelessWidget {
       children: [
         _buttonLeadText(),
         SizedBox(height: gap),
-        SizedBox(
-          height: buttonHeight,
-          child: FilledButton(
-            onPressed: onTap,
-            style: FilledButton.styleFrom(
-              backgroundColor: const Color(0xFFFFE36E),
-              foregroundColor: const Color(0xFF005098),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(999),
+        DecoratedBox(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(999),
+            boxShadow: const [
+              BoxShadow(
+                color: Color(0x33003366),
+                blurRadius: 16,
+                offset: Offset(0, 8),
               ),
-              textStyle: TextStyle(
-                fontSize: layout == _HomeLayout.mobile ? 34.0 : 38.0,
-                fontWeight: FontWeight.w800,
+              BoxShadow(
+                color: Color(0x55215A8A),
+                blurRadius: 0,
+                offset: Offset(0, 5),
               ),
+            ],
+          ),
+          child: SizedBox(
+            height: buttonHeight,
+            child: FilledButton(
+              onPressed: onTap,
+              style: FilledButton.styleFrom(
+                backgroundColor: const Color(0xFFFFE36E),
+                foregroundColor: const Color(0xFF005098),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                textStyle: TextStyle(
+                  fontSize: layout == _HomeLayout.mobile ? 34.0 : 38.0,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              child: const Text('Je participe'),
             ),
-            child: const Text('Je participe'),
           ),
         ),
         SizedBox(height: gap),
