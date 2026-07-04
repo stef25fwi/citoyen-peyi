@@ -177,6 +177,9 @@ const loadEligiblePolls = async (db, access, requestedPollId = '') => {
           .map((option) => ({
             id: String(option.id || ''),
             label: String(option.label || ''),
+            photoUrls: Array.isArray(option.photoUrls)
+              ? option.photoUrls.filter((url) => typeof url === 'string').slice(0, 2)
+              : [],
           }))
       : [];
     polls.push({

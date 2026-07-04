@@ -16,15 +16,25 @@ class VoteAccessException implements Exception {
 }
 
 class EligiblePollOption {
-  const EligiblePollOption({required this.id, required this.label});
+  const EligiblePollOption({
+    required this.id,
+    required this.label,
+    this.photoUrls = const <String>[],
+  });
 
   final String id;
   final String label;
+  final List<String> photoUrls;
 
   static EligiblePollOption fromJson(Map<String, dynamic> json) {
     return EligiblePollOption(
       id: (json['id'] as String? ?? '').trim(),
       label: (json['label'] as String? ?? '').trim(),
+      photoUrls: (json['photoUrls'] as List<dynamic>? ?? const <dynamic>[])
+          .whereType<String>()
+          .map((url) => url.trim())
+          .where((url) => url.isNotEmpty)
+          .toList(growable: false),
     );
   }
 }

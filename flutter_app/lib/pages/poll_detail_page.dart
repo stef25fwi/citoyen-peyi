@@ -648,6 +648,35 @@ class _ResultRow extends StatelessWidget {
             Text('${option.votes}'),
           ],
         ),
+        if (option.photoUrls.isNotEmpty) ...[
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              for (var i = 0; i < option.photoUrls.length; i++)
+                Padding(
+                  padding: EdgeInsets.only(
+                      right: i == option.photoUrls.length - 1 ? 0 : 8),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(10),
+                    child: Image.network(
+                      option.photoUrls[i],
+                      width: 56,
+                      height: 56,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        width: 56,
+                        height: 56,
+                        color: const Color(0xFFEFF3F7),
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.broken_image_outlined,
+                            size: 18, color: Color(0xFF9AA9B8)),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
         const SizedBox(height: 8),
         LinearProgressIndicator(value: ratio),
         const SizedBox(height: 6),

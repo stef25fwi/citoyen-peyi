@@ -182,7 +182,7 @@ class PollService {
     required String projectTitle,
     String description = '',
     required String question,
-    required List<String> options,
+    required List<PollOptionDraft> options,
     List<String>? photoUrls,
     String targetPopulation = '',
     required String openDate,
@@ -208,9 +208,11 @@ class PollService {
       'totalVoters': totalVoters,
       if (canEditOptions)
         'options': options
-            .map((label) => label.trim())
-            .where((label) => label.isNotEmpty)
-            .map((label) => {'label': label})
+            .where((option) => option.label.trim().isNotEmpty)
+            .map((option) => {
+                  'label': option.label.trim(),
+                  'photoUrls': option.photoUrls,
+                })
             .toList(),
     });
     return loadPollById(pollId);
