@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/controleur_profile_service.dart';
 
@@ -41,6 +42,115 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
         _isLoading = false;
       });
     }
+  }
+
+  Future<void> _deleteAgent(ControleurProfileModel agent) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Supprimer cet agent ?'),
+        content: Text(
+          'L\'agent "${agent.label}" de la commune "${agent.communeName}" '
+          'sera supprimé définitivement. Cette action est irréversible.',
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Annuler')),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    try {
+      await ControleurProfileService.instance.deleteProfile(agent.id);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Agent supprimé.')),
+      );
+      await _load();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
+  Future<void> _regenerateAgentCode(ControleurProfileModel agent) async {
+    try {
+      final regenerated = await ControleurProfileService.instance
+          .regenerateProfileCode(agent.id);
+      if (!mounted) return;
+      _showCodeRevealDialog(regenerated, regenerated: true);
+      await _load();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    }
+  }
+
+  void _showCodeRevealDialog(ControleurProfileModel profile, {bool regenerated = false}) {
+    showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text(
+          regenerated ? 'Nouveau code généré' : 'Code de l\'agent',
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('${profile.label} (${profile.communeName})'),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: const Color(0xFFF0F4F8),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      profile.code,
+                      style: const TextStyle(
+                        fontFamily: 'Courier',
+                        fontWeight: FontWeight.w600,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.copy_rounded, size: 20),
+                    onPressed: () {
+                      Clipboard.setData(ClipboardData(text: profile.code));
+                      Navigator.pop(context);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('Code copié.')),
+                      );
+                    },
+                    tooltip: 'Copier',
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Fermer'),
+          ),
+        ],
+      ),
+    );
   }
 
   Map<String, List<ControleurProfileModel>> _groupByCommune() {
@@ -188,6 +298,12 @@ class _CommuneAgentsCard extends StatelessWidget {
                         ),
                       ),
                       _UsageBadge(used: agent.hasBeenUsed),
+                      const SizedBox(width: 8),
+                      _AgentActionButtons(
+                        agent: agent,
+                        onRegenerate: () => _regenerateAgentCode(agent),
+                        onDelete: () => _deleteAgent(agent),
+                      ),
                     ],
                   ),
                 ),
@@ -215,6 +331,38 @@ class _UsageBadge extends StatelessWidget {
       ),
       child: Text(used ? 'Activé' : 'Jamais utilisé',
           style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+    );
+  }
+}
+
+class _AgentActionButtons extends StatelessWidget {
+  const _AgentActionButtons({
+    required this.agent,
+    required this.onRegenerate,
+    required this.onDelete,
+  });
+
+  final ControleurProfileModel agent;
+  final VoidCallback onRegenerate;
+  final VoidCallback onDelete;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.refresh_rounded, size: 20),
+          onPressed: onRegenerate,
+          tooltip: 'Régénérer le code',
+        ),
+        IconButton(
+          icon: const Icon(Icons.delete_outline_rounded,
+              size: 20, color: Colors.red),
+          onPressed: onDelete,
+          tooltip: 'Supprimer',
+        ),
+      ],
     );
   }
 }
