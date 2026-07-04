@@ -30,6 +30,14 @@ const sanitizePhotoUrls = (value) => {
     .filter((url) => /^https:\/\//i.test(url))
     .slice(0, 6);
 };
+const MAX_OPTION_PHOTOS = 2;
+const sanitizeOptionPhotoUrls = (value) => {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((url) => sanitizeString(url, 1000))
+    .filter((url) => /^https:\/\//i.test(url))
+    .slice(0, MAX_OPTION_PHOTOS);
+};
 export const sanitizeDate = (value) => {
   if (typeof value !== 'string') return '';
   const trimmed = value.trim();
@@ -78,7 +86,12 @@ const buildOptions = (rawOptions, existingOptions = []) => {
       if (!label) return null;
       const id = sanitizeString(option?.id, 64) || existingOptions[index]?.id || `opt-${crypto.randomBytes(6).toString('hex')}`;
       const votes = Number(option?.votes) >= 0 ? Number(option.votes) : (existingOptions[index]?.votes ?? 0);
-      return { id, label, votes };
+      // photoUrls : si le champ est fourni (meme vide), il remplace l'existant ;
+      // s'il est absent, on conserve les photos deja enregistrees pour cette option.
+      const photoUrls = Array.isArray(option?.photoUrls)
+        ? sanitizeOptionPhotoUrls(option.photoUrls)
+        : (existingOptions[index]?.photoUrls ?? []);
+      return { id, label, votes, photoUrls };
     })
     .filter(Boolean);
 };

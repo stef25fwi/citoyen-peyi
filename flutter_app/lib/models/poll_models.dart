@@ -5,21 +5,25 @@ class PollOptionModel {
     required this.id,
     required this.label,
     required this.votes,
+    this.photoUrls = const <String>[],
   });
 
   final String id;
   final String label;
   final int votes;
+  final List<String> photoUrls;
 
   PollOptionModel copyWith({
     String? id,
     String? label,
     int? votes,
+    List<String>? photoUrls,
   }) {
     return PollOptionModel(
       id: id ?? this.id,
       label: label ?? this.label,
       votes: votes ?? this.votes,
+      photoUrls: photoUrls ?? this.photoUrls,
     );
   }
 
@@ -27,6 +31,7 @@ class PollOptionModel {
         'id': id,
         'label': label,
         'votes': votes,
+        'photoUrls': photoUrls,
       };
 
   static PollOptionModel fromJson(Map<String, dynamic> json, int index) {
@@ -34,8 +39,21 @@ class PollOptionModel {
       id: json['id'] as String? ?? 'opt-${index + 1}',
       label: json['label'] as String? ?? 'Option ${index + 1}',
       votes: (json['votes'] as num?)?.toInt() ?? 0,
+      photoUrls: _readStringList(json['photoUrls']),
     );
   }
+}
+
+/// Brouillon d'option utilise lors de la creation d'une consultation :
+/// libelle + jusqu'a 2 photos deja televersees (URLs).
+class PollOptionDraft {
+  const PollOptionDraft({
+    required this.label,
+    this.photoUrls = const <String>[],
+  });
+
+  final String label;
+  final List<String> photoUrls;
 }
 
 List<String> _readStringList(Object? value) {

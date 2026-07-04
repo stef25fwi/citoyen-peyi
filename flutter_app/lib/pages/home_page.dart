@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../widgets/public_bottom_nav.dart';
 import 'access_citizen_page.dart';
@@ -18,14 +19,24 @@ class CitoyenPeyiHomePage extends StatelessWidget {
   static const String logoPath =
       'assets/citoyen_peyi/logo_citoyen_peyi_transparent.webp';
 
+  // Status bar blanche + texte/icones noirs, uniquement sur la page d'accueil.
+  static const _statusBarStyle = SystemUiOverlayStyle(
+    statusBarColor: Colors.white,
+    statusBarIconBrightness: Brightness.dark,
+    statusBarBrightness: Brightness.light,
+  );
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      body: ResponsiveHomeLayout(),
-      bottomNavigationBar: PublicBottomNav(
-        currentTab: PublicTab.home,
-        backgroundColor: Color(0xFFEAF7FF),
-        indicatorColor: Color(0xFFCAE9FB),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: _statusBarStyle,
+      child: Scaffold(
+        body: const ResponsiveHomeLayout(),
+        bottomNavigationBar: PublicBottomNav(
+          currentTab: PublicTab.home,
+          backgroundColor: const Color(0xFFEAF7FF),
+          indicatorColor: const Color(0xFFCAE9FB),
+        ),
       ),
     );
   }
@@ -68,9 +79,9 @@ class _HomeScaffold extends StatelessWidget {
     };
     const hPad = 6.0;
     final vPad = switch (layout) {
-      _HomeLayout.mobile => 12.0,
-      _HomeLayout.tablet => 18.0,
-      _HomeLayout.desktop => 24.0,
+      _HomeLayout.mobile => 6.0,
+      _HomeLayout.tablet => 12.0,
+      _HomeLayout.desktop => 16.0,
     };
 
     return Stack(
@@ -85,6 +96,15 @@ class _HomeScaffold extends StatelessWidget {
               ),
             ),
           ),
+        ),
+        // Bande blanche derriere la status bar (necessaire sur iOS ou elle est
+        // transparente et laisse voir le fond de la page en dessous).
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: MediaQuery.paddingOf(context).top,
+          child: const ColoredBox(color: Colors.white),
         ),
         SafeArea(
           child: LayoutBuilder(
@@ -188,19 +208,19 @@ class _HomeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final targetHeight = switch (layout) {
-      _HomeLayout.mobile => 198.0,
-      _HomeLayout.tablet => 279.0,
-      _HomeLayout.desktop => 310.5,
+      _HomeLayout.mobile => 228.0,
+      _HomeLayout.tablet => 340.0,
+      _HomeLayout.desktop => 380.0,
     };
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 171.0,
-      _HomeLayout.tablet => 252.0,
-      _HomeLayout.desktop => 274.5,
+      _HomeLayout.mobile => 208.0,
+      _HomeLayout.tablet => 320.0,
+      _HomeLayout.desktop => 360.0,
     };
     final maxHeight = switch (layout) {
-      _HomeLayout.mobile => 216.0,
-      _HomeLayout.tablet => 319.5,
-      _HomeLayout.desktop => 351.0,
+      _HomeLayout.mobile => 248.0,
+      _HomeLayout.tablet => 360.0,
+      _HomeLayout.desktop => 400.0,
     };
     final verticalPadding = switch (layout) {
       _HomeLayout.mobile => 0.0,
@@ -238,13 +258,13 @@ class _MainCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final horizontalPadding = switch (layout) {
       _HomeLayout.mobile => 8.0,
-      _HomeLayout.tablet => 28.0,
-      _HomeLayout.desktop => 32.0,
+      _HomeLayout.tablet => 24.0,
+      _HomeLayout.desktop => 28.0,
     };
     final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 12.0,
-      _HomeLayout.tablet => 20.0,
-      _HomeLayout.desktop => 24.0,
+      _HomeLayout.mobile => 6.0,
+      _HomeLayout.tablet => 14.0,
+      _HomeLayout.desktop => 18.0,
     };
 
     return Container(
@@ -275,9 +295,9 @@ class _MainCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HomeLogo(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 16 : 20),
+          SizedBox(height: layout == _HomeLayout.mobile ? 4 : 12),
           _HeroText(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 52 : 60),
+          SizedBox(height: layout == _HomeLayout.mobile ? 10 : 36),
           _ActionCards(layout: layout),
         ],
       ),
@@ -313,52 +333,40 @@ class _HeroText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fontSize = switch (layout) {
-      _HomeLayout.mobile => 22.0,
+      _HomeLayout.mobile => 21.0,
       _HomeLayout.tablet => 33.0,
       _HomeLayout.desktop => 38.0,
     };
-    final textSpans = layout == _HomeLayout.mobile
-        ? const [
-            TextSpan(
-              text: 'Votre collectivité place ',
-              style: TextStyle(color: Color(0xFFE6EEF9)),
-            ),
-            TextSpan(
-              text: 'votre parole\n',
-              style: TextStyle(
-                color: Color(0xFFFFE36E),
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            TextSpan(
-              text: 'au cœur de l\'action publique',
-              style: TextStyle(color: Color(0xFFE6EEF9)),
-            ),
-          ]
-        : const [
-            TextSpan(
-              text: 'Votre collectivité place ',
-              style: TextStyle(color: Color(0xFFE6EEF9)),
-            ),
-            TextSpan(
-              text: 'votre parole',
-              style: TextStyle(
-                color: Color(0xFFFFE36E),
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            TextSpan(
-              text: ' au cœur de l\'action publique',
-              style: TextStyle(color: Color(0xFFE6EEF9)),
-            ),
-          ];
+    // 'votre parole' plus grand que le reste pour un impact visuel fort, et
+    // isole entre deux retours a la ligne forces pour ne JAMAIS etre coupe
+    // entre 'votre' et 'parole' par le retour a la ligne automatique.
+    final highlightFontSize = fontSize + (layout == _HomeLayout.mobile ? 6.0 : 10.0);
+    final textSpans = [
+      const TextSpan(
+        text: 'Votre collectivité place\n',
+        style: TextStyle(color: Color(0xFFE6EEF9)),
+      ),
+      TextSpan(
+        text: 'votre parole\n',
+        style: TextStyle(
+          color: const Color(0xFFFFE36E),
+          fontWeight: FontWeight.w900,
+          fontSize: highlightFontSize,
+          letterSpacing: 0.2,
+        ),
+      ),
+      const TextSpan(
+        text: 'au cœur de l\'action publique',
+        style: TextStyle(color: Color(0xFFE6EEF9)),
+      ),
+    ];
 
     return Text.rich(
       TextSpan(
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.w800,
-          height: layout == _HomeLayout.mobile ? 1.18 : 1.22,
+          height: layout == _HomeLayout.mobile ? 1.16 : 1.22,
           letterSpacing: 0,
         ),
         children: textSpans,
@@ -397,7 +405,7 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => _hasSecondaryContent ? 228.0 : 64.0,
+      _HomeLayout.mobile => _hasSecondaryContent ? 208.0 : 64.0,
       _HomeLayout.tablet => _hasSecondaryContent ? 264.0 : 92.0,
       _HomeLayout.desktop => _hasSecondaryContent ? 288.0 : 116.0,
     };
@@ -429,8 +437,8 @@ class _ActionCard extends StatelessWidget {
   }
 
   Widget _mergedContent(BuildContext context) {
-    final gap = layout == _HomeLayout.mobile ? 10.0 : 14.0;
-    final buttonHeight = layout == _HomeLayout.mobile ? 56.0 : 60.0;
+    final gap = layout == _HomeLayout.mobile ? 6.0 : 14.0;
+    final buttonHeight = layout == _HomeLayout.mobile ? 48.0 : 60.0;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,

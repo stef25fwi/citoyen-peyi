@@ -1,7 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../models/poll_models.dart';
+import '../services/poll_photo_upload_service.dart';
 import '../services/poll_service.dart';
+
+/// Etat d'edition d'une option : libelle + photos deja televersees
+/// (existingPhotoUrls) + nouvelles photos locales pas encore televersees
+/// (newPhotos). Total limite a [PollPhotoUploadService.maxPhotosPerOption].
+class _OptionEditState {
+  _OptionEditState({String label = '', List<String> photoUrls = const []})
+      : controller = TextEditingController(text: label),
+        existingPhotoUrls = List<String>.from(photoUrls);
+
+  final TextEditingController controller;
+  final List<String> existingPhotoUrls;
+  final List<XFile> newPhotos = <XFile>[];
+
+  int get photoCount => existingPhotoUrls.length + newPhotos.length;
+
+  void dispose() => controller.dispose();
+}
 
 class AdminEditPollPage extends StatefulWidget {
   const AdminEditPollPage({required this.pollId, super.key});
@@ -19,13 +38,14 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
   final _questionController = TextEditingController();
   final _targetPopulationController = TextEditingController();
   final _voterCountController = TextEditingController();
-  final List<TextEditingController> _optionControllers = [];
+  final List<_OptionEditState> _optionStates = [];
 
   PollModel? _poll;
   DateTime? _openDate;
   DateTime? _closeDate;
   bool _isLoading = true;
   bool _isSubmitting = false;
+  bool _isUploadingPhotos = false;
 
   bool get _canEditOptions => (_poll?.totalVoted ?? 0) == 0;
 
@@ -42,8 +62,8 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
     _questionController.dispose();
     _targetPopulationController.dispose();
     _voterCountController.dispose();
-    for (final controller in _optionControllers) {
-      controller.dispose();
+    for (final option in _optionStates) {
+      option.dispose();
     }
     super.dispose();
   }
@@ -69,15 +89,18 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
     _openDate = DateTime.tryParse(poll.openDate);
     _closeDate = DateTime.tryParse(poll.closeDate);
 
-    for (final controller in _optionControllers) {
-      controller.dispose();
+    for (final option in _optionStates) {
+      option.dispose();
     }
-    _optionControllers
+    _optionStates
       ..clear()
-      ..addAll(poll.options.map((option) => TextEditingController(text: option.label)));
-    if (_optionControllers.length < 2) {
-      _optionControllers.add(TextEditingController());
-      _optionControllers.add(TextEditingController());
+      ..addAll(poll.options.map((option) => _OptionEditState(
+            label: option.label,
+            photoUrls: option.photoUrls,
+          )));
+    if (_optionStates.length < 2) {
+      _optionStates.add(_OptionEditState());
+      _optionStates.add(_OptionEditState());
     }
 
     setState(() {
@@ -119,15 +142,71 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
   void _addOption() {
     if (!_canEditOptions) return;
     setState(() {
-      _optionControllers.add(TextEditingController());
+      _optionStates.add(_OptionEditState());
     });
   }
 
   void _removeOption(int index) {
-    if (!_canEditOptions || _optionControllers.length <= 2) return;
+    if (!_canEditOptions || _optionStates.length <= 2) return;
     setState(() {
-      final controller = _optionControllers.removeAt(index);
-      controller.dispose();
+      final option = _optionStates.removeAt(index);
+      option.dispose();
+    });
+  }
+
+  Future<void> _pickOptionPhotos(int index) async {
+    if (!_canEditOptions || _isSubmitting || _isUploadingPhotos) return;
+
+    final option = _optionStates[index];
+    final remainingSlots =
+        PollPhotoUploadService.maxPhotosPerOption - option.existingPhotoUrls.length;
+    if (remainingSlots <= 0) return;
+
+    try {
+      final updated = await PollPhotoUploadService.instance.pickPhotos(
+        current: option.newPhotos,
+        limit: remainingSlots,
+      );
+      if (!mounted) return;
+      setState(() {
+        option.newPhotos
+          ..clear()
+          ..addAll(updated);
+      });
+    } on PollPhotoUploadException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange.shade800,
+          content: Text(error.message),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange.shade800,
+          content: Text('Selection de photos impossible: ${error.toString()}'),
+        ),
+      );
+    }
+  }
+
+  void _removeExistingOptionPhoto(int optionIndex, int photoIndex) {
+    if (!_canEditOptions) return;
+    final urls = _optionStates[optionIndex].existingPhotoUrls;
+    if (photoIndex < 0 || photoIndex >= urls.length) return;
+    setState(() {
+      urls.removeAt(photoIndex);
+    });
+  }
+
+  void _removeNewOptionPhoto(int optionIndex, int photoIndex) {
+    if (!_canEditOptions) return;
+    final photos = _optionStates[optionIndex].newPhotos;
+    if (photoIndex < 0 || photoIndex >= photos.length) return;
+    setState(() {
+      photos.removeAt(photoIndex);
     });
   }
 
@@ -150,12 +229,40 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
     setState(() => _isSubmitting = true);
 
     try {
+      final options = <PollOptionDraft>[];
+      if (_canEditOptions) {
+        final needsUpload =
+            _optionStates.any((option) => option.newPhotos.isNotEmpty);
+        if (needsUpload) setState(() => _isUploadingPhotos = true);
+        try {
+          for (var index = 0; index < _optionStates.length; index++) {
+            final option = _optionStates[index];
+            final label = option.controller.text.trim();
+            if (label.isEmpty) continue;
+
+            var uploadedUrls = const <String>[];
+            if (option.newPhotos.isNotEmpty) {
+              uploadedUrls = await PollPhotoUploadService.instance.uploadPhotos(
+                photos: option.newPhotos,
+                draftId: '${poll.id}-opt-$index',
+              );
+            }
+            options.add(PollOptionDraft(
+              label: label,
+              photoUrls: [...option.existingPhotoUrls, ...uploadedUrls],
+            ));
+          }
+        } finally {
+          if (mounted) setState(() => _isUploadingPhotos = false);
+        }
+      }
+
       final updated = await PollService.instance.updatePoll(
         pollId: poll.id,
         projectTitle: _titleController.text,
         description: _descriptionController.text,
         question: _questionController.text,
-        options: _optionControllers.map((item) => item.text).toList(),
+        options: options,
         targetPopulation: _targetPopulationController.text,
         openDate: _formatDate(openDate),
         closeDate: _formatDate(closeDate),
@@ -175,6 +282,14 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
         const SnackBar(content: Text('Consultation mise a jour.')),
       );
       Navigator.of(context).pushReplacementNamed('/admin/poll/${updated.id}');
+    } on PollPhotoUploadException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange.shade800,
+          content: Text('Photos non televersees: ${error.message}'),
+        ),
+      );
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);
@@ -271,35 +386,28 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
                   ),
                   child: Column(
                     children: [
-                      for (var index = 0; index < _optionControllers.length; index++)
+                      if (_canEditOptions)
                         Padding(
-                          padding: EdgeInsets.only(bottom: index == _optionControllers.length - 1 ? 0 : 12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CircleAvatar(radius: 16, backgroundColor: theme.colorScheme.primaryContainer, child: Text('${index + 1}')),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _optionControllers[index],
-                                  enabled: _canEditOptions,
-                                  decoration: InputDecoration(labelText: 'Option ${index + 1}'),
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'Toutes les options doivent etre remplies.';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              if (_optionControllers.length > 2) ...[
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  onPressed: _canEditOptions ? () => _removeOption(index) : null,
-                                  icon: const Icon(Icons.delete_outline_rounded),
-                                ),
-                              ],
-                            ],
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: Text(
+                            'Vous pouvez illustrer chaque option avec jusqu a ${PollPhotoUploadService.maxPhotosPerOption} photos.',
+                            style: theme.textTheme.bodyMedium,
+                          ),
+                        ),
+                      for (var index = 0; index < _optionStates.length; index++)
+                        Padding(
+                          padding: EdgeInsets.only(bottom: index == _optionStates.length - 1 ? 0 : 20),
+                          child: _OptionEditRow(
+                            index: index,
+                            option: _optionStates[index],
+                            canRemove: _canEditOptions && _optionStates.length > 2,
+                            enabled: _canEditOptions && !_isSubmitting && !_isUploadingPhotos,
+                            onRemove: () => _removeOption(index),
+                            onAddPhotos: () => _pickOptionPhotos(index),
+                            onRemoveExistingPhoto: (photoIndex) =>
+                                _removeExistingOptionPhoto(index, photoIndex),
+                            onRemoveNewPhoto: (photoIndex) =>
+                                _removeNewOptionPhoto(index, photoIndex),
                           ),
                         ),
                     ],
@@ -447,6 +555,176 @@ class _DateField extends StatelessWidget {
           suffixIcon: const Icon(Icons.calendar_today_outlined),
         ),
         child: Text(value.isEmpty ? 'Selectionner une date' : value),
+      ),
+    );
+  }
+}
+
+class _OptionEditRow extends StatelessWidget {
+  const _OptionEditRow({
+    required this.index,
+    required this.option,
+    required this.canRemove,
+    required this.enabled,
+    required this.onRemove,
+    required this.onAddPhotos,
+    required this.onRemoveExistingPhoto,
+    required this.onRemoveNewPhoto,
+  });
+
+  final int index;
+  final _OptionEditState option;
+  final bool canRemove;
+  final bool enabled;
+  final VoidCallback onRemove;
+  final VoidCallback onAddPhotos;
+  final void Function(int photoIndex) onRemoveExistingPhoto;
+  final void Function(int photoIndex) onRemoveNewPhoto;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final canAddPhoto =
+        enabled && option.photoCount < PollPhotoUploadService.maxPhotosPerOption;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Text('${index + 1}'),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: option.controller,
+                  enabled: enabled,
+                  decoration: InputDecoration(labelText: 'Option ${index + 1}'),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Toutes les options doivent etre remplies.';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              if (canRemove) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: onRemove,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  tooltip: 'Supprimer cette option',
+                ),
+              ],
+            ],
+          ),
+          if (option.photoCount > 0 || canAddPhoto) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 10,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (var i = 0; i < option.existingPhotoUrls.length; i++)
+                  _OptionPhotoThumb(
+                    onRemove: enabled ? () => onRemoveExistingPhoto(i) : null,
+                    child: Image.network(
+                      option.existingPhotoUrls[i],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.broken_image_outlined),
+                      ),
+                    ),
+                  ),
+                for (var i = 0; i < option.newPhotos.length; i++)
+                  _OptionPhotoThumb(
+                    onRemove: enabled ? () => onRemoveNewPhoto(i) : null,
+                    child: Image.network(
+                      option.newPhotos[i].path,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: theme.colorScheme.surfaceContainerHighest,
+                        alignment: Alignment.center,
+                        child: const Icon(Icons.broken_image_outlined),
+                      ),
+                    ),
+                  ),
+                if (canAddPhoto)
+                  InkWell(
+                    borderRadius: BorderRadius.circular(12),
+                    onTap: onAddPhotos,
+                    child: Container(
+                      width: 72,
+                      height: 72,
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: theme.dividerColor.withValues(alpha: 0.6),
+                        ),
+                        color: theme.colorScheme.surfaceContainerHighest
+                            .withValues(alpha: 0.35),
+                      ),
+                      child: Icon(
+                        Icons.add_photo_alternate_outlined,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _OptionPhotoThumb extends StatelessWidget {
+  const _OptionPhotoThumb({required this.child, required this.onRemove});
+
+  final Widget child;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 72,
+      height: 72,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(borderRadius: BorderRadius.circular(12), child: child),
+          if (onRemove != null)
+            Positioned(
+              top: 2,
+              right: 2,
+              child: Material(
+                color: Colors.black54,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onRemove,
+                  child: const Padding(
+                    padding: EdgeInsets.all(3),
+                    child: Icon(Icons.close_rounded,
+                        size: 14, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
+        ],
       ),
     );
   }

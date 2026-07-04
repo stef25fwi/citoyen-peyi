@@ -10,6 +10,8 @@
 // hash ne retablit les connexions que si les MEMES peppers (Secret Manager)
 // sont encore configures.
 
+import { logger } from './logger.js';
+
 export const SNAPSHOT_VERSION = 1;
 
 // Marqueur JSON pour les Timestamp/Date Firestore : { "$ts": "<ISO>" }.
@@ -191,20 +193,52 @@ const readCollection = async (db, spec, scope) => {
 };
 
 export const collectSnapshot = async ({ db, specs = COLLECTION_SPECS, scope = {}, now = new Date() }) => {
+  const MAX_DOCUMENTS = 100_000;
   const collections = {};
   const counts = {};
+  let totalDocuments = 0;
+
+  logger.info({ specsCount: specs.length, scope }, 'backup_collecting_start');
+  const startTime = Date.now();
+
   for (const spec of specs) {
+    const collStart = Date.now();
     const docs = await readCollection(db, spec, scope);
+    const docCount = docs.length;
+    const collDuration = Date.now() - collStart;
+
+    totalDocuments += docCount;
+    if (totalDocuments > MAX_DOCUMENTS) {
+      throw new Error(
+        `Snapshot trop volumineux: ${totalDocuments} documents > ${MAX_DOCUMENTS}`
+      );
+    }
+
+    logger.debug({
+      collection: spec.key,
+      docCount,
+      durationMs: collDuration,
+    }, 'backup_collection_read');
+
     collections[spec.key] = docs.map((doc) => ({ id: doc.id, data: serializeDocData(doc.data) }));
-    counts[spec.key] = docs.length;
+    counts[spec.key] = docCount;
   }
+
+  const totalDuration = Date.now() - startTime;
+  logger.info({
+    totalDocuments,
+    collectionsCount: specs.length,
+    durationMs: totalDuration,
+    counts,
+  }, 'backup_collecting_complete');
+
   return {
     version: SNAPSHOT_VERSION,
     createdAt: now.toISOString(),
     scope,
     collectionKeys: specs.map((spec) => spec.key),
     counts,
-    totalDocuments: Object.values(counts).reduce((sum, n) => sum + n, 0),
+    totalDocuments,
     collections,
   };
 };
@@ -240,21 +274,53 @@ const readExisting = async (db, spec, backupDocs, mode) => {
 };
 
 const applyPlan = async (db, spec, plan, { Timestamp }) => {
+  const errors = [];
+
+  // Appliquer les écritures
   const writes = plan.writes.map((doc) => ({
     ref: refForDoc(db, spec, doc.id, doc.data),
     data: deserializeDocData(doc.data, { Timestamp }),
   }));
-  for (const writeBatch of chunk(writes, 450)) {
-    const batch = db.batch();
-    for (const item of writeBatch) batch.set(item.ref, item.data);
-    await batch.commit();
+
+  for (let i = 0; i < chunk(writes, 450).length; i++) {
+    const writeBatch = chunk(writes, 450)[i];
+    try {
+      const batch = db.batch();
+      for (const item of writeBatch) batch.set(item.ref, item.data);
+      await batch.commit();
+    } catch (error) {
+      errors.push({
+        phase: 'write',
+        batch: i,
+        size: writeBatch.length,
+        error: error.message,
+      });
+    }
   }
 
+  // Appliquer les suppressions
   const deleteRefs = plan.deletes.map((id) => refForDoc(db, spec, id, {}));
-  for (const deleteBatch of chunk(deleteRefs, 450)) {
-    const batch = db.batch();
-    for (const ref of deleteBatch) batch.delete(ref);
-    await batch.commit();
+  for (let i = 0; i < chunk(deleteRefs, 450).length; i++) {
+    const deleteBatch = chunk(deleteRefs, 450)[i];
+    try {
+      const batch = db.batch();
+      for (const ref of deleteBatch) batch.delete(ref);
+      await batch.commit();
+    } catch (error) {
+      errors.push({
+        phase: 'delete',
+        batch: i,
+        size: deleteBatch.length,
+        error: error.message,
+      });
+    }
+  }
+
+  // Lever une erreur si des batches ont échoué
+  if (errors.length > 0) {
+    throw new Error(
+      `${errors.length} batch(s) ont échoué: ${errors.map((e) => `${e.phase}[${e.batch}]: ${e.error}`).join('; ')}`
+    );
   }
 };
 
@@ -265,6 +331,19 @@ export const restoreSnapshot = async ({
   specs = COLLECTION_SPECS,
   options = {},
 }) => {
+  // Validations de snapshot
+  if (!snapshot || typeof snapshot !== 'object') {
+    throw new Error('Snapshot invalide: pas un objet');
+  }
+  if (!snapshot.collections || typeof snapshot.collections !== 'object') {
+    throw new Error('Snapshot invalide: pas de propriété collections');
+  }
+  if (snapshot.version !== 1) {
+    throw new Error(
+      `Version snapshot incompatible: ${snapshot.version} (attendu: 1)`
+    );
+  }
+
   const mode = options.mode === 'mirror' ? 'mirror' : 'merge';
   const force = options.force === true;
   const dryRun = options.dryRun !== false; // sur par defaut
@@ -272,16 +351,56 @@ export const restoreSnapshot = async ({
     ? new Set(options.collections)
     : null;
 
-  const report = { dryRun, mode, force, collections: {}, totals: { writes: 0, deletes: 0, skipped: 0 } };
+  // Sécurité: mode mirror interdit sur snapshots partiels
+  const isPartialSnapshot = snapshot.scope && Object.keys(snapshot.scope).length > 0;
+  if (mode === 'mirror' && isPartialSnapshot) {
+    throw new Error(
+      'Mode mirror interdit sur snapshot partiel (avec scope communeId ou pollIds). '
+      + 'Utilisez merge pour les snapshots scoped, ou restaurez un snapshot complet en mirror.'
+    );
+  }
+
+  const report = { dryRun, mode, force, isPartialSnapshot, collections: {}, totals: { writes: 0, deletes: 0, skipped: 0 } };
+
+  logger.info({
+    mode,
+    force,
+    dryRun,
+    isPartialSnapshot,
+    collectionsCount: specs.length,
+    scope: snapshot.scope,
+  }, 'backup_restoring_start');
+
+  const startTime = Date.now();
 
   for (const spec of specs) {
     const backupDocs = snapshot?.collections?.[spec.key];
     if (!Array.isArray(backupDocs)) continue;
     if (only && !only.has(spec.key)) continue;
 
+    const collStart = Date.now();
     const existing = await readExisting(db, spec, backupDocs, mode);
     const plan = planRestore({ existing, backup: backupDocs, mode, force });
-    if (!dryRun) await applyPlan(db, spec, plan, { Timestamp });
+
+    try {
+      if (!dryRun) await applyPlan(db, spec, plan, { Timestamp });
+    } catch (error) {
+      logger.error({
+        collection: spec.key,
+        err: error,
+        plan: { writes: plan.writes.length, deletes: plan.deletes.length },
+      }, 'backup_restore_apply_failed');
+      throw error;
+    }
+
+    const collDuration = Date.now() - collStart;
+    logger.debug({
+      collection: spec.key,
+      writes: plan.writes.length,
+      deletes: plan.deletes.length,
+      skipped: plan.skipped.length,
+      durationMs: collDuration,
+    }, 'backup_collection_restored');
 
     report.collections[spec.key] = {
       writes: plan.writes.length,
@@ -292,6 +411,14 @@ export const restoreSnapshot = async ({
     report.totals.deletes += plan.deletes.length;
     report.totals.skipped += plan.skipped.length;
   }
+
+  const totalDuration = Date.now() - startTime;
+  logger.info({
+    mode,
+    dryRun,
+    durationMs: totalDuration,
+    totals: report.totals,
+  }, 'backup_restoring_complete');
 
   return report;
 };
