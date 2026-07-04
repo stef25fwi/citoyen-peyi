@@ -29,15 +29,18 @@ class PollPhotoUploadService {
 
   static final PollPhotoUploadService instance = PollPhotoUploadService._();
   static const int maxPhotos = 6;
+  static const int maxPhotosPerOption = 2;
   static const int maxPhotoBytes = 10 * 1024 * 1024;
 
   final ImagePicker _picker = ImagePicker();
 
-  Future<List<XFile>> pickPhotos(
-      {List<XFile> current = const <XFile>[]}) async {
-    final remainingSlots = maxPhotos - current.length;
+  Future<List<XFile>> pickPhotos({
+    List<XFile> current = const <XFile>[],
+    int limit = maxPhotos,
+  }) async {
+    final remainingSlots = limit - current.length;
     if (remainingSlots <= 0) {
-      throw const PollPhotoUploadException('Maximum 6 photos par sondage.');
+      throw PollPhotoUploadException('Maximum $limit photo(s).');
     }
 
     final picked = await _picker.pickMultiImage(

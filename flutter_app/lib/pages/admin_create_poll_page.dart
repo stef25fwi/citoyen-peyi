@@ -1,9 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../models/poll_models.dart';
 import '../services/poll_ai_draft_service.dart';
 import '../services/poll_photo_upload_service.dart';
 import '../services/poll_service.dart';
+
+/// Brouillon d'une option de vote pendant la creation : libelle + jusqu'a
+/// 2 photos locales (pas encore televersees).
+class _OptionDraft {
+  _OptionDraft({String label = ''}) : controller = TextEditingController(text: label);
+
+  final TextEditingController controller;
+  final List<XFile> photos = <XFile>[];
+
+  void dispose() => controller.dispose();
+}
 
 class AdminCreatePollPage extends StatefulWidget {
   const AdminCreatePollPage({super.key});
@@ -19,9 +31,9 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
   final _questionController = TextEditingController();
   final _targetPopulationController = TextEditingController();
   final _voterCountController = TextEditingController(text: '50');
-  final List<TextEditingController> _optionControllers = [
-    TextEditingController(),
-    TextEditingController(),
+  final List<_OptionDraft> _optionDrafts = [
+    _OptionDraft(),
+    _OptionDraft(),
   ];
 
   DateTime? _openDate;
@@ -39,8 +51,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     _questionController.dispose();
     _targetPopulationController.dispose();
     _voterCountController.dispose();
-    for (final controller in _optionControllers) {
-      controller.dispose();
+    for (final option in _optionDrafts) {
+      option.dispose();
     }
     super.dispose();
   }
@@ -82,18 +94,62 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
 
   void _addOption() {
     setState(() {
-      _optionControllers.add(TextEditingController());
+      _optionDrafts.add(_OptionDraft());
     });
   }
 
   void _removeOption(int index) {
-    if (_optionControllers.length <= 2) {
+    if (_optionDrafts.length <= 2) {
       return;
     }
 
     setState(() {
-      final controller = _optionControllers.removeAt(index);
-      controller.dispose();
+      final option = _optionDrafts.removeAt(index);
+      option.dispose();
+    });
+  }
+
+  Future<void> _pickOptionPhotos(int index) async {
+    if (_isSubmitting || _isUploadingPhotos) {
+      return;
+    }
+
+    final option = _optionDrafts[index];
+    try {
+      final updated = await PollPhotoUploadService.instance.pickPhotos(
+        current: option.photos,
+        limit: PollPhotoUploadService.maxPhotosPerOption,
+      );
+      if (!mounted) return;
+      setState(() {
+        option.photos
+          ..clear()
+          ..addAll(updated);
+      });
+    } on PollPhotoUploadException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange.shade800,
+          content: Text(error.message),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.orange.shade800,
+          content: Text('Selection de photos impossible: ${error.toString()}'),
+        ),
+      );
+    }
+  }
+
+  void _removeOptionPhoto(int optionIndex, int photoIndex) {
+    final photos = _optionDrafts[optionIndex].photos;
+    if (photoIndex < 0 || photoIndex >= photos.length) return;
+    setState(() {
+      photos.removeAt(photoIndex);
     });
   }
 
@@ -103,7 +159,7 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
       description: _descriptionController.text,
       question: _questionController.text,
       targetPopulation: _targetPopulationController.text,
-      options: _optionControllers.map((item) => item.text).toList(),
+      options: _optionDrafts.map((item) => item.controller.text).toList(),
     );
   }
 
@@ -123,13 +179,22 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
       _questionController.text = draft.question;
       _targetPopulationController.text = draft.targetPopulation;
 
-      for (final controller in _optionControllers) {
-        controller.dispose();
+      // Conserve les photos deja choisies tant qu'il reste assez d'options ;
+      // les options excedentaires (et leurs photos) sont abandonnees.
+      for (var i = options.length; i < _optionDrafts.length; i++) {
+        _optionDrafts[i].dispose();
+      }
+      final reused = _optionDrafts.take(options.length).toList();
+      for (var i = 0; i < reused.length; i++) {
+        reused[i].controller.text = options[i];
+      }
+      for (var i = reused.length; i < options.length; i++) {
+        reused.add(_OptionDraft(label: options[i]));
       }
 
-      _optionControllers
+      _optionDrafts
         ..clear()
-        ..addAll(options.map((label) => TextEditingController(text: label)));
+        ..addAll(reused);
 
       _aiProposalAccepted = true;
     });
@@ -461,18 +526,48 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     });
 
     try {
+      final draftId = 'draft-${DateTime.now().millisecondsSinceEpoch}';
       var photoUrls = const <String>[];
-      if (_photos.isNotEmpty) {
+      final options = <PollOptionDraft>[];
+      final hasOptionPhotos =
+          _optionDrafts.any((option) => option.photos.isNotEmpty);
+
+      if (_photos.isNotEmpty || hasOptionPhotos) {
         setState(() => _isUploadingPhotos = true);
         try {
-          photoUrls = await PollPhotoUploadService.instance.uploadPhotos(
-            photos: _photos,
-            draftId: 'draft-${DateTime.now().millisecondsSinceEpoch}',
-          );
+          if (_photos.isNotEmpty) {
+            photoUrls = await PollPhotoUploadService.instance.uploadPhotos(
+              photos: _photos,
+              draftId: draftId,
+            );
+          }
+
+          for (var index = 0; index < _optionDrafts.length; index++) {
+            final option = _optionDrafts[index];
+            final label = option.controller.text.trim();
+            if (label.isEmpty) continue;
+
+            var optionPhotoUrls = const <String>[];
+            if (option.photos.isNotEmpty) {
+              optionPhotoUrls =
+                  await PollPhotoUploadService.instance.uploadPhotos(
+                photos: option.photos,
+                draftId: '$draftId-opt-$index',
+              );
+            }
+            options.add(
+                PollOptionDraft(label: label, photoUrls: optionPhotoUrls));
+          }
         } finally {
           if (mounted) {
             setState(() => _isUploadingPhotos = false);
           }
+        }
+      } else {
+        for (final option in _optionDrafts) {
+          final label = option.controller.text.trim();
+          if (label.isEmpty) continue;
+          options.add(PollOptionDraft(label: label));
         }
       }
 
@@ -480,7 +575,7 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
         projectTitle: _titleController.text,
         description: _descriptionController.text,
         question: _questionController.text,
-        options: _optionControllers.map((item) => item.text).toList(),
+        options: options,
         photoUrls: photoUrls,
         targetPopulation: _targetPopulationController.text,
         openDate: _formatDate(openDate),
@@ -667,47 +762,28 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                   ),
                   child: Column(
                     children: [
+                      Text(
+                        'Vous pouvez illustrer chaque option avec jusqu a ${PollPhotoUploadService.maxPhotosPerOption} photos (JPG, PNG ou WebP, 10 Mo max).',
+                        style: theme.textTheme.bodyMedium,
+                      ),
+                      const SizedBox(height: 14),
                       for (var index = 0;
-                          index < _optionControllers.length;
+                          index < _optionDrafts.length;
                           index++)
                         Padding(
                           padding: EdgeInsets.only(
-                              bottom: index == _optionControllers.length - 1
+                              bottom: index == _optionDrafts.length - 1
                                   ? 0
-                                  : 12),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              CircleAvatar(
-                                radius: 16,
-                                backgroundColor:
-                                    theme.colorScheme.primaryContainer,
-                                child: Text('${index + 1}'),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: TextFormField(
-                                  controller: _optionControllers[index],
-                                  decoration: InputDecoration(
-                                      labelText: 'Option ${index + 1}'),
-                                  validator: (value) {
-                                    if (value == null || value.trim().isEmpty) {
-                                      return 'Toutes les options doivent etre remplies.';
-                                    }
-                                    return null;
-                                  },
-                                ),
-                              ),
-                              if (_optionControllers.length > 2) ...[
-                                const SizedBox(width: 8),
-                                IconButton(
-                                  onPressed: () => _removeOption(index),
-                                  icon:
-                                      const Icon(Icons.delete_outline_rounded),
-                                  tooltip: 'Supprimer cette option',
-                                ),
-                              ],
-                            ],
+                                  : 20),
+                          child: _OptionEditor(
+                            index: index,
+                            option: _optionDrafts[index],
+                            canRemove: _optionDrafts.length > 2,
+                            enabled: !_isSubmitting && !_isUploadingPhotos,
+                            onRemove: () => _removeOption(index),
+                            onAddPhotos: () => _pickOptionPhotos(index),
+                            onRemovePhoto: (photoIndex) =>
+                                _removeOptionPhoto(index, photoIndex),
                           ),
                         ),
                     ],
@@ -956,6 +1032,166 @@ class _PreviewLine extends StatelessWidget {
           Text(label, style: theme.textTheme.labelLarge),
           const SizedBox(height: 2),
           SelectableText(cleaned),
+        ],
+      ),
+    );
+  }
+}
+
+class _OptionEditor extends StatelessWidget {
+  const _OptionEditor({
+    required this.index,
+    required this.option,
+    required this.canRemove,
+    required this.enabled,
+    required this.onRemove,
+    required this.onAddPhotos,
+    required this.onRemovePhoto,
+  });
+
+  final int index;
+  final _OptionDraft option;
+  final bool canRemove;
+  final bool enabled;
+  final VoidCallback onRemove;
+  final VoidCallback onAddPhotos;
+  final void Function(int photoIndex) onRemovePhoto;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final canAddPhoto =
+        enabled && option.photos.length < PollPhotoUploadService.maxPhotosPerOption;
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              CircleAvatar(
+                radius: 16,
+                backgroundColor: theme.colorScheme.primaryContainer,
+                child: Text('${index + 1}'),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: TextFormField(
+                  controller: option.controller,
+                  enabled: enabled,
+                  decoration: InputDecoration(labelText: 'Option ${index + 1}'),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Toutes les options doivent etre remplies.';
+                    }
+                    return null;
+                  },
+                ),
+              ),
+              if (canRemove) ...[
+                const SizedBox(width: 8),
+                IconButton(
+                  onPressed: enabled ? onRemove : null,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  tooltip: 'Supprimer cette option',
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 10),
+          Wrap(
+            spacing: 10,
+            runSpacing: 10,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              for (var photoIndex = 0;
+                  photoIndex < option.photos.length;
+                  photoIndex++)
+                _OptionPhotoThumbnail(
+                  photo: option.photos[photoIndex],
+                  onRemove: enabled ? () => onRemovePhoto(photoIndex) : null,
+                ),
+              if (canAddPhoto)
+                InkWell(
+                  borderRadius: BorderRadius.circular(12),
+                  onTap: onAddPhotos,
+                  child: Container(
+                    width: 72,
+                    height: 72,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: theme.dividerColor.withValues(alpha: 0.6),
+                      ),
+                      color: theme.colorScheme.surfaceContainerHighest
+                          .withValues(alpha: 0.35),
+                    ),
+                    child: Icon(
+                      Icons.add_photo_alternate_outlined,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _OptionPhotoThumbnail extends StatelessWidget {
+  const _OptionPhotoThumbnail({required this.photo, required this.onRemove});
+
+  final XFile photo;
+  final VoidCallback? onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return SizedBox(
+      width: 72,
+      height: 72,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              photo.path,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) => Container(
+                color: theme.colorScheme.surfaceContainerHighest,
+                alignment: Alignment.center,
+                child: const Icon(Icons.broken_image_outlined),
+              ),
+            ),
+          ),
+          if (onRemove != null)
+            Positioned(
+              top: 2,
+              right: 2,
+              child: Material(
+                color: Colors.black54,
+                shape: const CircleBorder(),
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: onRemove,
+                  child: const Padding(
+                    padding: EdgeInsets.all(3),
+                    child: Icon(Icons.close_rounded,
+                        size: 14, color: Colors.white),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
