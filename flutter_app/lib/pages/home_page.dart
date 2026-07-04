@@ -180,9 +180,9 @@ class _HomeContent extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               _TransparentHeader(layout: layout),
-              SizedBox(height: _isMobile ? 10 : (_isDesktop ? 16 : 14)),
+              SizedBox(height: _isMobile ? 6 : (_isDesktop ? 16 : 12)),
               _HeroCard(layout: layout),
-              SizedBox(height: _isMobile ? 10 : (_isDesktop ? 18 : 14)),
+              SizedBox(height: _isMobile ? 8 : (_isDesktop ? 18 : 12)),
               _MainCard(layout: layout),
               SizedBox(height: _isMobile ? 16 : (_isDesktop ? 24 : 20)),
               if (pinAdministrationToBottom) const Spacer(),
@@ -196,9 +196,10 @@ class _HomeContent extends StatelessWidget {
 }
 
 class _HomeLogo extends StatelessWidget {
-  const _HomeLogo({required this.layout});
+  const _HomeLogo({required this.layout, this.heightFactor = 1});
 
   final _HomeLayout layout;
+  final double heightFactor;
 
   @override
   Widget build(BuildContext context) {
@@ -222,10 +223,11 @@ class _HomeLogo extends StatelessWidget {
       _HomeLayout.tablet => 11.0,
       _HomeLayout.desktop => 12.0,
     };
-    final logoHeight = MediaQuery.textScalerOf(context)
-        .scale(targetHeight)
-        .clamp(minHeight, maxHeight)
-        .toDouble();
+    final logoHeight = (MediaQuery.textScalerOf(context)
+          .scale(targetHeight)
+          .clamp(minHeight, maxHeight) *
+        heightFactor)
+      .toDouble();
 
     return Semantics(
       label: 'Citoyen Peyi',
@@ -252,9 +254,14 @@ class _TransparentHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final padding = switch (layout) {
-      _HomeLayout.mobile => const EdgeInsets.fromLTRB(10, 0, 10, 0),
-      _HomeLayout.tablet => const EdgeInsets.fromLTRB(18, 0, 18, 0),
-      _HomeLayout.desktop => const EdgeInsets.fromLTRB(24, 0, 24, 0),
+      _HomeLayout.mobile => const EdgeInsets.fromLTRB(8, 0, 8, 0),
+      _HomeLayout.tablet => const EdgeInsets.fromLTRB(14, 0, 14, 0),
+      _HomeLayout.desktop => const EdgeInsets.fromLTRB(20, 0, 20, 0),
+    };
+    final heightFactor = switch (layout) {
+      _HomeLayout.mobile => 0.50,
+      _HomeLayout.tablet => 0.60,
+      _HomeLayout.desktop => 0.65,
     };
 
     return Container(
@@ -266,7 +273,7 @@ class _TransparentHeader extends StatelessWidget {
           color: Colors.white.withValues(alpha: 0.18),
         ),
       ),
-      child: _HomeLogo(layout: layout),
+      child: _HomeLogo(layout: layout, heightFactor: heightFactor),
     );
   }
 }
@@ -279,12 +286,12 @@ class _HeroCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final horizontalPadding = switch (layout) {
-      _HomeLayout.mobile => 14.0,
+      _HomeLayout.mobile => 12.0,
       _HomeLayout.tablet => 24.0,
       _HomeLayout.desktop => 30.0,
     };
     final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 14.0,
+      _HomeLayout.mobile => 10.0,
       _HomeLayout.tablet => 18.0,
       _HomeLayout.desktop => 22.0,
     };
