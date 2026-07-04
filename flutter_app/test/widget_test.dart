@@ -21,7 +21,7 @@ void main() {
 
     expect(
       find.text(
-        'Votre collectivité place votre parole au cœur de l\'action publique',
+        'Votre collectivité place\nvotre parole\nau cœur de l\'action publique',
       ),
       findsOneWidget,
     );
@@ -43,7 +43,7 @@ void main() {
     expect(find.byIcon(Icons.star_rounded), findsNothing);
     expect(
       find.text(
-        'Votre collectivité place votre parole\nau cœur de l\'action publique',
+        'Votre collectivité place\nvotre parole\nau cœur de l\'action publique',
       ),
       findsOneWidget,
     );

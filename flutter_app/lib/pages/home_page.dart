@@ -313,52 +313,40 @@ class _HeroText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fontSize = switch (layout) {
-      _HomeLayout.mobile => 22.0,
+      _HomeLayout.mobile => 21.0,
       _HomeLayout.tablet => 33.0,
       _HomeLayout.desktop => 38.0,
     };
-    final textSpans = layout == _HomeLayout.mobile
-        ? const [
-            TextSpan(
-              text: 'Votre collectivité place ',
-              style: TextStyle(color: Color(0xFFE6EEF9)),
-            ),
-            TextSpan(
-              text: 'votre parole\n',
-              style: TextStyle(
-                color: Color(0xFFFFE36E),
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            TextSpan(
-              text: 'au cœur de l\'action publique',
-              style: TextStyle(color: Color(0xFFE6EEF9)),
-            ),
-          ]
-        : const [
-            TextSpan(
-              text: 'Votre collectivité place ',
-              style: TextStyle(color: Color(0xFFE6EEF9)),
-            ),
-            TextSpan(
-              text: 'votre parole',
-              style: TextStyle(
-                color: Color(0xFFFFE36E),
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            TextSpan(
-              text: ' au cœur de l\'action publique',
-              style: TextStyle(color: Color(0xFFE6EEF9)),
-            ),
-          ];
+    // 'votre parole' plus grand que le reste pour un impact visuel fort, et
+    // isole entre deux retours a la ligne forces pour ne JAMAIS etre coupe
+    // entre 'votre' et 'parole' par le retour a la ligne automatique.
+    final highlightFontSize = fontSize + (layout == _HomeLayout.mobile ? 6.0 : 10.0);
+    final textSpans = [
+      const TextSpan(
+        text: 'Votre collectivité place\n',
+        style: TextStyle(color: Color(0xFFE6EEF9)),
+      ),
+      TextSpan(
+        text: 'votre parole\n',
+        style: TextStyle(
+          color: const Color(0xFFFFE36E),
+          fontWeight: FontWeight.w900,
+          fontSize: highlightFontSize,
+          letterSpacing: 0.2,
+        ),
+      ),
+      const TextSpan(
+        text: 'au cœur de l\'action publique',
+        style: TextStyle(color: Color(0xFFE6EEF9)),
+      ),
+    ];
 
     return Text.rich(
       TextSpan(
         style: TextStyle(
           fontSize: fontSize,
           fontWeight: FontWeight.w800,
-          height: layout == _HomeLayout.mobile ? 1.18 : 1.22,
+          height: layout == _HomeLayout.mobile ? 1.16 : 1.22,
           letterSpacing: 0,
         ),
         children: textSpans,
