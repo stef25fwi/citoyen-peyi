@@ -313,9 +313,9 @@ class _HeroText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fontSize = switch (layout) {
-      _HomeLayout.mobile => 17.0,
-      _HomeLayout.tablet => 27.0,
-      _HomeLayout.desktop => 30.0,
+      _HomeLayout.mobile => 22.0,
+      _HomeLayout.tablet => 33.0,
+      _HomeLayout.desktop => 38.0,
     };
     final textSpans = layout == _HomeLayout.mobile
         ? const [
@@ -325,7 +325,10 @@ class _HeroText extends StatelessWidget {
             ),
             TextSpan(
               text: 'votre parole\n',
-              style: TextStyle(color: Color(0xFFFFE36E)),
+              style: TextStyle(
+                color: Color(0xFFFFE36E),
+                fontWeight: FontWeight.w900,
+              ),
             ),
             TextSpan(
               text: 'au cœur de l\'action publique',
@@ -339,7 +342,10 @@ class _HeroText extends StatelessWidget {
             ),
             TextSpan(
               text: 'votre parole',
-              style: TextStyle(color: Color(0xFFFFE36E)),
+              style: TextStyle(
+                color: Color(0xFFFFE36E),
+                fontWeight: FontWeight.w900,
+              ),
             ),
             TextSpan(
               text: ' au cœur de l\'action publique',
@@ -424,8 +430,7 @@ class _ActionCard extends StatelessWidget {
 
   Widget _mergedContent(BuildContext context) {
     final gap = layout == _HomeLayout.mobile ? 10.0 : 14.0;
-    final buttonHeight = layout == _HomeLayout.mobile ? 76.0 : 84.0;
-    final buttonWidth = layout == _HomeLayout.mobile ? 196.0 : 224.0;
+    final buttonHeight = layout == _HomeLayout.mobile ? 56.0 : 60.0;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
@@ -433,34 +438,23 @@ class _ActionCard extends StatelessWidget {
       children: [
         _buttonLeadText(),
         SizedBox(height: gap),
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            Divider(
-              color: const Color(0xFF77BFE4).withValues(alpha: 0.55),
-              thickness: 1,
-            ),
-            SizedBox(
-              height: buttonHeight,
-              width: buttonWidth,
-              child: FilledButton(
-                onPressed: onTap,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF0B2F5B),
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(999),
-                    side: const BorderSide(color: Color(0xFFBFD8FF)),
-                  ),
-                  textStyle: TextStyle(
-                    fontSize: layout == _HomeLayout.mobile ? 15.0 : 16.0,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                child: const Text('Je participe'),
+        SizedBox(
+          height: buttonHeight,
+          child: FilledButton(
+            onPressed: onTap,
+            style: FilledButton.styleFrom(
+              backgroundColor: const Color(0xFFFFE36E),
+              foregroundColor: const Color(0xFF005098),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(999),
+              ),
+              textStyle: TextStyle(
+                fontSize: layout == _HomeLayout.mobile ? 16.0 : 18.0,
+                fontWeight: FontWeight.w800,
               ),
             ),
-          ],
+            child: const Text('Je participe'),
+          ),
         ),
         SizedBox(height: gap),
         _actionRow(
@@ -472,8 +466,8 @@ class _ActionCard extends StatelessWidget {
   }
 
   Widget _buttonLeadText() {
-    final titleSize = layout == _HomeLayout.mobile ? 26.0 : 28.0;
-    final subtitleSize = layout == _HomeLayout.mobile ? 30.0 : 32.0;
+    final titleSize = layout == _HomeLayout.mobile ? 18.0 : 20.0;
+    final subtitleSize = layout == _HomeLayout.mobile ? 22.0 : 24.0;
 
     return Column(
       children: [
