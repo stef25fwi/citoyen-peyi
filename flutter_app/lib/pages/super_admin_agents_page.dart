@@ -232,6 +232,8 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
                     _CommuneAgentsCard(
                       commune: commune,
                       agents: grouped[commune]!,
+                      onRegenerate: _regenerateAgentCode,
+                      onDelete: _deleteAgent,
                     ),
               ],
             ),
@@ -243,10 +245,17 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
 }
 
 class _CommuneAgentsCard extends StatelessWidget {
-  const _CommuneAgentsCard({required this.commune, required this.agents});
+  const _CommuneAgentsCard({
+    required this.commune,
+    required this.agents,
+    required this.onRegenerate,
+    required this.onDelete,
+  });
 
   final String commune;
   final List<ControleurProfileModel> agents;
+  final void Function(ControleurProfileModel agent) onRegenerate;
+  final void Function(ControleurProfileModel agent) onDelete;
 
   @override
   Widget build(BuildContext context) {
@@ -301,8 +310,8 @@ class _CommuneAgentsCard extends StatelessWidget {
                       const SizedBox(width: 8),
                       _AgentActionButtons(
                         agent: agent,
-                        onRegenerate: () => _regenerateAgentCode(agent),
-                        onDelete: () => _deleteAgent(agent),
+                        onRegenerate: () => onRegenerate(agent),
+                        onDelete: () => onDelete(agent),
                       ),
                     ],
                   ),

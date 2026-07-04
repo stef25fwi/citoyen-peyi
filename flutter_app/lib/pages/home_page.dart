@@ -188,17 +188,17 @@ class _HomeLogo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final targetHeight = switch (layout) {
-      _HomeLayout.mobile => 260.0,
+      _HomeLayout.mobile => 228.0,
       _HomeLayout.tablet => 340.0,
       _HomeLayout.desktop => 380.0,
     };
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => 240.0,
+      _HomeLayout.mobile => 208.0,
       _HomeLayout.tablet => 320.0,
       _HomeLayout.desktop => 360.0,
     };
     final maxHeight = switch (layout) {
-      _HomeLayout.mobile => 280.0,
+      _HomeLayout.mobile => 248.0,
       _HomeLayout.tablet => 360.0,
       _HomeLayout.desktop => 400.0,
     };
@@ -242,7 +242,7 @@ class _MainCard extends StatelessWidget {
       _HomeLayout.desktop => 28.0,
     };
     final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 8.0,
+      _HomeLayout.mobile => 6.0,
       _HomeLayout.tablet => 14.0,
       _HomeLayout.desktop => 18.0,
     };
@@ -275,9 +275,9 @@ class _MainCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           _HomeLogo(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 8 : 12),
+          SizedBox(height: layout == _HomeLayout.mobile ? 4 : 12),
           _HeroText(layout: layout),
-          SizedBox(height: layout == _HomeLayout.mobile ? 28 : 36),
+          SizedBox(height: layout == _HomeLayout.mobile ? 10 : 36),
           _ActionCards(layout: layout),
         ],
       ),
@@ -397,7 +397,7 @@ class _ActionCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final minHeight = switch (layout) {
-      _HomeLayout.mobile => _hasSecondaryContent ? 228.0 : 64.0,
+      _HomeLayout.mobile => _hasSecondaryContent ? 208.0 : 64.0,
       _HomeLayout.tablet => _hasSecondaryContent ? 264.0 : 92.0,
       _HomeLayout.desktop => _hasSecondaryContent ? 288.0 : 116.0,
     };
@@ -429,8 +429,8 @@ class _ActionCard extends StatelessWidget {
   }
 
   Widget _mergedContent(BuildContext context) {
-    final gap = layout == _HomeLayout.mobile ? 10.0 : 14.0;
-    final buttonHeight = layout == _HomeLayout.mobile ? 56.0 : 60.0;
+    final gap = layout == _HomeLayout.mobile ? 6.0 : 14.0;
+    final buttonHeight = layout == _HomeLayout.mobile ? 48.0 : 60.0;
 
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
