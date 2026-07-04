@@ -182,10 +182,15 @@ class _HomeContent extends StatelessWidget {
               _TransparentHeader(layout: layout),
               SizedBox(height: _isMobile ? 6 : (_isDesktop ? 16 : 12)),
               _HeroCard(layout: layout),
-              SizedBox(height: _isMobile ? 8 : (_isDesktop ? 18 : 12)),
+              if (pinAdministrationToBottom)
+                const Spacer()
+              else
+                SizedBox(height: _isMobile ? 8 : (_isDesktop ? 18 : 12)),
               _MainCard(layout: layout),
-              SizedBox(height: _isMobile ? 16 : (_isDesktop ? 24 : 20)),
-              if (pinAdministrationToBottom) const Spacer(),
+              if (pinAdministrationToBottom)
+                const Spacer()
+              else
+                SizedBox(height: _isMobile ? 16 : (_isDesktop ? 24 : 20)),
               _AdministrationAccess(layout: layout),
             ],
           ),

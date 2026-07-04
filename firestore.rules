@@ -381,6 +381,11 @@ service cloud.firestore {
       allow write: if false;
     }
 
+    match /commune_branding/{communeId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
     match /support_tickets/{ticketId} {
       allow read: if isSuperAdmin() || isSupportTicketOwner();
       allow create: if isSupportTicketCreateByAdmin(ticketId);

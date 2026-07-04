@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/vote_access_service.dart';
+import '../widgets/commune_branding_banner.dart';
 
 /// Page de vote citoyen.
 ///
@@ -289,6 +290,12 @@ class _VotePageState extends State<VotePage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(6, 20, 6, 28),
               children: [
+                CommuneBrandingBanner(
+                  communeName: _validation?.communeName,
+                  title: 'Commune connectee',
+                  subtitle: 'Votre vote est rattache a cette collectivité, tout en restant anonyme.',
+                ),
+                const SizedBox(height: 16),
                 if (poll.photoUrls.isNotEmpty) ...[
                   _VotePollPhotoGallery(photoUrls: poll.photoUrls),
                   const SizedBox(height: 16),

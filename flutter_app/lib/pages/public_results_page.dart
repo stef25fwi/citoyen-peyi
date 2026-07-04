@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/poll_models.dart';
 import '../services/auth_session_store.dart';
 import '../services/poll_service.dart';
+import '../widgets/commune_branding_banner.dart';
 import '../widgets/public_bottom_nav.dart';
 
 /// Resultats publics anonymes des consultations.
@@ -90,6 +91,8 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
+                const CommuneBrandingBanner(),
+                const SizedBox(height: 16),
                 Text(
                   'Aucune donnee personnelle n\'est affichee. Seuls les totaux par option sont restitues.',
                   style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),

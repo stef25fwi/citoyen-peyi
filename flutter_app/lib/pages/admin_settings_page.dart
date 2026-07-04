@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../config/app_config.dart';
 import '../services/admin_analytics_service.dart';
 import '../services/auth_session_store.dart';
+import '../services/commune_branding_service.dart';
+import '../widgets/commune_branding_banner.dart';
 
 class AdminSettingsPage extends StatefulWidget {
   const AdminSettingsPage({super.key});
@@ -13,7 +15,9 @@ class AdminSettingsPage extends StatefulWidget {
 
 class _AdminSettingsPageState extends State<AdminSettingsPage> {
   bool _isLoading = true;
+  bool _isUploadingLogo = false;
   AdminAnalyticsSummary _summary = const AdminAnalyticsSummary.empty();
+  CommuneBrandingModel? _branding;
 
   @override
   void initState() {
@@ -24,11 +28,51 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
   Future<void> _load() async {
     setState(() => _isLoading = true);
     final summary = await AdminAnalyticsService.instance.loadSummary();
+    final commune = AuthSessionStore.instance.currentSession?.commune;
+    final branding = await CommuneBrandingService.instance.loadForCommune(
+      communeId: commune?.code,
+      communeName: commune?.name,
+    );
     if (!mounted) return;
     setState(() {
       _summary = summary;
+      _branding = branding;
       _isLoading = false;
     });
+  }
+
+  Future<void> _uploadLogo() async {
+    final commune = AuthSessionStore.instance.currentSession?.commune;
+    if (commune == null || commune.name.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Commune indisponible pour ce compte.')),
+      );
+      return;
+    }
+
+    final file = await CommuneBrandingService.instance.pickLogo();
+    if (file == null) return;
+
+    setState(() => _isUploadingLogo = true);
+    try {
+      final branding = await CommuneBrandingService.instance.uploadLogo(
+        file: file,
+        communeId: commune.code ?? commune.name,
+        communeName: commune.name,
+      );
+      if (!mounted) return;
+      setState(() => _branding = branding);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Logo communal mis a jour.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isUploadingLogo = false);
+    }
   }
 
   @override
@@ -60,6 +104,13 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                   style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B)),
                 ),
                 const SizedBox(height: 18),
+                CommuneBrandingBanner(
+                  communeId: commune?.code,
+                  communeName: commune?.name,
+                  title: 'Collectivite connectee',
+                  subtitle: 'Ce logo sera repris sur les espaces rattaches a votre commune.',
+                ),
+                const SizedBox(height: 18),
                 if (_isLoading)
                   const Padding(
                     padding: EdgeInsets.all(32),
@@ -84,6 +135,56 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                       _SettingRow(label: 'Nom', value: commune?.name ?? 'Non renseigne'),
                       _SettingRow(label: 'Code commune', value: commune?.code ?? 'Non renseigne'),
                       _SettingRow(label: 'Code postal', value: commune?.codePostal ?? 'Non renseigne'),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  _SettingsCard(
+                    title: 'Media de la collectivité',
+                    children: [
+                      _SettingNote(
+                        text: _branding?.hasLogo == true
+                            ? 'Le logo est converti en WebP puis reutilise dans la carte d’identification de votre commune.'
+                            : 'Ajoutez le logo de votre collectivite. Il sera converti en WebP et affiche sous le header des pages rattachees a votre commune.',
+                      ),
+                      if (_branding?.hasLogo == true)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 14),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(20),
+                            child: Image.network(
+                              _branding!.logoUrl,
+                              height: 120,
+                              width: 120,
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                width: 120,
+                                height: 120,
+                                color: const Color(0xFFE5E7EB),
+                                alignment: Alignment.center,
+                                child: const Icon(Icons.broken_image_outlined),
+                              ),
+                            ),
+                          ),
+                        ),
+                      Wrap(
+                        spacing: 10,
+                        runSpacing: 10,
+                        children: [
+                          FilledButton.icon(
+                            onPressed: _isUploadingLogo ? null : _uploadLogo,
+                            icon: _isUploadingLogo
+                                ? const SizedBox(
+                                    width: 16,
+                                    height: 16,
+                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                  )
+                                : const Icon(Icons.image_outlined),
+                            label: Text(_branding?.hasLogo == true
+                                ? 'Remplacer le logo'
+                                : 'Ajouter le logo'),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                   const SizedBox(height: 14),

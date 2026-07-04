@@ -9,6 +9,7 @@ import pollAiRoutes from './routes/pollAi.js';
 import newsRoutes from './routes/news.js';
 import adminRoutes from './routes/admins.js';
 import controllerRoutes from './routes/controllers.js';
+import communeBrandingRoutes from './routes/communeBranding.js';
 import notificationRoutes from './routes/notifications.js';
 import supportRoutes from './routes/support.js';
 import backupRoutes from './routes/backups.js';
@@ -42,10 +43,13 @@ app.use(cors({
 }));
 // Parser JSON global limite a 100kb pour toutes les routes, SAUF l'upload de
 // photos de consultation qui envoie des images base64 volumineuses et utilise
-// son propre parser elargi dans la route /api/polls/photos.
+// son propre parser elargi, comme l'upload du logo communal.
 const defaultJsonParser = express.json({ limit: '100kb' });
 app.use((req, res, next) => {
-  if (req.method === 'POST' && req.path === '/api/polls/photos') {
+  if (
+    req.method === 'POST'
+    && (req.path === '/api/polls/photos' || req.path === '/api/commune-branding/logo')
+  ) {
     return next();
   }
   return defaultJsonParser(req, res, next);
@@ -101,6 +105,7 @@ app.use('/api/vote-access', voteAccessRateLimiter, voteAccessRoutes);
 app.use('/api/polls', writeRateLimiter, pollRoutes);
 app.use('/api/poll-ai', writeRateLimiter, pollAiRoutes);
 app.use('/api/news', writeRateLimiter, newsRoutes);
+app.use('/api/commune-branding', writeRateLimiter, communeBrandingRoutes);
 app.use('/api/notifications', voteAccessRateLimiter, notificationRoutes);
 app.use('/api/admins', writeRateLimiter, adminRoutes);
 app.use('/api/controllers', writeRateLimiter, controllerRoutes);

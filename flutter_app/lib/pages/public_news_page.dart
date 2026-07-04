@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
 import '../services/firestore_data_service.dart';
+import '../widgets/commune_branding_banner.dart';
 import '../widgets/public_bottom_nav.dart';
 
 /// Page actualités / projets de la commune.
@@ -67,8 +68,10 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
+                const CommuneBrandingBanner(),
+                const SizedBox(height: 16),
                 Text(
-                  'Informations communales et projets soumis à consultation.',
+                  'Retrouvez ici les actualités de votre commune et les projets actuellement partagés avec les habitants.',
                   style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
                   textAlign: TextAlign.center,
                 ),
@@ -86,7 +89,7 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
                           Text('Aucune actualité pour le moment', style: theme.textTheme.titleLarge),
                           const SizedBox(height: 6),
                           const Text(
-                            'Les communes peuvent publier ici leurs actualités et projets soumis à consultation. Revenez bientôt.',
+                            'Les prochaines informations publiées par votre commune apparaîtront ici.',
                             textAlign: TextAlign.center,
                           ),
                         ],
