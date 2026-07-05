@@ -193,8 +193,7 @@ class _HomeContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompact(context);
-    final media = MediaQuery.of(context).size;
-    final shortHeight = media.height < 860;
+    final shortHeight = MediaQuery.of(context).size.height < 860;
 
     return Center(
       child: ConstrainedBox(
@@ -204,19 +203,19 @@ class _HomeContent extends StatelessWidget {
         child: Padding(
           padding: EdgeInsets.fromLTRB(
             compact ? 8 : 12,
-            shortHeight ? 10 : 14,
+            shortHeight ? 8 : 12,
             compact ? 8 : 12,
-            shortHeight ? 6 : 8,
+            shortHeight ? 4 : 6,
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               const _LogoHeaderCard(),
-              SizedBox(height: shortHeight ? 6 : 10),
+              SizedBox(height: shortHeight ? 4 : 8),
               const _StatementCard(),
-              SizedBox(height: shortHeight ? 6 : 10),
+              SizedBox(height: shortHeight ? 4 : 8),
               const _ParticipationCard(),
-              SizedBox(height: shortHeight ? 6 : 10),
+              SizedBox(height: shortHeight ? 4 : 8),
               const _AdministrationAccess(),
             ],
           ),
@@ -315,8 +314,8 @@ class _StatementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = isCompact(context);
     final shortHeight = MediaQuery.of(context).size.height < 860;
-    final titleFont = compact ? 24.0 : 40.0;
-    final highlightFont = compact ? 34.0 : 54.0;
+    final titleFont = compact ? 22.0 : 40.0;
+    final highlightFont = compact ? 31.0 : 54.0;
 
     return SizedBox(
       width: double.infinity,
@@ -359,7 +358,7 @@ class _StatementCard extends StatelessWidget {
               children: [
                 Positioned(
                   left: compact ? 14 : 42,
-                  bottom: compact ? 12 : (shortHeight ? 26 : 44),
+                  top: compact ? 58 : (shortHeight ? 66 : 78),
                   child: Icon(
                     Icons.groups_rounded,
                     size: compact ? 44 : 78,
@@ -368,7 +367,7 @@ class _StatementCard extends StatelessWidget {
                 ),
                 Positioned(
                   right: compact ? 20 : 64,
-                  bottom: compact ? 12 : (shortHeight ? 26 : 44),
+                  top: compact ? 56 : (shortHeight ? 64 : 76),
                   child: Icon(
                     Icons.account_balance_rounded,
                     size: compact ? 50 : 82,
@@ -454,12 +453,12 @@ class _ParticipationCard extends StatelessWidget {
     final shortHeight = MediaQuery.of(context).size.height < 860;
 
     return _GlassCard(
-      constraints: BoxConstraints(minHeight: compact ? 186 : (shortHeight ? 232 : 295)),
+      constraints: BoxConstraints(minHeight: compact ? 178 : (shortHeight ? 232 : 295)),
       padding: EdgeInsets.fromLTRB(
         compact ? 14 : 22,
-        compact ? 12 : (shortHeight ? 18 : 30),
+        compact ? 10 : (shortHeight ? 18 : 30),
         compact ? 14 : 22,
-        compact ? 12 : (shortHeight ? 16 : 28),
+        compact ? 10 : (shortHeight ? 16 : 28),
       ),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.94),
@@ -489,7 +488,7 @@ class _ParticipationCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               color: cpBlueDark,
-              fontSize: compact ? 22 : 30,
+              fontSize: compact ? 18 : 25,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.4,
               height: 1.0,
@@ -501,7 +500,7 @@ class _ParticipationCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               color: cpBlueDark,
-              fontSize: compact ? 21 : 28,
+              fontSize: compact ? 17 : 23,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.4,
               height: 1.0,
