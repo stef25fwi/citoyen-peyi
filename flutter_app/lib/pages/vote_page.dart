@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/vote_access_service.dart';
-import '../widgets/commune_branding_banner.dart';
 
 /// Page de vote citoyen.
 ///
@@ -290,12 +289,6 @@ class _VotePageState extends State<VotePage> {
             child: ListView(
               padding: const EdgeInsets.fromLTRB(6, 20, 6, 28),
               children: [
-                CommuneBrandingBanner(
-                  communeName: _validation?.communeName,
-                  title: 'Commune connectee',
-                  subtitle: 'Votre vote est rattache a cette collectivité, tout en restant anonyme.',
-                ),
-                const SizedBox(height: 16),
                 if (poll.photoUrls.isNotEmpty) ...[
                   _VotePollPhotoGallery(photoUrls: poll.photoUrls),
                   const SizedBox(height: 16),
@@ -541,80 +534,40 @@ class _PollOptions extends StatelessWidget {
                         ]
                       : null,
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                child: Row(
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: 28,
-                          height: 28,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: selectedOptionId == option.id
-                                ? const Color(0xFF0F6D8F)
-                                : Colors.transparent,
-                            border: Border.all(
-                              color: selectedOptionId == option.id
-                                  ? const Color(0xFF0F6D8F)
-                                  : const Color(0xFF9AA9B8),
-                              width: 2,
-                            ),
-                          ),
-                          child: selectedOptionId == option.id
-                              ? const Icon(Icons.check_rounded,
-                                  size: 18, color: Colors.white)
-                              : null,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Text(
-                            option.label,
-                            style: theme.textTheme.bodyLarge?.copyWith(
-                              fontWeight: FontWeight.w600,
-                              color: selectedOptionId == option.id
-                                  ? const Color(0xFF0F172A)
-                                  : const Color(0xFF475569),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    if (option.photoUrls.isNotEmpty) ...[
-                      const SizedBox(height: 12),
-                      Padding(
-                        padding: const EdgeInsets.only(left: 44),
-                        child: Row(
-                          children: [
-                            for (var i = 0; i < option.photoUrls.length; i++)
-                              Padding(
-                                padding: EdgeInsets.only(
-                                    right:
-                                        i == option.photoUrls.length - 1 ? 0 : 10),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(12),
-                                  child: Image.network(
-                                    option.photoUrls[i],
-                                    width: 84,
-                                    height: 84,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) =>
-                                        Container(
-                                      width: 84,
-                                      height: 84,
-                                      color: const Color(0xFFEFF3F7),
-                                      alignment: Alignment.center,
-                                      child: const Icon(
-                                          Icons.broken_image_outlined,
-                                          color: Color(0xFF9AA9B8)),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                          ],
+                    Container(
+                      width: 28,
+                      height: 28,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: selectedOptionId == option.id
+                            ? const Color(0xFF0F6D8F)
+                            : Colors.transparent,
+                        border: Border.all(
+                          color: selectedOptionId == option.id
+                              ? const Color(0xFF0F6D8F)
+                              : const Color(0xFF9AA9B8),
+                          width: 2,
                         ),
                       ),
-                    ],
+                      child: selectedOptionId == option.id
+                          ? const Icon(Icons.check_rounded,
+                              size: 18, color: Colors.white)
+                          : null,
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Text(
+                        option.label,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          fontWeight: FontWeight.w600,
+                          color: selectedOptionId == option.id
+                              ? const Color(0xFF0F172A)
+                              : const Color(0xFF475569),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),

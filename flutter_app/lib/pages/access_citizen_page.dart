@@ -27,6 +27,7 @@ class AccessCitizenPage extends StatefulWidget {
 class _AccessCitizenPageState extends State<AccessCitizenPage> {
   static const _background = Colors.white;
   static const _foreground = Color(0xFF374151);
+  static const _mutedText = Color(0xFF64748B);
 
   final TextEditingController _codeController = TextEditingController();
 
@@ -193,6 +194,24 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  Text(
+                    'Accès citoyen',
+                    style: theme.textTheme.headlineMedium?.copyWith(
+                      color: _foreground,
+                      fontWeight: FontWeight.w800,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    'Entrez votre code citoyen pour participer anonymement.',
+                    style: theme.textTheme.bodyLarge?.copyWith(
+                      color: _mutedText,
+                      height: 1.35,
+                    ),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 20),
                   _ConfidentialityCard(theme: theme),
                   const SizedBox(height: 14),
                   _AccessFormCard(
@@ -207,6 +226,15 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                       unawaited(_setAcceptedLegalTerms(accepted)),
                     onCodeChanged: () => setState(() => _errorMessage = null),
                     onSubmit: _validateCitizenCode,
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Plateforme de consultation citoyenne anonyme.',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: _mutedText,
+                      height: 1.25,
+                    ),
+                    textAlign: TextAlign.center,
                   ),
                 ],
               ),
@@ -265,7 +293,7 @@ class _ConfidentialityCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Accès anonyme — vos réponses ne sont exploitées qu’en forme statistique.', 
+                    'Votre code sécurise l’accès et limite les participations multiples. Vos réponses sont exploitées uniquement sous forme statistique.',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: const Color(0xFF475569),
                       height: 1.32,

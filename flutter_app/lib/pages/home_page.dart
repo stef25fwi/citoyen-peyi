@@ -55,12 +55,7 @@ class CitoyenPeyiHomePage extends StatelessWidget {
             SafeArea(
               child: Column(
                 children: [
-                  const Expanded(
-                    child: SingleChildScrollView(
-                      physics: BouncingScrollPhysics(),
-                      child: _HomeContent(),
-                    ),
-                  ),
+                  const Expanded(child: _HomeContent()),
                   const PublicBottomNav(currentTab: PublicTab.home),
                 ],
               ),
@@ -191,28 +186,31 @@ class _HomeContent extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompact(context);
+    final media = MediaQuery.of(context).size;
+    final shortHeight = media.height < 860;
 
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: compact ? double.infinity : 930,
+          maxWidth: compact ? double.infinity : 1080,
         ),
         child: Padding(
           padding: EdgeInsets.fromLTRB(
-            compact ? 18 : 24,
-            28,
-            compact ? 18 : 24,
-            16,
+            compact ? 8 : 12,
+            shortHeight ? 10 : 14,
+            compact ? 8 : 12,
+            shortHeight ? 6 : 8,
           ),
           child: Column(
-            children: const [
-              _LogoHeaderCard(),
-              SizedBox(height: 28),
-              _StatementCard(),
-              SizedBox(height: 16),
-              _ParticipationCard(),
-              SizedBox(height: 18),
-              _AdministrationAccess(),
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              const _LogoHeaderCard(),
+              SizedBox(height: shortHeight ? 8 : 10),
+              const _StatementCard(),
+              SizedBox(height: shortHeight ? 8 : 10),
+              const _ParticipationCard(),
+              SizedBox(height: shortHeight ? 8 : 10),
+              const _AdministrationAccess(),
             ],
           ),
         ),
@@ -262,9 +260,10 @@ class _LogoHeaderCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompact(context);
+    final shortHeight = MediaQuery.of(context).size.height < 860;
 
     return _GlassCard(
-      height: compact ? 180 : 260,
+      height: compact ? 152 : (shortHeight ? 220 : 260),
       padding: EdgeInsets.symmetric(horizontal: compact ? 18 : 28),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.88),
@@ -292,8 +291,8 @@ class _LogoHeaderCard extends StatelessWidget {
           image: true,
           child: Image.asset(
             CitoyenPeyiHomePage.logoPath,
-            width: compact ? 270 : 760,
-            height: compact ? 132 : 210,
+            width: compact ? 240 : (shortHeight ? 700 : 760),
+            height: compact ? 110 : (shortHeight ? 184 : 210),
             fit: BoxFit.contain,
           ),
         ),
@@ -308,22 +307,23 @@ class _StatementCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompact(context);
+    final shortHeight = MediaQuery.of(context).size.height < 860;
     final titleFont = compact ? 26.0 : 40.0;
     final highlightFont = compact ? 36.0 : 54.0;
 
     return SizedBox(
       width: double.infinity,
-      height: compact ? 205 : 235,
+      height: compact ? 178 : (shortHeight ? 198 : 235),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           _GlassCard(
-            height: compact ? 205 : 235,
+            height: compact ? 178 : (shortHeight ? 198 : 235),
             padding: EdgeInsets.fromLTRB(
               compact ? 22 : 34,
-              compact ? 34 : 28,
+              compact ? 24 : (shortHeight ? 20 : 28),
               compact ? 22 : 34,
-              compact ? 18 : 24,
+              compact ? 14 : (shortHeight ? 16 : 24),
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
@@ -352,7 +352,7 @@ class _StatementCard extends StatelessWidget {
               children: [
                 Positioned(
                   left: compact ? 14 : 42,
-                  bottom: compact ? 18 : 44,
+                  bottom: compact ? 12 : (shortHeight ? 26 : 44),
                   child: Icon(
                     Icons.groups_rounded,
                     size: compact ? 44 : 78,
@@ -361,7 +361,7 @@ class _StatementCard extends StatelessWidget {
                 ),
                 Positioned(
                   right: compact ? 20 : 64,
-                  bottom: compact ? 18 : 44,
+                  bottom: compact ? 12 : (shortHeight ? 26 : 44),
                   child: Icon(
                     Icons.account_balance_rounded,
                     size: compact ? 50 : 82,
@@ -444,14 +444,15 @@ class _ParticipationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final compact = isCompact(context);
+    final shortHeight = MediaQuery.of(context).size.height < 860;
 
     return _GlassCard(
-      constraints: BoxConstraints(minHeight: compact ? 270 : 295),
+      constraints: BoxConstraints(minHeight: compact ? 210 : (shortHeight ? 232 : 295)),
       padding: EdgeInsets.fromLTRB(
-        compact ? 18 : 28,
-        compact ? 24 : 30,
-        compact ? 18 : 28,
-        compact ? 24 : 28,
+        compact ? 14 : 22,
+        compact ? 14 : (shortHeight ? 18 : 30),
+        compact ? 14 : 22,
+        compact ? 14 : (shortHeight ? 16 : 28),
       ),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.94),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../services/citizen_public_access_service.dart';
-import '../widgets/commune_branding_banner.dart';
 import '../widgets/public_bottom_nav.dart';
 
 class CitizenDashboardPage extends StatelessWidget {
@@ -33,11 +32,6 @@ class CitizenDashboardPage extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
             children: [
-              CommuneBrandingBanner(
-                communeId: session?.communeId,
-                communeName: session?.communeName,
-              ),
-              const SizedBox(height: 16),
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(24),

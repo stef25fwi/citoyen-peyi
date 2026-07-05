@@ -148,6 +148,23 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
   }
 
   Future<void> _openCreateDialog() async {
+    final superKey = SuperAdminService.instance.runtimeSuperAdminKey;
+    if (superKey == null || superKey.trim().isEmpty) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Session super administrateur expirée. Reconnectez-vous pour créer un profil.',
+          ),
+        ),
+      );
+      await FirebaseAuthService.instance.signOut();
+      await AuthSessionStore.instance.clear();
+      if (!mounted) return;
+      Navigator.of(context).pushReplacementNamed('/super/login');
+      return;
+    }
+
     showDialog<void>(
       context: context,
       builder: (_) => _CreateProfileDialog(

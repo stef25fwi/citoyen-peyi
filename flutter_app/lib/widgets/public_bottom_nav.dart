@@ -55,15 +55,15 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
 
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        compact ? 18 : 78,
+        compact ? 8 : 14,
         0,
-        compact ? 18 : 78,
-        16,
+        compact ? 8 : 14,
+        6,
       ),
       child: Material(
         color: Colors.transparent,
         child: Container(
-          height: compact ? 88 : 96,
+          height: compact ? 64 : 72,
           decoration: BoxDecoration(
             color: Colors.white.withValues(alpha: 0.94),
             borderRadius: BorderRadius.circular(24),
@@ -146,9 +146,9 @@ class _NavItem extends StatelessWidget {
     final iconColor = selected
         ? _PublicBottomNavState._activeColor
         : _PublicBottomNavState._inactiveColor;
-    final iconSize = selected ? 32.0 : 27.0;
+    final iconSize = selected ? 26.0 : 22.0;
     final labelStyle = GoogleFonts.inter(
-      fontSize: compact ? 10.5 : 12,
+      fontSize: compact ? 9.5 : 11,
       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
       color: iconColor,
       letterSpacing: -0.1,
@@ -169,20 +169,20 @@ class _NavItem extends StatelessWidget {
             child: AnimatedContainer(
               duration: const Duration(milliseconds: 180),
               curve: Curves.easeOut,
-              width: selected ? (compact ? 96 : 128) : (compact ? 74 : 92),
-              height: selected ? 76 : 72,
+              width: selected ? (compact ? 84 : 102) : (compact ? 64 : 84),
+              height: selected ? 54 : 50,
               decoration: BoxDecoration(
                 color: selected
                     ? _PublicBottomNavState._activeBackground
                     : Colors.transparent,
                 borderRadius: BorderRadius.circular(22),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   iconWidget,
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 2),
                   Text(
                     label,
                     textAlign: TextAlign.center,

@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/poll_models.dart';
-import '../services/auth_session_store.dart';
 import '../services/poll_service.dart';
-import '../widgets/commune_branding_banner.dart';
 import '../widgets/public_bottom_nav.dart';
 
 /// Resultats publics anonymes des consultations.
@@ -27,7 +25,6 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
   @override
   void initState() {
     super.initState();
-    _communeFilter = AuthSessionStore.instance.currentSession?.commune?.name;
     _load();
   }
 
@@ -91,8 +88,12 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
-                const CommuneBrandingBanner(),
-                const SizedBox(height: 16),
+                Text(
+                  'Resultats anonymes des consultations',
+                  style: theme.textTheme.headlineMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
                 Text(
                   'Aucune donnee personnelle n\'est affichee. Seuls les totaux par option sont restitues.',
                   style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
@@ -142,11 +143,7 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
                     ),
                   )
                 else
-                  for (final poll in filtered)
-                    _PollResultCard(
-                      poll: poll,
-                      onTap: () => _showPollDetails(poll),
-                    ),
+                  for (final poll in filtered) _PollResultCard(poll: poll),
               ],
             ),
           ),
@@ -155,107 +152,12 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
       bottomNavigationBar: const PublicBottomNav(currentTab: PublicTab.results),
     );
   }
-
-  void _showPollDetails(PollModel poll) {
-    final isOpen = poll.status == 'active';
-    showModalBottomSheet<void>(
-      context: context,
-      showDragHandle: true,
-      isScrollControlled: true,
-      builder: (sheetContext) {
-        final theme = Theme.of(sheetContext);
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
-            child: SingleChildScrollView(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          poll.projectTitle,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
-                      ),
-                      Chip(
-                        label: Text(isOpen ? 'Ouverte' : 'Fermee'),
-                        backgroundColor: isOpen
-                            ? const Color(0xFFDCFCE7)
-                            : const Color(0xFFE5E7EB),
-                      ),
-                    ],
-                  ),
-                  if (poll.communeName.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      poll.communeName,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF5A6573),
-                      ),
-                    ),
-                  ],
-                  if (poll.question.isNotEmpty) ...[
-                    const SizedBox(height: 14),
-                    Text(
-                      poll.question,
-                      style: theme.textTheme.bodyLarge?.copyWith(
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ],
-                  if (poll.description.isNotEmpty) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      poll.description,
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF334155),
-                        height: 1.45,
-                      ),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  _DetailRow(label: 'Ouverture', value: _formatDate(poll.openDate)),
-                  _DetailRow(label: 'Fermeture', value: _formatDate(poll.closeDate)),
-                  _DetailRow(
-                    label: 'Options',
-                    value: poll.options.map((option) => option.label).join(' · '),
-                  ),
-                  if (isOpen) ...[
-                    const SizedBox(height: 18),
-                    FilledButton(
-                      onPressed: () {
-                        Navigator.of(sheetContext).pop();
-                        Navigator.of(context).pushNamed('/access');
-                      },
-                      child: const Text('Participer'),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  String _formatDate(String raw) {
-    final parsed = DateTime.tryParse(raw);
-    if (parsed == null) return raw.isEmpty ? 'Non renseignée' : raw;
-    return '${parsed.day.toString().padLeft(2, '0')}/${parsed.month.toString().padLeft(2, '0')}/${parsed.year}';
-  }
 }
 
 class _PollResultCard extends StatelessWidget {
-  const _PollResultCard({required this.poll, required this.onTap});
+  const _PollResultCard({required this.poll});
 
   final PollModel poll;
-  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -268,85 +170,46 @@ class _PollResultCard extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Card(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Expanded(child: Text(poll.projectTitle, style: theme.textTheme.titleLarge)),
-                    Chip(
-                      label: Text(statusLabel),
-                      backgroundColor: statusColor,
-                    ),
-                  ],
-                ),
-                if (poll.communeName.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(poll.communeName, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573))),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(child: Text(poll.projectTitle, style: theme.textTheme.titleLarge)),
+                  Chip(
+                    label: Text(statusLabel),
+                    backgroundColor: statusColor,
+                  ),
                 ],
-                if (poll.question.isNotEmpty) ...[
-                  const SizedBox(height: 10),
-                  Text(poll.question, style: theme.textTheme.bodyLarge),
-                ],
-                const SizedBox(height: 14),
-                if (totalVotes == 0)
-                  const Text('Aucun vote enregistre pour le moment.')
-                else
-                  for (final option in poll.options)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _ResultBar(label: option.label, votes: option.votes, total: totalVotes),
-                    ),
-                const SizedBox(height: 8),
-                Text(
-                  'Total des votes: $totalVotes${poll.totalVoters > 0 ? ' / ${poll.totalVoters} attendus' : ''}',
-                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573)),
-                ),
+              ),
+              if (poll.communeName.isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(poll.communeName, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573))),
               ],
-            ),
+              if (poll.question.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(poll.question, style: theme.textTheme.bodyLarge),
+              ],
+              const SizedBox(height: 14),
+              if (totalVotes == 0)
+                const Text('Aucun vote enregistre pour le moment.')
+              else
+                for (final option in poll.options)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: _ResultBar(label: option.label, votes: option.votes, total: totalVotes),
+                  ),
+              const SizedBox(height: 8),
+              Text(
+                'Total des votes: $totalVotes${poll.totalVoters > 0 ? ' / ${poll.totalVoters} attendus' : ''}',
+                style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573)),
+              ),
+            ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 92,
-            child: Text(
-              label,
-              style: const TextStyle(
-                fontWeight: FontWeight.w700,
-                color: Color(0xFF334155),
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value.isEmpty ? 'Non renseigné' : value,
-              style: const TextStyle(color: Color(0xFF475569)),
-            ),
-          ),
-        ],
       ),
     );
   }
