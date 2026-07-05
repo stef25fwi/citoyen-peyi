@@ -17,7 +17,7 @@ class NewPollBadgeService {
   static final NewPollBadgeService instance = NewPollBadgeService._();
 
   static const _seenKey = 'seen_poll_ids_v1';
-  static const _pollCollection = 'polls';
+  static const _pollCollection = 'public_polls';
 
   final ValueNotifier<bool> hasNew = ValueNotifier<bool>(false);
 

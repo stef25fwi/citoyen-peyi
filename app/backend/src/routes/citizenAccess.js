@@ -5,11 +5,12 @@ import { env } from '../config/env.js';
 import {
   controllerIdFromUser,
   isAdmin,
+  isCommuneAdmin,
   isController,
   isSuperAdmin,
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
-import { hasValidSuperAdminKey, requireSuperAdminKey } from '../middlewares/requireSuperAdminKey.js';
+import { requireSuperAdminKey } from '../middlewares/requireSuperAdminKey.js';
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 import { logger } from '../services/logger.js';
 
@@ -196,7 +197,7 @@ const loadControllerProfile = async (user) => {
 };
 
 const requireActiveController = async (req, res, next) => {
-  if (!isController(req.user) || isAdmin(req.user) || isSuperAdmin(req.user)) {
+  if (!isController(req.user) || isCommuneAdmin(req.user) || isSuperAdmin(req.user)) {
     return next();
   }
 
@@ -387,10 +388,6 @@ router.get('/duplicates', async (req, res) => {
   if (!privileged && !isController(req.user)) {
     return res.status(403).json({ message: 'Acces refuse.' });
   }
-  if (privileged && !hasValidSuperAdminKey(req)) {
-    return res.status(401).json({ message: 'Cle super administrateur invalide.' });
-  }
-
   try {
     const db = getFirebaseAdminDb();
     let query = db.collection(DUPLICATE_COLLECTION);
@@ -596,14 +593,10 @@ router.post('/codes/:accessCode/revoke', requireSuperAdminKey, async (req, res) 
 });
 
 router.get('/activity', async (req, res) => {
-  const privileged = isSuperAdmin(req.user) || isAdmin(req.user);
+  const privileged = isSuperAdmin(req.user) || isCommuneAdmin(req.user) || isAdmin(req.user);
   if (!privileged && !isController(req.user)) {
     return res.status(403).json({ message: 'Acces refuse.' });
   }
-  if (isSuperAdmin(req.user) && !hasValidSuperAdminKey(req)) {
-    return res.status(401).json({ message: 'Cle super administrateur invalide.' });
-  }
-
   try {
     const db = getFirebaseAdminDb();
     let query = db.collection(ACTIVITY_COLLECTION);

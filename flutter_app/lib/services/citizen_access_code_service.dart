@@ -7,7 +7,6 @@ import '../config/app_config.dart';
 import 'auth_session_store.dart';
 import 'firebase_auth_service.dart';
 import 'firestore_data_service.dart';
-import 'super_admin_service.dart';
 
 enum DuplicateReason {
   lostCode('lost_code', 'Code perdu'),
@@ -1047,8 +1046,6 @@ class CitizenAccessCodeService {
     final headers = {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
-      if (SuperAdminService.instance.runtimeSuperAdminKey?.isNotEmpty == true)
-        'x-super-admin-key': SuperAdminService.instance.runtimeSuperAdminKey!,
     };
 
     // Cold start Cloud Run : apres inactivite, la 1re requete peut renvoyer 503

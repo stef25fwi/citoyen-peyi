@@ -20,11 +20,21 @@ export const requireFirebaseAuth = async (req, res, next) => {
   }
 };
 
-const hasRole = (user, role) => user?.role === role || user?.[role] === true;
+export const hasRole = (user, role) => user?.role === role || user?.[role] === true;
+
+const hasAdminClaim = (user) => hasRole(user, 'admin');
+
+const adminScopeFromUser = (user) => (
+  typeof user?.adminScope === 'string' ? user.adminScope.trim().toLowerCase() : ''
+);
 
 export const isSuperAdmin = (user) => hasRole(user, 'super_admin');
-export const isAdmin = (user) => hasRole(user, 'admin') || isSuperAdmin(user);
-export const isCommuneAdmin = (user) => hasRole(user, 'admin') || hasRole(user, 'commune_admin') || isSuperAdmin(user);
+export const isAdmin = (user) => isSuperAdmin(user) || (hasAdminClaim(user) && adminScopeFromUser(user) === 'global');
+export const isCommuneAdmin = (user) => (
+  isSuperAdmin(user)
+  || hasRole(user, 'commune_admin')
+  || (hasAdminClaim(user) && adminScopeFromUser(user) !== 'global')
+);
 export const isController = (user) => hasRole(user, 'controller') || user?.controller === true;
 
 export const controllerIdFromUser = (user) => {
@@ -49,6 +59,16 @@ export const communeScopeFromUser = (user) => {
 export const requireRole = (predicate, message = 'Acces refuse.') => (req, res, next) => {
   if (predicate(req.user)) return next();
   return res.status(403).json({ message });
+};
+
+export const requireCommuneScope = (req, res, next) => {
+  if (isSuperAdmin(req.user)) return next();
+  const scope = communeScopeFromUser(req.user);
+  if (!scope) {
+    return res.status(403).json({ message: 'Aucune commune attachee au compte administrateur.' });
+  }
+  req.communeScope = scope;
+  return next();
 };
 
 export const requireSuperAdmin = requireRole(isSuperAdmin, 'Reserve au super administrateur.');

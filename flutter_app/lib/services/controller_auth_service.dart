@@ -40,12 +40,17 @@ class ControllerAuthService {
     }
 
     final url = '${AppConfig.apiBaseUrl}/api/auth/controller/exchange';
+    final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
     late http.Response response;
     try {
       response = await http
           .post(
             Uri.parse(url),
-            headers: const {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              if (appCheckToken != null && appCheckToken.isNotEmpty)
+                'X-Firebase-AppCheck': appCheckToken,
+            },
             body: jsonEncode({'code': normalizedCode}),
           )
           .timeout(const Duration(seconds: 10));

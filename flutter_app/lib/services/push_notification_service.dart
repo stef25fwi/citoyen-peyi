@@ -108,13 +108,18 @@ class PushNotificationService {
         vapidKey: kIsWeb ? AppConfig.pushVapidKey.trim() : null,
       );
       if (token == null || token.trim().isEmpty) return;
+      final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
 
       final base = AppConfig.apiBaseUrl.trim();
       if (base.isEmpty) return;
       await _client
           .post(
             Uri.parse('$base/api/notifications/subscribe'),
-            headers: const {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              if (appCheckToken != null && appCheckToken.isNotEmpty)
+                'X-Firebase-AppCheck': appCheckToken,
+            },
             body: jsonEncode({
               'code': rawCode.trim(),
               'token': token.trim(),

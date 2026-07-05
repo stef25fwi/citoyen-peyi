@@ -77,6 +77,21 @@ class FirebaseAuthService {
     _initialized = true;
   }
 
+  Future<String?> currentAppCheckToken({bool forceRefresh = false}) async {
+    if (!AppConfig.shouldActivateAppCheck) {
+      return null;
+    }
+    await initialize();
+    try {
+      return await FirebaseAppCheck.instance.getToken(forceRefresh);
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] AppCheck token failed: $error');
+      }
+      return null;
+    }
+  }
+
   Future<String> signInWithCustomToken(String customToken) async {
     if (customToken.trim().isEmpty) {
       throw FirebaseAuthException(

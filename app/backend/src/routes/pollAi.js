@@ -1,6 +1,7 @@
 import express from 'express';
 import {
   requireCommuneAdmin,
+  requireCommuneScope,
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
 import { env } from '../config/env.js';
@@ -73,7 +74,7 @@ Population cible: ${targetPopulation}
 Options: ${JSON.stringify(options)}
 `;
 
-router.use(requireFirebaseAuth, requireCommuneAdmin);
+router.use(requireFirebaseAuth, requireCommuneAdmin, requireCommuneScope);
 
 router.post('/rewrite', async (req, res, next) => {
   try {

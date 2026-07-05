@@ -3,7 +3,6 @@ import crypto from 'crypto';
 import { FieldValue } from 'firebase-admin/firestore';
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 import { requireFirebaseAuth, requireSuperAdmin } from '../middlewares/requireFirebaseAuth.js';
-import { requireSuperAdminKey } from '../middlewares/requireSuperAdminKey.js';
 import { hashAdminAccessKey } from '../services/keyHashing.js';
 
 const router = express.Router();
@@ -33,7 +32,7 @@ export const normalizeEmail = (value) => {
   return email && EMAIL_PATTERN.test(email) ? email : '';
 };
 
-router.use(ensureConfigured, requireFirebaseAuth, requireSuperAdmin, requireSuperAdminKey);
+router.use(ensureConfigured, requireFirebaseAuth, requireSuperAdmin);
 
 router.get('/', async (_req, res, next) => {
   try {

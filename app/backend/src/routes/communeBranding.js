@@ -6,6 +6,7 @@ import {
   communeScopeFromUser,
   isSuperAdmin,
   requireCommuneAdmin,
+  requireCommuneScope,
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
 import {
@@ -44,6 +45,11 @@ const normalizeCommuneName = (value) =>
     .replace(/^_+|_+$/g, '')
     .substring(0, 120);
 
+const isValidWebp = (buffer) => Buffer.isBuffer(buffer)
+  && buffer.length >= 12
+  && buffer.subarray(0, 4).toString('ascii') === 'RIFF'
+  && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+
 const resolveStorageBucketName = () => {
   if (env.storageBucket) return env.storageBucket;
   const projectId = process.env.GOOGLE_CLOUD_PROJECT
@@ -64,7 +70,7 @@ const requireMatchingCommune = (req, res, next) => {
   return next();
 };
 
-router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin);
+router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin, requireCommuneScope);
 
 router.post('/logo', logoBodyParser, requireMatchingCommune, async (req, res, next) => {
   try {
@@ -88,6 +94,11 @@ router.post('/logo', logoBodyParser, requireMatchingCommune, async (req, res, ne
     if (buffer.length === 0 || buffer.length > MAX_LOGO_BYTES) {
       return res.status(400).json({
         message: 'Logo vide ou superieur a 4 Mo apres conversion WebP.',
+      });
+    }
+    if (!isValidWebp(buffer)) {
+      return res.status(400).json({
+        message: 'Le contenu binaire du logo ne correspond pas a un fichier WebP valide.',
       });
     }
 

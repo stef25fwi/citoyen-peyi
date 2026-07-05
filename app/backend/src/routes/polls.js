@@ -8,12 +8,14 @@ import {
   isCommuneAdmin,
   isSuperAdmin,
   requireCommuneAdmin,
+  requireCommuneScope,
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
 import { notifyCommunePollPublished } from '../services/notificationService.js';
 
 const router = express.Router();
 const POLL_COLLECTION = 'polls';
+const PUBLIC_POLL_COLLECTION = 'public_polls';
 
 const ensureConfigured = (_req, res, next) => {
   if (!isFirebaseAdminConfigured()) {
@@ -29,6 +31,27 @@ const sanitizePhotoUrls = (value) => {
     .map((url) => sanitizeString(url, 1000))
     .filter((url) => /^https:\/\//i.test(url))
     .slice(0, 6);
+};
+const hasImageMagicBytes = (buffer, contentType) => {
+  if (!Buffer.isBuffer(buffer) || buffer.length < 12) return false;
+  if (contentType === 'image/jpeg') {
+    return buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[buffer.length - 2] === 0xff && buffer[buffer.length - 1] === 0xd9;
+  }
+  if (contentType === 'image/png') {
+    return buffer[0] === 0x89
+      && buffer[1] === 0x50
+      && buffer[2] === 0x4e
+      && buffer[3] === 0x47
+      && buffer[4] === 0x0d
+      && buffer[5] === 0x0a
+      && buffer[6] === 0x1a
+      && buffer[7] === 0x0a;
+  }
+  if (contentType === 'image/webp') {
+    return buffer.subarray(0, 4).toString('ascii') === 'RIFF'
+      && buffer.subarray(8, 12).toString('ascii') === 'WEBP';
+  }
+  return false;
 };
 const MAX_OPTION_PHOTOS = 2;
 const sanitizeOptionPhotoUrls = (value) => {
@@ -78,6 +101,42 @@ const normalizePollForRead = (poll, now = new Date()) => (
   isScheduledPublicationDue(poll, now) ? { ...poll, status: 'active' } : poll
 );
 
+const isPublicPollStatus = (status) => ['active', 'closed', 'archived'].includes(String(status || '').toLowerCase());
+
+const publicPollPayloadFrom = (poll) => {
+  const normalized = normalizePollForRead(poll);
+  if (!isPublicPollStatus(normalized.status)) return null;
+  return {
+    id: normalized.id,
+    projectTitle: normalized.projectTitle || '',
+    description: normalized.description || '',
+    question: normalized.question || '',
+    options: Array.isArray(normalized.options) ? normalized.options : [],
+    photoUrls: Array.isArray(normalized.photoUrls) ? normalized.photoUrls : [],
+    targetPopulation: normalized.targetPopulation || '',
+    communeId: normalized.communeId || '',
+    communeName: normalized.communeName || '',
+    openDate: normalized.openDate || '',
+    closeDate: normalized.closeDate || '',
+    status: normalized.status,
+    scheduledPublishDate: normalized.scheduledPublishDate || '',
+    createdAt: normalized.createdAt || FieldValue.serverTimestamp(),
+    updatedAt: FieldValue.serverTimestamp(),
+    totalVoters: Math.max(0, Number(normalized.totalVoters) || 0),
+    totalVoted: Math.max(0, Number(normalized.totalVoted) || 0),
+  };
+};
+
+const syncPublicPollProjection = async (db, pollId, poll) => {
+  const payload = publicPollPayloadFrom({ ...poll, id: pollId });
+  const ref = db.collection(PUBLIC_POLL_COLLECTION).doc(pollId);
+  if (!payload) {
+    await ref.delete().catch(() => {});
+    return;
+  }
+  await ref.set(payload, { merge: true });
+};
+
 const buildOptions = (rawOptions, existingOptions = []) => {
   if (!Array.isArray(rawOptions)) return [];
   return rawOptions
@@ -108,7 +167,7 @@ const requireMatchingCommune = (req, res, next) => {
   return next();
 };
 
-router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin);
+router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin, requireCommuneScope);
 
 router.get('/', async (req, res, next) => {
   try {
@@ -170,8 +229,11 @@ router.post('/', requireMatchingCommune, async (req, res, next) => {
     };
 
     await db.collection(POLL_COLLECTION).doc(id).set(poll);
+    await syncPublicPollProjection(db, id, poll);
     const responsePoll = { ...poll, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() };
-    await notifyCommunePollPublished({ db, poll: responsePoll });
+    if (publication.status === 'active') {
+      await notifyCommunePollPublished({ db, poll: responsePoll });
+    }
     res.status(201).json({ poll: responsePoll });
   } catch (error) {
     next(error);
@@ -224,6 +286,9 @@ router.post('/photos', photoBodyParser, requireMatchingCommune, async (req, res,
     const buffer = Buffer.from(base64, 'base64');
     if (buffer.length === 0 || buffer.length > MAX_PHOTO_BYTES) {
       return res.status(400).json({ message: 'Photo vide ou superieure a 10 Mo.' });
+    }
+    if (!hasImageMagicBytes(buffer, contentType)) {
+      return res.status(400).json({ message: 'Le contenu binaire de la photo ne correspond pas au format annonce.' });
     }
 
     const bucketName = resolveStorageBucketName();
@@ -303,6 +368,7 @@ router.patch('/:pollId', async (req, res, next) => {
     }
 
     await ref.set(update, { merge: true });
+    await syncPublicPollProjection(getFirebaseAdminDb(), req.params.pollId, { ...data, ...update, id: req.params.pollId });
     return res.json({ ok: true });
   } catch (error) {
     return next(error);
@@ -316,6 +382,7 @@ const updateStatus = (status) => async (req, res, next) => {
     const update = { status, updatedAt: FieldValue.serverTimestamp() };
     if (status === 'active') update.scheduledPublishDate = '';
     await loaded.ref.set(update, { merge: true });
+    await syncPublicPollProjection(getFirebaseAdminDb(), req.params.pollId, { ...loaded.data, ...update, id: req.params.pollId });
     if (status === 'active') {
       await notifyCommunePollPublished({
         db: getFirebaseAdminDb(),
@@ -340,6 +407,7 @@ router.delete('/:pollId', async (req, res, next) => {
       return res.status(409).json({ message: 'Impossible de supprimer une consultation qui contient des votes.' });
     }
     await loaded.ref.delete();
+    await getFirebaseAdminDb().collection(PUBLIC_POLL_COLLECTION).doc(req.params.pollId).delete().catch(() => {});
     return res.json({ ok: true });
   } catch (error) {
     return next(error);

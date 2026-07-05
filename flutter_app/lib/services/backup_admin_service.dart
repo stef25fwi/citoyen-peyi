@@ -4,7 +4,6 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import 'firebase_auth_service.dart';
-import 'super_admin_service.dart';
 
 class BackupAdminException implements Exception {
   const BackupAdminException(this.message);
@@ -164,13 +163,10 @@ class BackupAdminService {
       throw const BackupAdminException(
           'Session super administrateur expiree. Reconnectez-vous.');
     }
-    final superKey = SuperAdminService.instance.runtimeSuperAdminKey;
-
     final uri = Uri.parse('${AppConfig.apiBaseUrl}$path');
     final headers = {
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json',
-      if (superKey != null && superKey.isNotEmpty) 'x-super-admin-key': superKey,
     };
 
     late http.Response response;

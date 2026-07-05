@@ -60,7 +60,7 @@ test('admin/controller hashes use peppered HMAC and keep legacy compatibility ch
 test('generated controller code matches agent login format', () => {
   const code = controllerRoutes.generateControllerCode();
 
-  assert.match(code, /^[A-F0-9]{8}$/);
+  assert.match(code, /^[A-F0-9]{16}$/);
   assert.equal(authRoutes.normalizeControllerLoginCode(code), code);
   assert.equal(authRoutes.normalizeControllerLoginCode(` ctrl-${code.toLowerCase()} `), code);
 });

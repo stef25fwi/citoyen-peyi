@@ -294,6 +294,11 @@ service cloud.firestore {
     // them. The previous "anonymous voter update" rule is gone because
     // votes now flow only through /api/vote-access/submit.
     match /polls/{document=**} {
+      allow write: if false;
+      allow read: if isAdminCommune() || isSuperAdmin();
+    }
+
+    match /public_polls/{document=**} {
       allow read: if true;
       allow write: if false;
     }

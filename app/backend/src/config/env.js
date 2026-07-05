@@ -73,6 +73,9 @@ const nodeEnv = optional(process.env.NODE_ENV) || 'development';
 export const env = {
   nodeEnv,
   isProduction: nodeEnv === 'production',
+  appCheckEnforced: optional(process.env.APP_CHECK_ENFORCED)
+    ? optional(process.env.APP_CHECK_ENFORCED) === 'true'
+    : nodeEnv === 'production',
   port: Number(process.env.PORT || 4000),
   apiBaseUrl: optional(process.env.API_BASE_URL),
   corsOrigins: Array.from(
@@ -196,6 +199,10 @@ export const validateEnv = () => {
 
   if (env.isProduction && env.corsOrigins.length === 0) {
     errors.push('CORS_ORIGIN doit etre defini explicitement en production (au moins un domaine HTTPS).');
+  }
+
+  if (env.isProduction && !env.rateLimitRedisUrl) {
+    errors.push('RATE_LIMIT_REDIS_URL est requis en production pour un rate limiting partage entre instances.');
   }
 
   if (env.isProduction) {

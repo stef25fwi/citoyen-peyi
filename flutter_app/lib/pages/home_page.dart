@@ -1,8 +1,26 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../widgets/public_bottom_nav.dart';
 import 'access_citizen_page.dart';
+
+const cpBlueDark = Color(0xFF0756B8);
+const cpBlue = Color(0xFF1A8FE8);
+const cpBlueLight = Color(0xFFBFEFFF);
+const cpBlueSoft = Color(0xFFEAF8FF);
+const cpYellow = Color(0xFFFFD83D);
+const cpYellowStrong = Color(0xFFFFC400);
+const cpWhite = Color(0xFFFFFFFF);
+const cpTextDark = Color(0xFF073F82);
+const cpTextMuted = Color(0xFF65748B);
+const cpBorderWhite = Color(0xBFFFFFFF);
+
+bool isCompact(BuildContext context) {
+  return MediaQuery.of(context).size.width < 700;
+}
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -19,7 +37,6 @@ class CitoyenPeyiHomePage extends StatelessWidget {
   static const String logoPath =
       'assets/citoyen_peyi/logo_citoyen_peyi_transparent.webp';
 
-  // Status bar transparente pour laisser voir le fond de la page d'accueil.
   static const _statusBarStyle = SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
     statusBarIconBrightness: Brightness.dark,
@@ -31,167 +48,171 @@ class CitoyenPeyiHomePage extends StatelessWidget {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: _statusBarStyle,
       child: Scaffold(
-        body: const ResponsiveHomeLayout(),
-        bottomNavigationBar: PublicBottomNav(
-          currentTab: PublicTab.home,
-          backgroundColor: const Color(0xFFEAF7FF),
-          indicatorColor: const Color(0xFFCAE9FB),
+        backgroundColor: Colors.transparent,
+        body: Stack(
+          children: [
+            const _CitoyenPeyiBackground(),
+            SafeArea(
+              child: Column(
+                children: [
+                  const Expanded(
+                    child: SingleChildScrollView(
+                      physics: BouncingScrollPhysics(),
+                      child: _HomeContent(),
+                    ),
+                  ),
+                  const PublicBottomNav(currentTab: PublicTab.home),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
 
-class ResponsiveHomeLayout extends StatelessWidget {
-  const ResponsiveHomeLayout({super.key});
+class _CitoyenPeyiBackground extends StatelessWidget {
+  const _CitoyenPeyiBackground();
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFEAF8FF),
+            Color(0xFF76D7FB),
+            Color(0xFF1395E8),
+          ],
+          stops: [0.0, 0.52, 1.0],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: -160,
+            top: 120,
+            child: Transform.rotate(
+              angle: -0.22,
+              child: Container(
+                width: 420,
+                height: 520,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.18),
+                  borderRadius: BorderRadius.circular(260),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            right: -100,
+            top: 70,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                color: Colors.white.withValues(alpha: 0.12),
+                borderRadius: BorderRadius.circular(120),
+              ),
+            ),
+          ),
+          const Positioned.fill(
+            child: IgnorePointer(child: _BackgroundDots()),
+          ),
+          Positioned(
+            right: -24,
+            bottom: 90,
+            child: Opacity(
+              opacity: 0.12,
+              child: Image.asset(
+                CitoyenPeyiHomePage.logoPath,
+                width: 210,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _BackgroundDots extends StatelessWidget {
+  const _BackgroundDots();
+
+  @override
+  Widget build(BuildContext context) {
+    const dots = <Offset>[
+      Offset(56, 84),
+      Offset(82, 118),
+      Offset(116, 92),
+      Offset(302, 206),
+      Offset(338, 240),
+      Offset(886, 148),
+      Offset(910, 174),
+      Offset(936, 132),
+      Offset(1024, 360),
+      Offset(1088, 402),
+    ];
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        if (constraints.maxWidth < 600) {
-          return const _HomeScaffold(layout: _HomeLayout.mobile);
-        }
-        if (constraints.maxWidth < 1024) {
-          return const _HomeScaffold(layout: _HomeLayout.tablet);
-        }
-        return const _HomeScaffold(layout: _HomeLayout.desktop);
+        final maxWidth = constraints.maxWidth;
+        return Stack(
+          children: dots
+              .where((dot) => dot.dx <= maxWidth + 40)
+              .map(
+                (dot) => Positioned(
+                  left: dot.dx,
+                  top: dot.dy,
+                  child: Container(
+                    width: 6,
+                    height: 6,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.24),
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        );
       },
     );
   }
 }
 
-enum _HomeLayout { mobile, tablet, desktop }
-
-class _HomeScaffold extends StatelessWidget {
-  const _HomeScaffold({required this.layout});
-
-  final _HomeLayout layout;
-
-  bool get _isMobile => layout == _HomeLayout.mobile;
-
-  @override
-  Widget build(BuildContext context) {
-    final maxWidth = switch (layout) {
-      _HomeLayout.mobile => 480.0,
-      _HomeLayout.tablet => 720.0,
-      _HomeLayout.desktop => 920.0,
-    };
-    const hPad = 6.0;
-    final vPad = switch (layout) {
-      _HomeLayout.mobile => 6.0,
-      _HomeLayout.tablet => 12.0,
-      _HomeLayout.desktop => 16.0,
-    };
-
-    return Stack(
-      children: [
-        const Positioned.fill(
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF9BE4FF), Color(0xFF44B7FF), Color(0xFF167DDB)],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
-            ),
-          ),
-        ),
-        SafeArea(
-          child: LayoutBuilder(
-            builder: (context, viewport) {
-              final content = _HomeContent(
-                layout: layout,
-                maxWidth: maxWidth,
-                horizontalPadding: hPad,
-                verticalPadding: vPad,
-                pinAdministrationToBottom: _isMobile,
-              );
-
-              if (_isMobile) {
-                return SizedBox(
-                  width: viewport.maxWidth,
-                  height: viewport.maxHeight,
-                  child: Align(
-                    alignment: Alignment.topCenter,
-                    child: SizedBox(
-                      width: viewport.maxWidth,
-                      height: viewport.maxHeight,
-                      child: content,
-                    ),
-                  ),
-                );
-              }
-
-              return SingleChildScrollView(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: viewport.maxHeight),
-                  child: content,
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _HomeContent extends StatelessWidget {
-  const _HomeContent({
-    required this.layout,
-    required this.maxWidth,
-    required this.horizontalPadding,
-    required this.verticalPadding,
-    required this.pinAdministrationToBottom,
-  });
-
-  final _HomeLayout layout;
-  final double maxWidth;
-  final double horizontalPadding;
-  final double verticalPadding;
-  final bool pinAdministrationToBottom;
-
-  bool get _isMobile => layout == _HomeLayout.mobile;
-  bool get _isDesktop => layout == _HomeLayout.desktop;
+  const _HomeContent();
 
   @override
   Widget build(BuildContext context) {
-    final topPadding = switch (layout) {
-      _HomeLayout.mobile => 0.0,
-      _HomeLayout.tablet => 4.0,
-      _HomeLayout.desktop => 6.0,
-    };
+    final compact = isCompact(context);
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        horizontalPadding,
-        topPadding,
-        horizontalPadding,
-        verticalPadding,
-      ),
-      child: Align(
-        alignment: Alignment.topCenter,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: maxWidth),
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: compact ? double.infinity : 930,
+        ),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 18 : 24,
+            28,
+            compact ? 18 : 24,
+            16,
+          ),
           child: Column(
-            mainAxisSize:
-                pinAdministrationToBottom ? MainAxisSize.max : MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              _TransparentHeader(layout: layout),
-              SizedBox(height: _isMobile ? 6 : (_isDesktop ? 16 : 12)),
-              _HeroCard(layout: layout),
-              if (pinAdministrationToBottom)
-                const Spacer()
-              else
-                SizedBox(height: _isMobile ? 8 : (_isDesktop ? 18 : 12)),
-              _MainCard(layout: layout),
-              if (pinAdministrationToBottom)
-                const Spacer()
-              else
-                SizedBox(height: _isMobile ? 16 : (_isDesktop ? 24 : 20)),
-              _AdministrationAccess(layout: layout),
+            children: const [
+              _LogoHeaderCard(),
+              SizedBox(height: 28),
+              _StatementCard(),
+              SizedBox(height: 16),
+              _ParticipationCard(),
+              SizedBox(height: 18),
+              _AdministrationAccess(),
             ],
           ),
         ),
@@ -200,49 +221,79 @@ class _HomeContent extends StatelessWidget {
   }
 }
 
-class _HomeLogo extends StatelessWidget {
-  const _HomeLogo({required this.layout, this.heightFactor = 1});
+class _GlassCard extends StatelessWidget {
+  const _GlassCard({
+    required this.child,
+    required this.decoration,
+    this.padding,
+    this.height,
+    this.constraints,
+  });
 
-  final _HomeLayout layout;
-  final double heightFactor;
+  final Widget child;
+  final BoxDecoration decoration;
+  final EdgeInsetsGeometry? padding;
+  final double? height;
+  final BoxConstraints? constraints;
 
   @override
   Widget build(BuildContext context) {
-    final targetHeight = switch (layout) {
-      _HomeLayout.mobile => 267.0,
-      _HomeLayout.tablet => 377.0,
-      _HomeLayout.desktop => 419.0,
-    };
-    final minHeight = switch (layout) {
-      _HomeLayout.mobile => 231.0,
-      _HomeLayout.tablet => 340.0,
-      _HomeLayout.desktop => 371.0,
-    };
-    final maxHeight = switch (layout) {
-      _HomeLayout.mobile => 292.0,
-      _HomeLayout.tablet => 431.0,
-      _HomeLayout.desktop => 474.0,
-    };
-    final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 0.0,
-      _HomeLayout.tablet => 11.0,
-      _HomeLayout.desktop => 12.0,
-    };
-    final logoHeight = (MediaQuery.textScalerOf(context)
-          .scale(targetHeight)
-          .clamp(minHeight, maxHeight) *
-        heightFactor)
-      .toDouble();
+    final borderRadius = decoration.borderRadius! as BorderRadius;
 
-    return Semantics(
-      label: 'Citoyen Peyi',
-      image: true,
-      child: Padding(
-        padding: EdgeInsets.symmetric(vertical: verticalPadding),
-        child: Center(
+    return ClipRRect(
+      borderRadius: borderRadius,
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+        child: Container(
+          height: height,
+          constraints: constraints,
+          decoration: decoration,
+          padding: padding,
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoHeaderCard extends StatelessWidget {
+  const _LogoHeaderCard();
+
+  @override
+  Widget build(BuildContext context) {
+    final compact = isCompact(context);
+
+    return _GlassCard(
+      height: compact ? 180 : 260,
+      padding: EdgeInsets.symmetric(horizontal: compact ? 18 : 28),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.88),
+        borderRadius: BorderRadius.circular(34),
+        border: Border.all(
+          color: cpBorderWhite,
+          width: 1.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 32,
+            offset: const Offset(0, 18),
+          ),
+          BoxShadow(
+            color: Colors.white.withValues(alpha: 0.55),
+            blurRadius: 20,
+            offset: const Offset(-8, -8),
+          ),
+        ],
+      ),
+      child: Center(
+        child: Semantics(
+          label: 'Citoyen Peyi',
+          image: true,
           child: Image.asset(
             CitoyenPeyiHomePage.logoPath,
-            height: logoHeight,
+            width: compact ? 270 : 760,
+            height: compact ? 132 : 210,
             fit: BoxFit.contain,
           ),
         ),
@@ -251,404 +302,357 @@ class _HomeLogo extends StatelessWidget {
   }
 }
 
-class _TransparentHeader extends StatelessWidget {
-  const _TransparentHeader({required this.layout});
-
-  final _HomeLayout layout;
+class _StatementCard extends StatelessWidget {
+  const _StatementCard();
 
   @override
   Widget build(BuildContext context) {
-    final padding = switch (layout) {
-      _HomeLayout.mobile => const EdgeInsets.fromLTRB(8, 0, 8, 0),
-      _HomeLayout.tablet => const EdgeInsets.fromLTRB(14, 0, 14, 0),
-      _HomeLayout.desktop => const EdgeInsets.fromLTRB(20, 0, 20, 0),
-    };
-    final heightFactor = switch (layout) {
-      _HomeLayout.mobile => 0.50,
-      _HomeLayout.tablet => 0.60,
-      _HomeLayout.desktop => 0.65,
-    };
+    final compact = isCompact(context);
+    final titleFont = compact ? 26.0 : 40.0;
+    final highlightFont = compact ? 36.0 : 54.0;
 
-    return Container(
-      padding: padding,
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.18),
-        ),
+    return SizedBox(
+      width: double.infinity,
+      height: compact ? 205 : 235,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          _GlassCard(
+            height: compact ? 205 : 235,
+            padding: EdgeInsets.fromLTRB(
+              compact ? 22 : 34,
+              compact ? 34 : 28,
+              compact ? 22 : 34,
+              compact ? 18 : 24,
+            ),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(28),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: 0.30),
+                  cpBlue.withValues(alpha: 0.48),
+                  cpBlue.withValues(alpha: 0.62),
+                ],
+              ),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: 0.65),
+                width: 1.2,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: cpBlueDark.withValues(alpha: 0.16),
+                  blurRadius: 28,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: Stack(
+              children: [
+                Positioned(
+                  left: compact ? 14 : 42,
+                  bottom: compact ? 18 : 44,
+                  child: Icon(
+                    Icons.groups_rounded,
+                    size: compact ? 44 : 78,
+                    color: Colors.white.withValues(alpha: 0.22),
+                  ),
+                ),
+                Positioned(
+                  right: compact ? 20 : 64,
+                  bottom: compact ? 18 : 44,
+                  child: Icon(
+                    Icons.account_balance_rounded,
+                    size: compact ? 50 : 82,
+                    color: Colors.white.withValues(alpha: 0.24),
+                  ),
+                ),
+                Center(
+                  child: RichText(
+                    textAlign: TextAlign.center,
+                    text: TextSpan(
+                      style: GoogleFonts.inter(
+                        height: 1.08,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        fontSize: titleFont,
+                        letterSpacing: -0.5,
+                      ),
+                      children: [
+                        const TextSpan(text: 'Votre collectivité place\n'),
+                        TextSpan(
+                          text: 'votre parole\n',
+                          style: GoogleFonts.inter(
+                            color: cpYellow,
+                            fontSize: highlightFont,
+                            fontWeight: FontWeight.w900,
+                            letterSpacing: -1.2,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.10),
+                                offset: const Offset(0, 3),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const TextSpan(text: 'au cœur de l\'action publique'),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Positioned(
+            top: -16,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                width: 58,
+                height: 58,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withValues(alpha: 0.72),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.08),
+                      blurRadius: 14,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+                child: const Icon(
+                  Icons.format_quote_rounded,
+                  color: cpBlueDark,
+                  size: 34,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
-      child: _HomeLogo(layout: layout, heightFactor: heightFactor),
     );
   }
 }
 
-class _HeroCard extends StatelessWidget {
-  const _HeroCard({required this.layout});
-
-  final _HomeLayout layout;
+class _ParticipationCard extends StatelessWidget {
+  const _ParticipationCard();
 
   @override
   Widget build(BuildContext context) {
-    final horizontalPadding = switch (layout) {
-      _HomeLayout.mobile => 12.0,
-      _HomeLayout.tablet => 24.0,
-      _HomeLayout.desktop => 30.0,
-    };
-    final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 10.0,
-      _HomeLayout.tablet => 18.0,
-      _HomeLayout.desktop => 22.0,
-    };
+    final compact = isCompact(context);
 
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: Colors.white.withValues(alpha: 0.24),
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x180A3566),
-            blurRadius: 18,
-            offset: Offset(0, 8),
-          ),
-        ],
-      ),
-      padding: EdgeInsets.symmetric(
-        horizontal: horizontalPadding,
-        vertical: verticalPadding,
-      ),
-      child: _HeroText(layout: layout),
-    );
-  }
-}
-
-class _MainCard extends StatelessWidget {
-  const _MainCard({required this.layout});
-
-  final _HomeLayout layout;
-
-  @override
-  Widget build(BuildContext context) {
-    final horizontalPadding = switch (layout) {
-      _HomeLayout.mobile => 8.0,
-      _HomeLayout.tablet => 20.0,
-      _HomeLayout.desktop => 24.0,
-    };
-    final topPad = switch (layout) {
-      _HomeLayout.mobile => 10.0,
-      _HomeLayout.tablet => 14.0,
-      _HomeLayout.desktop => 16.0,
-    };
-    final bottomPad = switch (layout) {
-      _HomeLayout.mobile => 12.0,
-      _HomeLayout.tablet => 20.0,
-      _HomeLayout.desktop => 24.0,
-    };
-
-    return Container(
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(
-          color: const Color(0xFF7FCBFF),
-          width: 1.5,
-        ),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF5BD1FF), Color(0xFF168DE3)],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x2D0A3566),
-            blurRadius: 24,
-            offset: Offset(0, 12),
-          ),
-        ],
-      ),
+    return _GlassCard(
+      constraints: BoxConstraints(minHeight: compact ? 270 : 295),
       padding: EdgeInsets.fromLTRB(
-        horizontalPadding,
-        topPad,
-        horizontalPadding,
-        bottomPad,
+        compact ? 18 : 28,
+        compact ? 24 : 30,
+        compact ? 18 : 28,
+        compact ? 24 : 28,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.94),
+        borderRadius: BorderRadius.circular(32),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.90),
+          width: 1.4,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.10),
+            blurRadius: 30,
+            offset: const Offset(0, 16),
+          ),
+          BoxShadow(
+            color: cpBlue.withValues(alpha: 0.10),
+            blurRadius: 24,
+            offset: const Offset(0, -4),
+          ),
+        ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          _ActionCards(layout: layout),
+          Text(
+            'EXPRIMEZ VOUS',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: cpBlueDark,
+              fontSize: compact ? 24 : 30,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.4,
+              height: 1.0,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            'et CONTRIBUEZ.',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: cpBlueDark,
+              fontSize: compact ? 23 : 28,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 0.4,
+              height: 1.0,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Container(
+            width: 46,
+            height: 3,
+            decoration: BoxDecoration(
+              color: cpYellowStrong,
+              borderRadius: BorderRadius.circular(100),
+            ),
+          ),
+          const SizedBox(height: 16),
+          const _MainParticipateButton(),
+          const SizedBox(height: 16),
+          const _ConfidentialityLine(),
         ],
       ),
     );
   }
 }
 
-class _ActionCards extends StatelessWidget {
-  const _ActionCards({required this.layout});
-
-  final _HomeLayout layout;
+class _MainParticipateButton extends StatelessWidget {
+  const _MainParticipateButton();
 
   @override
   Widget build(BuildContext context) {
-    return _ActionCard(
-      icon: Icons.group_rounded,
-      title: 'Je participe',
-      subtitle: 'Exprimez-vous et contribuez',
-      secondaryIcon: Icons.chat_bubble_outline_rounded,
-      secondaryTitle: 'Plateforme de consultation citoyenne anonyme',
-      secondarySubtitle: 'Partagez vos avis en toute confidentialité',
-      layout: layout,
-      onTap: () => Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
-    );
-  }
-}
+    final compact = isCompact(context);
+    final buttonHeight = compact ? 72.0 : 92.0;
+    final textSize = compact ? 28.0 : 40.0;
+    final circleSize = compact ? 44.0 : 54.0;
+    final iconSize = compact ? 28.0 : 34.0;
 
-class _HeroText extends StatelessWidget {
-  const _HeroText({required this.layout});
-
-  final _HomeLayout layout;
-
-  @override
-  Widget build(BuildContext context) {
-    final fontSize = switch (layout) {
-      _HomeLayout.mobile => 21.0,
-      _HomeLayout.tablet => 33.0,
-      _HomeLayout.desktop => 38.0,
-    };
-    // 'votre parole' plus grand que le reste pour un impact visuel fort, et
-    // isole entre deux retours a la ligne forces pour ne JAMAIS etre coupe
-    // entre 'votre' et 'parole' par le retour a la ligne automatique.
-    final highlightFontSize = fontSize + (layout == _HomeLayout.mobile ? 6.0 : 10.0);
-    final textSpans = [
-      const TextSpan(
-        text: 'Votre collectivité place\n',
-        style: TextStyle(color: Color(0xFFE6EEF9)),
-      ),
-      TextSpan(
-        text: 'votre parole\n',
-        style: TextStyle(
-          color: const Color(0xFFFFE36E),
-          fontWeight: FontWeight.w900,
-          fontSize: highlightFontSize,
-          letterSpacing: 0.2,
-        ),
-      ),
-      const TextSpan(
-        text: 'au cœur de l\'action publique',
-        style: TextStyle(color: Color(0xFFE6EEF9)),
-      ),
-    ];
-
-    return Text.rich(
-      TextSpan(
-        style: TextStyle(
-          fontSize: fontSize,
-          fontWeight: FontWeight.w800,
-          height: layout == _HomeLayout.mobile ? 1.16 : 1.22,
-          letterSpacing: 0,
-        ),
-        children: textSpans,
-      ),
-      textAlign: TextAlign.center,
-    );
-  }
-}
-
-class _ActionCard extends StatelessWidget {
-  const _ActionCard({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-    required this.layout,
-    required this.onTap,
-    this.secondaryIcon,
-    this.secondaryTitle,
-    this.secondarySubtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-  final _HomeLayout layout;
-  final VoidCallback onTap;
-  final IconData? secondaryIcon;
-  final String? secondaryTitle;
-  final String? secondarySubtitle;
-
-  static const _blue = Color(0xFF005098);
-
-  bool get _hasSecondaryContent =>
-      secondaryTitle != null && secondarySubtitle != null;
-
-  @override
-  Widget build(BuildContext context) {
-    final minHeight = switch (layout) {
-      _HomeLayout.mobile => _hasSecondaryContent ? 208.0 : 64.0,
-      _HomeLayout.tablet => _hasSecondaryContent ? 264.0 : 92.0,
-      _HomeLayout.desktop => _hasSecondaryContent ? 288.0 : 116.0,
-    };
-    final horizontalPadding = switch (layout) {
-      _HomeLayout.mobile => 8.0,
-      _HomeLayout.tablet => 14.0,
-      _HomeLayout.desktop => 16.0,
-    };
-    final verticalPadding = switch (layout) {
-      _HomeLayout.mobile => 8.0,
-      _HomeLayout.tablet => 12.0,
-      _HomeLayout.desktop => 14.0,
-    };
-
-    return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
-      shadowColor: Colors.black.withValues(alpha: 0.18),
-      elevation: 4,
-      child: Container(
-        constraints: BoxConstraints(minHeight: minHeight),
-        padding: EdgeInsets.symmetric(
-          horizontal: horizontalPadding,
-          vertical: verticalPadding,
-        ),
-        child: _hasSecondaryContent ? _mergedContent(context) : _decoratedContent(),
-      ),
-    );
-  }
-
-  Widget _mergedContent(BuildContext context) {
-    final gap = layout == _HomeLayout.mobile ? 6.0 : 14.0;
-    final buttonHeight = layout == _HomeLayout.mobile ? 108.0 : 120.0;
-
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        _buttonLeadText(),
-        SizedBox(height: gap),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(999),
-            boxShadow: const [
-              BoxShadow(
-                color: Color(0x33003366),
-                blurRadius: 16,
-                offset: Offset(0, 8),
-              ),
-              BoxShadow(
-                color: Color(0x55215A8A),
-                blurRadius: 0,
-                offset: Offset(0, 5),
-              ),
+    return FractionallySizedBox(
+      widthFactor: compact ? 1 : 0.82,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(48),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFFFE875),
+              cpYellow,
+              cpYellowStrong,
             ],
           ),
-          child: SizedBox(
-            height: buttonHeight,
-            child: FilledButton(
-              onPressed: onTap,
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFFFE36E),
-                foregroundColor: const Color(0xFF005098),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                textStyle: TextStyle(
-                  fontSize: layout == _HomeLayout.mobile ? 34.0 : 38.0,
-                  fontWeight: FontWeight.w800,
-                ),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.85),
+            width: 1.6,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: cpYellowStrong.withValues(alpha: 0.42),
+              blurRadius: 24,
+              offset: const Offset(0, 10),
+            ),
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.18),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(48),
+            onTap: () => Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
+            child: SizedBox(
+              height: buttonHeight,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Center(
+                    child: Text(
+                      'Je participe',
+                      style: GoogleFonts.inter(
+                        color: cpBlueDark,
+                        fontSize: textSize,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.6,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: compact ? 18 : 30,
+                    child: Container(
+                      width: circleSize,
+                      height: circleSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.white.withValues(alpha: 0.92),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.08),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: Icon(
+                        Icons.arrow_forward_rounded,
+                        color: cpBlueDark,
+                        size: iconSize,
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              child: const Text('Je participe'),
             ),
           ),
         ),
-        SizedBox(height: gap),
-        _actionRow(
-          title: secondaryTitle!,
-          subtitle: secondarySubtitle!,
-        ),
-      ],
-    );
-  }
-
-  Widget _buttonLeadText() {
-    final sharedSize = layout == _HomeLayout.mobile ? 22.0 : 24.0;
-
-    return Column(
-      children: [
-        Text(
-          'EXPRIMEZ VOUS',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: _blue,
-            fontSize: sharedSize,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 1.2,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          'et CONTRIBUEZ.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: _blue,
-            fontSize: sharedSize,
-            fontWeight: FontWeight.w800,
-            letterSpacing: 0.6,
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _decoratedContent() {
-    return InkWell(
-      borderRadius: BorderRadius.circular(22),
-      onTap: onTap,
-      child: _actionRow(
-        title: title,
-        subtitle: subtitle,
       ),
     );
   }
+}
 
-  Widget _actionRow({
-    required String title,
-    required String subtitle,
-  }) {
-    final titleSize = switch (layout) {
-      _HomeLayout.mobile => 14.0,
-      _HomeLayout.tablet => 16.0,
-      _HomeLayout.desktop => 17.0,
-    };
-    final subtitleSize = layout == _HomeLayout.mobile ? 11.0 : 13.0;
+class _ConfidentialityLine extends StatelessWidget {
+  const _ConfidentialityLine();
 
-    return Row(
+  @override
+  Widget build(BuildContext context) {
+    final compact = isCompact(context);
+
+    return Column(
       children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text(
-                title,
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(
+              Icons.verified_user_outlined,
+              color: cpBlueDark,
+              size: 26,
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                'Plateforme de consultation citoyenne anonyme',
                 textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: _blue,
-                  fontSize: titleSize,
+                style: GoogleFonts.inter(
+                  color: cpBlueDark,
+                  fontSize: compact ? 15 : 17,
                   fontWeight: FontWeight.w800,
-                  height: 1.25,
                 ),
               ),
-              SizedBox(height: layout == _HomeLayout.mobile ? 2 : 3),
-              Text(
-                subtitle,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: const Color(0xFF52627A),
-                  fontSize: subtitleSize,
-                  height: 1.3,
-                ),
-              ),
-            ],
+            ),
+          ],
+        ),
+        const SizedBox(height: 4),
+        Text(
+          'Partagez vos avis en toute confidentialité',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: cpTextMuted,
+            fontSize: compact ? 13 : 14,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
@@ -657,79 +661,78 @@ class _ActionCard extends StatelessWidget {
 }
 
 class _AdministrationAccess extends StatelessWidget {
-  const _AdministrationAccess({required this.layout});
-
-  final _HomeLayout layout;
+  const _AdministrationAccess();
 
   @override
   Widget build(BuildContext context) {
-    final iconSize = layout == _HomeLayout.mobile ? 38.0 : 46.0;
-    final iconGlyphSize = layout == _HomeLayout.mobile ? 19.0 : 22.0;
-    final sideGap = layout == _HomeLayout.mobile ? 10.0 : 14.0;
-    final titleSize = layout == _HomeLayout.mobile ? 12.0 : 14.0;
-    final subtitleSize = layout == _HomeLayout.mobile ? 10.5 : 12.0;
+    final compact = isCompact(context);
 
     return Semantics(
       button: true,
       label: 'Accès administration',
-      child: GestureDetector(
+      child: InkWell(
+        borderRadius: BorderRadius.circular(24),
         onTap: () => _showAdministrationSheet(context),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Divider(
-                    color: Colors.white.withValues(alpha: 0.35),
-                    thickness: 1,
-                  ),
-                ),
-                SizedBox(width: sideGap),
-                Container(
-                  width: iconSize,
-                  height: iconSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.white.withValues(alpha: 0.15),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.35),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: Colors.white.withValues(alpha: 0.34),
+                      thickness: 1,
                     ),
                   ),
-                  child: Icon(
-                    Icons.lock_outline_rounded,
-                    color: Colors.white,
-                    size: iconGlyphSize,
+                  const SizedBox(width: 14),
+                  Container(
+                    width: compact ? 40 : 46,
+                    height: compact ? 40 : 46,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: 0.16),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: 0.30),
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.lock_outline_rounded,
+                      color: cpWhite,
+                      size: 20,
+                    ),
                   ),
-                ),
-                SizedBox(width: sideGap),
-                Expanded(
-                  child: Divider(
-                    color: Colors.white.withValues(alpha: 0.35),
-                    thickness: 1,
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Divider(
+                      color: Colors.white.withValues(alpha: 0.34),
+                      thickness: 1,
+                    ),
                   ),
+                ],
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Accès administration',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: cpWhite,
+                  fontSize: compact ? 12 : 14,
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
-            ),
-            SizedBox(height: layout == _HomeLayout.mobile ? 4 : 7),
-            Text(
-              'Accès administration',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: titleSize,
-                fontWeight: FontWeight.w700,
               ),
-            ),
-            SizedBox(height: layout == _HomeLayout.mobile ? 1 : 2),
-            Text(
-              'Espace réservé aux administrateurs',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.65),
-                fontSize: subtitleSize,
+              const SizedBox(height: 2),
+              Text(
+                'Espace réservé aux administrateurs',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.inter(
+                  color: Colors.white.withValues(alpha: 0.74),
+                  fontSize: compact ? 10.5 : 12,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -795,8 +798,8 @@ class _AdminChoice extends StatelessWidget {
       label: label,
       child: ListTile(
         minTileHeight: 54,
-        leading: Icon(icon, color: const Color(0xFF005098)),
-        title: Text(label),
+        leading: Icon(icon, color: cpBlueDark),
+        title: Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () {
           Navigator.of(context).pop();

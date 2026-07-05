@@ -6,6 +6,7 @@ import {
   isCommuneAdmin,
   isSuperAdmin,
   requireCommuneAdmin,
+  requireCommuneScope,
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
 import { notifySuperAdminsNewTicket, registerSuperAdminSubscription } from '../services/notificationService.js';
@@ -159,7 +160,7 @@ const messagePayload = ({ messageRef, ticketId, senderId, senderName, senderEmai
   readByAdmin,
 });
 
-router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin);
+router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin, requireCommuneScope);
 
 router.get('/tickets', async (req, res, next) => {
   try {

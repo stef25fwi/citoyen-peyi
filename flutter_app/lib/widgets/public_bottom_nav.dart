@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import '../services/new_poll_badge_service.dart';
 
@@ -23,6 +24,10 @@ class PublicBottomNav extends StatefulWidget {
 class _PublicBottomNavState extends State<PublicBottomNav> {
   final _badgeSvc = NewPollBadgeService.instance;
 
+  static const _activeColor = Color(0xFF0756B8);
+  static const _inactiveColor = Color(0xFF536173);
+  static const _activeBackground = Color(0xFFE7F5FF);
+
   @override
   void initState() {
     super.initState();
@@ -46,85 +51,148 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
 
   @override
   Widget build(BuildContext context) {
-    final baseTheme = Theme.of(context);
+    final compact = MediaQuery.of(context).size.width < 700;
 
-    return Material(
-      color: widget.backgroundColor,
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(34)),
-      elevation: 10,
-      shadowColor: Colors.black38,
-      clipBehavior: Clip.antiAlias,
-      child: Theme(
-        data: baseTheme.copyWith(
-          splashFactory: NoSplash.splashFactory,
-          splashColor: Colors.transparent,
-          highlightColor: Colors.transparent,
-          hoverColor: Colors.transparent,
-        ),
-        child: NavigationBarTheme(
-          data: NavigationBarThemeData(
-            overlayColor:
-                const WidgetStatePropertyAll<Color>(Colors.transparent),
-            backgroundColor: Colors.transparent,
-            indicatorColor: widget.indicatorColor,
-            iconTheme: WidgetStateProperty.resolveWith((states) {
-              final selected = states.contains(WidgetState.selected);
-              return IconThemeData(
-                size: selected ? 26 : 22,
-                color: selected
-                    ? const Color(0xFF005098)
-                    : const Color(0xFF1A2E50),
-              );
-            }),
-            labelTextStyle: WidgetStateProperty.resolveWith((states) {
-              final selected = states.contains(WidgetState.selected);
-              return TextStyle(
-                fontSize: 11,
-                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
-                color: selected
-                    ? const Color(0xFF005098)
-                    : const Color(0xFF1A2E50),
-              );
-            }),
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        compact ? 18 : 78,
+        0,
+        compact ? 18 : 78,
+        16,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: Container(
+          height: compact ? 88 : 96,
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.94),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: Colors.white.withValues(alpha: 0.85),
+              width: 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.10),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
+              ),
+            ],
           ),
           child: ValueListenableBuilder<bool>(
             valueListenable: _badgeSvc.hasNew,
             builder: (context, hasNew, _) {
-              return NavigationBar(
-                height: 74,
-                selectedIndex: widget.currentTab.index,
-                labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
-                onDestinationSelected: (index) => _handleTap(context, index),
-                destinations: [
-                  const NavigationDestination(
-                    icon: Icon(Icons.home_rounded),
-                    selectedIcon: Icon(Icons.home_filled),
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _NavItem(
+                    icon: Icons.home_rounded,
                     label: 'Accueil',
+                    selected: widget.currentTab == PublicTab.home,
+                    compact: compact,
+                    onTap: () => _handleTap(context, 0),
                   ),
-                  const NavigationDestination(
-                    icon: Icon(Icons.newspaper_outlined),
-                    selectedIcon: Icon(Icons.newspaper_rounded),
-                    label: 'Actualites',
+                  _NavItem(
+                    icon: Icons.article_outlined,
+                    label: 'Actualités',
+                    selected: widget.currentTab == PublicTab.news,
+                    compact: compact,
+                    onTap: () => _handleTap(context, 1),
                   ),
-                  NavigationDestination(
-                    icon: Badge(
-                      isLabelVisible: hasNew,
-                      child: const Icon(Icons.how_to_vote_outlined),
-                    ),
-                    selectedIcon: Badge(
-                      isLabelVisible: hasNew,
-                      child: const Icon(Icons.how_to_vote_rounded),
-                    ),
+                  _NavItem(
+                    icon: Icons.edit_square,
                     label: 'Donner mon avis',
+                    selected: widget.currentTab == PublicTab.vote,
+                    compact: compact,
+                    showBadge: hasNew,
+                    onTap: () => _handleTap(context, 2),
                   ),
-                  const NavigationDestination(
-                    icon: Icon(Icons.bar_chart_outlined),
-                    selectedIcon: Icon(Icons.bar_chart_rounded),
-                    label: 'Resultats',
+                  _NavItem(
+                    icon: Icons.bar_chart_rounded,
+                    label: 'Résultats',
+                    selected: widget.currentTab == PublicTab.results,
+                    compact: compact,
+                    onTap: () => _handleTap(context, 3),
                   ),
                 ],
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _NavItem extends StatelessWidget {
+  const _NavItem({
+    required this.icon,
+    required this.label,
+    required this.selected,
+    required this.compact,
+    required this.onTap,
+    this.showBadge = false,
+  });
+
+  final IconData icon;
+  final String label;
+  final bool selected;
+  final bool compact;
+  final bool showBadge;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final iconColor = selected
+        ? _PublicBottomNavState._activeColor
+        : _PublicBottomNavState._inactiveColor;
+    final iconSize = selected ? 32.0 : 27.0;
+    final labelStyle = GoogleFonts.inter(
+      fontSize: compact ? 10.5 : 12,
+      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+      color: iconColor,
+      letterSpacing: -0.1,
+    );
+
+    Widget iconWidget = Icon(icon, color: iconColor, size: iconSize);
+    if (showBadge) {
+      iconWidget = Badge(isLabelVisible: true, child: iconWidget);
+    }
+
+    return Expanded(
+      child: Center(
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(22),
+            onTap: onTap,
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 180),
+              curve: Curves.easeOut,
+              width: selected ? (compact ? 96 : 128) : (compact ? 74 : 92),
+              height: selected ? 76 : 72,
+              decoration: BoxDecoration(
+                color: selected
+                    ? _PublicBottomNavState._activeBackground
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  iconWidget,
+                  const SizedBox(height: 6),
+                  Text(
+                    label,
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: labelStyle,
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
       ),

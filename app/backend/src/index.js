@@ -16,6 +16,7 @@ import backupRoutes from './routes/backups.js';
 import { env, isFirebaseAdminConfigured, isSuperAdminConfigured, validateEnv } from './config/env.js';
 import { logger, httpLogger } from './services/logger.js';
 import { errorHandler, notFoundHandler, registerProcessHandlers } from './middlewares/errorHandler.js';
+import { requireAppCheck } from './middlewares/requireAppCheck.js';
 import { authRateLimiter, voteAccessRateLimiter, writeRateLimiter } from './middlewares/rateLimit.js';
 import { getFirebaseAdminDb } from './services/firebaseAdmin.js';
 
@@ -38,7 +39,7 @@ app.use(cors({
   origin: env.corsOrigins,
   credentials: true,
   methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-super-admin-key'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-super-admin-key', 'x-firebase-appcheck'],
   maxAge: 86400,
 }));
 // Parser JSON global limite a 100kb pour toutes les routes, SAUF l'upload de
@@ -99,14 +100,14 @@ app.get('/api/health', (_req, res) => {
   });
 });
 
-app.use('/api/auth', authRateLimiter, authRoutes);
+app.use('/api/auth', authRateLimiter, requireAppCheck, authRoutes);
 app.use('/api/citizen-access', writeRateLimiter, citizenAccessRoutes);
-app.use('/api/vote-access', voteAccessRateLimiter, voteAccessRoutes);
+app.use('/api/vote-access', voteAccessRateLimiter, requireAppCheck, voteAccessRoutes);
 app.use('/api/polls', writeRateLimiter, pollRoutes);
 app.use('/api/poll-ai', writeRateLimiter, pollAiRoutes);
 app.use('/api/news', writeRateLimiter, newsRoutes);
 app.use('/api/commune-branding', writeRateLimiter, communeBrandingRoutes);
-app.use('/api/notifications', voteAccessRateLimiter, notificationRoutes);
+app.use('/api/notifications', voteAccessRateLimiter, requireAppCheck, notificationRoutes);
 app.use('/api/admins', writeRateLimiter, adminRoutes);
 app.use('/api/controllers', writeRateLimiter, controllerRoutes);
 app.use('/api/support', writeRateLimiter, supportRoutes);

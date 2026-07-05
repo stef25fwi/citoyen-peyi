@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 
 import '../config/app_config.dart';
 import '../models/poll_models.dart';
+import 'firebase_auth_service.dart';
 
 class VoteAccessException implements Exception {
   const VoteAccessException(this.message, {this.errorCode = 'UNKNOWN'});
@@ -127,10 +128,15 @@ class VoteAccessService {
     }
 
     try {
+      final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
       final response = await _client
           .post(
             Uri.parse('${AppConfig.apiBaseUrl}/api/vote-access/validate'),
-            headers: const {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              if (appCheckToken != null && appCheckToken.isNotEmpty)
+                'X-Firebase-AppCheck': appCheckToken,
+            },
             body: jsonEncode({
               'code': code,
               if (pollId?.trim().isNotEmpty == true) 'pollId': pollId!.trim(),
@@ -175,10 +181,15 @@ class VoteAccessService {
     required String optionId,
   }) async {
     try {
+      final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
       final response = await _client
           .post(
             Uri.parse('${AppConfig.apiBaseUrl}/api/vote-access/submit'),
-            headers: const {'Content-Type': 'application/json'},
+            headers: {
+              'Content-Type': 'application/json',
+              if (appCheckToken != null && appCheckToken.isNotEmpty)
+                'X-Firebase-AppCheck': appCheckToken,
+            },
             body: jsonEncode({
               'accessToken': accessToken,
               'pollId': pollId,

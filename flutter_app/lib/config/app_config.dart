@@ -6,7 +6,7 @@ import '../firebase_options.dart';
 class AppConfig {
   static const bool appCheckEnabled = bool.fromEnvironment(
     'APP_CHECK_ENABLED',
-    defaultValue: false,
+    defaultValue: true,
   );
 
   static const bool _isProductBuild = bool.fromEnvironment('dart.vm.product');

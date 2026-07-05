@@ -51,6 +51,7 @@ test('validateEnv accepts production boot without CORS_ORIGIN when public origin
   process.env.PARTICIPATION_PEPPER = 'c'.repeat(48);
   process.env.ADMIN_ACCESS_PEPPER = 'd'.repeat(48);
   process.env.CONTROLLER_CODE_PEPPER = 'e'.repeat(48);
+  process.env.RATE_LIMIT_REDIS_URL = 'redis://127.0.0.1:6379';
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
   process.env.FIREBASE_ADMIN_CLIENT_EMAIL = 'demo@example.com';
   process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';
@@ -75,6 +76,7 @@ test('validateEnv refuses production boot with localhost CORS_ORIGIN', async () 
   process.env.PARTICIPATION_PEPPER = 'c'.repeat(48);
   process.env.ADMIN_ACCESS_PEPPER = 'd'.repeat(48);
   process.env.CONTROLLER_CODE_PEPPER = 'e'.repeat(48);
+  process.env.RATE_LIMIT_REDIS_URL = 'redis://127.0.0.1:6379';
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
   process.env.FIREBASE_ADMIN_CLIENT_EMAIL = 'demo@example.com';
   process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';
@@ -140,6 +142,7 @@ test('validateEnv accepts Cloud Run application default credentials', async () =
   process.env.PARTICIPATION_PEPPER = 'c'.repeat(48);
   process.env.ADMIN_ACCESS_PEPPER = 'd'.repeat(48);
   process.env.CONTROLLER_CODE_PEPPER = 'e'.repeat(48);
+  process.env.RATE_LIMIT_REDIS_URL = 'redis://127.0.0.1:6379';
   delete process.env.FIREBASE_ADMIN_PROJECT_ID;
   delete process.env.FIREBASE_ADMIN_CLIENT_EMAIL;
   delete process.env.FIREBASE_ADMIN_PRIVATE_KEY;
@@ -162,6 +165,7 @@ test('validateEnv refuses production boot with non-HTTPS CORS origin', async () 
   process.env.PARTICIPATION_PEPPER = 'c'.repeat(48);
   process.env.ADMIN_ACCESS_PEPPER = 'd'.repeat(48);
   process.env.CONTROLLER_CODE_PEPPER = 'e'.repeat(48);
+  process.env.RATE_LIMIT_REDIS_URL = 'redis://127.0.0.1:6379';
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
   process.env.FIREBASE_ADMIN_CLIENT_EMAIL = 'demo@example.com';
   process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';
@@ -183,6 +187,7 @@ test('validateEnv refuses production boot when peppers are not all distinct', as
   process.env.PARTICIPATION_PEPPER = 'c'.repeat(48);
   process.env.ADMIN_ACCESS_PEPPER = 'a'.repeat(48); // identique a ACCESS_CODE_PEPPER
   process.env.CONTROLLER_CODE_PEPPER = 'd'.repeat(48);
+  process.env.RATE_LIMIT_REDIS_URL = 'redis://127.0.0.1:6379';
   process.env.FIREBASE_ADMIN_PROJECT_ID = 'demo';
   process.env.FIREBASE_ADMIN_CLIENT_EMAIL = 'demo@example.com';
   process.env.FIREBASE_ADMIN_PRIVATE_KEY = 'PRIVATE';

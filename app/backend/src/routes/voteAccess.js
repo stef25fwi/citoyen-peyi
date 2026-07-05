@@ -84,14 +84,18 @@ export const signPollAccessToken = ({ pollId, communeId, participationHash }) =>
 });
 
 export const verifyAccessToken = (token) => {
-  const [body, signature] = String(token || '').split('.');
-  if (!body || !signature) return null;
-  const expected = crypto.createHmac('sha256', tokenSecret()).update(body).digest('base64url');
-  if (Buffer.byteLength(signature) !== Buffer.byteLength(expected)) return null;
-  if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
-  const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
-  if (!payload.exp || payload.exp < Date.now()) return null;
-  return payload;
+  try {
+    const [body, signature] = String(token || '').split('.');
+    if (!body || !signature) return null;
+    const expected = crypto.createHmac('sha256', tokenSecret()).update(body).digest('base64url');
+    if (Buffer.byteLength(signature) !== Buffer.byteLength(expected)) return null;
+    if (!crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected))) return null;
+    const payload = JSON.parse(Buffer.from(body, 'base64url').toString('utf8'));
+    if (!payload.exp || payload.exp < Date.now()) return null;
+    return payload;
+  } catch (_error) {
+    return null;
+  }
 };
 
 export const isPollOpen = (poll) => {

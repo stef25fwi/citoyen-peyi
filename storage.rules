@@ -5,24 +5,34 @@ service firebase.storage {
     function hasRole(role)    { return isAuth() && (request.auth.token.role == role || request.auth.token[role] == true); }
     function isAdminCommune() { return hasRole('adminCommune') || hasRole('commune_admin') || hasRole('admin'); }
     function isSuperAdmin()   { return hasRole('super_admin'); }
+    function userCommuneId()  {
+      return request.auth.token.communeId != null
+        ? request.auth.token.communeId
+        : request.auth.token.communeCode;
+    }
+    function hasCommuneScope() { return isAuth() && userCommuneId() is string && userCommuneId().size() > 0; }
+    function matchesCommuneScope(communeId) { return hasCommuneScope() && communeId == userCommuneId(); }
+    function supportTicketCommuneId(ticketId) {
+      return firestore.get(/databases/(default)/documents/support_tickets/$(ticketId)).data.communeId;
+    }
     function isImage()        { return request.resource.contentType.matches('image/(jpeg|jpg|png|webp)'); }
     function isPDF()          { return request.resource.contentType == 'application/pdf'; }
     function maxMB(n)         { return request.resource.size <= n * 1024 * 1024; }
 
     match /support_attachments/{ticketId}/{fileName} {
-      allow read:   if isAdminCommune() || isSuperAdmin();
-      allow create: if isAdminCommune() && (isImage() || isPDF()) && maxMB(10);
+      allow read:   if isSuperAdmin() || (isAdminCommune() && hasCommuneScope() && supportTicketCommuneId(ticketId) == userCommuneId());
+      allow create: if isAdminCommune() && hasCommuneScope() && supportTicketCommuneId(ticketId) == userCommuneId() && (isImage() || isPDF()) && maxMB(10);
       allow delete: if isSuperAdmin();
     }
     match /poll_assets/{communeId}/{pollId}/{fileName} {
       allow read:   if true;
-      allow create, update: if isAdminCommune() && (isImage() || isPDF()) && maxMB(20);
-      allow delete: if isAdminCommune() || isSuperAdmin();
+      allow create, update: if (isSuperAdmin() || (isAdminCommune() && matchesCommuneScope(communeId))) && (isImage() || isPDF()) && maxMB(20);
+      allow delete: if isSuperAdmin() || (isAdminCommune() && matchesCommuneScope(communeId));
     }
     match /news_assets/{communeId}/{newsId}/{fileName} {
       allow read:   if true;
-      allow create, update: if isAdminCommune() && isImage() && maxMB(5);
-      allow delete: if isAdminCommune() || isSuperAdmin();
+      allow create, update: if (isSuperAdmin() || (isAdminCommune() && matchesCommuneScope(communeId))) && isImage() && maxMB(5);
+      allow delete: if isSuperAdmin() || (isAdminCommune() && matchesCommuneScope(communeId));
     }
     match /{allPaths=**} {
       allow read, write: if false;

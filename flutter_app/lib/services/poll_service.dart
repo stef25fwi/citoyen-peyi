@@ -21,6 +21,7 @@ class PollService {
 
   static const _pollStorageKey = 'polls_v1';
   static const _pollCollection = 'polls';
+  static const _publicPollCollection = 'public_polls';
   static final PollService instance = PollService._();
 
   Future<void> _writeLocalPolls(List<PollModel> polls) {
@@ -83,7 +84,8 @@ class PollService {
     }
 
     try {
-      final snapshot = await db.collection(_pollCollection).get();
+      final collection = isAuthenticated ? _pollCollection : _publicPollCollection;
+      final snapshot = await db.collection(collection).get();
       if (snapshot.docs.isEmpty) {
         final polls = await _loadLocalPolls();
         return _filterByCommuneScope(polls, communeScope);

@@ -6,6 +6,7 @@ import {
   communeScopeFromUser,
   isSuperAdmin,
   requireCommuneAdmin,
+  requireCommuneScope,
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
 
@@ -21,7 +22,7 @@ const ensureConfigured = (_req, res, next) => {
 
 const sanitize = (value, max) => (typeof value === 'string' ? value.trim().substring(0, max) : '');
 
-router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin);
+router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin, requireCommuneScope);
 
 router.post('/', async (req, res, next) => {
   try {

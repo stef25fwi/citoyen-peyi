@@ -2,7 +2,6 @@ import express from 'express';
 import { Timestamp } from 'firebase-admin/firestore';
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 import { requireFirebaseAuth, requireSuperAdmin } from '../middlewares/requireFirebaseAuth.js';
-import { requireSuperAdminKey } from '../middlewares/requireSuperAdminKey.js';
 import { logger } from '../services/logger.js';
 import { COLLECTION_SPECS, collectSnapshot, restoreSnapshot } from '../services/backupService.js';
 import {
@@ -45,7 +44,7 @@ const parseCollections = (raw) => {
   return keys.length > 0 ? keys : null;
 };
 
-router.use(ensureConfigured, requireFirebaseAuth, requireSuperAdmin, requireSuperAdminKey);
+router.use(ensureConfigured, requireFirebaseAuth, requireSuperAdmin);
 
 // Cree un snapshot maintenant et le stocke dans le bucket prive.
 router.post('/', async (req, res, next) => {

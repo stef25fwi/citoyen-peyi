@@ -6,6 +6,7 @@ import {
   communeScopeFromUser,
   isSuperAdmin,
   requireCommuneAdmin,
+  requireCommuneScope,
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
 import { hashControllerCode } from '../services/keyHashing.js';
@@ -25,7 +26,7 @@ const sanitize = (value, max) => (typeof value === 'string' ? value.trim().subst
 
 export const generateControllerCode = () => {
   const hash = crypto.createHash('sha256').update(crypto.randomBytes(32)).digest('hex');
-  return hash.substring(0, 8).toUpperCase();
+  return hash.substring(0, 16).toUpperCase();
 };
 
 const stripLegacyPrefix = (value) => {
@@ -90,7 +91,7 @@ const generateUnusedControllerCode = async (db) => {
   throw error;
 };
 
-router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin);
+router.use(ensureConfigured, requireFirebaseAuth, requireCommuneAdmin, requireCommuneScope);
 
 const resolveCommuneScope = (req) => {
   if (isSuperAdmin(req.user)) {

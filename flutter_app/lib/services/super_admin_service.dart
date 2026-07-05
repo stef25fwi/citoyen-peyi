@@ -93,57 +93,15 @@ class SuperAdminService {
   static final SuperAdminService instance = SuperAdminService._();
 
   Future<String?> _superAdminIdToken() async {
-    String? token;
     try {
-      token = await FirebaseAuthService.instance.requireFreshIdToken();
+      final token = await FirebaseAuthService.instance.requireFreshIdToken();
+      if (token.isNotEmpty) {
+        return token;
+      }
     } catch (error) {
-      // On bascule vers l'exchange backend si le refresh local echoue.
       _debugLog('Echec refresh idToken local: $error');
     }
-    if (token != null && token.isNotEmpty) {
-      return token;
-    }
-
-    final key = runtimeSuperAdminKey;
-    if (key == null || key.trim().isEmpty) {
-      return null;
-    }
-
-    // Recrée une session Firebase super admin si la page a perdu currentUser.
-    final url = '${AppConfig.apiBaseUrl}/api/auth/super/exchange';
-    _debugLog('Endpoint appelé: $url');
-    late http.Response response;
-    try {
-      response = await http
-          .post(
-            Uri.parse(url),
-            headers: {
-              'Content-Type': 'application/json',
-              'x-super-admin-key': key,
-            },
-            body: jsonEncode({'accessKey': key}),
-          )
-          .timeout(const Duration(seconds: 10));
-    } catch (error) {
-      throw SuperAdminAuthException(
-          BackendDiagnostics.describeNetworkError(error, attemptedUrl: url));
-    }
-    _debugLog('Statut HTTP: ${response.statusCode}');
-
-    if (response.statusCode == 401 || response.statusCode == 403) {
-      return null;
-    }
-    if (response.statusCode < 200 || response.statusCode >= 300) {
-      throw SuperAdminAuthException(_readError(response.body));
-    }
-
-    final payload = jsonDecode(response.body) as Map<String, dynamic>;
-    final customToken = payload['customToken'] as String?;
-    if (customToken == null || customToken.isEmpty) {
-      return null;
-    }
-
-    return _firebaseIdTokenFromCustomToken(customToken);
+    return null;
   }
 
   Future<String> _firebaseIdTokenFromCustomToken(String customToken) async {
@@ -174,9 +132,7 @@ class SuperAdminService {
   static const _profilesKey = 'super_admin_profiles_v1';
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
-  String? _runtimeSuperAdminKey;
-
-  String? get runtimeSuperAdminKey => _runtimeSuperAdminKey;
+  String? get runtimeSuperAdminKey => null;
 
   void _debugLog(String message) {
     if (kDebugMode) {
@@ -185,7 +141,7 @@ class SuperAdminService {
   }
 
   void clearRuntimeSuperAdminKey() {
-    _runtimeSuperAdminKey = null;
+    // Aucune cle runtime persistante apres authentification.
   }
 
   /// Authenticate as super admin. La cle saisie est envoyee au backend comme
@@ -202,6 +158,7 @@ class SuperAdminService {
     }
 
     final url = '${AppConfig.apiBaseUrl}/api/auth/super/exchange';
+    final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
     late http.Response response;
     try {
       response = await http
@@ -210,6 +167,8 @@ class SuperAdminService {
             headers: {
               'Content-Type': 'application/json',
               'x-super-admin-key': trimmed,
+              if (appCheckToken != null && appCheckToken.isNotEmpty)
+                'X-Firebase-AppCheck': appCheckToken,
             },
             body: jsonEncode(const <String, dynamic>{}),
           )
@@ -233,8 +192,6 @@ class SuperAdminService {
 
     await _firebaseIdTokenFromCustomToken(customToken);
 
-    _runtimeSuperAdminKey = trimmed;
-
     await AuthSessionStore.instance.save(AuthSession(
       role: 'super_admin',
       admin: true,
@@ -248,7 +205,6 @@ class SuperAdminService {
   /// Retourne la liste des profils admin via le backend (preferred) ou via
   /// le cache local en lecture seule.
   Future<List<AdminProfileModel>> loadProfiles() async {
-    final superKey = _runtimeSuperAdminKey;
     String? token;
     try {
       token = await _superAdminIdToken();
@@ -262,8 +218,6 @@ class SuperAdminService {
           Uri.parse('${AppConfig.apiBaseUrl}/api/admins'),
           headers: {
             'Authorization': 'Bearer $token',
-            if (superKey != null && superKey.isNotEmpty)
-              'x-super-admin-key': superKey,
           },
         ).timeout(const Duration(seconds: 12));
         _debugLog('loadProfiles HTTP ${response.statusCode}');
@@ -395,8 +349,6 @@ class SuperAdminService {
 
     // La cle n'est plus requise apres login : le token Firebase (claim
     // super_admin) autorise cote backend. La cle reste envoyee si presente.
-    final superKey = _runtimeSuperAdminKey;
-
     final url = '${AppConfig.apiBaseUrl}$path';
     _debugLog('Endpoint appelé: $url');
     if (path == '/api/admins') {
@@ -428,8 +380,6 @@ class SuperAdminService {
             headers: {
               'Content-Type': 'application/json',
               'Authorization': 'Bearer $token',
-              if (superKey != null && superKey.isNotEmpty)
-                'x-super-admin-key': superKey,
             },
             body: jsonEncode(body),
           )
@@ -452,7 +402,6 @@ class SuperAdminService {
   }
 
   Future<void> _authorizedDelete(String path) async {
-    final superKey = _runtimeSuperAdminKey;
     final token = await _superAdminIdToken();
     if (token == null) {
       throw const SuperAdminAuthException(
@@ -462,8 +411,6 @@ class SuperAdminService {
       Uri.parse('${AppConfig.apiBaseUrl}$path'),
       headers: {
         'Authorization': 'Bearer $token',
-        if (superKey != null && superKey.isNotEmpty)
-          'x-super-admin-key': superKey,
       },
     ).timeout(const Duration(seconds: 12));
     if (response.statusCode < 200 || response.statusCode >= 300) {
