@@ -55,7 +55,14 @@ class CitoyenPeyiHomePage extends StatelessWidget {
             SafeArea(
               child: Column(
                 children: [
-                  const Expanded(child: _HomeContent()),
+                  Expanded(
+                    child: MediaQuery.of(context).size.height < 700
+                        ? const SingleChildScrollView(
+                            physics: BouncingScrollPhysics(),
+                            child: _HomeContent(),
+                          )
+                        : const _HomeContent(),
+                  ),
                   const PublicBottomNav(currentTab: PublicTab.home),
                 ],
               ),
@@ -205,11 +212,11 @@ class _HomeContent extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               const _LogoHeaderCard(),
-              SizedBox(height: shortHeight ? 8 : 10),
+              SizedBox(height: shortHeight ? 6 : 10),
               const _StatementCard(),
-              SizedBox(height: shortHeight ? 8 : 10),
+              SizedBox(height: shortHeight ? 6 : 10),
               const _ParticipationCard(),
-              SizedBox(height: shortHeight ? 8 : 10),
+              SizedBox(height: shortHeight ? 6 : 10),
               const _AdministrationAccess(),
             ],
           ),
@@ -263,7 +270,7 @@ class _LogoHeaderCard extends StatelessWidget {
     final shortHeight = MediaQuery.of(context).size.height < 860;
 
     return _GlassCard(
-      height: compact ? 152 : (shortHeight ? 220 : 260),
+      height: compact ? 138 : (shortHeight ? 220 : 260),
       padding: EdgeInsets.symmetric(horizontal: compact ? 18 : 28),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.88),
@@ -291,8 +298,8 @@ class _LogoHeaderCard extends StatelessWidget {
           image: true,
           child: Image.asset(
             CitoyenPeyiHomePage.logoPath,
-            width: compact ? 240 : (shortHeight ? 700 : 760),
-            height: compact ? 110 : (shortHeight ? 184 : 210),
+            width: compact ? 220 : (shortHeight ? 700 : 760),
+            height: compact ? 98 : (shortHeight ? 184 : 210),
             fit: BoxFit.contain,
           ),
         ),
@@ -308,22 +315,22 @@ class _StatementCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final compact = isCompact(context);
     final shortHeight = MediaQuery.of(context).size.height < 860;
-    final titleFont = compact ? 26.0 : 40.0;
-    final highlightFont = compact ? 36.0 : 54.0;
+    final titleFont = compact ? 24.0 : 40.0;
+    final highlightFont = compact ? 34.0 : 54.0;
 
     return SizedBox(
       width: double.infinity,
-      height: compact ? 178 : (shortHeight ? 198 : 235),
+      height: compact ? 168 : (shortHeight ? 198 : 235),
       child: Stack(
         clipBehavior: Clip.none,
         children: [
           _GlassCard(
-            height: compact ? 178 : (shortHeight ? 198 : 235),
+            height: compact ? 168 : (shortHeight ? 198 : 235),
             padding: EdgeInsets.fromLTRB(
               compact ? 22 : 34,
-              compact ? 24 : (shortHeight ? 20 : 28),
+              compact ? 18 : (shortHeight ? 20 : 28),
               compact ? 22 : 34,
-              compact ? 14 : (shortHeight ? 16 : 24),
+              compact ? 10 : (shortHeight ? 16 : 24),
             ),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(28),
@@ -369,9 +376,9 @@ class _StatementCard extends StatelessWidget {
                   ),
                 ),
                 Center(
-                  child: RichText(
+                  child: Text.rich(
                     textAlign: TextAlign.center,
-                    text: TextSpan(
+                    TextSpan(
                       style: GoogleFonts.inter(
                         height: 1.08,
                         fontWeight: FontWeight.w800,
@@ -447,12 +454,12 @@ class _ParticipationCard extends StatelessWidget {
     final shortHeight = MediaQuery.of(context).size.height < 860;
 
     return _GlassCard(
-      constraints: BoxConstraints(minHeight: compact ? 210 : (shortHeight ? 232 : 295)),
+      constraints: BoxConstraints(minHeight: compact ? 186 : (shortHeight ? 232 : 295)),
       padding: EdgeInsets.fromLTRB(
         compact ? 14 : 22,
-        compact ? 14 : (shortHeight ? 18 : 30),
+        compact ? 12 : (shortHeight ? 18 : 30),
         compact ? 14 : 22,
-        compact ? 14 : (shortHeight ? 16 : 28),
+        compact ? 12 : (shortHeight ? 16 : 28),
       ),
       decoration: BoxDecoration(
         color: Colors.white.withValues(alpha: 0.94),
@@ -482,7 +489,7 @@ class _ParticipationCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               color: cpBlueDark,
-              fontSize: compact ? 24 : 30,
+              fontSize: compact ? 22 : 30,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.4,
               height: 1.0,
@@ -494,7 +501,7 @@ class _ParticipationCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: GoogleFonts.inter(
               color: cpBlueDark,
-              fontSize: compact ? 23 : 28,
+              fontSize: compact ? 21 : 28,
               fontWeight: FontWeight.w900,
               letterSpacing: 0.4,
               height: 1.0,

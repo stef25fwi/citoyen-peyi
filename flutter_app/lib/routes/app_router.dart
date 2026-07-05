@@ -13,7 +13,10 @@ import '../pages/controller_login_page.dart';
 import '../pages/controller_dashboard_page.dart';
 import '../pages/controller_history_page.dart';
 import '../pages/controller_activity_dashboard_page.dart';
-import '../pages/citizen_dashboard_page.dart';
+import '../pages/citizen/citizen_consultations_page.dart';
+import '../pages/citizen/citizen_home_page.dart';
+import '../pages/citizen/citizen_poll_question_page.dart';
+import '../pages/citizen/citizen_welcome_page.dart';
 import '../pages/duplicate_request_detail_page.dart';
 import '../pages/duplicate_request_list_page.dart';
 import '../pages/home_page.dart';
@@ -166,13 +169,27 @@ class AppRouter {
         return _page(const LegalPage(), settings);
       case '/citizen':
         return _page(
-          CitizenDashboardPage(
+          CitizenHomePage(
               initialSession: _readCitizenAccessSession(settings.arguments)),
           settings,
         );
       case '/citizen/polls':
         return _page(
-          CitizenDashboardPage(
+          CitizenConsultationsPage(
+              initialSession: _readCitizenAccessSession(settings.arguments)),
+          settings,
+        );
+      case '/citizen/welcome':
+        return _page(const CitizenWelcomePage(), settings);
+      case '/citizen/home':
+        return _page(
+          CitizenHomePage(
+              initialSession: _readCitizenAccessSession(settings.arguments)),
+          settings,
+        );
+      case '/citizen/consultations':
+        return _page(
+          CitizenConsultationsPage(
               initialSession: _readCitizenAccessSession(settings.arguments)),
           settings,
         );
@@ -193,7 +210,7 @@ class AppRouter {
       case '/profile':
         return _page(
           const _LegacyRouteRedirectPage(
-            targetRoute: '/citizen',
+            targetRoute: '/citizen/home',
             message:
                 'Le profil public a ete remplace par l\'espace citoyen accessible avec un code valide.',
           ),
@@ -268,6 +285,13 @@ class AppRouter {
                   token: uri.pathSegments[1],
                   pollId: uri.queryParameters['poll']),
               settings);
+        }
+
+        if (uri.pathSegments.length == 3 &&
+            uri.pathSegments[0] == 'citizen' &&
+            uri.pathSegments[1] == 'consultation') {
+          final title = Uri.decodeComponent(uri.pathSegments[2]);
+          return _page(CitizenPollQuestionPage(title: title), settings);
         }
 
         return _placeholder(settings, 'Page introuvable', subtitle: uri.path);
