@@ -3,8 +3,10 @@ import 'package:flutter/material.dart';
 import '../models/poll_models.dart';
 import '../services/citizen_public_access_service.dart';
 import '../services/poll_service.dart';
+import '../widgets/citizen/citizen_bottom_nav.dart';
 import '../widgets/citizen_connect_invite.dart';
 import '../widgets/public_bottom_nav.dart';
+import 'public_news_page.dart';
 
 /// Resultats publics anonymes des consultations.
 ///
@@ -156,8 +158,35 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
           ),
         ),
       ),
-      bottomNavigationBar: const PublicBottomNav(currentTab: PublicTab.results),
+      bottomNavigationBar:
+          CitizenPublicAccessService.instance.currentSession != null
+              ? CitizenBottomNav(
+                  activeTab: CitizenNavTab.results,
+                  onTabSelected: _onCitizenNav,
+                )
+              : const PublicBottomNav(currentTab: PublicTab.results),
     );
+  }
+
+  void _onCitizenNav(CitizenNavTab tab) {
+    switch (tab) {
+      case CitizenNavTab.home:
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/citizen/welcome',
+          (route) => route.isFirst,
+        );
+        break;
+      case CitizenNavTab.news:
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (_) => const PublicNewsPage()),
+        );
+        break;
+      case CitizenNavTab.opinion:
+        Navigator.of(context).pushNamed('/citizen/consultations');
+        break;
+      case CitizenNavTab.results:
+        break;
+    }
   }
 }
 

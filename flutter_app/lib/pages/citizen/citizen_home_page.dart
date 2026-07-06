@@ -17,7 +17,13 @@ class CitizenHomePage extends StatelessWidget {
   final CitizenPublicAccessSession? initialSession;
 
   void _onNav(BuildContext context, CitizenNavTab tab) {
-    if (tab == CitizenNavTab.home) return;
+    if (tab == CitizenNavTab.home) {
+      Navigator.of(context).pushReplacementNamed(
+        '/citizen/welcome',
+        arguments: {'session': initialSession},
+      );
+      return;
+    }
 
     if (tab == CitizenNavTab.opinion) {
       Navigator.of(context).push(

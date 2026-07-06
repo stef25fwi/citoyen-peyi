@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../../services/citizen_public_access_service.dart';
-import 'citizen_home_page.dart';
 import 'citizen_poll_question_page.dart';
 import '../public_news_page.dart';
 import '../public_results_page.dart';
@@ -159,10 +158,9 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
     if (tab == _CitizenNavTab.opinion) return;
 
     if (tab == _CitizenNavTab.home) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => CitizenHomePage(initialSession: widget.initialSession),
-        ),
+      Navigator.of(context).pushReplacementNamed(
+        '/citizen/welcome',
+        arguments: {'session': widget.initialSession},
       );
       return;
     }
