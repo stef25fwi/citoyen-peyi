@@ -1,7 +1,9 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../services/citizen_public_access_service.dart';
 import '../services/firestore_data_service.dart';
+import '../widgets/citizen_connect_invite.dart';
 import '../widgets/public_bottom_nav.dart';
 
 /// Page actualités / projets de la commune.
@@ -67,6 +69,11 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
+                if (CitizenPublicAccessService.instance.currentSession == null)
+                  const CitizenConnectInvite(
+                    message:
+                        'Connectez-vous a votre compte pour suivre les actualites et participer aux consultations de votre commune.',
+                  ),
                 Text(
                   'Informations communales et projets soumis à consultation.',
                   style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),

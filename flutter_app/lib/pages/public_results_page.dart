@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 
 import '../models/poll_models.dart';
+import '../services/citizen_public_access_service.dart';
 import '../services/poll_service.dart';
+import '../widgets/citizen_connect_invite.dart';
 import '../widgets/public_bottom_nav.dart';
 
 /// Resultats publics anonymes des consultations.
@@ -88,6 +90,11 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
+                if (CitizenPublicAccessService.instance.currentSession == null)
+                  const CitizenConnectInvite(
+                    message:
+                        'Connectez-vous a votre compte pour participer aux consultations et suivre leurs resultats.',
+                  ),
                 Text(
                   'Resultats anonymes des consultations',
                   style: theme.textTheme.headlineMedium,
