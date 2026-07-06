@@ -105,6 +105,19 @@ class VoteAccessValidationResult {
   final List<EligiblePollModel> eligiblePolls;
 }
 
+VoteAccessValidationResult _validationFromPayload(
+  Map<String, dynamic> payload,
+  List<EligiblePollModel> eligiblePolls,
+) {
+  return VoteAccessValidationResult(
+    accessToken: payload['accessToken'] as String? ?? '',
+    accessCodeId: payload['accessCodeId'] as String? ?? '',
+    communeId: payload['communeId'] as String? ?? '',
+    communeName: payload['communeName'] as String? ?? '',
+    eligiblePolls: eligiblePolls,
+  );
+}
+
 class VoteSubmitResult {
   const VoteSubmitResult({required this.receiptId, required this.message});
 
@@ -159,13 +172,13 @@ class VoteAccessService {
               .where((poll) => poll.pollId.isNotEmpty)
               .toList();
 
-      return VoteAccessValidationResult(
-        accessToken: payload['accessToken'] as String? ?? '',
-        accessCodeId: payload['accessCodeId'] as String? ?? '',
-        communeId: payload['communeId'] as String? ?? '',
-        communeName: payload['communeName'] as String? ?? '',
-        eligiblePolls: eligiblePolls,
-      );
+      if (!pollIdSpecified(pollId) &&
+          response.statusCode == 409 &&
+          payload['errorCode'] == 'NO_OPEN_POLL') {
+        return _validationFromPayload(payload, const <EligiblePollModel>[]);
+      }
+
+      return _validationFromPayload(payload, eligiblePolls);
     } on VoteAccessException {
       rethrow;
     } catch (_) {
@@ -222,4 +235,6 @@ class VoteAccessService {
   }
 
   String? parseCodeOrQrUrl(String rawValue) => resolveVoteAccessCode(rawValue);
+
+  bool pollIdSpecified(String? pollId) => pollId?.trim().isNotEmpty == true;
 }
