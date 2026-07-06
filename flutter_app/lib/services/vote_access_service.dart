@@ -157,6 +157,16 @@ class VoteAccessService {
           )
           .timeout(const Duration(seconds: 12));
       final payload = jsonDecode(response.body) as Map<String, dynamic>;
+
+      // Un code valide pour une commune sans consultation ouverte renvoie 409
+      // NO_OPEN_POLL : on le traite comme une validation réussie avec zéro
+      // consultation afin d'ouvrir quand même l'espace citoyen (page bienvenue).
+      if (!pollIdSpecified(pollId) &&
+          response.statusCode == 409 &&
+          payload['errorCode'] == 'NO_OPEN_POLL') {
+        return _validationFromPayload(payload, const <EligiblePollModel>[]);
+      }
+
       if (response.statusCode < 200 ||
           response.statusCode >= 300 ||
           payload['ok'] != true) {
@@ -171,12 +181,6 @@ class VoteAccessService {
               .map(EligiblePollModel.fromJson)
               .where((poll) => poll.pollId.isNotEmpty)
               .toList();
-
-      if (!pollIdSpecified(pollId) &&
-          response.statusCode == 409 &&
-          payload['errorCode'] == 'NO_OPEN_POLL') {
-        return _validationFromPayload(payload, const <EligiblePollModel>[]);
-      }
 
       return _validationFromPayload(payload, eligiblePolls);
     } on VoteAccessException {
