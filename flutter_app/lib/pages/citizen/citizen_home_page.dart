@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
 import '../../services/citizen_public_access_service.dart';
+import '../public_news_page.dart';
+import '../public_results_page.dart';
 import '../../theme/citizen_design_tokens.dart';
 import '../../widgets/citizen/citizen_bottom_nav.dart';
 import '../../widgets/citizen/citizen_card.dart';
@@ -26,15 +28,20 @@ class CitizenHomePage extends StatelessWidget {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          tab == CitizenNavTab.news
-              ? 'Page Actualites a connecter.'
-              : 'Page Resultats a connecter.',
-        ),
-      ),
-    );
+    if (tab == CitizenNavTab.news) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PublicNewsPage()),
+      );
+      return;
+    }
+
+    if (tab == CitizenNavTab.results) {
+      Navigator.of(context).push(
+        MaterialPageRoute(builder: (_) => const PublicResultsPage()),
+      );
+      return;
+    }
+
   }
 
   @override
@@ -48,15 +55,16 @@ class CitizenHomePage extends StatelessWidget {
             _HomeHeader(communeName: initialSession?.communeName),
             Expanded(
               child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                 child: Column(
                   children: [
                     Transform.translate(
                       offset: const Offset(0, -18),
-                      child: _QuickActionsGrid(initialSession: initialSession),
+                      child: _QuickActionsPanel(initialSession: initialSession),
                     ),
                     const SizedBox(height: 2),
-                    _OpinionInfoCard(communeName: initialSession?.communeName),
+                    const _OpinionInfoCard(),
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -80,8 +88,6 @@ class _HomeHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final safeCommune = (communeName ?? '').trim();
-
     return Container(
       height: 238,
       width: double.infinity,
@@ -98,7 +104,63 @@ class _HomeHeader extends StatelessWidget {
             Row(
               children: [
                 IconButton(
-                  onPressed: () {},
+                  tooltip: 'Menu',
+                  onPressed: () async {
+                    final shouldLogout = await showModalBottomSheet<bool>(
+                      context: context,
+                      backgroundColor: Colors.white,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(
+                          top: Radius.circular(28),
+                        ),
+                      ),
+                      builder: (sheetContext) {
+                        return SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                const Text(
+                                  'Session citoyenne',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: CitizenDesignTokens.textDark,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+                                ListTile(
+                                  leading: const Icon(
+                                    Icons.logout_rounded,
+                                    color: CitizenDesignTokens.deepBlue,
+                                  ),
+                                  title: const Text('Se deconnecter'),
+                                  subtitle: const Text(
+                                    'Rester connecte jusqu\'a une deconnexion manuelle.',
+                                  ),
+                                  onTap: () => Navigator.of(sheetContext).pop(true),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
+                    );
+                    if (shouldLogout != true || !context.mounted) {
+                      return;
+                    }
+                    await CitizenPublicAccessService.instance.clearSession();
+                    if (!context.mounted) {
+                      return;
+                    }
+                    Navigator.of(context).pushNamedAndRemoveUntil(
+                      '/access',
+                      (route) => false,
+                    );
+                  },
                   icon: const Icon(
                     Icons.menu_rounded,
                     color: Colors.white,
@@ -109,6 +171,7 @@ class _HomeHeader extends StatelessWidget {
                   child: Center(
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
                       children: [
                         _MiniFlowerLogo(size: 48),
                         SizedBox(width: 8),
@@ -121,7 +184,14 @@ class _HomeHeader extends StatelessWidget {
                   clipBehavior: Clip.none,
                   children: [
                     IconButton(
-                      onPressed: () {},
+                      tooltip: 'Notifications',
+                      onPressed: () {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('Notifications a connecter.'),
+                          ),
+                        );
+                      },
                       icon: const Icon(
                         Icons.notifications_none_rounded,
                         color: Colors.white,
@@ -163,12 +233,10 @@ class _HomeHeader extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 10),
-            Text(
-              safeCommune.isEmpty
-                  ? 'Exprimez-vous, contribuez, participez\na la vie de votre collectivite.'
-                  : 'Exprimez-vous pour votre commune\net participez a la vie locale.',
+            const Text(
+              'Exprimez-vous, contribuez, participez\na la vie de votre collectivite.',
               textAlign: TextAlign.center,
-              style: const TextStyle(
+              style: TextStyle(
                 color: Colors.white,
                 fontSize: 15.5,
                 height: 1.3,
@@ -183,8 +251,8 @@ class _HomeHeader extends StatelessWidget {
   }
 }
 
-class _QuickActionsGrid extends StatelessWidget {
-  const _QuickActionsGrid({this.initialSession});
+class _QuickActionsPanel extends StatelessWidget {
+  const _QuickActionsPanel({this.initialSession});
 
   final CitizenPublicAccessSession? initialSession;
 
@@ -205,8 +273,8 @@ class _QuickActionsGrid extends StatelessWidget {
             title: 'Actualites',
             subtitle: 'Suivez les dernieres\ninformations',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Page Actualites a connecter.')),
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PublicNewsPage()),
               );
             },
           ),
@@ -229,8 +297,8 @@ class _QuickActionsGrid extends StatelessWidget {
             title: 'Resultats',
             subtitle: 'Decouvrez les resultats\ndes consultations',
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Page Resultats a connecter.')),
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const PublicResultsPage()),
               );
             },
           ),
@@ -265,55 +333,77 @@ class _QuickActionCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CitizenCard(
-      padding: const EdgeInsets.all(14),
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, size: 44, color: CitizenDesignTokens.primaryBlue),
-          const SizedBox(height: 12),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: CitizenDesignTokens.textDark,
-              fontSize: 15.5,
-              fontWeight: FontWeight.w900,
+    return Semantics(
+      button: true,
+      label: title,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: onTap,
+          child: Ink(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: CitizenDesignTokens.cardBorder),
+              boxShadow: const [
+                BoxShadow(
+                  color: Color(0x12005A9C),
+                  blurRadius: 16,
+                  offset: Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(icon, size: 44, color: CitizenDesignTokens.primaryBlue),
+                  const SizedBox(height: 12),
+                  Text(
+                    title,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: CitizenDesignTokens.textDark,
+                      fontSize: 15.5,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: 7),
+                  Text(
+                    subtitle,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      color: CitizenDesignTokens.textDark,
+                      fontSize: 12.5,
+                      height: 1.25,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(height: 7),
-          Text(
-            subtitle,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: CitizenDesignTokens.textDark,
-              fontSize: 12.5,
-              height: 1.25,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
 class _OpinionInfoCard extends StatelessWidget {
-  const _OpinionInfoCard({this.communeName});
-
-  final String? communeName;
+  const _OpinionInfoCard();
 
   @override
   Widget build(BuildContext context) {
-    final subtitle = (communeName ?? '').trim().isEmpty
-        ? 'Chaque avis est important\npour ameliorer notre\nterritoire.'
-        : 'Chaque avis est important\npour ameliorer votre\ncommune.';
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: CitizenDesignTokens.softBlueDecoration,
+      decoration: BoxDecoration(
+        color: CitizenDesignTokens.skyBlue,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: CitizenDesignTokens.cardBorder),
+      ),
       child: Row(
         children: [
           Container(
@@ -323,10 +413,34 @@ class _OpinionInfoCard extends StatelessWidget {
               color: Colors.white.withValues(alpha: 0.72),
               borderRadius: BorderRadius.circular(22),
             ),
-            child: const Icon(
-              Icons.verified_user_rounded,
-              size: 48,
-              color: CitizenDesignTokens.primaryBlue,
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Center(
+                  child: Icon(
+                    Icons.verified_user_rounded,
+                    size: 48,
+                    color: CitizenDesignTokens.primaryBlue,
+                  ),
+                ),
+                Positioned(
+                  right: 8,
+                  bottom: 8,
+                  child: Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      color: CitizenDesignTokens.yellow,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.lock_rounded,
+                      size: 15,
+                      color: CitizenDesignTokens.deepBlue,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(width: 18),
@@ -343,9 +457,9 @@ class _OpinionInfoCard extends StatelessWidget {
                   ),
                 ),
                 const SizedBox(height: 8),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
+                const Text(
+                  'Chaque avis est important\npour ameliorer notre\nterritoire.',
+                  style: TextStyle(
                     color: CitizenDesignTokens.textDark,
                     fontSize: 14,
                     height: 1.3,

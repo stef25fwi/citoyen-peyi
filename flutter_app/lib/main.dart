@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import 'app.dart';
 import 'services/auth_session_store.dart';
+import 'services/citizen_public_access_service.dart';
 import 'services/firebase_auth_service.dart';
 
 Future<void> main() async {
@@ -30,6 +31,13 @@ Future<void> main() async {
       await AuthSessionStore.instance.initialize();
     } catch (error, stackTrace) {
       debugPrint('[CitoyenPeyi] Session store init failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+
+    try {
+      await CitizenPublicAccessService.instance.initialize();
+    } catch (error, stackTrace) {
+      debugPrint('[CitoyenPeyi] Citizen session init failed: $error');
       debugPrintStack(stackTrace: stackTrace);
     }
 

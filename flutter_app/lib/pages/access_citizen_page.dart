@@ -50,6 +50,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
     }
     NewPollBadgeService.instance.markAllSeen();
     _loadStoredLegalAcceptance();
+    _resumeCitizenSessionIfAvailable();
   }
 
   @override
@@ -126,6 +127,8 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
           );
       if (!mounted) return;
 
+      await CitizenPublicAccessService.instance.saveSession(session);
+
       await CitizenCommuneStore.instance.save(
         communeId: session.communeId,
         communeName: session.communeName,
@@ -141,16 +144,8 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
 
       setState(() => _isSubmitting = false);
 
-      if (validation.eligiblePolls.length == 1) {
-        final poll = validation.eligiblePolls.first;
-        final routeCode = Uri.encodeComponent(session.accessCode);
-        final routePollId = Uri.encodeQueryComponent(poll.pollId);
-        Navigator.of(context).pushNamed('/vote/$routeCode?poll=$routePollId');
-        return;
-      }
-
       Navigator.of(context).pushNamed(
-        '/citizen',
+        '/citizen/welcome',
         arguments: {'session': session},
       );
     } on VoteAccessException catch (error) {
@@ -166,6 +161,24 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
         _isSubmitting = false;
       });
     }
+  }
+
+  void _resumeCitizenSessionIfAvailable() {
+    final session = CitizenPublicAccessService.instance.currentSession;
+    if (session == null) {
+      return;
+    }
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) {
+        return;
+      }
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        '/citizen/welcome',
+        (route) => false,
+        arguments: {'session': session},
+      );
+    });
   }
 
   @override

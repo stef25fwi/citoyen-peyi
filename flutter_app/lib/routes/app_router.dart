@@ -180,7 +180,12 @@ class AppRouter {
           settings,
         );
       case '/citizen/welcome':
-        return _page(const CitizenWelcomePage(), settings);
+        return _page(
+          CitizenWelcomePage(
+            initialSession: _readCitizenAccessSession(settings.arguments),
+          ),
+          settings,
+        );
       case '/citizen/home':
         return _page(
           CitizenHomePage(
@@ -363,7 +368,7 @@ class AppRouter {
       }
     }
 
-    return null;
+    return CitizenPublicAccessService.instance.currentSession;
   }
 
   static String? _readStringArgument(Object? arguments, String key) {

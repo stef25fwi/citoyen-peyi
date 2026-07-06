@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../../services/citizen_public_access_service.dart';
 import '../../theme/citizen_design_tokens.dart';
 import '../../widgets/citizen/citizen_primary_button.dart';
 
 class CitizenWelcomePage extends StatelessWidget {
-  const CitizenWelcomePage({super.key});
+  const CitizenWelcomePage({
+    super.key,
+    this.initialSession,
+  });
+
+  final CitizenPublicAccessSession? initialSession;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +34,32 @@ class CitizenWelcomePage extends StatelessWidget {
               ),
               child: Column(
                 children: [
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton.icon(
+                      onPressed: () async {
+                        await CitizenPublicAccessService.instance.clearSession();
+                        if (!context.mounted) {
+                          return;
+                        }
+                        Navigator.of(context).pushNamedAndRemoveUntil(
+                          '/access',
+                          (route) => false,
+                        );
+                      },
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                        color: Colors.white,
+                      ),
+                      label: const Text(
+                        'Se deconnecter',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(height: 10),
                   const _CitizenFlowerLogo(size: 112),
                   const SizedBox(height: 12),
@@ -71,7 +103,10 @@ class CitizenWelcomePage extends StatelessWidget {
                   CitizenPrimaryButton(
                     label: 'Je participe',
                     onPressed: () {
-                      Navigator.of(context).pushReplacementNamed('/citizen/home');
+                      Navigator.of(context).pushReplacementNamed(
+                        '/citizen/home',
+                        arguments: {'session': initialSession},
+                      );
                     },
                   ),
                   const SizedBox(height: 18),

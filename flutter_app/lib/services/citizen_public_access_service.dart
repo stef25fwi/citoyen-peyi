@@ -1,4 +1,7 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/poll_models.dart';
 import 'auth_session_store.dart';
@@ -27,6 +30,45 @@ class CitizenPublicAccessSession {
   final Set<String> votedPollIds;
 
   bool hasVoted(String pollId) => votedPollIds.contains(pollId);
+
+  Map<String, dynamic> toJson() => {
+        'accessCode': accessCode,
+        'communeId': communeId,
+        'communeName': communeName,
+        'openPolls': openPolls.map((item) => item.toJson()).toList(),
+        'votedPollIds': votedPollIds.toList(),
+      };
+
+  static CitizenPublicAccessSession? fromJson(Object? raw) {
+    if (raw is! Map<String, dynamic>) {
+      return null;
+    }
+
+    final accessCode = raw['accessCode'] as String? ?? '';
+    final communeId = raw['communeId'] as String? ?? '';
+    final communeName = raw['communeName'] as String? ?? '';
+    if (accessCode.trim().isEmpty || communeId.trim().isEmpty) {
+      return null;
+    }
+
+    final rawPolls = (raw['openPolls'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .map(PollModel.fromJson)
+        .toList(growable: false);
+    final votedPollIds = (raw['votedPollIds'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<String>()
+        .map((item) => item.trim())
+        .where((item) => item.isNotEmpty)
+        .toSet();
+
+    return CitizenPublicAccessSession(
+      accessCode: accessCode.trim(),
+      communeId: communeId.trim(),
+      communeName: communeName.trim(),
+      openPolls: rawPolls,
+      votedPollIds: votedPollIds,
+    );
+  }
 }
 
 class CitizenPollAccessRecord {
@@ -62,8 +104,47 @@ class CitizenPublicAccessService {
   static final CitizenPublicAccessService instance =
       CitizenPublicAccessService._();
   static const _pollAccessCollection = 'citizen_poll_access';
+  static const _storageKey = 'citizen_public_access_session_v1';
+
+  SharedPreferences? _preferences;
+  CitizenPublicAccessSession? _currentSession;
+
+  CitizenPublicAccessSession? get currentSession => _currentSession;
+
+  Future<void> initialize() async {
+    _preferences ??= await SharedPreferences.getInstance();
+    final raw = _preferences?.getString(_storageKey);
+    if (raw == null || raw.isEmpty) {
+      _currentSession = null;
+      return;
+    }
+
+    try {
+      final data = jsonDecode(raw) as Map<String, dynamic>;
+      _currentSession = CitizenPublicAccessSession.fromJson(data);
+    } catch (_) {
+      _currentSession = null;
+    }
+  }
+
+  Future<void> saveSession(CitizenPublicAccessSession session) async {
+    _preferences ??= await SharedPreferences.getInstance();
+    _currentSession = session;
+    await _preferences?.setString(_storageKey, jsonEncode(session.toJson()));
+  }
+
+  Future<void> clearSession() async {
+    _preferences ??= await SharedPreferences.getInstance();
+    _currentSession = null;
+    await _preferences?.remove(_storageKey);
+  }
 
   Future<CitizenPublicAccessSession?> openAccess(String rawCode) async {
+    final normalizedCode = resolveVoteAccessCode(rawCode) ?? rawCode.trim();
+    final session = _currentSession;
+    if (session != null && session.accessCode.trim() == normalizedCode.trim()) {
+      return session;
+    }
     return null;
   }
 
@@ -102,13 +183,15 @@ class CitizenPublicAccessService {
         .where((p) => p.hasVoted)
         .map((p) => p.pollId)
         .toSet();
-    return CitizenPublicAccessSession(
+    final session = CitizenPublicAccessSession(
       accessCode: code,
       communeId: validation.communeId,
       communeName: validation.communeName,
       openPolls: openPolls,
       votedPollIds: votedPollIds,
     );
+    _currentSession = session;
+    return session;
   }
 
   Future<bool> hasVoted(
