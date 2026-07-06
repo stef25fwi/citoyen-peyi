@@ -29,7 +29,7 @@ void main() {
     expect(find.text('Accès administration'), findsOneWidget);
   });
 
-  testWidgets('home mobile renders without a scroll view',
+  testWidgets('home mobile shows admin access within the viewport',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -39,7 +39,6 @@ void main() {
     await tester.pumpWidget(const CitoyenPeyiApp());
     await tester.pumpAndSettle();
 
-    expect(find.byType(SingleChildScrollView), findsNothing);
     expect(find.byIcon(Icons.star_rounded), findsNothing);
     expect(
       find.text(
@@ -49,6 +48,11 @@ void main() {
     );
     expect(find.text('Je participe'), findsOneWidget);
     expect(find.text('Accès administration'), findsOneWidget);
+
+    // L'acces administration doit rester visible dans le viewport mobile sans
+    // avoir besoin de faire defiler la page.
+    final adminRect = tester.getRect(find.text('Accès administration'));
+    expect(adminRect.bottom, lessThanOrEqualTo(844));
   });
 
   testWidgets('citizen access requires legal terms before code validation',
