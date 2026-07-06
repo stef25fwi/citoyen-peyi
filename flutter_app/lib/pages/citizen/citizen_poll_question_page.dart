@@ -43,6 +43,15 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
   void _submitStep() {
     if (!canContinue) return;
 
+    final pollId = widget.pollId?.trim();
+    final accessCode = widget.accessCode?.trim();
+    if (pollId != null && pollId.isNotEmpty && accessCode != null && accessCode.isNotEmpty) {
+      final routeCode = Uri.encodeComponent(accessCode);
+      final routePollId = Uri.encodeQueryComponent(pollId);
+      Navigator.of(context).pushReplacementNamed('/vote/$routeCode?poll=$routePollId');
+      return;
+    }
+
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => _CitizenQuestionStepBridgePage(title: widget.title),

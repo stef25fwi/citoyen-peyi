@@ -50,9 +50,109 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
   void _openConsultation(_ConsultationItem consultation) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => CitizenPollQuestionPage(title: consultation.title),
+        builder: (_) => CitizenPollQuestionPage(
+          title: consultation.title,
+          pollId: consultation.pollId,
+          accessCode: widget.initialSession?.accessCode,
+        ),
       ),
     );
+  }
+
+  List<_ConsultationItem> _resolvedConsultations() {
+    final session = widget.initialSession;
+    if (session == null) {
+      return consultations;
+    }
+
+    return session.openPolls
+        .map(
+          (poll) => _ConsultationItem(
+            title: poll.projectTitle,
+            displayTitle: _displayTitleFor(poll.projectTitle),
+            dateLabel: _formatCloseDate(poll.closeDate),
+            participationLabel: _participationLabel(poll.totalVoted),
+            badge: poll.totalVoted == 0 ? 'NOUVEAU' : null,
+            icon: _iconForPoll(poll.projectTitle, poll.question),
+            pollId: poll.id,
+          ),
+        )
+        .toList(growable: false);
+  }
+
+  String _displayTitleFor(String title) {
+    final normalized = title.trim();
+    if (normalized.length <= 26 || !normalized.contains(' ')) {
+      return normalized;
+    }
+
+    final words = normalized.split(RegExp(r'\s+'));
+    final buffer = StringBuffer();
+    var currentLength = 0;
+    for (final word in words) {
+      final nextLength = currentLength == 0 ? word.length : currentLength + 1 + word.length;
+      if (nextLength > 24 && currentLength > 0) {
+        buffer.write('\n');
+        buffer.write(word);
+        currentLength = word.length;
+      } else {
+        if (currentLength > 0) {
+          buffer.write(' ');
+        }
+        buffer.write(word);
+        currentLength = nextLength;
+      }
+    }
+    return buffer.toString();
+  }
+
+  String _formatCloseDate(String raw) {
+    final trimmed = raw.trim();
+    if (trimmed.isEmpty) {
+      return 'Date de cloture a confirmer';
+    }
+
+    final date = DateTime.tryParse(trimmed);
+    if (date == null) {
+      return 'Jusqu\'au $trimmed';
+    }
+
+    const months = [
+      'janvier',
+      'fevrier',
+      'mars',
+      'avril',
+      'mai',
+      'juin',
+      'juillet',
+      'aout',
+      'septembre',
+      'octobre',
+      'novembre',
+      'decembre',
+    ];
+    return 'Jusqu\'au ${date.day} ${months[date.month - 1]} ${date.year}';
+  }
+
+  String _participationLabel(int totalVoted) {
+    if (totalVoted <= 1) {
+      return '$totalVoted participation';
+    }
+    return '$totalVoted participations';
+  }
+
+  IconData _iconForPoll(String title, String question) {
+    final lower = '$title $question'.toLowerCase();
+    if (lower.contains('transport') || lower.contains('mobilite')) {
+      return Icons.directions_bus_rounded;
+    }
+    if (lower.contains('ecolog') || lower.contains('environ')) {
+      return Icons.public_rounded;
+    }
+    if (lower.contains('parc') || lower.contains('espace') || lower.contains('amenagement')) {
+      return Icons.park_rounded;
+    }
+    return Icons.forum_rounded;
   }
 
   void _onBottomNav(_CitizenNavTab tab) {
@@ -96,6 +196,8 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final resolvedConsultations = _resolvedConsultations();
+
     return Scaffold(
       backgroundColor: _CitizenColors.background,
       body: SafeArea(
@@ -128,12 +230,17 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
                     ),
                     const SizedBox(height: 18),
                     if (selectedFilter == 0)
-                      ...consultations.map(
-                        (consultation) => _ConsultationCard(
-                          consultation: consultation,
-                          onPressed: () => _openConsultation(consultation),
-                        ),
-                      )
+                      if (resolvedConsultations.isEmpty)
+                        const _EmptyState(
+                          message: 'Aucune consultation en cours pour le moment.',
+                        )
+                      else
+                        ...resolvedConsultations.map(
+                          (consultation) => _ConsultationCard(
+                            consultation: consultation,
+                            onPressed: () => _openConsultation(consultation),
+                          ),
+                        )
                     else
                       _EmptyState(
                         message: selectedFilter == 1
@@ -727,6 +834,7 @@ class _ConsultationItem {
     required this.dateLabel,
     required this.participationLabel,
     required this.icon,
+    this.pollId,
     this.badge,
   });
 
@@ -735,5 +843,6 @@ class _ConsultationItem {
   final String dateLabel;
   final String participationLabel;
   final IconData icon;
+  final String? pollId;
   final String? badge;
 }
