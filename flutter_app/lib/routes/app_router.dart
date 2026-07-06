@@ -296,7 +296,19 @@ class AppRouter {
             uri.pathSegments[0] == 'citizen' &&
             uri.pathSegments[1] == 'consultation') {
           final title = Uri.decodeComponent(uri.pathSegments[2]);
-          return _page(CitizenPollQuestionPage(title: title), settings);
+          final session = _readCitizenAccessSession(settings.arguments);
+          final pollId = uri.queryParameters['poll']?.trim();
+          final accessCode = uri.queryParameters['code']?.trim() ??
+              uri.queryParameters['accessCode']?.trim() ??
+              session?.accessCode;
+          return _page(
+            CitizenPollQuestionPage(
+              title: title,
+              pollId: pollId?.isNotEmpty == true ? pollId : null,
+              accessCode: accessCode?.isNotEmpty == true ? accessCode : null,
+            ),
+            settings,
+          );
         }
 
         return _placeholder(settings, 'Page introuvable', subtitle: uri.path);
