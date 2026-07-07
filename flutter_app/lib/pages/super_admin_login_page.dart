@@ -86,7 +86,8 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          color: const Color(0xFF6B21A8).withValues(alpha: 0.10),
+                          color:
+                              const Color(0xFF6B21A8).withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: const Icon(
@@ -98,13 +99,15 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                       const SizedBox(height: 12),
                       Text(
                         'Connexion Super Admin',
-                        style: theme.textTheme.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w700),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                            fontSize: 18, fontWeight: FontWeight.w700),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'Ce profil peut creer des comptes administrateurs rattaches a une commune et generer leurs cles de connexion.',
-                        style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573)),
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: const Color(0xFF5A6573)),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -123,24 +126,29 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                           hintText: 'Cle super administrateur',
                           filled: true,
                           fillColor: const Color(0xFFF8FAFC),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 14),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFD7E0EA)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFD7E0EA)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFF6B21A8), width: 1.6),
+                            borderSide: const BorderSide(
+                                color: Color(0xFF6B21A8), width: 1.6),
                           ),
                           suffixIcon: IconButton(
                             icon: Icon(_obscure
                                 ? Icons.visibility_outlined
                                 : Icons.visibility_off_outlined),
-                            onPressed: () => setState(() => _obscure = !_obscure),
+                            onPressed: () =>
+                                setState(() => _obscure = !_obscure),
                           ),
                         ),
                         onChanged: (_) => setState(() {}),
@@ -160,7 +168,8 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white),
                                 )
                               : const Icon(Icons.arrow_forward_rounded),
                           label: Text(_isSubmitting
@@ -171,7 +180,8 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                       const SizedBox(height: 8),
                       Text(
                         'La cle super administrateur est verifiee par le backend et n\'est jamais compilee dans Flutter.',
-                        style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF7A8796)),
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: const Color(0xFF7A8796)),
                         textAlign: TextAlign.center,
                       ),
                     ],

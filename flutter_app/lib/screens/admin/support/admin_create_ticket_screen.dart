@@ -7,7 +7,8 @@ class AdminCreateTicketScreen extends StatefulWidget {
   const AdminCreateTicketScreen({super.key});
 
   @override
-  State<AdminCreateTicketScreen> createState() => _AdminCreateTicketScreenState();
+  State<AdminCreateTicketScreen> createState() =>
+      _AdminCreateTicketScreenState();
 }
 
 class _AdminCreateTicketScreenState extends State<AdminCreateTicketScreen> {
@@ -37,12 +38,15 @@ class _AdminCreateTicketScreenState extends State<AdminCreateTicketScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Votre ticket a bien été envoyé au super administrateur.')),
+        const SnackBar(
+            content: Text(
+                'Votre ticket a bien été envoyé au super administrateur.')),
       );
       Navigator.of(context).pushReplacementNamed('/admin/support');
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error.toString())));
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -67,7 +71,9 @@ class _AdminCreateTicketScreenState extends State<AdminCreateTicketScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Text('Assistance interne', style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),
+                        Text('Assistance interne',
+                            style: theme.textTheme.headlineSmall
+                                ?.copyWith(fontWeight: FontWeight.w800)),
                         const SizedBox(height: 8),
                         const Text(
                           'Cette messagerie permet aux administrateurs communaux de contacter directement le super administrateur pour signaler un problème technique, une demande de modification ou un besoin d’accompagnement.',
@@ -75,43 +81,71 @@ class _AdminCreateTicketScreenState extends State<AdminCreateTicketScreen> {
                         const SizedBox(height: 20),
                         TextFormField(
                           controller: _subjectCtrl,
-                          decoration: const InputDecoration(labelText: 'Sujet du ticket *'),
-                          validator: (value) => (value == null || value.trim().length < 5) ? 'Sujet minimum 5 caractères.' : null,
+                          decoration: const InputDecoration(
+                              labelText: 'Sujet du ticket *'),
+                          validator: (value) =>
+                              (value == null || value.trim().length < 5)
+                                  ? 'Sujet minimum 5 caractères.'
+                                  : null,
                         ),
                         const SizedBox(height: 14),
                         DropdownButtonFormField<String>(
                           initialValue: _category,
-                          decoration: const InputDecoration(labelText: 'Catégorie *'),
-                          items: supportTicketCategories.map((item) => DropdownMenuItem(value: item, child: Text(item))).toList(),
-                          onChanged: _isSubmitting ? null : (value) => setState(() => _category = value),
-                          validator: (value) => value == null ? 'Catégorie obligatoire.' : null,
+                          decoration:
+                              const InputDecoration(labelText: 'Catégorie *'),
+                          items: supportTicketCategories
+                              .map((item) => DropdownMenuItem(
+                                  value: item, child: Text(item)))
+                              .toList(),
+                          onChanged: _isSubmitting
+                              ? null
+                              : (value) => setState(() => _category = value),
+                          validator: (value) =>
+                              value == null ? 'Catégorie obligatoire.' : null,
                         ),
                         const SizedBox(height: 14),
                         DropdownButtonFormField<String>(
                           initialValue: _priority,
-                          decoration: const InputDecoration(labelText: 'Priorité *'),
+                          decoration:
+                              const InputDecoration(labelText: 'Priorité *'),
                           items: const [
-                            DropdownMenuItem(value: 'faible', child: Text('Faible')),
-                            DropdownMenuItem(value: 'normale', child: Text('Normale')),
-                            DropdownMenuItem(value: 'urgente', child: Text('Urgente')),
+                            DropdownMenuItem(
+                                value: 'faible', child: Text('Faible')),
+                            DropdownMenuItem(
+                                value: 'normale', child: Text('Normale')),
+                            DropdownMenuItem(
+                                value: 'urgente', child: Text('Urgente')),
                           ],
-                          onChanged: _isSubmitting ? null : (value) => setState(() => _priority = value ?? 'normale'),
+                          onChanged: _isSubmitting
+                              ? null
+                              : (value) => setState(
+                                  () => _priority = value ?? 'normale'),
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _messageCtrl,
                           minLines: 5,
                           maxLines: 9,
-                          decoration: const InputDecoration(labelText: 'Message détaillé *'),
-                          validator: (value) => (value == null || value.trim().length < 10) ? 'Message minimum 10 caractères.' : null,
+                          decoration: const InputDecoration(
+                              labelText: 'Message détaillé *'),
+                          validator: (value) =>
+                              (value == null || value.trim().length < 10)
+                                  ? 'Message minimum 10 caractères.'
+                                  : null,
                         ),
                         const SizedBox(height: 20),
                         FilledButton.icon(
                           onPressed: _isSubmitting ? null : _submit,
                           icon: _isSubmitting
-                              ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              ? const SizedBox(
+                                  width: 16,
+                                  height: 16,
+                                  child: CircularProgressIndicator(
+                                      strokeWidth: 2, color: Colors.white))
                               : const Icon(Icons.send_rounded),
-                          label: Text(_isSubmitting ? 'Envoi...' : 'Envoyer au super admin'),
+                          label: Text(_isSubmitting
+                              ? 'Envoi...'
+                              : 'Envoyer au super admin'),
                         ),
                       ],
                     ),

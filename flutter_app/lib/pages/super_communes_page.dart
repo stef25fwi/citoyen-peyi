@@ -49,11 +49,13 @@ class _SuperCommunesPageState extends State<SuperCommunesPage> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                Text('Vue globale par commune', style: theme.textTheme.headlineSmall),
+                Text('Vue globale par commune',
+                    style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 Text(
                   'Suivi des agents de mobilisation citoyenne, codes generes, doublons et admins communaux rattaches.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B)),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: const Color(0xFF64748B)),
                 ),
                 const SizedBox(height: 18),
                 if (_isLoading)
@@ -65,7 +67,8 @@ class _SuperCommunesPageState extends State<SuperCommunesPage> {
                   const Card(
                     child: Padding(
                       padding: EdgeInsets.all(24),
-                      child: Text('Aucune activite de commune disponible pour le moment.'),
+                      child: Text(
+                          'Aucune activite de commune disponible pour le moment.'),
                     ),
                   )
                 else
@@ -87,8 +90,10 @@ class _SuperCommunesPageState extends State<SuperCommunesPage> {
 
   int _adminCountFor(CommuneAnalyticsModel commune) {
     return _admins.where((admin) {
-      final byCode = admin.communeCode != null && admin.communeCode == commune.communeId;
-      final byName = admin.communeName.toLowerCase() == commune.communeName.toLowerCase();
+      final byCode =
+          admin.communeCode != null && admin.communeCode == commune.communeId;
+      final byName =
+          admin.communeName.toLowerCase() == commune.communeName.toLowerCase();
       return byCode || byName;
     }).length;
   }
@@ -128,10 +133,16 @@ class _CommuneCard extends StatelessWidget {
               runSpacing: 12,
               children: [
                 _MetricChip(label: 'Admins', value: '$adminCount'),
-                _MetricChip(label: 'Agents actifs', value: '${commune.activeControllers}'),
-                _MetricChip(label: 'Codes generes', value: '${commune.codesGenerated}'),
-                _MetricChip(label: 'Doublons', value: '${commune.duplicatesDetected}'),
-                _MetricChip(label: 'Demandes pending', value: '${commune.pendingRequests}'),
+                _MetricChip(
+                    label: 'Agents actifs',
+                    value: '${commune.activeControllers}'),
+                _MetricChip(
+                    label: 'Codes generes', value: '${commune.codesGenerated}'),
+                _MetricChip(
+                    label: 'Doublons', value: '${commune.duplicatesDetected}'),
+                _MetricChip(
+                    label: 'Demandes pending',
+                    value: '${commune.pendingRequests}'),
                 _MetricChip(label: 'Taux doublons', value: '$duplicateRate%'),
               ],
             ),
@@ -145,7 +156,8 @@ class _CommuneCard extends StatelessWidget {
               runSpacing: 10,
               children: [
                 FilledButton.tonal(
-                  onPressed: () => Navigator.of(context).pushNamed('/super/activity/commune/${commune.communeId}'),
+                  onPressed: () => Navigator.of(context).pushNamed(
+                      '/super/activity/commune/${commune.communeId}'),
                   child: const Text('Voir activite'),
                 ),
                 OutlinedButton(
@@ -156,7 +168,8 @@ class _CommuneCard extends StatelessWidget {
                   child: const Text('Filtrer activite'),
                 ),
                 OutlinedButton(
-                  onPressed: () => Navigator.of(context).pushNamed('/super/admins'),
+                  onPressed: () =>
+                      Navigator.of(context).pushNamed('/super/admins'),
                   child: const Text('Admins communaux'),
                 ),
               ],
@@ -187,7 +200,11 @@ class _MetricChip extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(value, style: Theme.of(context).textTheme.titleMedium),
-          Text(label, style: Theme.of(context).textTheme.bodySmall?.copyWith(color: const Color(0xFF64748B))),
+          Text(label,
+              style: Theme.of(context)
+                  .textTheme
+                  .bodySmall
+                  ?.copyWith(color: const Color(0xFF64748B))),
         ],
       ),
     );

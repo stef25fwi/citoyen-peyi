@@ -183,10 +183,10 @@ class _ControllerCitizenAccessPageState
       if (!mounted) {
         return;
       }
-      final msg = error.message?.toString() ?? 'Informations minimales invalides.';
+      final msg =
+          error.message?.toString() ?? 'Informations minimales invalides.';
       setState(() => _lastMessage = msg);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(msg)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } catch (error) {
       if (!mounted) {
         return;
@@ -199,8 +199,7 @@ class _ControllerCitizenAccessPageState
           ? detail
           : 'Impossible de generer le code citoyen pour le moment.';
       setState(() => _lastMessage = msg);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(msg)));
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(msg)));
     } finally {
       if (mounted) {
         setState(() => _isSubmitting = false);

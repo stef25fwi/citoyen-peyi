@@ -8,10 +8,12 @@ class CommuneControllerActivityPage extends StatefulWidget {
   final String communeId;
 
   @override
-  State<CommuneControllerActivityPage> createState() => _CommuneControllerActivityPageState();
+  State<CommuneControllerActivityPage> createState() =>
+      _CommuneControllerActivityPageState();
 }
 
-class _CommuneControllerActivityPageState extends State<CommuneControllerActivityPage> {
+class _CommuneControllerActivityPageState
+    extends State<CommuneControllerActivityPage> {
   bool _isLoading = true;
   ControllerActivityAnalytics _analytics = const ControllerActivityAnalytics(
     logs: [],
@@ -33,7 +35,8 @@ class _CommuneControllerActivityPageState extends State<CommuneControllerActivit
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final analytics = await CitizenAccessCodeService.instance.getControllerAnalytics(
+    final analytics =
+        await CitizenAccessCodeService.instance.getControllerAnalytics(
       filters: ControllerActivityFilters(communeId: widget.communeId),
     );
     if (!mounted) return;
@@ -51,7 +54,8 @@ class _CommuneControllerActivityPageState extends State<CommuneControllerActivit
     }
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Agents de mobilisation citoyenne de la commune')),
+      appBar: AppBar(
+          title: const Text('Agents de mobilisation citoyenne de la commune')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 980),
@@ -60,13 +64,19 @@ class _CommuneControllerActivityPageState extends State<CommuneControllerActivit
               : ListView(
                   padding: const EdgeInsets.all(20),
                   children: [
-                    Text('Agents de mobilisation citoyenne', style: Theme.of(context).textTheme.headlineMedium),
+                    Text('Agents de mobilisation citoyenne',
+                        style: Theme.of(context).textTheme.headlineMedium),
                     const SizedBox(height: 16),
                     if (byController.isEmpty)
-                      const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Aucun agent de mobilisation citoyenne actif pour cette commune.')))
+                      const Card(
+                          child: Padding(
+                              padding: EdgeInsets.all(24),
+                              child: Text(
+                                  'Aucun agent de mobilisation citoyenne actif pour cette commune.')))
                     else
                       for (final entry in byController.entries)
-                        _ControllerCard(controllerId: entry.key, logs: entry.value),
+                        _ControllerCard(
+                            controllerId: entry.key, logs: entry.value),
                   ],
                 ),
         ),
@@ -84,10 +94,18 @@ class _ControllerCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = logs.isEmpty ? controllerId : logs.first.controllerName;
-    final generated = logs.where((item) => item.actionType == 'code_created').length;
-    final duplicates = logs.where((item) => item.actionType == 'duplicate_detected').length;
-    final pending = logs.where((item) => item.actionType == 'duplicate_request_created').length -
-        logs.where((item) => item.actionType == 'regeneration_approved' || item.actionType == 'regeneration_rejected').length;
+    final generated =
+        logs.where((item) => item.actionType == 'code_created').length;
+    final duplicates =
+        logs.where((item) => item.actionType == 'duplicate_detected').length;
+    final pending = logs
+            .where((item) => item.actionType == 'duplicate_request_created')
+            .length -
+        logs
+            .where((item) =>
+                item.actionType == 'regeneration_approved' ||
+                item.actionType == 'regeneration_rejected')
+            .length;
     final last = logs.isEmpty ? '-' : logs.first.createdAt;
 
     return Card(
@@ -99,7 +117,8 @@ class _ControllerCard extends StatelessWidget {
         ),
         isThreeLine: true,
         trailing: TextButton(
-          onPressed: () => Navigator.of(context).pushNamed('/super/activity', arguments: {'controllerId': controllerId}),
+          onPressed: () => Navigator.of(context).pushNamed('/super/activity',
+              arguments: {'controllerId': controllerId}),
           child: const Text('Voir activite'),
         ),
       ),

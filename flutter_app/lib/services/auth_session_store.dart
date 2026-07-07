@@ -61,7 +61,8 @@ class AuthSession {
   final AuthSessionCommune? commune;
 
   bool get isSuperAdmin => role == 'super_admin';
-  bool get isCommuneAdmin => role == 'commune_admin' || role == 'admin' || (admin && !isSuperAdmin);
+  bool get isCommuneAdmin =>
+      role == 'commune_admin' || role == 'admin' || (admin && !isSuperAdmin);
   bool get isAdmin => isCommuneAdmin;
   bool get isController => controller || role == 'controller';
   bool get isAuthenticated => isAdmin || isController;
@@ -71,7 +72,8 @@ class AuthSession {
   bool hasAnyRole(Iterable<String> roles) {
     for (final roleName in roles) {
       if (roleName == 'super_admin' && isSuperAdmin) return true;
-      if ((roleName == 'admin' || roleName == 'commune_admin') && isCommuneAdmin) return true;
+      if ((roleName == 'admin' || roleName == 'commune_admin') &&
+          isCommuneAdmin) return true;
       if (roleName == 'controller' && isController) return true;
     }
     return false;
@@ -82,7 +84,8 @@ class AuthSession {
         'admin': admin,
         'controller': controller,
         'mode': mode,
-        'sessionCreatedAt': sessionCreatedAt ?? DateTime.now().toIso8601String(),
+        'sessionCreatedAt':
+            sessionCreatedAt ?? DateTime.now().toIso8601String(),
         'adminScope': adminScope,
         'id': id,
         'label': label,

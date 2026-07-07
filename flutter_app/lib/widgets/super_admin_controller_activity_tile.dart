@@ -29,7 +29,10 @@ class SuperAdminControllerActivityTile extends StatelessWidget {
                 children: [
                   const Icon(Icons.timeline_rounded, color: Color(0xFF0F6D8F)),
                   const SizedBox(width: 10),
-                  Expanded(child: Text('Activite des agents de mobilisation citoyenne', style: theme.textTheme.titleLarge)),
+                  Expanded(
+                      child: Text(
+                          'Activite des agents de mobilisation citoyenne',
+                          style: theme.textTheme.titleLarge)),
                 ],
               ),
               const SizedBox(height: 14),
@@ -38,10 +41,16 @@ class SuperAdminControllerActivityTile extends StatelessWidget {
                 runSpacing: 10,
                 children: [
                   _Metric(label: 'Codes', value: analytics.totalCodesGenerated),
-                  _Metric(label: 'Doublons', value: analytics.duplicatesDetected),
-                  _Metric(label: 'Demandes', value: analytics.regenerationRequests),
-                  _Metric(label: 'Validees', value: analytics.regenerationsApproved),
-                  _Metric(label: 'Refusees', value: analytics.regenerationsRejected),
+                  _Metric(
+                      label: 'Doublons', value: analytics.duplicatesDetected),
+                  _Metric(
+                      label: 'Demandes', value: analytics.regenerationRequests),
+                  _Metric(
+                      label: 'Validees',
+                      value: analytics.regenerationsApproved),
+                  _Metric(
+                      label: 'Refusees',
+                      value: analytics.regenerationsRejected),
                   _Metric(label: 'Connexions', value: analytics.loginCodesUsed),
                 ],
               ),

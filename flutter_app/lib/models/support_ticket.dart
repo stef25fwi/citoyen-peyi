@@ -169,7 +169,8 @@ class SupportTicket {
       unreadForAdmin: data['unreadForAdmin'] as bool? ?? false,
       createdAt: _readDateString(data['createdAt']),
       updatedAt: _readDateString(data['updatedAt']),
-      closedAt: data['closedAt'] == null ? null : _readDateString(data['closedAt']),
+      closedAt:
+          data['closedAt'] == null ? null : _readDateString(data['closedAt']),
       closedBy: data['closedBy'] == null ? null : _readString(data['closedBy']),
     );
   }

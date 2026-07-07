@@ -33,7 +33,8 @@ class BrowserStorageService {
     }
   }
 
-  Future<void> writeJsonList(String key, List<Map<String, dynamic>> value) async {
+  Future<void> writeJsonList(
+      String key, List<Map<String, dynamic>> value) async {
     final prefs = await _prefs();
     await prefs.setString(key, jsonEncode(value));
   }

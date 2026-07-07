@@ -102,9 +102,8 @@ class SupportTicketService {
         'priority': priority,
         'message': normalizedMessage,
         'communeName': communeName,
-        'createdByName': session?.label ??
-            user?.displayName ??
-            'Administrateur communal',
+        'createdByName':
+            session?.label ?? user?.displayName ?? 'Administrateur communal',
         'createdByEmail': user?.email ?? '',
       },
     );

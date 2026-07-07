@@ -26,11 +26,9 @@ class FirebaseAuthService {
     }
   }
 
-
   bool get isSignedIn => FirebaseAuth.instance.currentUser != null;
 
   String? get currentUid => FirebaseAuth.instance.currentUser?.uid;
-
 
   bool _initialized = false;
 
@@ -42,7 +40,8 @@ class FirebaseAuthService {
     }
 
     if (Firebase.apps.isEmpty) {
-      await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+      await Firebase.initializeApp(
+          options: DefaultFirebaseOptions.currentPlatform);
     }
 
     // Garder la session connectee tant que l'utilisateur ne se deconnecte pas
@@ -53,7 +52,8 @@ class FirebaseAuthService {
         await FirebaseAuth.instance.setPersistence(Persistence.LOCAL);
       } catch (error) {
         if (kDebugMode) {
-          debugPrint('[FirebaseAuthService] setPersistence(LOCAL) failed: $error');
+          debugPrint(
+              '[FirebaseAuthService] setPersistence(LOCAL) failed: $error');
         }
       }
     }
@@ -69,7 +69,8 @@ class FirebaseAuthService {
         // L'enforcement cote console determinera si Firestore/Auth refusent
         // les appels non attestes.
         if (kDebugMode) {
-          debugPrint('[FirebaseAuthService] AppCheck activation failed: $error');
+          debugPrint(
+              '[FirebaseAuthService] AppCheck activation failed: $error');
         }
       }
     }
@@ -207,7 +208,7 @@ class FirebaseAuthService {
   /// Returns a fresh Firebase ID token suitable for the Authorization header.
   /// Forces refresh when the cached token is older than the threshold so
   /// long-lived sessions do not silently drift past the 1h expiry.
-  
+
   Future<String> requireFreshIdToken() async {
     await ensureInitialized();
     try {
@@ -322,9 +323,11 @@ class FirebaseAuthService {
       final payload = jsonDecode(body) as Map<String, dynamic>;
       final error = payload['error'];
       if (error is Map<String, dynamic>) {
-        return error['message'] as String? ?? 'Authentification Firebase refusée.';
+        return error['message'] as String? ??
+            'Authentification Firebase refusée.';
       }
-      return payload['message'] as String? ?? 'Authentification Firebase refusée.';
+      return payload['message'] as String? ??
+          'Authentification Firebase refusée.';
     } catch (_) {
       return 'Authentification Firebase refusée.';
     }

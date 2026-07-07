@@ -28,7 +28,8 @@ class CitizenHomePage extends StatelessWidget {
     if (tab == CitizenNavTab.opinion) {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => CitizenConsultationsPage(initialSession: initialSession),
+          builder: (_) =>
+              CitizenConsultationsPage(initialSession: initialSession),
         ),
       );
       return;
@@ -47,7 +48,6 @@ class CitizenHomePage extends StatelessWidget {
       );
       return;
     }
-
   }
 
   @override
@@ -147,7 +147,8 @@ class _HomeHeader extends StatelessWidget {
                                   subtitle: const Text(
                                     'Rester connecte jusqu\'a une deconnexion manuelle.',
                                   ),
-                                  onTap: () => Navigator.of(sheetContext).pop(true),
+                                  onTap: () =>
+                                      Navigator.of(sheetContext).pop(true),
                                 ),
                               ],
                             ),

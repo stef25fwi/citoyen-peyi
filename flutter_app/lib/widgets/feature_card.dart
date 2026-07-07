@@ -42,7 +42,8 @@ class FeatureCard extends StatelessWidget {
             const SizedBox(height: 10),
             Text(
               description,
-              style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
+              style: theme.textTheme.bodyMedium
+                  ?.copyWith(color: const Color(0xFF5A6573)),
             ),
           ],
         ),

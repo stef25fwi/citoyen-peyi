@@ -25,7 +25,8 @@ class VoteConfirmationPage extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const Icon(Icons.verified_rounded, size: 52, color: Color(0xFF2E7D32)),
+                    const Icon(Icons.verified_rounded,
+                        size: 52, color: Color(0xFF2E7D32)),
                     const SizedBox(height: 16),
                     Text(
                       'Votre vote est enregistre anonymement.',
@@ -50,10 +51,14 @@ class VoteConfirmationPage extends StatelessWidget {
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             children: [
-                              if (pollTitle != null) Text('Consultation: $pollTitle', textAlign: TextAlign.center),
+                              if (pollTitle != null)
+                                Text('Consultation: $pollTitle',
+                                    textAlign: TextAlign.center),
                               if (communeName != null) ...[
-                                if (pollTitle != null) const SizedBox(height: 6),
-                                Text('Commune: $communeName', textAlign: TextAlign.center),
+                                if (pollTitle != null)
+                                  const SizedBox(height: 6),
+                                Text('Commune: $communeName',
+                                    textAlign: TextAlign.center),
                               ],
                             ],
                           ),
@@ -64,13 +69,15 @@ class VoteConfirmationPage extends StatelessWidget {
                     SizedBox(
                       width: double.infinity,
                       child: FilledButton(
-                        onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil('/access', (_) => false),
+                        onPressed: () => Navigator.of(context)
+                            .pushNamedAndRemoveUntil('/access', (_) => false),
                         child: const Text('Acceder a un autre code citoyen'),
                       ),
                     ),
                     const SizedBox(height: 10),
                     TextButton(
-                      onPressed: () => Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false),
+                      onPressed: () => Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/', (_) => false),
                       child: const Text('Retour a l\'accueil'),
                     ),
                   ],

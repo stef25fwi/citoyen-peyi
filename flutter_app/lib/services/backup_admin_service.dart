@@ -122,7 +122,8 @@ class BackupAdminService {
   }
 
   Future<String> signedDownloadUrl(String id) async {
-    final payload = await _request('GET', '/api/backups/${Uri.encodeComponent(id)}');
+    final payload =
+        await _request('GET', '/api/backups/${Uri.encodeComponent(id)}');
     final url = payload['url'] as String?;
     if (url == null || url.isEmpty) {
       throw const BackupAdminException('URL de telechargement indisponible.');
@@ -154,7 +155,8 @@ class BackupAdminService {
     Object? body,
   }) async {
     if (AppConfig.apiBaseUrl.isEmpty) {
-      throw const BackupAdminException('Backend non configure (API_BASE_URL vide).');
+      throw const BackupAdminException(
+          'Backend non configure (API_BASE_URL vide).');
     }
 
     final token =

@@ -125,7 +125,8 @@ class _ControllerActivityDashboardPageState
         .toList();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Activite des agents de mobilisation citoyenne')),
+      appBar: AppBar(
+          title: const Text('Activite des agents de mobilisation citoyenne')),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1120),
@@ -161,8 +162,8 @@ class _ControllerActivityDashboardPageState
                       width: 260,
                       child: DropdownButtonFormField<String>(
                         initialValue: _controllerId,
-                        decoration:
-                            const InputDecoration(labelText: 'Agent de mobilisation citoyenne'),
+                        decoration: const InputDecoration(
+                            labelText: 'Agent de mobilisation citoyenne'),
                         items: [
                           const DropdownMenuItem<String>(
                               value: null, child: Text('Tous')),
@@ -272,7 +273,8 @@ class _ControllerActivityDashboardPageState
                       final byController = _ActivityBreakdownCard(
                         title: 'Activite par agent de mobilisation citoyenne',
                         items: _analytics.activityByController,
-                        emptyText: 'Aucun agent de mobilisation citoyenne actif sur la periode.',
+                        emptyText:
+                            'Aucun agent de mobilisation citoyenne actif sur la periode.',
                       );
                       if (!wide) {
                         return Column(children: [
@@ -355,10 +357,26 @@ class _ActionTypePieChart extends StatelessWidget {
     final theme = Theme.of(context);
     final data = <(String, int, Color)>[
       ('Codes générés', analytics.totalCodesGenerated, const Color(0xFF0F6D8F)),
-      ('Doublons détectés', analytics.duplicatesDetected, const Color(0xFFEAB308)),
-      ('Demandes régén.', analytics.regenerationRequests, const Color(0xFF8B5CF6)),
-      ('Régén. validées', analytics.regenerationsApproved, const Color(0xFF15803D)),
-      ('Régén. refusées', analytics.regenerationsRejected, const Color(0xFFDC2626)),
+      (
+        'Doublons détectés',
+        analytics.duplicatesDetected,
+        const Color(0xFFEAB308)
+      ),
+      (
+        'Demandes régén.',
+        analytics.regenerationRequests,
+        const Color(0xFF8B5CF6)
+      ),
+      (
+        'Régén. validées',
+        analytics.regenerationsApproved,
+        const Color(0xFF15803D)
+      ),
+      (
+        'Régén. refusées',
+        analytics.regenerationsRejected,
+        const Color(0xFFDC2626)
+      ),
       ('Codes utilisés', analytics.loginCodesUsed, const Color(0xFF0891B2)),
     ];
     final total = data.fold<int>(0, (sum, item) => sum + item.$2);

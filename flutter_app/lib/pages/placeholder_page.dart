@@ -29,13 +29,18 @@ class PlaceholderPage extends StatelessWidget {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.construction_rounded, size: 52, color: theme.colorScheme.primary),
+                    Icon(Icons.construction_rounded,
+                        size: 52, color: theme.colorScheme.primary),
                     const SizedBox(height: 18),
-                    Text(title, style: theme.textTheme.headlineMedium, textAlign: TextAlign.center),
+                    Text(title,
+                        style: theme.textTheme.headlineMedium,
+                        textAlign: TextAlign.center),
                     const SizedBox(height: 12),
                     Text(
-                      subtitle ?? 'Cette route est branchee dans Flutter et attend maintenant le portage fonctionnel de son ecran React equivalent.',
-                      style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
+                      subtitle ??
+                          'Cette route est branchee dans Flutter et attend maintenant le portage fonctionnel de son ecran React equivalent.',
+                      style: theme.textTheme.bodyLarge
+                          ?.copyWith(color: const Color(0xFF5A6573)),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 20),

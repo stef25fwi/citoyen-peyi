@@ -94,7 +94,9 @@ class TicketCard extends StatelessWidget {
               ),
               const SizedBox(height: 12),
               Text(
-                ticket.lastMessage.isEmpty ? 'Aucun message.' : ticket.lastMessage,
+                ticket.lastMessage.isEmpty
+                    ? 'Aucun message.'
+                    : ticket.lastMessage,
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodyMedium?.copyWith(

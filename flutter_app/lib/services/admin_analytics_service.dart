@@ -44,25 +44,31 @@ class AdminAnalyticsSummary {
   final List<PollAccessStats> accessStats;
   final List<DailyVotesMetric> dailyVotes;
 
-  int get totalVotes => polls.fold<int>(0, (sum, poll) => sum + poll.totalVoted);
+  int get totalVotes =>
+      polls.fold<int>(0, (sum, poll) => sum + poll.totalVoted);
 
-  int get totalVoters => polls.fold<int>(0, (sum, poll) => sum + poll.totalVoters);
+  int get totalVoters =>
+      polls.fold<int>(0, (sum, poll) => sum + poll.totalVoters);
 
   int get activeCount => polls.where((item) => item.status == 'active').length;
 
   int get closedCount => polls.where((item) => item.status == 'closed').length;
 
-  int get archivedCount => polls.where((item) => item.status == 'archived').length;
+  int get archivedCount =>
+      polls.where((item) => item.status == 'archived').length;
 
   int get draftCount => polls.where((item) => item.status == 'draft').length;
 
   int get completedCount => closedCount + archivedCount;
 
-  int get totalValidatedCodes => accessStats.fold<int>(0, (sum, item) => sum + item.total);
+  int get totalValidatedCodes =>
+      accessStats.fold<int>(0, (sum, item) => sum + item.total);
 
-  int get totalActivatedCodes => accessStats.fold<int>(0, (sum, item) => sum + item.activated);
+  int get totalActivatedCodes =>
+      accessStats.fold<int>(0, (sum, item) => sum + item.activated);
 
-  int get totalUsedCodes => accessStats.fold<int>(0, (sum, item) => sum + item.voted);
+  int get totalUsedCodes =>
+      accessStats.fold<int>(0, (sum, item) => sum + item.voted);
 
   double get averageParticipation {
     final eligiblePolls = polls.where((item) => item.totalVoters > 0).toList();
@@ -91,12 +97,10 @@ class AdminAnalyticsSummary {
   double get votesMomentumDelta {
     if (dailyVotes.length < 4) return 0;
     final half = dailyVotes.length ~/ 2;
-    final older = dailyVotes
-        .take(half)
-        .fold<int>(0, (sum, item) => sum + item.votes);
-    final recent = dailyVotes
-        .skip(half)
-        .fold<int>(0, (sum, item) => sum + item.votes);
+    final older =
+        dailyVotes.take(half).fold<int>(0, (sum, item) => sum + item.votes);
+    final recent =
+        dailyVotes.skip(half).fold<int>(0, (sum, item) => sum + item.votes);
     if (older == 0) return recent == 0 ? 0 : 100;
     return ((recent - older) / older) * 100;
   }
@@ -140,7 +144,8 @@ class AdminAnalyticsService {
     final accessStats = <PollAccessStats>[];
     final votesByDay = <String, int>{};
 
-    final activeCodes = citizenCodes.where((item) => item.status == 'active').length;
+    final activeCodes =
+        citizenCodes.where((item) => item.status == 'active').length;
     final usedCodes = citizenCodes.where((item) => item.usedForLogin).length;
     if (citizenCodes.isNotEmpty) {
       accessStats.add(

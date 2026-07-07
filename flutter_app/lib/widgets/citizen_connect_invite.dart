@@ -77,8 +77,8 @@ class CitizenConnectInvite extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              onPressed: () => Navigator.of(context)
-                  .pushNamed(AccessCitizenPage.routeName),
+              onPressed: () =>
+                  Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
               icon: const Icon(Icons.arrow_forward_rounded),
               label: const Text('Je participe'),
             ),

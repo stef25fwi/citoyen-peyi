@@ -8,10 +8,12 @@ class SuperAdminSupportListScreen extends StatefulWidget {
   const SuperAdminSupportListScreen({super.key});
 
   @override
-  State<SuperAdminSupportListScreen> createState() => _SuperAdminSupportListScreenState();
+  State<SuperAdminSupportListScreen> createState() =>
+      _SuperAdminSupportListScreenState();
 }
 
-class _SuperAdminSupportListScreenState extends State<SuperAdminSupportListScreen> {
+class _SuperAdminSupportListScreenState
+    extends State<SuperAdminSupportListScreen> {
   final _searchCtrl = TextEditingController();
   String _filter = 'all';
 
@@ -24,16 +26,19 @@ class _SuperAdminSupportListScreenState extends State<SuperAdminSupportListScree
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Tickets assistance'), centerTitle: true),
+      appBar:
+          AppBar(title: const Text('Tickets assistance'), centerTitle: true),
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 1100),
           child: StreamBuilder<List<SupportTicket>>(
-            stream: SupportTicketService.instance.watchAllTicketsForSuperAdmin(),
+            stream:
+                SupportTicketService.instance.watchAllTicketsForSuperAdmin(),
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
                   children: const [
                     _IntroCard(),
                     SizedBox(height: 16),
@@ -49,9 +54,11 @@ class _SuperAdminSupportListScreenState extends State<SuperAdminSupportListScree
                   ],
                 );
               }
-              final tickets = _applyFilters(snapshot.data ?? const <SupportTicket>[]);
+              final tickets =
+                  _applyFilters(snapshot.data ?? const <SupportTicket>[]);
               return ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
                 children: [
                   const _IntroCard(),
                   const SizedBox(height: 16),
@@ -59,7 +66,8 @@ class _SuperAdminSupportListScreenState extends State<SuperAdminSupportListScree
                     controller: _searchCtrl,
                     decoration: const InputDecoration(
                       prefixIcon: Icon(Icons.search_rounded),
-                      labelText: 'Recherche par commune, sujet, catégorie ou email admin',
+                      labelText:
+                          'Recherche par commune, sujet, catégorie ou email admin',
                     ),
                     onChanged: (_) => setState(() {}),
                   ),
@@ -81,18 +89,24 @@ class _SuperAdminSupportListScreenState extends State<SuperAdminSupportListScree
                         ChoiceChip(
                           label: Text(entry.value),
                           selected: _filter == entry.key,
-                          onSelected: (_) => setState(() => _filter = entry.key),
+                          onSelected: (_) =>
+                              setState(() => _filter = entry.key),
                         ),
                     ],
                   ),
                   const SizedBox(height: 16),
                   if (snapshot.connectionState == ConnectionState.waiting)
-                    const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
+                    const Center(
+                        child: Padding(
+                            padding: EdgeInsets.all(32),
+                            child: CircularProgressIndicator()))
                   else if (tickets.isEmpty)
                     const Card(
                       child: Padding(
                         padding: EdgeInsets.all(24),
-                        child: Text('Aucun ticket d’assistance reçu pour le moment.', textAlign: TextAlign.center),
+                        child: Text(
+                            'Aucun ticket d’assistance reçu pour le moment.',
+                            textAlign: TextAlign.center),
                       ),
                     )
                   else
@@ -102,7 +116,8 @@ class _SuperAdminSupportListScreenState extends State<SuperAdminSupportListScree
                         showCommune: true,
                         showAdmin: true,
                         showUnreadForSuperAdmin: true,
-                        onOpen: () => Navigator.of(context).pushNamed('/super-admin/support/${ticket.ticketId}'),
+                        onOpen: () => Navigator.of(context).pushNamed(
+                            '/super-admin/support/${ticket.ticketId}'),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -146,15 +161,19 @@ class _IntroCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
         child: Row(
           children: [
-            const Icon(Icons.support_agent_rounded, color: Color(0xFF0D73F2), size: 34),
+            const Icon(Icons.support_agent_rounded,
+                color: Color(0xFF0D73F2), size: 34),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Tickets assistance', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                  Text('Tickets assistance',
+                      style: theme.textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 6),
-                  const Text('Messages envoyés par les administrateurs communaux.'),
+                  const Text(
+                      'Messages envoyés par les administrateurs communaux.'),
                 ],
               ),
             ),

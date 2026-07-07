@@ -158,7 +158,8 @@ class SuperAdminService {
     }
 
     final url = '${AppConfig.apiBaseUrl}/api/auth/super/exchange';
-    final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
+    final appCheckToken =
+        await FirebaseAuthService.instance.currentAppCheckToken();
     late http.Response response;
     try {
       response = await http
@@ -324,7 +325,8 @@ class SuperAdminService {
   /// hachees (irrecuperables) : le backend en emet une nouvelle, retournee une
   /// seule fois, et invalide l'ancienne.
   Future<String> regenerateAdminKey(String id) async {
-    final response = await _authorizedPost('/api/admins/$id/regenerate', const {});
+    final response =
+        await _authorizedPost('/api/admins/$id/regenerate', const {});
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
     final key = payload['accessKey'] as String?;
     if (key == null || key.isEmpty) {

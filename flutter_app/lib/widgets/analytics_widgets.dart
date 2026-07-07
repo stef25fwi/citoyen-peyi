@@ -65,9 +65,8 @@ class AnalyticsKpiCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final hasDelta = delta != null && delta!.isFinite && delta!.abs() > 0.01;
     final positive = (delta ?? 0) >= 0;
-    final deltaColor = positive
-        ? const Color(0xFF16A34A)
-        : const Color(0xFFDC2626);
+    final deltaColor =
+        positive ? const Color(0xFF16A34A) : const Color(0xFFDC2626);
 
     return Container(
       width: width,
@@ -457,8 +456,8 @@ class EngagementFunnel extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 6, vertical: 2),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
                     color: color.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(999),

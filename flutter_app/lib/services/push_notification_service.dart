@@ -108,7 +108,8 @@ class PushNotificationService {
         vapidKey: kIsWeb ? AppConfig.pushVapidKey.trim() : null,
       );
       if (token == null || token.trim().isEmpty) return;
-      final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
+      final appCheckToken =
+          await FirebaseAuthService.instance.currentAppCheckToken();
 
       final base = AppConfig.apiBaseUrl.trim();
       if (base.isEmpty) return;

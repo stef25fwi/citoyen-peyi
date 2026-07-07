@@ -49,7 +49,8 @@ class CommuneBrandingModel {
     return CommuneBrandingModel(
       communeId: (data['communeId'] as String? ?? '').trim(),
       communeName: communeName,
-      normalizedCommuneName: (data['normalizedCommuneName'] as String? ?? '').trim(),
+      normalizedCommuneName:
+          (data['normalizedCommuneName'] as String? ?? '').trim(),
       logoUrl: logoUrl,
       logoContentType: data['logoContentType'] as String?,
       logoStoragePath: data['logoStoragePath'] as String?,
@@ -119,7 +120,8 @@ class CommuneBrandingService {
 
     final docId = documentIdFor(communeId: communeId, communeName: communeName);
     if (docId.isEmpty) {
-      throw const CommuneBrandingException('Identifiant de collectivité invalide.');
+      throw const CommuneBrandingException(
+          'Identifiant de collectivité invalide.');
     }
 
     final webpBytes = await _convertToWebp(file);
@@ -131,7 +133,8 @@ class CommuneBrandingService {
 
     final base = AppConfig.apiBaseUrl.trim();
     if (base.isEmpty) {
-      throw const CommuneBrandingException('Backend non configure (API_BASE_URL vide).');
+      throw const CommuneBrandingException(
+          'Backend non configure (API_BASE_URL vide).');
     }
 
     final token = await FirebaseAuthService.instance.currentIdToken();
@@ -185,7 +188,8 @@ class CommuneBrandingService {
       }
       return branding;
     } catch (_) {
-      throw const CommuneBrandingException('Reponse backend illisible pour le logo.');
+      throw const CommuneBrandingException(
+          'Reponse backend illisible pour le logo.');
     }
   }
 
@@ -198,9 +202,8 @@ class CommuneBrandingService {
       );
     }
 
-    final resized = decoded.width > 1200
-        ? img.copyResize(decoded, width: 1200)
-        : decoded;
+    final resized =
+        decoded.width > 1200 ? img.copyResize(decoded, width: 1200) : decoded;
     final encoded = img.encodeWebP(resized);
     return Uint8List.fromList(encoded);
   }
@@ -227,7 +230,11 @@ class CommuneBrandingService {
         .replaceAll('ü', 'u')
         .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
         .replaceAll(RegExp(r'^_+|_+$'), '')
-        .substring(0, value.trim().isEmpty ? 0 : (value.trim().length > 120 ? 120 : value.trim().length));
+        .substring(
+            0,
+            value.trim().isEmpty
+                ? 0
+                : (value.trim().length > 120 ? 120 : value.trim().length));
   }
 
   static String documentIdFor({String? communeId, String? communeName}) {

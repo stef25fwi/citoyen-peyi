@@ -201,31 +201,53 @@ class _HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        const SizedBox(height: 20),
-        const Padding(
-          padding: EdgeInsets.symmetric(horizontal: 20),
-          child: Card(
-            elevation: 10,
-            child: Padding(
-              padding: EdgeInsets.all(16),
-              child: Text(
-                'Votre collectivité place votre parole',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
+    final compact = isCompact(context);
+    final shortHeight = MediaQuery.of(context).size.height < 860;
+
+    return Center(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: compact ? double.infinity : 1080,
+        ),
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            compact ? 8 : 12,
+            shortHeight ? 8 : 12,
+            compact ? 8 : 12,
+            shortHeight ? 4 : 6,
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            children: [
+              const _LogoHeaderCard(),
+              SizedBox(height: shortHeight ? 4 : 8),
+              const _StatementCard(),
+              SizedBox(height: shortHeight ? 4 : 8),
+              const _ParticipationCard(),
+              SizedBox(height: shortHeight ? 4 : 8),
+              const _AdministrationAccess(),
+            ],
           ),
         ),
-        // Autres widgets dans votre colonne...
-      ],
+      ),
     );
   }
-}  final BoxConstraints? constraints;
+}
+
+class _GlassCard extends StatelessWidget {
+  const _GlassCard({
+    required this.child,
+    required this.decoration,
+    this.padding,
+    this.height,
+    this.constraints,
+  });
+
+  final Widget child;
+  final BoxDecoration decoration;
+  final EdgeInsetsGeometry? padding;
+  final double? height;
+  final BoxConstraints? constraints;
 
   @override
   Widget build(BuildContext context) {
@@ -283,13 +305,14 @@ class _LogoHeaderCard extends StatelessWidget {
           label: 'Citoyen Peyi',
           image: true,
           child: Image.asset(
-            'assets/citoyen_peyi/logo4.png',
+            CitoyenPeyiHomePage.logoPath,
             width: compact ? 220 : (shortHeight ? 700 : 760),
             height: compact ? 84 : (shortHeight ? 184 : 210),
             fit: BoxFit.contain,
           ),
         ),
-      ),    );
+      ),
+    );
   }
 }
 
@@ -439,7 +462,8 @@ class _ParticipationCard extends StatelessWidget {
     final shortHeight = MediaQuery.of(context).size.height < 860;
 
     return _GlassCard(
-      constraints: BoxConstraints(minHeight: compact ? 162 : (shortHeight ? 232 : 295)),
+      constraints:
+          BoxConstraints(minHeight: compact ? 162 : (shortHeight ? 232 : 295)),
       padding: EdgeInsets.fromLTRB(
         compact ? 14 : 22,
         compact ? 8 : (shortHeight ? 18 : 30),
@@ -557,7 +581,8 @@ class _MainParticipateButton extends StatelessWidget {
           color: Colors.transparent,
           child: InkWell(
             borderRadius: BorderRadius.circular(48),
-            onTap: () => Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
+            onTap: () =>
+                Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
             child: SizedBox(
               height: buttonHeight,
               child: Stack(
@@ -792,7 +817,8 @@ class _AdminChoice extends StatelessWidget {
       child: ListTile(
         minTileHeight: 54,
         leading: Icon(icon, color: cpBlueDark),
-        title: Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title:
+            Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () {
           Navigator.of(context).pop();

@@ -45,10 +45,14 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
 
     final pollId = widget.pollId?.trim();
     final accessCode = widget.accessCode?.trim();
-    if (pollId != null && pollId.isNotEmpty && accessCode != null && accessCode.isNotEmpty) {
+    if (pollId != null &&
+        pollId.isNotEmpty &&
+        accessCode != null &&
+        accessCode.isNotEmpty) {
       final routeCode = Uri.encodeComponent(accessCode);
       final routePollId = Uri.encodeQueryComponent(pollId);
-      Navigator.of(context).pushReplacementNamed('/vote/$routeCode?poll=$routePollId');
+      Navigator.of(context)
+          .pushReplacementNamed('/vote/$routeCode?poll=$routePollId');
       return;
     }
 
@@ -88,7 +92,6 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
       );
       return;
     }
-
   }
 
   @override

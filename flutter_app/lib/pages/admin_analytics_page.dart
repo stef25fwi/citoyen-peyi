@@ -57,7 +57,8 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
               : RefreshIndicator(
                   onRefresh: _load,
                   child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
                     children: [
                       _AnalyticsHero(summary: _summary),
                       const SizedBox(height: 20),
@@ -71,18 +72,25 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                                 children: [
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        Text('Participation par consultation', style: Theme.of(context).textTheme.titleMedium),
+                                        Text('Participation par consultation',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium),
                                         const SizedBox(height: 4),
                                         Text(
                                           'Taux calcule a partir des votes anonymes et de l\'objectif de participation.',
-                                          style: Theme.of(context).textTheme.bodySmall,
+                                          style: Theme.of(context)
+                                              .textTheme
+                                              .bodySmall,
                                         ),
                                       ],
                                     ),
                                   ),
-                                  const Icon(Icons.bar_chart_rounded, color: Color(0xFF0B6FA4)),
+                                  const Icon(Icons.bar_chart_rounded,
+                                      color: Color(0xFF0B6FA4)),
                                 ],
                               ),
                               const SizedBox(height: 16),
@@ -117,24 +125,42 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                               final legend = Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Repartition des consultations', style: Theme.of(context).textTheme.titleMedium),
+                                  Text('Repartition des consultations',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium),
                                   const SizedBox(height: 6),
                                   Text(
                                     'Vue rapide de l\'etat du parc de consultations.',
-                                    style: Theme.of(context).textTheme.bodySmall,
+                                    style:
+                                        Theme.of(context).textTheme.bodySmall,
                                   ),
                                   const SizedBox(height: 18),
-                                  _ChartLegendItem(color: const Color(0xFF0F9D58), label: 'Actifs', value: _summary.activeCount),
-                                  _ChartLegendItem(color: const Color(0xFFF4A100), label: 'Clos', value: _summary.closedCount),
-                                  _ChartLegendItem(color: const Color(0xFF64748B), label: 'Archives', value: _summary.archivedCount),
-                                  _ChartLegendItem(color: const Color(0xFF0B6FA4), label: 'Brouillons', value: _summary.draftCount),
+                                  _ChartLegendItem(
+                                      color: const Color(0xFF0F9D58),
+                                      label: 'Actifs',
+                                      value: _summary.activeCount),
+                                  _ChartLegendItem(
+                                      color: const Color(0xFFF4A100),
+                                      label: 'Clos',
+                                      value: _summary.closedCount),
+                                  _ChartLegendItem(
+                                      color: const Color(0xFF64748B),
+                                      label: 'Archives',
+                                      value: _summary.archivedCount),
+                                  _ChartLegendItem(
+                                      color: const Color(0xFF0B6FA4),
+                                      label: 'Brouillons',
+                                      value: _summary.draftCount),
                                 ],
                               );
 
                               if (wide) {
                                 return Row(
                                   children: [
-                                    Expanded(child: SizedBox(height: 260, child: chart)),
+                                    Expanded(
+                                        child: SizedBox(
+                                            height: 260, child: chart)),
                                     const SizedBox(width: 24),
                                     Expanded(child: legend),
                                   ],
@@ -143,7 +169,11 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
 
                               return Column(
                                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [SizedBox(height: 240, child: chart), const SizedBox(height: 16), legend],
+                                children: [
+                                  SizedBox(height: 240, child: chart),
+                                  const SizedBox(height: 16),
+                                  legend
+                                ],
                               );
                             },
                           ),
@@ -154,50 +184,67 @@ class _AdminAnalyticsPageState extends State<AdminAnalyticsPage> {
                         builder: (context, constraints) {
                           final wide = constraints.maxWidth >= 760;
                           final left = Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Usage des acces citoyens', style: Theme.of(context).textTheme.titleMedium),
-                                    const SizedBox(height: 6),
-                                    Text('Synthese globale des codes citoyens actifs, utilises et des votes anonymes.', style: Theme.of(context).textTheme.bodySmall),
-                                    const SizedBox(height: 16),
-                                    if (accessStats.isEmpty)
-                                      const Text('Aucun code citoyen n\'a encore ete genere.')
-                                    else ...[
-                                      _AccessUsageBarChart(stats: accessStats),
-                                      const SizedBox(height: 18),
-                                      for (final stat in accessStats)
-                                        Padding(
-                                          padding: const EdgeInsets.only(bottom: 16),
-                                          child: _AccessUsageRow(stat: stat),
-                                        ),
-                                    ],
-                                  ],
-                                ),
-                              ),
-                          );
-                          final right = Card(
-                              child: Padding(
-                                padding: const EdgeInsets.all(20),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text('Votes sur 7 jours', style: Theme.of(context).textTheme.titleMedium),
-                                    const SizedBox(height: 6),
-                                    Text('Evolution quotidienne des votes traces.', style: Theme.of(context).textTheme.bodySmall),
-                                    const SizedBox(height: 16),
-                                    _DailyVotesBarChart(dailyVotes: dailyVotes),
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Usage des acces citoyens',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                      'Synthese globale des codes citoyens actifs, utilises et des votes anonymes.',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall),
+                                  const SizedBox(height: 16),
+                                  if (accessStats.isEmpty)
+                                    const Text(
+                                        'Aucun code citoyen n\'a encore ete genere.')
+                                  else ...[
+                                    _AccessUsageBarChart(stats: accessStats),
                                     const SizedBox(height: 18),
-                                    for (final daily in dailyVotes)
+                                    for (final stat in accessStats)
                                       Padding(
-                                        padding: const EdgeInsets.only(bottom: 14),
-                                        child: _DailyVotesRow(daily: daily),
+                                        padding:
+                                            const EdgeInsets.only(bottom: 16),
+                                        child: _AccessUsageRow(stat: stat),
                                       ),
                                   ],
-                                ),
+                                ],
                               ),
+                            ),
+                          );
+                          final right = Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(20),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text('Votes sur 7 jours',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleMedium),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                      'Evolution quotidienne des votes traces.',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .bodySmall),
+                                  const SizedBox(height: 16),
+                                  _DailyVotesBarChart(dailyVotes: dailyVotes),
+                                  const SizedBox(height: 18),
+                                  for (final daily in dailyVotes)
+                                    Padding(
+                                      padding:
+                                          const EdgeInsets.only(bottom: 14),
+                                      child: _DailyVotesRow(daily: daily),
+                                    ),
+                                ],
+                              ),
+                            ),
                           );
 
                           if (wide) {
@@ -258,28 +305,40 @@ class _PollStatusPieChart extends StatelessWidget {
               title: 'Actifs\n$active',
               color: const Color(0xFF0F9D58),
               radius: 76,
-              titleStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+              titleStyle: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700),
             ),
             PieChartSectionData(
               value: closed.toDouble(),
               title: 'Clos\n$closed',
               color: const Color(0xFFF4A100),
               radius: 76,
-              titleStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+              titleStyle: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700),
             ),
             PieChartSectionData(
               value: archived.toDouble(),
               title: 'Archives\n$archived',
               color: const Color(0xFF64748B),
               radius: 76,
-              titleStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+              titleStyle: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700),
             ),
             PieChartSectionData(
               value: draft.toDouble(),
               title: 'Brouillons\n$draft',
               color: const Color(0xFF0B6FA4),
               radius: 76,
-              titleStyle: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w700),
+              titleStyle: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700),
             ),
           ];
 
@@ -311,14 +370,17 @@ class _PollParticipationBarChart extends StatelessWidget {
           gridData: const FlGridData(show: true, drawVerticalLine: false),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 40,
                 interval: 25,
-                getTitlesWidget: (value, meta) => Text('${value.toInt()}%', style: const TextStyle(fontSize: 11)),
+                getTitlesWidget: (value, meta) => Text('${value.toInt()}%',
+                    style: const TextStyle(fontSize: 11)),
               ),
             ),
             bottomTitles: AxisTitles(
@@ -327,7 +389,8 @@ class _PollParticipationBarChart extends StatelessWidget {
                 reservedSize: 66,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= visiblePolls.length) return const SizedBox.shrink();
+                  if (index < 0 || index >= visiblePolls.length)
+                    return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: SizedBox(
@@ -347,7 +410,9 @@ class _PollParticipationBarChart extends StatelessWidget {
           ),
           barGroups: List.generate(visiblePolls.length, (index) {
             final poll = visiblePolls[index];
-            final rate = poll.totalVoters == 0 ? 0.0 : (poll.totalVoted / poll.totalVoters) * 100;
+            final rate = poll.totalVoters == 0
+                ? 0.0
+                : (poll.totalVoted / poll.totalVoters) * 100;
             return BarChartGroupData(
               x: index,
               barRods: [
@@ -373,7 +438,8 @@ class _DailyVotesBarChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final maxVotes = dailyVotes.fold<int>(0, (maxValue, item) => item.votes > maxValue ? item.votes : maxValue);
+    final maxVotes = dailyVotes.fold<int>(
+        0, (maxValue, item) => item.votes > maxValue ? item.votes : maxValue);
     final maxY = maxVotes <= 0 ? 1.0 : maxVotes.toDouble();
 
     return SizedBox(
@@ -385,13 +451,16 @@ class _DailyVotesBarChart extends StatelessWidget {
           gridData: const FlGridData(show: true, drawVerticalLine: false),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 32,
-                getTitlesWidget: (value, meta) => Text('${value.toInt()}', style: const TextStyle(fontSize: 10)),
+                getTitlesWidget: (value, meta) => Text('${value.toInt()}',
+                    style: const TextStyle(fontSize: 10)),
               ),
             ),
             bottomTitles: AxisTitles(
@@ -400,8 +469,10 @@ class _DailyVotesBarChart extends StatelessWidget {
                 reservedSize: 30,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= dailyVotes.length) return const SizedBox.shrink();
-                  return Text(dailyVotes[index].label, style: const TextStyle(fontSize: 10));
+                  if (index < 0 || index >= dailyVotes.length)
+                    return const SizedBox.shrink();
+                  return Text(dailyVotes[index].label,
+                      style: const TextStyle(fontSize: 10));
                 },
               ),
             ),
@@ -433,7 +504,8 @@ class _AccessUsageBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final visibleStats = stats.take(6).toList();
-    final maxTotal = visibleStats.fold<int>(0, (maxValue, item) => item.total > maxValue ? item.total : maxValue);
+    final maxTotal = visibleStats.fold<int>(
+        0, (maxValue, item) => item.total > maxValue ? item.total : maxValue);
     final maxY = maxTotal <= 0 ? 1.0 : maxTotal.toDouble();
 
     return SizedBox(
@@ -445,13 +517,16 @@ class _AccessUsageBarChart extends StatelessWidget {
           gridData: const FlGridData(show: true, drawVerticalLine: false),
           borderData: FlBorderData(show: false),
           titlesData: FlTitlesData(
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            rightTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+            topTitles:
+                const AxisTitles(sideTitles: SideTitles(showTitles: false)),
             leftTitles: AxisTitles(
               sideTitles: SideTitles(
                 showTitles: true,
                 reservedSize: 34,
-                getTitlesWidget: (value, meta) => Text('${value.toInt()}', style: const TextStyle(fontSize: 10)),
+                getTitlesWidget: (value, meta) => Text('${value.toInt()}',
+                    style: const TextStyle(fontSize: 10)),
               ),
             ),
             bottomTitles: AxisTitles(
@@ -460,7 +535,8 @@ class _AccessUsageBarChart extends StatelessWidget {
                 reservedSize: 54,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= visibleStats.length) return const SizedBox.shrink();
+                  if (index < 0 || index >= visibleStats.length)
+                    return const SizedBox.shrink();
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: SizedBox(
@@ -484,8 +560,16 @@ class _AccessUsageBarChart extends StatelessWidget {
               x: index,
               barsSpace: 4,
               barRods: [
-                BarChartRodData(toY: stat.activated.toDouble(), width: 10, color: const Color(0xFF0B6FA4), borderRadius: BorderRadius.circular(4)),
-                BarChartRodData(toY: stat.voted.toDouble(), width: 10, color: const Color(0xFF0F9D58), borderRadius: BorderRadius.circular(4)),
+                BarChartRodData(
+                    toY: stat.activated.toDouble(),
+                    width: 10,
+                    color: const Color(0xFF0B6FA4),
+                    borderRadius: BorderRadius.circular(4)),
+                BarChartRodData(
+                    toY: stat.voted.toDouble(),
+                    width: 10,
+                    color: const Color(0xFF0F9D58),
+                    borderRadius: BorderRadius.circular(4)),
               ],
             );
           }),
@@ -515,7 +599,8 @@ class _ChartLegendItem extends StatelessWidget {
           Container(
             width: 12,
             height: 12,
-            decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(999)),
+            decoration: BoxDecoration(
+                color: color, borderRadius: BorderRadius.circular(999)),
           ),
           const SizedBox(width: 8),
           Expanded(child: Text(label)),
@@ -768,21 +853,25 @@ class _PollParticipationRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rate = poll.totalVoters == 0 ? 0.0 : poll.totalVoted / poll.totalVoters;
+    final rate =
+        poll.totalVoters == 0 ? 0.0 : poll.totalVoted / poll.totalVoters;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
           children: [
-            Expanded(child: Text(poll.projectTitle, style: Theme.of(context).textTheme.titleSmall)),
+            Expanded(
+                child: Text(poll.projectTitle,
+                    style: Theme.of(context).textTheme.titleSmall)),
             Text('${(rate * 100).round()}%'),
           ],
         ),
         const SizedBox(height: 8),
         LinearProgressIndicator(value: rate),
         const SizedBox(height: 6),
-        Text('${poll.totalVoted} votes sur ${poll.totalVoters} inscrits · statut ${poll.status}'),
+        Text(
+            '${poll.totalVoted} votes sur ${poll.totalVoters} inscrits · statut ${poll.status}'),
       ],
     );
   }
@@ -803,11 +892,14 @@ class _AccessUsageRow extends StatelessWidget {
       children: [
         Text(stat.pollName, style: Theme.of(context).textTheme.titleSmall),
         const SizedBox(height: 8),
-        Text('Codes utilises: ${stat.activated}/${stat.total} · Votes anonymes: ${stat.voted}'),
+        Text(
+            'Codes utilises: ${stat.activated}/${stat.total} · Votes anonymes: ${stat.voted}'),
         const SizedBox(height: 8),
         LinearProgressIndicator(value: activationRate),
         const SizedBox(height: 8),
-        LinearProgressIndicator(value: voteRate.clamp(0, 1), color: Theme.of(context).colorScheme.secondary),
+        LinearProgressIndicator(
+            value: voteRate.clamp(0, 1),
+            color: Theme.of(context).colorScheme.secondary),
       ],
     );
   }

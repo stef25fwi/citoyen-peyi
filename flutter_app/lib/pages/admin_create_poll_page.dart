@@ -9,7 +9,8 @@ import '../services/poll_service.dart';
 /// Brouillon d'une option de vote pendant la creation : libelle + jusqu'a
 /// 2 photos locales (pas encore televersees).
 class _OptionDraft {
-  _OptionDraft({String label = ''}) : controller = TextEditingController(text: label);
+  _OptionDraft({String label = ''})
+      : controller = TextEditingController(text: label);
 
   final TextEditingController controller;
   final List<XFile> photos = <XFile>[];
@@ -555,8 +556,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                 draftId: '$draftId-opt-$index',
               );
             }
-            options.add(
-                PollOptionDraft(label: label, photoUrls: optionPhotoUrls));
+            options
+                .add(PollOptionDraft(label: label, photoUrls: optionPhotoUrls));
           }
         } finally {
           if (mounted) {
@@ -767,14 +768,11 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                         style: theme.textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 14),
-                      for (var index = 0;
-                          index < _optionDrafts.length;
-                          index++)
+                      for (var index = 0; index < _optionDrafts.length; index++)
                         Padding(
                           padding: EdgeInsets.only(
-                              bottom: index == _optionDrafts.length - 1
-                                  ? 0
-                                  : 20),
+                              bottom:
+                                  index == _optionDrafts.length - 1 ? 0 : 20),
                           child: _OptionEditor(
                             index: index,
                             option: _optionDrafts[index],
@@ -1060,8 +1058,8 @@ class _OptionEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canAddPhoto =
-        enabled && option.photos.length < PollPhotoUploadService.maxPhotosPerOption;
+    final canAddPhoto = enabled &&
+        option.photos.length < PollPhotoUploadService.maxPhotosPerOption;
 
     return Container(
       padding: const EdgeInsets.all(12),

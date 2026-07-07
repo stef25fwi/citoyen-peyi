@@ -83,7 +83,8 @@ class _CommuneBrandingBannerState extends State<CommuneBrandingBanner> {
                       width: 72,
                       height: 72,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) => _fallbackLogo(),
+                      errorBuilder: (context, error, stackTrace) =>
+                          _fallbackLogo(),
                     ),
                   )
                 : _fallbackLogo(),

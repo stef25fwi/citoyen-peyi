@@ -6,7 +6,8 @@ class DuplicateRequestListPage extends StatefulWidget {
   const DuplicateRequestListPage({super.key});
 
   @override
-  State<DuplicateRequestListPage> createState() => _DuplicateRequestListPageState();
+  State<DuplicateRequestListPage> createState() =>
+      _DuplicateRequestListPageState();
 }
 
 class _DuplicateRequestListPageState extends State<DuplicateRequestListPage> {
@@ -22,7 +23,8 @@ class _DuplicateRequestListPageState extends State<DuplicateRequestListPage> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final requests = await CitizenAccessCodeService.instance.getDuplicateRequestsForSuperAdmin(
+    final requests = await CitizenAccessCodeService.instance
+        .getDuplicateRequestsForSuperAdmin(
       status: _statusFilter,
     );
     if (!mounted) return;
@@ -48,7 +50,12 @@ class _DuplicateRequestListPageState extends State<DuplicateRequestListPage> {
                   spacing: 8,
                   runSpacing: 8,
                   children: [
-                    for (final status in const ['pending', 'approved', 'rejected', 'all'])
+                    for (final status in const [
+                      'pending',
+                      'approved',
+                      'rejected',
+                      'all'
+                    ])
                       ChoiceChip(
                         label: Text(status),
                         selected: _statusFilter == status,
@@ -61,15 +68,22 @@ class _DuplicateRequestListPageState extends State<DuplicateRequestListPage> {
                 ),
                 const SizedBox(height: 16),
                 if (_isLoading)
-                  const Center(child: Padding(padding: EdgeInsets.all(32), child: CircularProgressIndicator()))
+                  const Center(
+                      child: Padding(
+                          padding: EdgeInsets.all(32),
+                          child: CircularProgressIndicator()))
                 else if (_requests.isEmpty)
-                  const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Aucune demande de doublon.')))
+                  const Card(
+                      child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Text('Aucune demande de doublon.')))
                 else
                   for (final request in _requests)
                     _DuplicateRequestCard(
                       request: request,
                       onOpen: () async {
-                        await Navigator.of(context).pushNamed('/super/duplicates/${request.id}');
+                        await Navigator.of(context)
+                            .pushNamed('/super/duplicates/${request.id}');
                         _load();
                       },
                     ),

@@ -50,8 +50,8 @@ class _SuperAdminBackupPageState extends State<SuperAdminBackupPage> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-              'Sauvegarde creee : ${snapshot.totalDocuments} documents.'),
+          content:
+              Text('Sauvegarde creee : ${snapshot.totalDocuments} documents.'),
         ),
       );
       await _load();
@@ -66,7 +66,8 @@ class _SuperAdminBackupPageState extends State<SuperAdminBackupPage> {
 
   Future<void> _showDownloadUrl(BackupSnapshot snapshot) async {
     try {
-      final url = await BackupAdminService.instance.signedDownloadUrl(snapshot.id);
+      final url =
+          await BackupAdminService.instance.signedDownloadUrl(snapshot.id);
       if (!mounted) return;
       await showDialog<void>(
         context: context,
@@ -112,7 +113,8 @@ class _SuperAdminBackupPageState extends State<SuperAdminBackupPage> {
       context: context,
       builder: (_) => AlertDialog(
         title: const Text('Supprimer cette sauvegarde ?'),
-        content: Text('Le snapshot ${snapshot.id} sera supprime definitivement.'),
+        content:
+            Text('Le snapshot ${snapshot.id} sera supprime definitivement.'),
         actions: [
           TextButton(
               onPressed: () => Navigator.pop(context, false),
@@ -359,9 +361,9 @@ class _RestoreDialogState extends State<_RestoreDialog> {
         Navigator.pop(context, true);
         messenger.showSnackBar(
           SnackBar(
-            content: Text(
-                'Restauration ${report.mode} : ${report.writes} ecrits, '
-                '${report.deletes} supprimes, ${report.skipped} ignores.'),
+            content:
+                Text('Restauration ${report.mode} : ${report.writes} ecrits, '
+                    '${report.deletes} supprimes, ${report.skipped} ignores.'),
           ),
         );
       }
@@ -379,7 +381,9 @@ class _RestoreDialogState extends State<_RestoreDialog> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (_) => AlertDialog(
-        title: Text(isMirror ? 'Confirmer le mode miroir' : 'Confirmer la restauration'),
+        title: Text(isMirror
+            ? 'Confirmer le mode miroir'
+            : 'Confirmer la restauration'),
         content: Text(isMirror
             ? 'Le mode MIROIR supprimera les documents absents du snapshot. '
                 'Action irreversible. Continuer ?'

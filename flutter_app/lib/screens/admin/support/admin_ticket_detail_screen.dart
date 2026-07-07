@@ -15,7 +15,8 @@ class AdminTicketDetailScreen extends StatefulWidget {
   final String ticketId;
 
   @override
-  State<AdminTicketDetailScreen> createState() => _AdminTicketDetailScreenState();
+  State<AdminTicketDetailScreen> createState() =>
+      _AdminTicketDetailScreenState();
 }
 
 class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
@@ -26,7 +27,9 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
   void initState() {
     super.initState();
     unawaited(
-      SupportTicketService.instance.markTicketReadByAdmin(widget.ticketId).catchError(
+      SupportTicketService.instance
+          .markTicketReadByAdmin(widget.ticketId)
+          .catchError(
         (Object error, StackTrace stackTrace) {
           debugPrint('[AdminTicketDetail] mark read failed: $error');
           debugPrintStack(stackTrace: stackTrace);
@@ -52,7 +55,8 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
       _messageCtrl.clear();
     } catch (error) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.toString())));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error.toString())));
       }
     } finally {
       if (mounted) setState(() => _isSending = false);
@@ -75,32 +79,41 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
               child: Card(
                 child: Padding(
                   padding: EdgeInsets.all(24),
-                  child: Text('Impossible de charger ce ticket pour le moment.'),
+                  child:
+                      Text('Impossible de charger ce ticket pour le moment.'),
                 ),
               ),
             );
           }
           if (ticket == null) {
-            return const Center(child: Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Ticket introuvable.'))));
+            return const Center(
+                child: Card(
+                    child: Padding(
+                        padding: EdgeInsets.all(24),
+                        child: Text('Ticket introuvable.'))));
           }
           return Column(
             children: [
               _TicketHeader(ticket: ticket),
               Expanded(
                 child: StreamBuilder<List<SupportMessage>>(
-                  stream: SupportTicketService.instance.watchTicketMessages(widget.ticketId),
+                  stream: SupportTicketService.instance
+                      .watchTicketMessages(widget.ticketId),
                   builder: (context, messagesSnapshot) {
                     if (messagesSnapshot.hasError) {
                       return const Center(
                         child: Card(
                           child: Padding(
                             padding: EdgeInsets.all(24),
-                            child: Text('Impossible de charger les messages pour le moment.'),
+                            child: Text(
+                                'Impossible de charger les messages pour le moment.'),
                           ),
                         ),
                       );
                     }
-                    if (messagesSnapshot.connectionState == ConnectionState.waiting && !messagesSnapshot.hasData) {
+                    if (messagesSnapshot.connectionState ==
+                            ConnectionState.waiting &&
+                        !messagesSnapshot.hasData) {
                       return const Center(
                         child: Card(
                           child: Padding(
@@ -110,13 +123,15 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
                         ),
                       );
                     }
-                    final messages = messagesSnapshot.data ?? const <SupportMessage>[];
+                    final messages =
+                        messagesSnapshot.data ?? const <SupportMessage>[];
                     if (messages.isEmpty) {
                       return const Center(
                         child: Card(
                           child: Padding(
                             padding: EdgeInsets.all(24),
-                            child: Text('Aucun message dans ce ticket pour le moment.'),
+                            child: Text(
+                                'Aucun message dans ce ticket pour le moment.'),
                           ),
                         ),
                       );
@@ -125,7 +140,8 @@ class _AdminTicketDetailScreenState extends State<AdminTicketDetailScreen> {
                       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
                       children: [
                         for (final message in messages)
-                          TicketMessageBubble(message: message, currentRole: 'admin_communal'),
+                          TicketMessageBubble(
+                              message: message, currentRole: 'admin_communal'),
                       ],
                     );
                   },
@@ -161,7 +177,9 @@ class _TicketHeader extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(ticket.subject, style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+            Text(ticket.subject,
+                style: theme.textTheme.titleLarge
+                    ?.copyWith(fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
             Wrap(spacing: 8, runSpacing: 8, children: [
               TicketStatusBadge(status: ticket.status),
@@ -170,7 +188,8 @@ class _TicketHeader extends StatelessWidget {
             ]),
             if (ticket.isClosed) ...[
               const SizedBox(height: 8),
-              const Text('Ce ticket est fermé. Vous pouvez demander au super administrateur de le rouvrir si nécessaire.'),
+              const Text(
+                  'Ce ticket est fermé. Vous pouvez demander au super administrateur de le rouvrir si nécessaire.'),
             ],
           ],
         ),
@@ -219,7 +238,11 @@ class _ReplyComposer extends StatelessWidget {
             FilledButton.icon(
               onPressed: isClosed || isSending ? null : onSend,
               icon: isSending
-                  ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                          strokeWidth: 2, color: Colors.white))
                   : const Icon(Icons.send_rounded),
               label: const Text('Envoyer'),
             ),

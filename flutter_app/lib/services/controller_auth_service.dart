@@ -31,7 +31,8 @@ class ControllerAuthService {
       normalizedCode = normalizedCode.substring(5);
     }
     if (normalizedCode.isEmpty) {
-      throw const ControllerAuthException('Le code agent de mobilisation citoyenne est requis.');
+      throw const ControllerAuthException(
+          'Le code agent de mobilisation citoyenne est requis.');
     }
 
     final configIssue = BackendDiagnostics.describeConfigIssue();
@@ -40,7 +41,8 @@ class ControllerAuthService {
     }
 
     final url = '${AppConfig.apiBaseUrl}/api/auth/controller/exchange';
-    final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
+    final appCheckToken =
+        await FirebaseAuthService.instance.currentAppCheckToken();
     late http.Response response;
     try {
       response = await http
@@ -64,12 +66,15 @@ class ControllerAuthService {
     }
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
-    final profile = payload['profile'] as Map<String, dynamic>? ?? const <String, dynamic>{};
-    final claims = payload['claims'] as Map<String, dynamic>? ?? const <String, dynamic>{};
+    final profile = payload['profile'] as Map<String, dynamic>? ??
+        const <String, dynamic>{};
+    final claims =
+        payload['claims'] as Map<String, dynamic>? ?? const <String, dynamic>{};
     final customToken = payload['customToken'] as String?;
 
     if (customToken == null || customToken.isEmpty) {
-      throw const ControllerAuthException('Réponse backend invalide (customToken manquant).');
+      throw const ControllerAuthException(
+          'Réponse backend invalide (customToken manquant).');
     }
 
     await _signInWithCustomTokenWithFallback(customToken);
@@ -91,7 +96,8 @@ class ControllerAuthService {
   String _readErrorMessage(String responseBody) {
     try {
       final payload = jsonDecode(responseBody) as Map<String, dynamic>;
-      return payload['message'] as String? ?? 'Connexion agent de mobilisation citoyenne impossible.';
+      return payload['message'] as String? ??
+          'Connexion agent de mobilisation citoyenne impossible.';
     } catch (_) {
       return 'Connexion agent de mobilisation citoyenne impossible.';
     }

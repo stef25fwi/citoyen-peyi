@@ -84,7 +84,8 @@ class PollService {
     }
 
     try {
-      final collection = isAuthenticated ? _pollCollection : _publicPollCollection;
+      final collection =
+          isAuthenticated ? _pollCollection : _publicPollCollection;
       final snapshot = await db.collection(collection).get();
       if (snapshot.docs.isEmpty) {
         final polls = await _loadLocalPolls();

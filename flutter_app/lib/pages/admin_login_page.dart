@@ -97,7 +97,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canSubmit = _accessKeyController.text.trim().isNotEmpty && !_isSubmitting;
+    final canSubmit =
+        _accessKeyController.text.trim().isNotEmpty && !_isSubmitting;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FB),
@@ -134,7 +135,8 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                         width: 56,
                         height: 56,
                         decoration: BoxDecoration(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                          color:
+                              theme.colorScheme.primary.withValues(alpha: 0.10),
                           borderRadius: BorderRadius.circular(18),
                         ),
                         child: Icon(
@@ -146,13 +148,15 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       const SizedBox(height: 12),
                       Text(
                         'Connexion administrateur communal',
-                        style: theme.textTheme.titleLarge?.copyWith(fontSize: 18, fontWeight: FontWeight.w700),
+                        style: theme.textTheme.titleLarge?.copyWith(
+                            fontSize: 18, fontWeight: FontWeight.w700),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 6),
                       Text(
                         'Entrez votre cle d\'acces administrateur communal pour recevoir un jeton de confiance emis par le backend.',
-                        style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573)),
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: const Color(0xFF5A6573)),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
@@ -171,18 +175,22 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                           hintText: 'Cle administrateur communal',
                           filled: true,
                           fillColor: const Color(0xFFF8FAFC),
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 18, vertical: 14),
                           border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFD7E0EA)),
                           ),
                           enabledBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(color: Color(0xFFD7E0EA)),
+                            borderSide:
+                                const BorderSide(color: Color(0xFFD7E0EA)),
                           ),
                           focusedBorder: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(color: theme.colorScheme.primary, width: 1.6),
+                            borderSide: BorderSide(
+                                color: theme.colorScheme.primary, width: 1.6),
                           ),
                         ),
                         onChanged: (_) {
@@ -203,21 +211,26 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                               ? const SizedBox(
                                   width: 18,
                                   height: 18,
-                                  child: CircularProgressIndicator(strokeWidth: 2),
+                                  child:
+                                      CircularProgressIndicator(strokeWidth: 2),
                                 )
                               : const Icon(Icons.arrow_forward_rounded),
-                          label: Text(_isSubmitting ? 'Connexion en cours...' : 'Acceder au tableau de bord'),
+                          label: Text(_isSubmitting
+                              ? 'Connexion en cours...'
+                              : 'Acceder au tableau de bord'),
                         ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         'En mode configure, cette cle sera verifiee par le backend avant emission des claims admin communaux.',
-                        style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF7A8796)),
+                        style: theme.textTheme.bodySmall
+                            ?.copyWith(color: const Color(0xFF7A8796)),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 4),
                       TextButton(
-                        onPressed: () => Navigator.of(context).pushNamed('/super/login'),
+                        onPressed: () =>
+                            Navigator.of(context).pushNamed('/super/login'),
                         child: const Text(
                           'Espace Super Administrateur',
                           style: TextStyle(color: Color(0xFF6B21A8)),

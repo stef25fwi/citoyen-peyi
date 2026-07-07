@@ -55,11 +55,14 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
     return _publicPolls.where((poll) {
       if (_communeFilter != null && _communeFilter!.isNotEmpty) {
         final matchById = poll.communeId == _communeFilter;
-        final matchByName = poll.communeName.toLowerCase() == _communeFilter!.toLowerCase();
+        final matchByName =
+            poll.communeName.toLowerCase() == _communeFilter!.toLowerCase();
         if (!matchById && !matchByName) return false;
       }
-      if (_statusFilter == 'open' && poll.status != ‘active’) return false;
-      if (_statusFilter == ‘closed’ && poll.status != ‘closed’ && poll.status != ‘archived’) return false;
+      if (_statusFilter == 'open' && poll.status != 'active') return false;
+      if (_statusFilter == 'closed' &&
+          poll.status != 'closed' &&
+          poll.status != 'archived') return false;
       return true;
     }).toList()
       ..sort((left, right) => right.openDate.compareTo(left.openDate));
@@ -81,7 +84,7 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
-        title: const Text(‘Résultats des consultations’),
+        title: const Text('Résultats des consultations'),
         centerTitle: true,
       ),
       body: Center(
@@ -92,100 +95,80 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
-                 Card(
-                   elevation: 0,
-                   color: Colors.white.withOpacity(0.9),
-                   shape: RoundedRectangleBorder(
-                     borderRadius: BorderRadius.circular(28),
-                   ),
-                   child: Padding(
-                     padding: const EdgeInsets.all(24),
-                     child: Column(
-                       children: [
-                         const SizedBox(height: 20),
-                         const Icon(Icons.lock_outline_rounded, size: 44),
-                         const SizedBox(height: 12),
-                         Text(
-                           ‘Rejoignez votre espace citoyen’,
-                           style: theme.textTheme.titleLarge,
-                           textAlign: TextAlign.center,
-                         ),
-                         const SizedBox(height: 8),
-                         const Text(
-                           ‘Saisissez votre code citoyen pour acceder aux consultations.’,
-                           textAlign: TextAlign.center,
-                         ),
-                         const SizedBox(height: 16),
-                         FilledButton(
-                           onPressed: () {
-                             Navigator.of(context).pushNamed(‘/access’);
-                           },
-                           child: const Text(‘Acceder’),
-                         ),
-                       ],
-                     ),
-                   ),
-                 ),                    style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
-                    textAlign: TextAlign.center,
+                if (CitizenPublicAccessService.instance.currentSession == null)
+                  const CitizenConnectInvite(
+                    message:
+                        'Connectez-vous a votre compte pour participer aux consultations et suivre leurs resultats.',
                   ),
-                  const SizedBox(height: 18),
-                  DropdownButtonFormField<String>(
-                    initialValue: _communeFilter,
-                    decoration: const InputDecoration(labelText: 'Commune'),
-                    items: [
-                      const DropdownMenuItem<String>(value: null, child: Text('Toutes')),
-                      for (final commune in _communes)
-                        DropdownMenuItem(value: commune, child: Text(commune)),
-                    ],
-                    onChanged: (value) => setState(() => _communeFilter = value),
-                  ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _statusFilter,
-                    decoration: const InputDecoration(labelText: 'Etat'),
-                    items: const [
-                      DropdownMenuItem(value: 'all', child: Text('Tous')),
-                      DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
-                      DropdownMenuItem(value: 'closed', child: Text('Cloturees')),
-                    ],
-                    onChanged: (value) => setState(() => _statusFilter = value ?? 'all'),
-                  ),
-                  const SizedBox(height: 16),
-                  if (_isLoading)
-                    const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
-                  else if (filtered.isEmpty)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.bar_chart_rounded, size: 42, color: Color(0xFF5A6573)),
-                            const SizedBox(height: 12),
-                            Text('Aucun resultat disponible', style: theme.textTheme.titleLarge),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Aucune consultation ne correspond aux filtres selectionnes.',
-                              textAlign: TextAlign.center,
-                            ),
-                          ],
-                        ),
+                Text(
+                  'Resultats anonymes des consultations',
+                  style: theme.textTheme.headlineMedium,
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Aucune donnee personnelle n\'est affichee. Seuls les totaux par option sont restitues.',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: const Color(0xFF5A6573)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                DropdownButtonFormField<String>(
+                  initialValue: _communeFilter,
+                  decoration: const InputDecoration(labelText: 'Commune'),
+                  items: [
+                    const DropdownMenuItem<String>(
+                        value: null, child: Text('Toutes')),
+                    for (final commune in _communes)
+                      DropdownMenuItem(value: commune, child: Text(commune)),
+                  ],
+                  onChanged: (value) => setState(() => _communeFilter = value),
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  initialValue: _statusFilter,
+                  decoration: const InputDecoration(labelText: 'Etat'),
+                  items: const [
+                    DropdownMenuItem(value: 'all', child: Text('Tous')),
+                    DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
+                    DropdownMenuItem(value: 'closed', child: Text('Cloturees')),
+                  ],
+                  onChanged: (value) =>
+                      setState(() => _statusFilter = value ?? 'all'),
+                ),
+                const SizedBox(height: 16),
+                if (_isLoading)
+                  const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Center(child: CircularProgressIndicator()))
+                else if (filtered.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.bar_chart_rounded,
+                              size: 42, color: Color(0xFF5A6573)),
+                          const SizedBox(height: 12),
+                          Text('Aucun resultat disponible',
+                              style: theme.textTheme.titleLarge),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Aucune consultation ne correspond aux filtres selectionnes.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
                       ),
-                    )
-                  else
-                    for (final poll in filtered) _PollResultCard(poll: poll),
-                ],
+                    ),
+                  )
+                else
+                  for (final poll in filtered) _PollResultCard(poll: poll),
               ],
             ),
           ),
         ),
       ),
       bottomNavigationBar:
-          CitizenPublicAccessService.instance.currentSession != null
-              ? CitizenBottomNav(
-                  activeTab: CitizenNavTab.results,
-                  onTabSelected: _onCitizenNav,
-                )
-              : const PublicBottomNav(currentTab: PublicTab.results),      bottomNavigationBar:
           CitizenPublicAccessService.instance.currentSession != null
               ? CitizenBottomNav(
                   activeTab: CitizenNavTab.results,
@@ -225,11 +208,20 @@ class _PollResultCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final totalVotes = poll.options.fold<int>(0, (sum, option) => sum + option.votes);
+    final totalVotes =
+        poll.options.fold<int>(0, (sum, option) => sum + option.votes);
     final isClosed = poll.status == 'closed';
     final isArchived = poll.status == 'archived';
-    final statusLabel = isArchived ? 'Archivee' : isClosed ? 'Cloturee' : 'Ouverte';
-    final statusColor = isArchived ? const Color(0xFFE2E8F0) : isClosed ? const Color(0xFFE5E7EB) : const Color(0xFFDCFCE7);
+    final statusLabel = isArchived
+        ? 'Archivee'
+        : isClosed
+            ? 'Cloturee'
+            : 'Ouverte';
+    final statusColor = isArchived
+        ? const Color(0xFFE2E8F0)
+        : isClosed
+            ? const Color(0xFFE5E7EB)
+            : const Color(0xFFDCFCE7);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 16),
@@ -241,7 +233,9 @@ class _PollResultCard extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Expanded(child: Text(poll.projectTitle, style: theme.textTheme.titleLarge)),
+                  Expanded(
+                      child: Text(poll.projectTitle,
+                          style: theme.textTheme.titleLarge)),
                   Chip(
                     label: Text(statusLabel),
                     backgroundColor: statusColor,
@@ -250,7 +244,9 @@ class _PollResultCard extends StatelessWidget {
               ),
               if (poll.communeName.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(poll.communeName, style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573))),
+                Text(poll.communeName,
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: const Color(0xFF5A6573))),
               ],
               if (poll.question.isNotEmpty) ...[
                 const SizedBox(height: 10),
@@ -263,12 +259,16 @@ class _PollResultCard extends StatelessWidget {
                 for (final option in poll.options)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 8),
-                    child: _ResultBar(label: option.label, votes: option.votes, total: totalVotes),
+                    child: _ResultBar(
+                        label: option.label,
+                        votes: option.votes,
+                        total: totalVotes),
                   ),
               const SizedBox(height: 8),
               Text(
                 'Total des votes: $totalVotes${poll.totalVoters > 0 ? ' / ${poll.totalVoters} attendus' : ''}',
-                style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573)),
+                style: theme.textTheme.bodySmall
+                    ?.copyWith(color: const Color(0xFF5A6573)),
               ),
             ],
           ),
@@ -279,7 +279,8 @@ class _PollResultCard extends StatelessWidget {
 }
 
 class _ResultBar extends StatelessWidget {
-  const _ResultBar({required this.label, required this.votes, required this.total});
+  const _ResultBar(
+      {required this.label, required this.votes, required this.total});
 
   final String label;
   final int votes;
@@ -295,7 +296,8 @@ class _ResultBar extends StatelessWidget {
         Row(
           children: [
             Expanded(child: Text(label)),
-            Text('$votes  ·  $percent%', style: const TextStyle(fontWeight: FontWeight.w600)),
+            Text('$votes  ·  $percent%',
+                style: const TextStyle(fontWeight: FontWeight.w600)),
           ],
         ),
         const SizedBox(height: 4),

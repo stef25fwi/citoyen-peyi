@@ -26,8 +26,7 @@ class CitizenPrimaryButton extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: isEnabled ? onPressed : null,
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusButton),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusButton),
           child: Ink(
             height: 58,
             decoration: CitizenDesignTokens.primaryButtonDecoration.copyWith(

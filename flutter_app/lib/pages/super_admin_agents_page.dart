@@ -96,7 +96,8 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
     }
   }
 
-  void _showCodeRevealDialog(ControleurProfileModel profile, {bool regenerated = false}) {
+  void _showCodeRevealDialog(ControleurProfileModel profile,
+      {bool regenerated = false}) {
     showDialog<void>(
       context: context,
       builder: (_) => AlertDialog(
@@ -164,7 +165,8 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
       grouped.putIfAbsent(key, () => []).add(agent);
     }
     for (final list in grouped.values) {
-      list.sort((a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
+      list.sort(
+          (a, b) => a.label.toLowerCase().compareTo(b.label.toLowerCase()));
     }
     return grouped;
   }
@@ -224,7 +226,8 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
                   const Card(
                     child: Padding(
                       padding: EdgeInsets.all(24),
-                      child: Center(child: Text('Aucun agent créé pour le moment.')),
+                      child: Center(
+                          child: Text('Aucun agent créé pour le moment.')),
                     ),
                   )
                 else
@@ -339,7 +342,8 @@ class _UsageBadge extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
       ),
       child: Text(used ? 'Activé' : 'Jamais utilisé',
-          style: TextStyle(color: color, fontSize: 11, fontWeight: FontWeight.w700)),
+          style: TextStyle(
+              color: color, fontSize: 11, fontWeight: FontWeight.w700)),
     );
   }
 }

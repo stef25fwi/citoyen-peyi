@@ -101,9 +101,8 @@ class _NavItem extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
               decoration: BoxDecoration(
-                color: isActive
-                    ? CitizenDesignTokens.skyBlue
-                    : Colors.transparent,
+                color:
+                    isActive ? CitizenDesignTokens.skyBlue : Colors.transparent,
                 borderRadius: BorderRadius.circular(22),
               ),
               child: Icon(

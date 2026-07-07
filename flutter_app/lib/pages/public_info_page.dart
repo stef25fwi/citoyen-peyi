@@ -43,9 +43,11 @@ class PublicInfoPage extends StatelessWidget {
                       height: 88,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: theme.colorScheme.primary.withValues(alpha: 0.10),
+                        color:
+                            theme.colorScheme.primary.withValues(alpha: 0.10),
                       ),
-                      child: Icon(icon, size: 42, color: theme.colorScheme.primary),
+                      child: Icon(icon,
+                          size: 42, color: theme.colorScheme.primary),
                     ),
                     const SizedBox(height: 20),
                     Text(
@@ -56,7 +58,8 @@ class PublicInfoPage extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       description,
-                      style: theme.textTheme.bodyLarge?.copyWith(color: const Color(0xFF5A6573)),
+                      style: theme.textTheme.bodyLarge
+                          ?.copyWith(color: const Color(0xFF5A6573)),
                       textAlign: TextAlign.center,
                     ),
                     const SizedBox(height: 24),
@@ -67,7 +70,8 @@ class PublicInfoPage extends StatelessWidget {
                       children: [
                         if (primaryActionLabel != null && primaryRoute != null)
                           FilledButton.icon(
-                            onPressed: () => Navigator.of(context).pushNamed(primaryRoute!),
+                            onPressed: () =>
+                                Navigator.of(context).pushNamed(primaryRoute!),
                             icon: const Icon(Icons.arrow_forward_rounded),
                             label: Text(primaryActionLabel!),
                           ),

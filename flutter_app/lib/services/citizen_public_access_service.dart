@@ -55,11 +55,12 @@ class CitizenPublicAccessSession {
         .whereType<Map<String, dynamic>>()
         .map(PollModel.fromJson)
         .toList(growable: false);
-    final votedPollIds = (raw['votedPollIds'] as List<dynamic>? ?? const <dynamic>[])
-        .whereType<String>()
-        .map((item) => item.trim())
-        .where((item) => item.isNotEmpty)
-        .toSet();
+    final votedPollIds =
+        (raw['votedPollIds'] as List<dynamic>? ?? const <dynamic>[])
+            .whereType<String>()
+            .map((item) => item.trim())
+            .where((item) => item.isNotEmpty)
+            .toSet();
 
     return CitizenPublicAccessSession(
       accessCode: accessCode.trim(),

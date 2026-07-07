@@ -33,14 +33,16 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
   Future<void> _load() async {
     setState(() => _isLoading = true);
     final db = FirestoreDataService.instance;
-    List<_NewsItem> items = const [];    if (db != null) {
+    List<_NewsItem> items = const [];
+    if (db != null) {
       try {
         final snapshot = await db
             .collection('public_news')
             .orderBy('publishedAt', descending: true)
             .limit(50)
             .get();
-        items = snapshot.docs.map((doc) => _NewsItem.fromMap(doc.data())).toList();
+        items =
+            snapshot.docs.map((doc) => _NewsItem.fromMap(doc.data())).toList();
       } catch (_) {
         items = const [];
       }
@@ -70,41 +72,56 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
-                 if (CitizenPublicAccessService.instance.currentSession == null) ...[
-                   const CitizenConnectInvite(
-                     message:
-                         ‘Connectez-vous à votre compte pour suivre les actualités et participer aux consultations de votre commune.’,
-                   ),
-                 ] else ...[
-                   Text(
-                     ‘Informations communales et projets soumis à consultation.’,
-                     style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF5A6573)),
-                     textAlign: TextAlign.center,
-                   ),
-                   const SizedBox(height: 18),
-                   if (_isLoading)
-                     const Padding(padding: EdgeInsets.all(32), child: Center(child: CircularProgressIndicator()))
-                   else if (_items.isEmpty)
-                     Card(
-                       child: Padding(
-                         padding: const EdgeInsets.all(28),
-                         child: Column(
-                           children: [
-                             const Icon(Icons.newspaper_rounded, size: 42, color: Color(0xFF5A6573)),
-                             const SizedBox(height: 12),
-                             Text(‘Aucune actualité pour le moment’, style: theme.textTheme.titleLarge),
-                             const SizedBox(height: 6),
-                             const Text(
-                               ‘Les communes peuvent publier ici leurs actualités et projets soumis à consultation. Revenez bientôt.’,
-                               textAlign: TextAlign.center,
-                             ),
-                           ],
-                         ),
-                       ),
-                     )
-                   else
-                     for (final item in _items) _NewsCard(item: item),
-                 ],              : const PublicBottomNav(currentTab: PublicTab.news),
+                if (CitizenPublicAccessService.instance.currentSession == null)
+                  const CitizenConnectInvite(
+                    message:
+                        'Connectez-vous a votre compte pour suivre les actualites et participer aux consultations de votre commune.',
+                  ),
+                Text(
+                  'Informations communales et projets soumis à consultation.',
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: const Color(0xFF5A6573)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 18),
+                if (_isLoading)
+                  const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: Center(child: CircularProgressIndicator()))
+                else if (_items.isEmpty)
+                  Card(
+                    child: Padding(
+                      padding: const EdgeInsets.all(28),
+                      child: Column(
+                        children: [
+                          const Icon(Icons.newspaper_rounded,
+                              size: 42, color: Color(0xFF5A6573)),
+                          const SizedBox(height: 12),
+                          Text('Aucune actualité pour le moment',
+                              style: theme.textTheme.titleLarge),
+                          const SizedBox(height: 6),
+                          const Text(
+                            'Les communes peuvent publier ici leurs actualités et projets soumis à consultation. Revenez bientôt.',
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                else
+                  for (final item in _items) _NewsCard(item: item),
+              ],
+            ),
+          ),
+        ),
+      ),
+      bottomNavigationBar:
+          CitizenPublicAccessService.instance.currentSession != null
+              ? CitizenBottomNav(
+                  activeTab: CitizenNavTab.news,
+                  onTabSelected: _onCitizenNav,
+                )
+              : const PublicBottomNav(currentTab: PublicTab.news),
     );
   }
 
@@ -149,18 +166,24 @@ class _NewsCard extends StatelessWidget {
               if (item.communeName.isNotEmpty)
                 Text(item.communeName.toUpperCase(),
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.labelSmall?.copyWith(color: const Color(0xFF5A6573))),
+                    style: theme.textTheme.labelSmall
+                        ?.copyWith(color: const Color(0xFF5A6573))),
               const SizedBox(height: 4),
-              Text(item.title, textAlign: TextAlign.center, style: theme.textTheme.titleLarge),
+              Text(item.title,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.titleLarge),
               if (item.publishedAt.isNotEmpty) ...[
                 const SizedBox(height: 4),
                 Text(item.publishedAt,
                     textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFF5A6573))),
+                    style: theme.textTheme.bodySmall
+                        ?.copyWith(color: const Color(0xFF5A6573))),
               ],
               if (item.body.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Text(item.body, textAlign: TextAlign.center, style: theme.textTheme.bodyLarge),
+                Text(item.body,
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.bodyLarge),
               ],
             ],
           ),
@@ -193,7 +216,8 @@ class _NewsItem {
     }
     return _NewsItem(
       title: (data['title'] as String? ?? '').trim(),
-      body: (data['body'] as String? ?? data['content'] as String? ?? '').trim(),
+      body:
+          (data['body'] as String? ?? data['content'] as String? ?? '').trim(),
       communeName: (data['communeName'] as String? ?? '').trim(),
       publishedAt: publishedIso,
     );

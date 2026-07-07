@@ -36,13 +36,15 @@ class _AdminSupportListScreenState extends State<AdminSupportListScreen> {
             IconButton(
               icon: const Icon(Icons.add_rounded),
               tooltip: 'Nouveau ticket',
-              onPressed: () => Navigator.of(context).pushNamed('/admin/support/new'),
+              onPressed: () =>
+                  Navigator.of(context).pushNamed('/admin/support/new'),
             )
           else
             Padding(
               padding: const EdgeInsets.only(right: 12),
               child: FilledButton.icon(
-                onPressed: () => Navigator.of(context).pushNamed('/admin/support/new'),
+                onPressed: () =>
+                    Navigator.of(context).pushNamed('/admin/support/new'),
                 icon: const Icon(Icons.add_rounded),
                 label: const Text('Nouveau ticket'),
               ),
@@ -58,7 +60,8 @@ class _AdminSupportListScreenState extends State<AdminSupportListScreen> {
             builder: (context, snapshot) {
               if (snapshot.hasError) {
                 return ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
                   children: [
                     const _IntroCard(unreadCount: 0),
                     const SizedBox(height: 16),
@@ -77,9 +80,12 @@ class _AdminSupportListScreenState extends State<AdminSupportListScreen> {
               }
               final tickets = snapshot.data ?? const <SupportTicket>[];
               return ListView(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
                 children: [
-                  _IntroCard(unreadCount: tickets.where((item) => item.unreadForAdmin).length),
+                  _IntroCard(
+                      unreadCount:
+                          tickets.where((item) => item.unreadForAdmin).length),
                   const SizedBox(height: 16),
                   if (snapshot.connectionState == ConnectionState.waiting)
                     const _SupportStateCard(
@@ -98,7 +104,8 @@ class _AdminSupportListScreenState extends State<AdminSupportListScreen> {
                       TicketCard(
                         ticket: ticket,
                         showUnreadForAdmin: true,
-                        onOpen: () => Navigator.of(context).pushNamed('/admin/support/${ticket.ticketId}'),
+                        onOpen: () => Navigator.of(context)
+                            .pushNamed('/admin/support/${ticket.ticketId}'),
                       ),
                       const SizedBox(height: 12),
                     ],
@@ -173,15 +180,19 @@ class _IntroCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
         child: Row(
           children: [
-            const Icon(Icons.support_agent_rounded, color: Color(0xFF0D73F2), size: 34),
+            const Icon(Icons.support_agent_rounded,
+                color: Color(0xFF0D73F2), size: 34),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Assistance', style: theme.textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w800)),
+                  Text('Assistance',
+                      style: theme.textTheme.titleLarge
+                          ?.copyWith(fontWeight: FontWeight.w800)),
                   const SizedBox(height: 6),
-                  const Text('Contactez le super administrateur en cas de problème, demande ou besoin d’accompagnement.'),
+                  const Text(
+                      'Contactez le super administrateur en cas de problème, demande ou besoin d’accompagnement.'),
                 ],
               ),
             ),

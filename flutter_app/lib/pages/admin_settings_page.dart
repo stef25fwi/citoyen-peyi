@@ -101,14 +101,16 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                 const SizedBox(height: 6),
                 Text(
                   'Vue de configuration communale et de readiness production. Les modifications critiques restent centralisees cote backend et Firestore.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B)),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: const Color(0xFF64748B)),
                 ),
                 const SizedBox(height: 18),
                 CommuneBrandingBanner(
                   communeId: commune?.code,
                   communeName: commune?.name,
                   title: 'Collectivite connectee',
-                  subtitle: 'Ce logo sera repris sur les espaces rattaches a votre commune.',
+                  subtitle:
+                      'Ce logo sera repris sur les espaces rattaches a votre commune.',
                 ),
                 const SizedBox(height: 18),
                 if (_isLoading)
@@ -121,20 +123,36 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                     spacing: 12,
                     runSpacing: 12,
                     children: [
-                      _StatCard(label: 'Consultations actives', value: _summary.activeCount.toString()),
-                      _StatCard(label: 'Consultations cloturees', value: _summary.closedCount.toString()),
-                      _StatCard(label: 'Consultations archivees', value: _summary.archivedCount.toString()),
-                      _StatCard(label: 'Codes citoyens actifs', value: _summary.totalValidatedCodes.toString()),
-                      _StatCard(label: 'Votes enregistres', value: _summary.totalVotes.toString()),
+                      _StatCard(
+                          label: 'Consultations actives',
+                          value: _summary.activeCount.toString()),
+                      _StatCard(
+                          label: 'Consultations cloturees',
+                          value: _summary.closedCount.toString()),
+                      _StatCard(
+                          label: 'Consultations archivees',
+                          value: _summary.archivedCount.toString()),
+                      _StatCard(
+                          label: 'Codes citoyens actifs',
+                          value: _summary.totalValidatedCodes.toString()),
+                      _StatCard(
+                          label: 'Votes enregistres',
+                          value: _summary.totalVotes.toString()),
                     ],
                   ),
                   const SizedBox(height: 18),
                   _SettingsCard(
                     title: 'Identite communale',
                     children: [
-                      _SettingRow(label: 'Nom', value: commune?.name ?? 'Non renseigne'),
-                      _SettingRow(label: 'Code commune', value: commune?.code ?? 'Non renseigne'),
-                      _SettingRow(label: 'Code postal', value: commune?.codePostal ?? 'Non renseigne'),
+                      _SettingRow(
+                          label: 'Nom',
+                          value: commune?.name ?? 'Non renseigne'),
+                      _SettingRow(
+                          label: 'Code commune',
+                          value: commune?.code ?? 'Non renseigne'),
+                      _SettingRow(
+                          label: 'Code postal',
+                          value: commune?.codePostal ?? 'Non renseigne'),
                     ],
                   ),
                   const SizedBox(height: 14),
@@ -156,7 +174,8 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                               height: 120,
                               width: 120,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
                                 width: 120,
                                 height: 120,
                                 color: const Color(0xFFE5E7EB),
@@ -176,7 +195,8 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                                 ? const SizedBox(
                                     width: 16,
                                     height: 16,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
+                                    child: CircularProgressIndicator(
+                                        strokeWidth: 2),
                                   )
                                 : const Icon(Icons.image_outlined),
                             label: Text(_branding?.hasLogo == true
@@ -191,12 +211,16 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                   _SettingsCard(
                     title: 'Publication publique',
                     children: [
-                      _SettingRow(label: 'API publique Flutter', value: AppConfig.apiBaseUrl),
+                      _SettingRow(
+                          label: 'API publique Flutter',
+                          value: AppConfig.apiBaseUrl),
                       const _SettingNote(
-                        text: 'La page /news lit la collection public_news. Publiez les contenus cote Firestore pour alimenter l’interface publique.',
+                        text:
+                            'La page /news lit la collection public_news. Publiez les contenus cote Firestore pour alimenter l’interface publique.',
                       ),
                       const _SettingNote(
-                        text: 'Les resultats publics sont anonymes: aucune identite citoyenne n’est exposee.',
+                        text:
+                            'Les resultats publics sont anonymes: aucune identite citoyenne n’est exposee.',
                       ),
                     ],
                   ),
@@ -204,14 +228,20 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                   _SettingsCard(
                     title: 'Capacite et participation',
                     children: [
-                      _SettingRow(label: 'Electeurs estimes', value: _summary.totalVoters.toString()),
-                      _SettingRow(label: 'Votes comptabilises', value: _summary.totalVotes.toString()),
+                      _SettingRow(
+                          label: 'Electeurs estimes',
+                          value: _summary.totalVoters.toString()),
+                      _SettingRow(
+                          label: 'Votes comptabilises',
+                          value: _summary.totalVotes.toString()),
                       _SettingRow(
                         label: 'Participation moyenne',
-                        value: '${_summary.averageParticipation.toStringAsFixed(1)}%',
+                        value:
+                            '${_summary.averageParticipation.toStringAsFixed(1)}%',
                       ),
                       const _SettingNote(
-                        text: 'Le nombre de votants estime est defini lors de la creation des consultations. Aucun stock de QR n’est genere depuis cet ecran.',
+                        text:
+                            'Le nombre de votants estime est defini lors de la creation des consultations. Aucun stock de QR n’est genere depuis cet ecran.',
                       ),
                     ],
                   ),
@@ -224,17 +254,21 @@ class _AdminSettingsPageState extends State<AdminSettingsPage> {
                         runSpacing: 10,
                         children: [
                           FilledButton.icon(
-                            onPressed: () => Navigator.of(context).pushNamed('/admin/polls/create'),
+                            onPressed: () => Navigator.of(context)
+                                .pushNamed('/admin/polls/create'),
                             icon: const Icon(Icons.add_rounded),
                             label: const Text('Nouvelle consultation'),
                           ),
                           OutlinedButton.icon(
-                            onPressed: () => Navigator.of(context).pushNamed('/admin/controllers'),
+                            onPressed: () => Navigator.of(context)
+                                .pushNamed('/admin/controllers'),
                             icon: const Icon(Icons.groups_rounded),
-                            label: const Text('Agents de mobilisation citoyenne'),
+                            label:
+                                const Text('Agents de mobilisation citoyenne'),
                           ),
                           OutlinedButton.icon(
-                            onPressed: () => Navigator.of(context).pushNamed('/admin/results'),
+                            onPressed: () => Navigator.of(context)
+                                .pushNamed('/admin/results'),
                             icon: const Icon(Icons.bar_chart_rounded),
                             label: const Text('Resultats'),
                           ),
@@ -316,7 +350,10 @@ class _SettingRow extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: 180, child: Text(label, style: const TextStyle(color: Color(0xFF64748B)))),
+          SizedBox(
+              width: 180,
+              child: Text(label,
+                  style: const TextStyle(color: Color(0xFF64748B)))),
           Expanded(child: Text(value)),
         ],
       ),
@@ -335,7 +372,10 @@ class _SettingNote extends StatelessWidget {
       padding: const EdgeInsets.only(bottom: 10),
       child: Text(
         text,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B)),
+        style: Theme.of(context)
+            .textTheme
+            .bodyMedium
+            ?.copyWith(color: const Color(0xFF64748B)),
       ),
     );
   }

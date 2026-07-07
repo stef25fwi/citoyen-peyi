@@ -141,7 +141,8 @@ class VoteAccessService {
     }
 
     try {
-      final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
+      final appCheckToken =
+          await FirebaseAuthService.instance.currentAppCheckToken();
       final response = await _client
           .post(
             Uri.parse('${AppConfig.apiBaseUrl}/api/vote-access/validate'),
@@ -198,7 +199,8 @@ class VoteAccessService {
     required String optionId,
   }) async {
     try {
-      final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
+      final appCheckToken =
+          await FirebaseAuthService.instance.currentAppCheckToken();
       final response = await _client
           .post(
             Uri.parse('${AppConfig.apiBaseUrl}/api/vote-access/submit'),

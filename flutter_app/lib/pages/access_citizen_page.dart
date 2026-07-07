@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:flutter/services.dart';import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/citizen_commune_store.dart';
 import '../services/citizen_public_access_service.dart';
@@ -235,7 +236,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                     hasAcceptedLegalTerms: hasAcceptedLegalTerms,
                     onLegalTermsRead: _markLegalTermsRead,
                     onTermsChanged: (accepted) =>
-                      unawaited(_setAcceptedLegalTerms(accepted)),
+                        unawaited(_setAcceptedLegalTerms(accepted)),
                     onCodeChanged: () => setState(() => _errorMessage = null),
                     onSubmit: _validateCitizenCode,
                   ),
@@ -335,7 +336,8 @@ class _LegalTermsConsentPanel extends StatefulWidget {
   final ValueChanged<bool> onAcceptedChanged;
 
   @override
-  State<_LegalTermsConsentPanel> createState() => _LegalTermsConsentPanelState();
+  State<_LegalTermsConsentPanel> createState() =>
+      _LegalTermsConsentPanelState();
 }
 
 class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {

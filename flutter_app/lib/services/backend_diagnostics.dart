@@ -29,7 +29,8 @@ class BackendDiagnostics {
     final origin = pageOrigin ?? Uri.base;
     if (origin.scheme == 'https' && apiUri.scheme == 'http') {
       final host = apiUri.host;
-      final isLoopback = host == 'localhost' || host == '127.0.0.1' || host == '::1';
+      final isLoopback =
+          host == 'localhost' || host == '127.0.0.1' || host == '::1';
       if (!isLoopback) {
         return 'Backend en HTTP alors que la page est servie en HTTPS ($raw). '
             'Le navigateur bloque les requetes mixtes : exposez le backend en HTTPS.';

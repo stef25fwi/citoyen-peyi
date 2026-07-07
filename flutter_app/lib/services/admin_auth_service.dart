@@ -37,7 +37,8 @@ class AdminAuthService {
     }
 
     final url = '${AppConfig.apiBaseUrl}/api/auth/admin/exchange';
-    final appCheckToken = await FirebaseAuthService.instance.currentAppCheckToken();
+    final appCheckToken =
+        await FirebaseAuthService.instance.currentAppCheckToken();
     late http.Response response;
     try {
       response = await http
@@ -61,12 +62,15 @@ class AdminAuthService {
     }
 
     final payload = jsonDecode(response.body) as Map<String, dynamic>;
-    final claims = payload['claims'] as Map<String, dynamic>? ?? const <String, dynamic>{};
-    final profile = payload['profile'] as Map<String, dynamic>? ?? const <String, dynamic>{};
+    final claims =
+        payload['claims'] as Map<String, dynamic>? ?? const <String, dynamic>{};
+    final profile = payload['profile'] as Map<String, dynamic>? ??
+        const <String, dynamic>{};
     final customToken = payload['customToken'] as String?;
 
     if (customToken == null || customToken.isEmpty) {
-      throw const AdminAuthException('Réponse backend invalide (customToken manquant).');
+      throw const AdminAuthException(
+          'Réponse backend invalide (customToken manquant).');
     }
 
     await _signInWithCustomTokenWithFallback(customToken);
@@ -79,7 +83,8 @@ class AdminAuthService {
       adminScope: claims['adminScope'] as String?,
       id: profile['id'] as String?,
       label: profile['label'] as String? ?? 'Administrateur communal',
-      commune: profile['communeName'] is String && (profile['communeName'] as String).isNotEmpty
+      commune: profile['communeName'] is String &&
+              (profile['communeName'] as String).isNotEmpty
           ? AuthSessionCommune(
               name: profile['communeName'] as String,
               code: profile['communeId'] as String?,
@@ -94,7 +99,8 @@ class AdminAuthService {
   String _readErrorMessage(String responseBody) {
     try {
       final payload = jsonDecode(responseBody) as Map<String, dynamic>;
-      return payload['message'] as String? ?? 'Connexion administrateur impossible.';
+      return payload['message'] as String? ??
+          'Connexion administrateur impossible.';
     } catch (_) {
       return 'Connexion administrateur impossible.';
     }

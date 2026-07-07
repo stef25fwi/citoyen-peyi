@@ -89,7 +89,8 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
     final buffer = StringBuffer();
     var currentLength = 0;
     for (final word in words) {
-      final nextLength = currentLength == 0 ? word.length : currentLength + 1 + word.length;
+      final nextLength =
+          currentLength == 0 ? word.length : currentLength + 1 + word.length;
       if (nextLength > 24 && currentLength > 0) {
         buffer.write('\n');
         buffer.write(word);
@@ -148,7 +149,9 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
     if (lower.contains('ecolog') || lower.contains('environ')) {
       return Icons.public_rounded;
     }
-    if (lower.contains('parc') || lower.contains('espace') || lower.contains('amenagement')) {
+    if (lower.contains('parc') ||
+        lower.contains('espace') ||
+        lower.contains('amenagement')) {
       return Icons.park_rounded;
     }
     return Icons.forum_rounded;
@@ -178,7 +181,6 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
       );
       return;
     }
-
   }
 
   Future<void> _logoutCitizen() async {
@@ -230,7 +232,8 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
                     if (selectedFilter == 0)
                       if (resolvedConsultations.isEmpty)
                         const _EmptyState(
-                          message: 'Aucune consultation en cours pour le moment.',
+                          message:
+                              'Aucune consultation en cours pour le moment.',
                         )
                       else
                         ...resolvedConsultations.map(

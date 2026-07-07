@@ -29,9 +29,12 @@ class SuperAdminDuplicateTile extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.content_copy_rounded, color: Color(0xFF0F6D8F)),
+                  const Icon(Icons.content_copy_rounded,
+                      color: Color(0xFF0F6D8F)),
                   const SizedBox(width: 10),
-                  Expanded(child: Text('Doublons à vérifier', style: theme.textTheme.titleLarge)),
+                  Expanded(
+                      child: Text('Doublons à vérifier',
+                          style: theme.textTheme.titleLarge)),
                   Badge(label: Text('$pendingCount')),
                 ],
               ),

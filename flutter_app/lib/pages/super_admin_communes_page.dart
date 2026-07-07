@@ -102,11 +102,13 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
             child: ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                Text('Pilotage multi-communes', style: theme.textTheme.headlineSmall),
+                Text('Pilotage multi-communes',
+                    style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 Text(
                   'Vue consolidee des communes actives, basee sur les logs des agents de mobilisation citoyenne et les demandes de doublons deja disponibles dans la plateforme.',
-                  style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B)),
+                  style: theme.textTheme.bodyMedium
+                      ?.copyWith(color: const Color(0xFF64748B)),
                 ),
                 const SizedBox(height: 18),
                 if (_isLoading)
@@ -118,7 +120,8 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                   const Card(
                     child: Padding(
                       padding: EdgeInsets.all(24),
-                      child: Text('Aucune activite communale disponible pour le moment.'),
+                      child: Text(
+                          'Aucune activite communale disponible pour le moment.'),
                     ),
                   )
                 else ...[
@@ -132,15 +135,24 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                       ),
                       _TopStatCard(
                         label: 'Agents actifs',
-                        value: _communes.fold<int>(0, (sum, item) => sum + item.activeControllers).toString(),
+                        value: _communes
+                            .fold<int>(
+                                0, (sum, item) => sum + item.activeControllers)
+                            .toString(),
                       ),
                       _TopStatCard(
                         label: 'Codes generes',
-                        value: _communes.fold<int>(0, (sum, item) => sum + item.codesGenerated).toString(),
+                        value: _communes
+                            .fold<int>(
+                                0, (sum, item) => sum + item.codesGenerated)
+                            .toString(),
                       ),
                       _TopStatCard(
                         label: 'Demandes en attente',
-                        value: _communes.fold<int>(0, (sum, item) => sum + item.pendingRequests).toString(),
+                        value: _communes
+                            .fold<int>(
+                                0, (sum, item) => sum + item.pendingRequests)
+                            .toString(),
                       ),
                     ],
                   ),
@@ -157,9 +169,13 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                               Row(
                                 children: [
                                   Expanded(
-                                    child: Text(commune.communeName, style: theme.textTheme.titleLarge),
+                                    child: Text(commune.communeName,
+                                        style: theme.textTheme.titleLarge),
                                   ),
-                                  Chip(label: Text(commune.communeId.isEmpty ? 'Commune non codee' : commune.communeId)),
+                                  Chip(
+                                      label: Text(commune.communeId.isEmpty
+                                          ? 'Commune non codee'
+                                          : commune.communeId)),
                                 ],
                               ),
                               const SizedBox(height: 10),
@@ -167,17 +183,32 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                                 spacing: 10,
                                 runSpacing: 10,
                                 children: [
-                                  _MetricChip(label: 'Agents actifs', value: commune.activeControllers.toString()),
-                                  _MetricChip(label: 'Codes generes', value: commune.codesGenerated.toString()),
-                                  _MetricChip(label: 'Doublons detectes', value: commune.duplicatesDetected.toString()),
-                                  _MetricChip(label: 'Demandes pending', value: commune.pendingRequests.toString()),
-                                  _MetricChip(label: 'Taux doublons', value: '${(commune.duplicateRate * 100).round()}%'),
+                                  _MetricChip(
+                                      label: 'Agents actifs',
+                                      value:
+                                          commune.activeControllers.toString()),
+                                  _MetricChip(
+                                      label: 'Codes generes',
+                                      value: commune.codesGenerated.toString()),
+                                  _MetricChip(
+                                      label: 'Doublons detectes',
+                                      value: commune.duplicatesDetected
+                                          .toString()),
+                                  _MetricChip(
+                                      label: 'Demandes pending',
+                                      value:
+                                          commune.pendingRequests.toString()),
+                                  _MetricChip(
+                                      label: 'Taux doublons',
+                                      value:
+                                          '${(commune.duplicateRate * 100).round()}%'),
                                 ],
                               ),
                               const SizedBox(height: 12),
                               Text(
                                 'Dernier code genere: ${commune.lastCodeGeneratedAt ?? 'Aucune activite recente'}',
-                                style: theme.textTheme.bodyMedium?.copyWith(color: const Color(0xFF64748B)),
+                                style: theme.textTheme.bodyMedium
+                                    ?.copyWith(color: const Color(0xFF64748B)),
                               ),
                               const SizedBox(height: 12),
                               Wrap(
@@ -185,16 +216,20 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                                 runSpacing: 10,
                                 children: [
                                   FilledButton.tonalIcon(
-                                    onPressed: () => Navigator.of(context).pushNamed(
+                                    onPressed: () =>
+                                        Navigator.of(context).pushNamed(
                                       '/super/activity/commune/${commune.communeId}',
                                     ),
                                     icon: const Icon(Icons.analytics_rounded),
                                     label: const Text('Voir activite'),
                                   ),
                                   OutlinedButton.icon(
-                                    onPressed: () => Navigator.of(context).pushNamed(
+                                    onPressed: () =>
+                                        Navigator.of(context).pushNamed(
                                       '/super/activity',
-                                      arguments: {'communeId': commune.communeId},
+                                      arguments: {
+                                        'communeId': commune.communeId
+                                      },
                                     ),
                                     icon: const Icon(Icons.filter_alt_rounded),
                                     label: const Text('Filtrer le tableau'),
@@ -223,7 +258,8 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                     const Card(
                       child: Padding(
                         padding: EdgeInsets.all(24),
-                        child: Text('Aucune consultation en ligne pour le moment.'),
+                        child: Text(
+                            'Aucune consultation en ligne pour le moment.'),
                       ),
                     )
                   else
@@ -276,7 +312,9 @@ class _PollAdminCard extends StatelessWidget {
     final (label, color) = _statusBadge(poll.status);
     final commune = poll.communeName.isNotEmpty
         ? poll.communeName
-        : (poll.communeId.isNotEmpty ? poll.communeId : 'Commune non renseignée');
+        : (poll.communeId.isNotEmpty
+            ? poll.communeId
+            : 'Commune non renseignée');
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -298,15 +336,17 @@ class _PollAdminCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                     decoration: BoxDecoration(
                       color: color.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(label,
                         style: TextStyle(
-                            color: color, fontWeight: FontWeight.w700, fontSize: 12)),
+                            color: color,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12)),
                   ),
                 ],
               ),

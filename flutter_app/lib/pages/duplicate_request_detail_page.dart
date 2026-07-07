@@ -9,10 +9,12 @@ class DuplicateRequestDetailPage extends StatefulWidget {
   final String requestId;
 
   @override
-  State<DuplicateRequestDetailPage> createState() => _DuplicateRequestDetailPageState();
+  State<DuplicateRequestDetailPage> createState() =>
+      _DuplicateRequestDetailPageState();
 }
 
-class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage> {
+class _DuplicateRequestDetailPageState
+    extends State<DuplicateRequestDetailPage> {
   final _rejectionController = TextEditingController();
   bool _isLoading = true;
   bool _isSubmitting = false;
@@ -32,10 +34,12 @@ class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage>
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final requests = await CitizenAccessCodeService.instance.getDuplicateRequestsForSuperAdmin(status: 'all');
+    final requests = await CitizenAccessCodeService.instance
+        .getDuplicateRequestsForSuperAdmin(status: 'all');
     if (!mounted) return;
     setState(() {
-      _request = requests.where((item) => item.id == widget.requestId).firstOrNull;
+      _request =
+          requests.where((item) => item.id == widget.requestId).firstOrNull;
       _isLoading = false;
     });
   }
@@ -43,7 +47,8 @@ class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage>
   Future<void> _approve() async {
     setState(() => _isSubmitting = true);
     final session = AuthSessionStore.instance.currentSession;
-    final updated = await CitizenAccessCodeService.instance.approveDuplicateRequest(
+    final updated =
+        await CitizenAccessCodeService.instance.approveDuplicateRequest(
       requestId: widget.requestId,
       reviewedBySuperAdminId: session?.id,
     );
@@ -53,18 +58,22 @@ class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage>
       _isSubmitting = false;
     });
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Demande traitée. Le nouveau code est affiché une seule fois à l\'agent de mobilisation citoyenne.')),
+      const SnackBar(
+          content: Text(
+              'Demande traitée. Le nouveau code est affiché une seule fois à l\'agent de mobilisation citoyenne.')),
     );
   }
 
   Future<void> _reject() async {
     if (_rejectionController.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Renseigner le motif de refus.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Renseigner le motif de refus.')));
       return;
     }
     setState(() => _isSubmitting = true);
     final session = AuthSessionStore.instance.currentSession;
-    final updated = await CitizenAccessCodeService.instance.rejectDuplicateRequest(
+    final updated =
+        await CitizenAccessCodeService.instance.rejectDuplicateRequest(
       requestId: widget.requestId,
       rejectionReason: _rejectionController.text,
       reviewedBySuperAdminId: session?.id,
@@ -74,7 +83,8 @@ class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage>
       _request = updated;
       _isSubmitting = false;
     });
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Demande refusée.')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('Demande refusée.')));
   }
 
   @override
@@ -88,7 +98,10 @@ class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage>
           child: _isLoading
               ? const Center(child: CircularProgressIndicator())
               : request == null
-                  ? const Card(child: Padding(padding: EdgeInsets.all(24), child: Text('Demande introuvable.')))
+                  ? const Card(
+                      child: Padding(
+                          padding: EdgeInsets.all(24),
+                          child: Text('Demande introuvable.')))
                   : ListView(
                       padding: const EdgeInsets.all(20),
                       children: [
@@ -98,14 +111,25 @@ class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage>
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Wrap(spacing: 8, children: [Chip(label: Text(request.status)), Chip(label: Text(request.duplicateReason.label))]),
+                                Wrap(spacing: 8, children: [
+                                  Chip(label: Text(request.status)),
+                                  Chip(
+                                      label:
+                                          Text(request.duplicateReason.label))
+                                ]),
                                 const SizedBox(height: 16),
                                 _Line('Commune', request.communeName),
-                                _Line('Agent de mobilisation citoyenne', request.requestedByControllerName),
+                                _Line('Agent de mobilisation citoyenne',
+                                    request.requestedByControllerName),
                                 _Line('Date tentative', request.requestedAt),
                                 _Line('Référence dossier', request.id),
-                                if (request.controllerComment != null) _Line('Commentaire agent de mobilisation citoyenne', request.controllerComment!),
-                                if (request.rejectionReason != null) _Line('Motif refus', request.rejectionReason!),
+                                if (request.controllerComment != null)
+                                  _Line(
+                                      'Commentaire agent de mobilisation citoyenne',
+                                      request.controllerComment!),
+                                if (request.rejectionReason != null)
+                                  _Line(
+                                      'Motif refus', request.rejectionReason!),
                               ],
                             ),
                           ),
@@ -118,13 +142,17 @@ class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage>
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('Décision super administrateur', style: Theme.of(context).textTheme.titleLarge),
+                                  Text('Décision super administrateur',
+                                      style: Theme.of(context)
+                                          .textTheme
+                                          .titleLarge),
                                   const SizedBox(height: 12),
                                   TextField(
                                     controller: _rejectionController,
                                     minLines: 2,
                                     maxLines: 4,
-                                    decoration: const InputDecoration(labelText: 'Motif de refus si rejet'),
+                                    decoration: const InputDecoration(
+                                        labelText: 'Motif de refus si rejet'),
                                   ),
                                   const SizedBox(height: 16),
                                   Wrap(
@@ -132,12 +160,15 @@ class _DuplicateRequestDetailPageState extends State<DuplicateRequestDetailPage>
                                     runSpacing: 12,
                                     children: [
                                       FilledButton.icon(
-                                        onPressed: _isSubmitting ? null : _approve,
+                                        onPressed:
+                                            _isSubmitting ? null : _approve,
                                         icon: const Icon(Icons.check_rounded),
-                                        label: const Text('Valider la régénération'),
+                                        label: const Text(
+                                            'Valider la régénération'),
                                       ),
                                       OutlinedButton.icon(
-                                        onPressed: _isSubmitting ? null : _reject,
+                                        onPressed:
+                                            _isSubmitting ? null : _reject,
                                         icon: const Icon(Icons.close_rounded),
                                         label: const Text('Refuser'),
                                       ),

@@ -38,7 +38,8 @@ class CitizenWelcomePage extends StatelessWidget {
                     alignment: Alignment.centerRight,
                     child: TextButton.icon(
                       onPressed: () async {
-                        await CitizenPublicAccessService.instance.clearSession();
+                        await CitizenPublicAccessService.instance
+                            .clearSession();
                         if (!context.mounted) {
                           return;
                         }
@@ -79,13 +80,15 @@ class CitizenWelcomePage extends StatelessWidget {
                         _ReassuranceRow(
                           icon: Icons.verified_user_rounded,
                           title: 'Anonyme et securise',
-                          subtitle: 'Vos avis sont proteges\net 100% confidentiels',
+                          subtitle:
+                              'Vos avis sont proteges\net 100% confidentiels',
                         ),
                         SizedBox(height: 20),
                         _ReassuranceRow(
                           icon: Icons.groups_rounded,
                           title: 'Simple et accessible',
-                          subtitle: 'Participez en quelques clics,\nou que vous soyez',
+                          subtitle:
+                              'Participez en quelques clics,\nou que vous soyez',
                         ),
                         SizedBox(height: 20),
                         _ReassuranceRow(

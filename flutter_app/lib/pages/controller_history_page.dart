@@ -27,7 +27,8 @@ class _ControllerHistoryPageState extends State<ControllerHistoryPage> {
     try {
       final results = await Future.wait([
         CitizenAccessCodeService.instance.loadAccessCodesForCurrentController(),
-        CitizenAccessCodeService.instance.getDuplicateRequestsForCurrentController(status: 'all'),
+        CitizenAccessCodeService.instance
+            .getDuplicateRequestsForCurrentController(status: 'all'),
       ]).timeout(const Duration(seconds: 15));
       codes = results[0] as List<CitizenAccessCodeModel>;
       requests = results[1] as List<DuplicateCodeRequestModel>;
@@ -48,15 +49,18 @@ class _ControllerHistoryPageState extends State<ControllerHistoryPage> {
   @override
   Widget build(BuildContext context) {
     final pending = _requests.where((item) => item.status == 'pending').length;
-    final approved = _requests.where((item) => item.status == 'approved').length;
-    final rejected = _requests.where((item) => item.status == 'rejected').length;
+    final approved =
+        _requests.where((item) => item.status == 'approved').length;
+    final rejected =
+        _requests.where((item) => item.status == 'rejected').length;
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Historique agent de mobilisation citoyenne'),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pushNamed('/controleur/acces-citoyen'),
+            onPressed: () =>
+                Navigator.of(context).pushNamed('/controleur/acces-citoyen'),
             child: const Text('Nouvel acces'),
           ),
         ],
@@ -73,10 +77,22 @@ class _ControllerHistoryPageState extends State<ControllerHistoryPage> {
                   spacing: 12,
                   runSpacing: 12,
                   children: [
-                    _HistoryMetric(label: 'Codes generes', value: '${_codes.length}', icon: Icons.vpn_key_rounded),
-                    _HistoryMetric(label: 'Demandes en attente', value: '$pending', icon: Icons.hourglass_top_rounded),
-                    _HistoryMetric(label: 'Demandes validees', value: '$approved', icon: Icons.check_circle_rounded),
-                    _HistoryMetric(label: 'Demandes refusees', value: '$rejected', icon: Icons.cancel_rounded),
+                    _HistoryMetric(
+                        label: 'Codes generes',
+                        value: '${_codes.length}',
+                        icon: Icons.vpn_key_rounded),
+                    _HistoryMetric(
+                        label: 'Demandes en attente',
+                        value: '$pending',
+                        icon: Icons.hourglass_top_rounded),
+                    _HistoryMetric(
+                        label: 'Demandes validees',
+                        value: '$approved',
+                        icon: Icons.check_circle_rounded),
+                    _HistoryMetric(
+                        label: 'Demandes refusees',
+                        value: '$rejected',
+                        icon: Icons.cancel_rounded),
                   ],
                 ),
                 const SizedBox(height: 16),
@@ -86,14 +102,20 @@ class _ControllerHistoryPageState extends State<ControllerHistoryPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Codes citoyens generes', style: Theme.of(context).textTheme.titleLarge),
+                        Text('Codes citoyens generes',
+                            style: Theme.of(context).textTheme.titleLarge),
                         const SizedBox(height: 8),
-                        Text('Retrouvez les acces generes, leur statut et leur date de creation.'),
+                        Text(
+                            'Retrouvez les acces generes, leur statut et leur date de creation.'),
                         const SizedBox(height: 16),
                         if (_isLoading)
-                          const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+                          const Center(
+                              child: Padding(
+                                  padding: EdgeInsets.all(24),
+                                  child: CircularProgressIndicator()))
                         else if (_codes.isEmpty)
-                          const Text('Aucun code citoyen genere pour le moment.')
+                          const Text(
+                              'Aucun code citoyen genere pour le moment.')
                         else
                           for (final code in _codes)
                             Padding(
@@ -111,14 +133,20 @@ class _ControllerHistoryPageState extends State<ControllerHistoryPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Demandes de regeneration', style: Theme.of(context).textTheme.titleLarge),
+                        Text('Demandes de regeneration',
+                            style: Theme.of(context).textTheme.titleLarge),
                         const SizedBox(height: 8),
-                        Text('Suivi des doublons detectes et des decisions super administrateur.'),
+                        Text(
+                            'Suivi des doublons detectes et des decisions super administrateur.'),
                         const SizedBox(height: 16),
                         if (_isLoading)
-                          const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
+                          const Center(
+                              child: Padding(
+                                  padding: EdgeInsets.all(24),
+                                  child: CircularProgressIndicator()))
                         else if (_requests.isEmpty)
-                          const Text('Aucune demande de regeneration enregistree.')
+                          const Text(
+                              'Aucune demande de regeneration enregistree.')
                         else
                           for (final request in _requests)
                             Padding(
@@ -139,7 +167,8 @@ class _ControllerHistoryPageState extends State<ControllerHistoryPage> {
 }
 
 class _HistoryMetric extends StatelessWidget {
-  const _HistoryMetric({required this.label, required this.value, required this.icon});
+  const _HistoryMetric(
+      {required this.label, required this.value, required this.icon});
 
   final String label;
   final String value;
@@ -208,7 +237,7 @@ class _DuplicateHistoryTile extends StatelessWidget {
     final subtitle = request.status == 'approved'
         ? 'Nouveau code émis'
         : request.status == 'rejected'
-          ? 'Motif de refus: ${request.rejectionReason ?? 'Non précisé'}'
+            ? 'Motif de refus: ${request.rejectionReason ?? 'Non précisé'}'
             : 'Motif demande: ${request.duplicateReason.label}';
 
     return DecoratedBox(

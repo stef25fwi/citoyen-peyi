@@ -291,7 +291,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
               try {
                 await AuthSessionStore.instance.clear();
               } catch (error, stackTrace) {
-                debugPrint('[SuperAdminDashboard] session clear failed: $error');
+                debugPrint(
+                    '[SuperAdminDashboard] session clear failed: $error');
                 debugPrintStack(stackTrace: stackTrace);
               }
               if (!context.mounted) return;
@@ -434,8 +435,8 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
                   ),
                   const SizedBox(height: 16),
                   _SuperAdminSupportDashboardCard(
-                    onOpen: () => Navigator.of(context)
-                        .pushNamed('/super-admin/support'),
+                    onOpen: () =>
+                        Navigator.of(context).pushNamed('/super-admin/support'),
                   ),
                   const SizedBox(height: 16),
                   LayoutBuilder(
@@ -562,9 +563,8 @@ class _SupportNavBadge extends StatelessWidget {
       builder: (context, snapshot) {
         final count = snapshot.data?.length ?? 0;
         return IconButton(
-          tooltip: count > 0
-              ? '$count ticket(s) non lu(s)'
-              : 'Tickets assistance',
+          tooltip:
+              count > 0 ? '$count ticket(s) non lu(s)' : 'Tickets assistance',
           onPressed: onTap,
           icon: Badge(
             isLabelVisible: count > 0,
@@ -592,7 +592,8 @@ class _SuperAdminSupportDashboardCard extends StatelessWidget {
         final tickets = snapshot.data ?? const <SupportTicket>[];
         final unread = tickets.where((item) => item.unreadForSuperAdmin).length;
         final urgent = tickets
-            .where((item) => item.priority == 'urgente' && item.status != 'ferme')
+            .where(
+                (item) => item.priority == 'urgente' && item.status != 'ferme')
             .length;
         return Card(
           child: InkWell(
@@ -616,24 +617,29 @@ class _SuperAdminSupportDashboardCard extends StatelessWidget {
                           width: 48,
                           height: 48,
                           decoration: BoxDecoration(
-                            color: const Color(0xFF0D73F2).withValues(alpha: 0.10),
+                            color:
+                                const Color(0xFF0D73F2).withValues(alpha: 0.10),
                             borderRadius: BorderRadius.circular(16),
                           ),
-                          child: const Icon(Icons.support_agent_rounded, color: Color(0xFF0D73F2)),
+                          child: const Icon(Icons.support_agent_rounded,
+                              color: Color(0xFF0D73F2)),
                         ),
                         const SizedBox(width: 14),
                         Flexible(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('Tickets assistance', style: theme.textTheme.titleLarge),
+                              Text('Tickets assistance',
+                                  style: theme.textTheme.titleLarge),
                               const SizedBox(height: 4),
-                              const Text('Suivez les demandes des administrateurs communaux.'),
+                              const Text(
+                                  'Suivez les demandes des administrateurs communaux.'),
                               if (snapshot.hasError) ...[
                                 const SizedBox(height: 6),
                                 Text(
                                   'Compteurs indisponibles pour le moment.',
-                                  style: theme.textTheme.bodySmall?.copyWith(color: const Color(0xFFB45309)),
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                      color: const Color(0xFFB45309)),
                                 ),
                               ],
                             ],
@@ -735,8 +741,8 @@ class _ProfileCardState extends State<_ProfileCard> {
 
     setState(() => _busy = true);
     try {
-      final key =
-          await SuperAdminService.instance.regenerateAdminKey(widget.profile.id);
+      final key = await SuperAdminService.instance
+          .regenerateAdminKey(widget.profile.id);
       if (!mounted) return;
       setState(() {
         _revealedKey = key;
@@ -747,7 +753,8 @@ class _ProfileCardState extends State<_ProfileCard> {
       if (!mounted) return;
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Régénération impossible : ${error.toString()}')),
+        SnackBar(
+            content: Text('Régénération impossible : ${error.toString()}')),
       );
     }
   }
@@ -977,7 +984,8 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
       debugPrint('[CreateProfileDialog] appel createAdminProfile');
       final profile = await SuperAdminService.instance.createAdminProfile(
         label: _labelCtrl.text.trim(),
-        communeName: CommuneLookupService.normalizeCommuneName(_communeCtrl.text),
+        communeName:
+            CommuneLookupService.normalizeCommuneName(_communeCtrl.text),
         communeCode: CommuneLookupService.normalizeInsee(_codeCtrl.text),
         codePostal: CommuneLookupService.normalizePostal(_postalCtrl.text),
         referenceEmail: _emailCtrl.text.trim(),
@@ -1088,7 +1096,8 @@ class _CreateProfileDialogState extends State<_CreateProfileDialog> {
                 validator: (v) {
                   final value = v?.trim() ?? '';
                   if (value.isEmpty) return null; // optionnel
-                  final ok = RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value);
+                  final ok =
+                      RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(value);
                   return ok ? null : 'E-mail invalide.';
                 },
               ),

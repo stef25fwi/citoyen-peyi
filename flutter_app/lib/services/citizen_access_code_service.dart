@@ -1094,7 +1094,8 @@ class CitizenAccessCodeService {
       try {
         return jsonDecode(response.body) as Map<String, dynamic>;
       } catch (_) {
-        throw StateError('Réponse backend illisible (HTTP ${response.statusCode}).');
+        throw StateError(
+            'Réponse backend illisible (HTTP ${response.statusCode}).');
       }
     }
 

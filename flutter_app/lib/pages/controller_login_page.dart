@@ -172,10 +172,10 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                       SizedBox(
                         width: double.infinity,
                         child: _LoginGradientButton(
-                          onPressed:
-                              _isSubmitting || _codeController.text.trim().isEmpty
-                                  ? null
-                                  : _submit,
+                          onPressed: _isSubmitting ||
+                                  _codeController.text.trim().isEmpty
+                              ? null
+                              : _submit,
                           isLoading: _isSubmitting,
                           label: _isSubmitting
                               ? 'Connexion en cours...'

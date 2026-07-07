@@ -67,8 +67,8 @@ class AppRouter {
             const ['super_admin']);
       case '/super-admin/support':
       case '/super/support':
-        return _requireRoles(
-            settings, const SuperAdminSupportListScreen(), const ['super_admin']);
+        return _requireRoles(settings, const SuperAdminSupportListScreen(),
+            const ['super_admin']);
       case '/super/controllers':
         return _requireRoles(
             settings, const SuperAdminAgentsPage(), const ['super_admin']);
