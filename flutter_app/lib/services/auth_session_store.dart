@@ -73,7 +73,9 @@ class AuthSession {
     for (final roleName in roles) {
       if (roleName == 'super_admin' && isSuperAdmin) return true;
       if ((roleName == 'admin' || roleName == 'commune_admin') &&
-          isCommuneAdmin) return true;
+          isCommuneAdmin) {
+        return true;
+      }
       if (roleName == 'controller' && isController) return true;
     }
     return false;

@@ -62,7 +62,9 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
       if (_statusFilter == 'open' && poll.status != 'active') return false;
       if (_statusFilter == 'closed' &&
           poll.status != 'closed' &&
-          poll.status != 'archived') return false;
+          poll.status != 'archived') {
+        return false;
+      }
       return true;
     }).toList()
       ..sort((left, right) => right.openDate.compareTo(left.openDate));

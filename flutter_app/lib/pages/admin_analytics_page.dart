@@ -389,8 +389,9 @@ class _PollParticipationBarChart extends StatelessWidget {
                 reservedSize: 66,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= visiblePolls.length)
+                  if (index < 0 || index >= visiblePolls.length) {
                     return const SizedBox.shrink();
+                  }
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: SizedBox(
@@ -469,8 +470,9 @@ class _DailyVotesBarChart extends StatelessWidget {
                 reservedSize: 30,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= dailyVotes.length)
+                  if (index < 0 || index >= dailyVotes.length) {
                     return const SizedBox.shrink();
+                  }
                   return Text(dailyVotes[index].label,
                       style: const TextStyle(fontSize: 10));
                 },
@@ -535,8 +537,9 @@ class _AccessUsageBarChart extends StatelessWidget {
                 reservedSize: 54,
                 getTitlesWidget: (value, meta) {
                   final index = value.toInt();
-                  if (index < 0 || index >= visibleStats.length)
+                  if (index < 0 || index >= visibleStats.length) {
                     return const SizedBox.shrink();
+                  }
                   return Padding(
                     padding: const EdgeInsets.only(top: 8),
                     child: SizedBox(

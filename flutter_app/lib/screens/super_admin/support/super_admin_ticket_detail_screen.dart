@@ -53,9 +53,10 @@ class _SuperAdminTicketDetailScreenState
           .sendMessage(ticketId: widget.ticketId, message: _messageCtrl.text);
       _messageCtrl.clear();
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
@@ -67,9 +68,10 @@ class _SuperAdminTicketDetailScreenState
       await SupportTicketService.instance
           .updateTicketStatus(ticketId: widget.ticketId, status: status);
     } catch (error) {
-      if (mounted)
+      if (mounted) {
         ScaffoldMessenger.of(context)
             .showSnackBar(SnackBar(content: Text(error.toString())));
+      }
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
     }
