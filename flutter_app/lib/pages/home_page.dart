@@ -305,14 +305,13 @@ class _LogoHeaderCard extends StatelessWidget {
           label: 'Citoyen Peyi',
           image: true,
           child: Image.asset(
-            CitoyenPeyiHomePage.logoPath,
+            'assets/citoyen_peyi/logo4.png',
             width: compact ? 220 : (shortHeight ? 700 : 760),
             height: compact ? 84 : (shortHeight ? 184 : 210),
             fit: BoxFit.contain,
           ),
         ),
-      ),
-    );
+      ),    );
   }
 }
 
