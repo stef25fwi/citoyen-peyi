@@ -201,53 +201,31 @@ class _HomeContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final compact = isCompact(context);
-    final shortHeight = MediaQuery.of(context).size.height < 860;
-
-    return Center(
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: compact ? double.infinity : 1080,
-        ),
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(
-            compact ? 8 : 12,
-            shortHeight ? 8 : 12,
-            compact ? 8 : 12,
-            shortHeight ? 4 : 6,
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              const _LogoHeaderCard(),
-              SizedBox(height: shortHeight ? 4 : 8),
-              const _StatementCard(),
-              SizedBox(height: shortHeight ? 4 : 8),
-              const _ParticipationCard(),
-              SizedBox(height: shortHeight ? 4 : 8),
-              const _AdministrationAccess(),
-            ],
+    return Column(
+      children: [
+        const SizedBox(height: 20),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 20),
+          child: Card(
+            elevation: 10,
+            child: Padding(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                'Votre collectivité place votre parole',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
           ),
         ),
-      ),
+        // Autres widgets dans votre colonne...
+      ],
     );
   }
-}
-
-class _GlassCard extends StatelessWidget {
-  const _GlassCard({
-    required this.child,
-    required this.decoration,
-    this.padding,
-    this.height,
-    this.constraints,
-  });
-
-  final Widget child;
-  final BoxDecoration decoration;
-  final EdgeInsetsGeometry? padding;
-  final double? height;
-  final BoxConstraints? constraints;
+}  final BoxConstraints? constraints;
 
   @override
   Widget build(BuildContext context) {
