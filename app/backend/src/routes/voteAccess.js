@@ -114,6 +114,103 @@ export const isPollOpen = (poll) => {
 export const optionBelongsToPoll = (poll, optionId) => Array.isArray(poll.options)
   && poll.options.some((option) => String(option.id || '') === optionId);
 
+// Identifiant de la pseudo-question exposee pour les consultations
+// historiques a question unique (champ questions absent en base).
+export const LEGACY_QUESTION_ID = 'main';
+
+const sanitizePublicOption = (option) => ({
+  id: String(option?.id || ''),
+  label: String(option?.label || ''),
+  icon: String(option?.icon || ''),
+  photoUrls: Array.isArray(option?.photoUrls)
+    ? option.photoUrls.filter((url) => typeof url === 'string').slice(0, 2)
+    : [],
+});
+
+// Questions publiques d'une consultation : soit le questionnaire multi-etapes
+// stocke, soit une pseudo-question unique batie sur question/options
+// historiques. Le client ne rend QUE cette forme.
+export const publicQuestionsForPoll = (poll) => {
+  if (Array.isArray(poll.questions) && poll.questions.length > 0) {
+    return poll.questions
+      .filter((question) => question && Array.isArray(question.options))
+      .map((question) => ({
+        id: String(question.id || ''),
+        title: String(question.title || ''),
+        subtitle: String(question.subtitle || ''),
+        multiple: question.multiple === true,
+        options: question.options
+          .filter((option) => option && (option.id || option.label))
+          .map(sanitizePublicOption),
+      }));
+  }
+  const options = Array.isArray(poll.options)
+    ? poll.options.filter((option) => option && (option.id || option.label)).map(sanitizePublicOption)
+    : [];
+  return [{
+    id: LEGACY_QUESTION_ID,
+    title: String(poll.question || ''),
+    subtitle: '',
+    multiple: false,
+    options,
+  }];
+};
+
+// Valide les reponses d'un questionnaire : chaque question doit recevoir au
+// moins une option valide, une seule pour les questions a choix unique, et
+// aucune question/option inconnue n'est acceptee. Retourne les reponses
+// normalisees (Map questionId -> Set optionIds) ou une erreur.
+export const validateAnswers = (poll, rawAnswers) => {
+  const questions = publicQuestionsForPoll(poll);
+  if (!Array.isArray(rawAnswers) || rawAnswers.length === 0) {
+    return { error: 'Aucune reponse fournie.' };
+  }
+  if (rawAnswers.length > questions.length) {
+    return { error: 'Reponses en trop.' };
+  }
+
+  const byQuestion = new Map(questions.map((q) => [q.id, q]));
+  const normalized = new Map();
+
+  for (const answer of rawAnswers) {
+    const questionId = String(answer?.questionId || '');
+    const question = byQuestion.get(questionId);
+    if (!question) return { error: 'Question inconnue.' };
+    if (normalized.has(questionId)) return { error: 'Question repondue deux fois.' };
+
+    const rawIds = Array.isArray(answer?.optionIds) ? answer.optionIds : [];
+    const validIds = new Set(question.options.map((option) => option.id));
+    const optionIds = [...new Set(rawIds.map((value) => String(value || '')))];
+    if (optionIds.length === 0) return { error: 'Selectionnez au moins une reponse.' };
+    if (!question.multiple && optionIds.length > 1) {
+      return { error: 'Une seule reponse est autorisee pour cette question.' };
+    }
+    if (optionIds.some((id) => !validIds.has(id))) return { error: 'Option invalide.' };
+    normalized.set(questionId, optionIds);
+  }
+
+  for (const question of questions) {
+    if (!normalized.has(question.id)) {
+      return { error: 'Toutes les questions doivent etre repondues.' };
+    }
+  }
+
+  return { answers: normalized };
+};
+
+// Applique les reponses aux compteurs de votes des questions du document.
+export const applyAnswersToQuestions = (questions, answers) => questions.map((question) => {
+  const selected = new Set(answers.get(String(question.id || '')) || []);
+  return {
+    ...question,
+    options: (question.options || []).map((option) => (
+      selected.has(String(option.id || ''))
+        ? { ...option, votes: Number(option.votes || 0) + 1 }
+        : option
+    )),
+  };
+});
+
 const normalizeAccessDoc = (doc) => {
   if (!doc?.exists) return null;
   const data = doc.data() || {};
@@ -197,6 +294,7 @@ const loadEligiblePolls = async (db, access, requestedPollId = '') => {
       status: 'open',
       hasVoted: participationMap.get(pollId) === true,
       options: safeOptions,
+      questions: publicQuestionsForPoll(poll),
     });
   }
   return polls;
@@ -260,7 +358,7 @@ router.post('/validate', async (req, res) => {
 
 const ID_PATTERN = /^[A-Za-z0-9_-]{1,64}$/;
 
-export const submitAnonymousVote = async ({ db, token, pollId, optionId }) => {
+export const submitAnonymousVote = async ({ db, token, pollId, optionId, answers }) => {
   const participationHash = token?.participationHash;
   const participationDocId = createParticipationDocId(pollId, participationHash);
 
@@ -279,56 +377,112 @@ export const submitAnonymousVote = async ({ db, token, pollId, optionId }) => {
     if (token.communeId && poll.communeId && token.communeId !== poll.communeId) {
       return { status: 403, errorCode: 'INVALID_CODE', message: 'Ce code n’est pas rattache a cette commune.' };
     }
-    if (!optionBelongsToPoll(poll, optionId)) {
-      return { status: 400, errorCode: 'INVALID_OPTION', message: 'Option invalide.' };
-    }
     if (participationDoc.exists) {
       return { status: 409, errorCode: 'ALREADY_VOTED', message: 'Vous avez deja vote pour cette consultation.' };
     }
 
-    const options = (poll.options || []).map((option) => (
-      String(option.id || '') === optionId
-        ? { ...option, votes: Number(option.votes || 0) + 1 }
-        : option
-    ));
+    // Deux formes acceptees : reponses de questionnaire (answers) ou vote
+    // historique a option unique (optionId). Le vote historique est converti
+    // en reponse sur l'unique question du questionnaire (stockee ou
+    // pseudo-question), et refuse clairement si la consultation compte
+    // plusieurs questions (le client doit alors envoyer answers).
+    const storedQuestions = Array.isArray(poll.questions) ? poll.questions : [];
+    if ((!Array.isArray(answers) || answers.length === 0) && storedQuestions.length > 1) {
+      return {
+        status: 400,
+        errorCode: 'INVALID_OPTION',
+        message: 'Cette consultation comporte plusieurs questions : reponses completes requises.',
+      };
+    }
+    const legacyQuestionId = storedQuestions.length === 1
+      ? String(storedQuestions[0].id || LEGACY_QUESTION_ID)
+      : LEGACY_QUESTION_ID;
+    const rawAnswers = Array.isArray(answers) && answers.length > 0
+      ? answers
+      : [{ questionId: legacyQuestionId, optionIds: [optionId] }];
+    const validated = validateAnswers(poll, rawAnswers);
+    if (validated.error) {
+      return { status: 400, errorCode: 'INVALID_OPTION', message: validated.error };
+    }
+
+    const communeId = token.communeId || poll.communeId || '';
+    const update = {
+      totalVoted: Number(poll.totalVoted || 0) + 1,
+      updatedAt: FieldValue.serverTimestamp(),
+    };
+
+    if (Array.isArray(poll.questions) && poll.questions.length > 0) {
+      update.questions = applyAnswersToQuestions(poll.questions, validated.answers);
+      // Miroir historique : question/options refletent la premiere question
+      // (listes, resultats publics et exports existants).
+      update.options = update.questions[0].options;
+    } else {
+      const selected = new Set(validated.answers.get(LEGACY_QUESTION_ID) || []);
+      update.options = (poll.options || []).map((option) => (
+        selected.has(String(option.id || ''))
+          ? { ...option, votes: Number(option.votes || 0) + 1 }
+          : option
+      ));
+    }
+
+    const answersRecord = [...validated.answers.entries()].map(([questionId, optionIds]) => ({
+      questionId,
+      optionIds,
+    }));
+    const primaryOptionId = answersRecord[0]?.optionIds?.[0] || '';
 
     transaction.set(participationRef, buildParticipationRecord({
       pollId,
       participationHash,
-      communeId: token.communeId || poll.communeId || '',
+      communeId,
     }));
-    transaction.set(ballotRef, buildAnonymousBallotRecord({
-      pollId,
-      optionId,
-      communeId: token.communeId || poll.communeId || '',
-    }));
-    transaction.set(pollRef, {
-      options,
-      totalVoted: Number(poll.totalVoted || 0) + 1,
-      updatedAt: FieldValue.serverTimestamp(),
-    }, { merge: true });
+    transaction.set(ballotRef, {
+      ...buildAnonymousBallotRecord({ pollId, optionId: primaryOptionId, communeId }),
+      answers: answersRecord,
+    });
+    transaction.set(pollRef, update, { merge: true });
     return { status: 200 };
   });
+};
+
+// Reponses de questionnaire : liste bornee de {questionId, optionIds[]},
+// identifiants au format court sur. Renvoie null si la forme est invalide.
+const readAnswersBody = (raw) => {
+  if (raw === undefined || raw === null) return [];
+  if (!Array.isArray(raw) || raw.length === 0 || raw.length > 10) return null;
+  const answers = [];
+  for (const item of raw) {
+    const questionId = typeof item?.questionId === 'string' ? item.questionId.trim() : '';
+    const rawIds = Array.isArray(item?.optionIds) ? item.optionIds : [];
+    if (!ID_PATTERN.test(questionId) || rawIds.length === 0 || rawIds.length > 12) return null;
+    const optionIds = rawIds.map((value) => (typeof value === 'string' ? value.trim() : ''));
+    if (optionIds.some((id) => !ID_PATTERN.test(id))) return null;
+    answers.push({ questionId, optionIds });
+  }
+  return answers;
 };
 
 router.post('/submit', async (req, res) => {
   const token = verifyAccessToken(req.body?.accessToken);
   const pollId = typeof req.body?.pollId === 'string' ? req.body.pollId.trim() : '';
   const optionId = typeof req.body?.optionId === 'string' ? req.body.optionId.trim() : '';
+  const answers = readAnswersBody(req.body?.answers);
   const participationHash = token?.participationHash;
-  if (!token || token.pollId !== pollId || !participationHash || !pollId || !optionId) {
+  const hasAnswers = Array.isArray(answers) && answers.length > 0;
+  if (!token || token.pollId !== pollId || !participationHash || !pollId
+      || answers === null || (!optionId && !hasAnswers)) {
     return res.status(400).json({ ok: false, errorCode: 'INVALID_REQUEST', message: 'Demande de vote incomplete.' });
   }
   if (!/^[a-f0-9]{64}$/.test(participationHash)) {
     return res.status(400).json({ ok: false, errorCode: 'INVALID_REQUEST', message: 'Jeton de vote invalide.' });
   }
-  if (!ID_PATTERN.test(pollId) || !ID_PATTERN.test(optionId)) {
+  if (!ID_PATTERN.test(pollId) || (optionId && !ID_PATTERN.test(optionId))) {
     return res.status(400).json({ ok: false, errorCode: 'INVALID_REQUEST', message: 'Identifiants invalides.' });
   }
 
   try {
     const db = getFirebaseAdminDb();
-    const result = await submitAnonymousVote({ db, token, pollId, optionId });
+    const result = await submitAnonymousVote({ db, token, pollId, optionId, answers });
 
     if (result.status !== 200) {
       return res.status(result.status).json({ ok: false, errorCode: result.errorCode, message: result.message });

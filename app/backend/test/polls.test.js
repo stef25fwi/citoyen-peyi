@@ -51,3 +51,38 @@ test('isScheduledPublicationDue compares date-only values', () => {
     false,
   );
 });
+test('buildQuestions sanitizes questions, options and icons', () => {
+  const questions = polls.buildQuestions([
+    {
+      title: '  Quels aménagements ?  ',
+      multiple: true,
+      options: [
+        { label: 'Espaces verts et parcs', icon: 'Park!' },
+        { label: 'Éclairage public', icon: 'lighting' },
+        { label: '' },
+      ],
+    },
+    { title: 'Sans assez d\'options', options: [{ label: 'Seule' }] },
+    'pas un objet',
+  ]);
+  assert.equal(questions.length, 1);
+  assert.equal(questions[0].title, 'Quels aménagements ?');
+  assert.equal(questions[0].multiple, true);
+  assert.equal(questions[0].options.length, 2);
+  assert.equal(questions[0].options[0].icon, 'park');
+  assert.match(questions[0].id, /^q-/);
+});
+
+test('buildQuestions preserves existing ids and votes on update', () => {
+  const existing = [{
+    id: 'q-keep',
+    title: 'Old',
+    options: [{ id: 'o-keep', label: 'Old A', votes: 7 }],
+  }];
+  const questions = polls.buildQuestions([
+    { title: 'New title', options: [{ label: 'New A' }, { label: 'New B' }] },
+  ], existing);
+  assert.equal(questions[0].id, 'q-keep');
+  assert.equal(questions[0].options[0].id, 'o-keep');
+  assert.equal(questions[0].options[0].votes, 7);
+});

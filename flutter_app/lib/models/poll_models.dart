@@ -5,24 +5,30 @@ class PollOptionModel {
     required this.id,
     required this.label,
     required this.votes,
+    this.icon = '',
     this.photoUrls = const <String>[],
   });
 
   final String id;
   final String label;
   final int votes;
+
+  /// Slug d'icone facultatif (parc, eclairage, jeux, pmr, autre, ...).
+  final String icon;
   final List<String> photoUrls;
 
   PollOptionModel copyWith({
     String? id,
     String? label,
     int? votes,
+    String? icon,
     List<String>? photoUrls,
   }) {
     return PollOptionModel(
       id: id ?? this.id,
       label: label ?? this.label,
       votes: votes ?? this.votes,
+      icon: icon ?? this.icon,
       photoUrls: photoUrls ?? this.photoUrls,
     );
   }
@@ -31,6 +37,7 @@ class PollOptionModel {
         'id': id,
         'label': label,
         'votes': votes,
+        'icon': icon,
         'photoUrls': photoUrls,
       };
 
@@ -39,21 +46,91 @@ class PollOptionModel {
       id: json['id'] as String? ?? 'opt-${index + 1}',
       label: json['label'] as String? ?? 'Option ${index + 1}',
       votes: (json['votes'] as num?)?.toInt() ?? 0,
+      icon: json['icon'] as String? ?? '',
       photoUrls: _readStringList(json['photoUrls']),
     );
   }
 }
 
-/// Brouillon d'option utilise lors de la creation d'une consultation :
-/// libelle + jusqu'a 2 photos deja televersees (URLs).
+/// Question d'un questionnaire multi-etapes.
+class PollQuestionModel {
+  const PollQuestionModel({
+    required this.id,
+    required this.title,
+    this.subtitle = '',
+    this.multiple = false,
+    this.options = const <PollOptionModel>[],
+  });
+
+  final String id;
+  final String title;
+  final String subtitle;
+  final bool multiple;
+  final List<PollOptionModel> options;
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'title': title,
+        'subtitle': subtitle,
+        'multiple': multiple,
+        'options': options.map((item) => item.toJson()).toList(),
+      };
+
+  static PollQuestionModel fromJson(Map<String, dynamic> json, int index) {
+    final rawOptions = (json['options'] as List<dynamic>? ?? const <dynamic>[])
+        .whereType<Map<String, dynamic>>()
+        .toList();
+    return PollQuestionModel(
+      id: json['id'] as String? ?? 'q-${index + 1}',
+      title: json['title'] as String? ?? '',
+      subtitle: json['subtitle'] as String? ?? '',
+      multiple: json['multiple'] == true,
+      options: rawOptions
+          .asMap()
+          .entries
+          .map((entry) => PollOptionModel.fromJson(entry.value, entry.key))
+          .toList(),
+    );
+  }
+}
+
+/// Brouillon d'option utilise lors de la creation/edition d'une consultation :
+/// libelle + icone facultative + jusqu'a 2 photos deja televersees (URLs).
 class PollOptionDraft {
   const PollOptionDraft({
     required this.label,
+    this.icon = '',
     this.photoUrls = const <String>[],
   });
 
   final String label;
+  final String icon;
   final List<String> photoUrls;
+
+  Map<String, dynamic> toJson() => {
+        'label': label,
+        if (icon.isNotEmpty) 'icon': icon,
+        'photoUrls': photoUrls,
+      };
+}
+
+/// Brouillon de question d'un questionnaire multi-etapes.
+class PollQuestionDraft {
+  const PollQuestionDraft({
+    required this.title,
+    this.multiple = false,
+    required this.options,
+  });
+
+  final String title;
+  final bool multiple;
+  final List<PollOptionDraft> options;
+
+  Map<String, dynamic> toJson() => {
+        'title': title,
+        'multiple': multiple,
+        'options': options.map((option) => option.toJson()).toList(),
+      };
 }
 
 List<String> _readStringList(Object? value) {
@@ -98,6 +175,7 @@ class PollModel {
     this.description = '',
     required this.question,
     required this.options,
+    this.pollQuestions = const <PollQuestionModel>[],
     this.photoUrls = const <String>[],
     this.targetPopulation = '',
     this.communeId = '',
@@ -118,6 +196,19 @@ class PollModel {
   final String description;
   final String question;
   final List<PollOptionModel> options;
+
+  /// Questionnaire multi-etapes (vide pour les consultations historiques).
+  final List<PollQuestionModel> pollQuestions;
+
+  /// Questionnaire effectif : questions stockees, sinon pseudo-question
+  /// unique batie sur question/options (meme convention que le backend).
+  List<PollQuestionModel> get effectiveQuestions {
+    if (pollQuestions.isNotEmpty) return pollQuestions;
+    return [
+      PollQuestionModel(id: 'main', title: question, options: options),
+    ];
+  }
+
   final List<String> photoUrls;
   String get mainPhotoUrl => photoUrls.isEmpty ? '' : photoUrls.first;
   final String targetPopulation;
@@ -139,6 +230,7 @@ class PollModel {
     String? description,
     String? question,
     List<PollOptionModel>? options,
+    List<PollQuestionModel>? pollQuestions,
     List<String>? photoUrls,
     String? targetPopulation,
     String? communeId,
@@ -159,6 +251,7 @@ class PollModel {
       description: description ?? this.description,
       question: question ?? this.question,
       options: options ?? this.options,
+      pollQuestions: pollQuestions ?? this.pollQuestions,
       photoUrls: photoUrls ?? this.photoUrls,
       targetPopulation: targetPopulation ?? this.targetPopulation,
       communeId: communeId ?? this.communeId,
@@ -182,6 +275,7 @@ class PollModel {
         'description': description,
         'question': question,
         'options': options.map((item) => item.toJson()).toList(),
+        'questions': pollQuestions.map((item) => item.toJson()).toList(),
         'photoUrls': photoUrls,
         'mainPhotoUrl': mainPhotoUrl,
         'targetPopulation': targetPopulation,
@@ -204,6 +298,10 @@ class PollModel {
     final rawOptions = (json['options'] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
         .toList();
+    final rawQuestions =
+        (json['questions'] as List<dynamic>? ?? const <dynamic>[])
+            .whereType<Map<String, dynamic>>()
+            .toList();
 
     return PollModel(
       id: json['id'] as String? ?? 'poll-1',
@@ -216,6 +314,12 @@ class PollModel {
           .asMap()
           .entries
           .map((entry) => PollOptionModel.fromJson(entry.value, entry.key))
+          .toList(),
+      pollQuestions: rawQuestions
+          .asMap()
+          .entries
+          .map((entry) => PollQuestionModel.fromJson(entry.value, entry.key))
+          .where((q) => q.title.isNotEmpty && q.options.isNotEmpty)
           .toList(),
       photoUrls: _readStringList(
         json['photoUrls'] ??

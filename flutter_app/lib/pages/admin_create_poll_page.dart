@@ -5,17 +5,36 @@ import '../models/poll_models.dart';
 import '../services/poll_ai_draft_service.dart';
 import '../services/poll_photo_upload_service.dart';
 import '../services/poll_service.dart';
+import '../widgets/poll_option_icons.dart';
 
-/// Brouillon d'une option de vote pendant la creation : libelle + jusqu'a
-/// 2 photos locales (pas encore televersees).
+/// Brouillon d'une option de vote pendant la creation : libelle + icone
+/// facultative + jusqu'a 2 photos locales (pas encore televersees).
 class _OptionDraft {
   _OptionDraft({String label = ''})
       : controller = TextEditingController(text: label);
 
   final TextEditingController controller;
   final List<XFile> photos = <XFile>[];
+  String icon = '';
 
   void dispose() => controller.dispose();
+}
+
+/// Brouillon d'une question du questionnaire multi-etapes.
+class _QuestionDraft {
+  _QuestionDraft({String title = ''})
+      : titleController = TextEditingController(text: title);
+
+  final TextEditingController titleController;
+  bool multiple = false;
+  final List<_OptionDraft> options = [_OptionDraft(), _OptionDraft()];
+
+  void dispose() {
+    titleController.dispose();
+    for (final option in options) {
+      option.dispose();
+    }
+  }
 }
 
 class AdminCreatePollPage extends StatefulWidget {
@@ -29,13 +48,9 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
   final _formKey = GlobalKey<FormState>();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _questionController = TextEditingController();
   final _targetPopulationController = TextEditingController();
   final _voterCountController = TextEditingController(text: '50');
-  final List<_OptionDraft> _optionDrafts = [
-    _OptionDraft(),
-    _OptionDraft(),
-  ];
+  final List<_QuestionDraft> _questionDrafts = [_QuestionDraft()];
 
   DateTime? _openDate;
   DateTime? _closeDate;
@@ -49,11 +64,10 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
   void dispose() {
     _titleController.dispose();
     _descriptionController.dispose();
-    _questionController.dispose();
     _targetPopulationController.dispose();
     _voterCountController.dispose();
-    for (final option in _optionDrafts) {
-      option.dispose();
+    for (final question in _questionDrafts) {
+      question.dispose();
     }
     super.dispose();
   }
@@ -93,29 +107,49 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     });
   }
 
-  void _addOption() {
+  void _addQuestion() {
+    if (_questionDrafts.length >= 10) return;
     setState(() {
-      _optionDrafts.add(_OptionDraft());
+      _questionDrafts.add(_QuestionDraft());
     });
   }
 
-  void _removeOption(int index) {
-    if (_optionDrafts.length <= 2) {
+  void _removeQuestion(int index) {
+    if (_questionDrafts.length <= 1) return;
+    setState(() {
+      final question = _questionDrafts.removeAt(index);
+      question.dispose();
+    });
+  }
+
+  void _addOption(_QuestionDraft question) {
+    setState(() {
+      question.options.add(_OptionDraft());
+    });
+  }
+
+  void _removeOption(_QuestionDraft question, int index) {
+    if (question.options.length <= 2) {
       return;
     }
 
     setState(() {
-      final option = _optionDrafts.removeAt(index);
+      final option = question.options.removeAt(index);
       option.dispose();
     });
   }
 
-  Future<void> _pickOptionPhotos(int index) async {
+  Future<void> _pickOptionIcon(_OptionDraft option) async {
+    final slug = await showPollOptionIconPicker(context);
+    if (slug == null || !mounted) return;
+    setState(() => option.icon = slug);
+  }
+
+  Future<void> _pickOptionPhotos(_OptionDraft option) async {
     if (_isSubmitting || _isUploadingPhotos) {
       return;
     }
 
-    final option = _optionDrafts[index];
     try {
       final updated = await PollPhotoUploadService.instance.pickPhotos(
         current: option.photos,
@@ -146,21 +180,22 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     }
   }
 
-  void _removeOptionPhoto(int optionIndex, int photoIndex) {
-    final photos = _optionDrafts[optionIndex].photos;
-    if (photoIndex < 0 || photoIndex >= photos.length) return;
+  void _removeOptionPhoto(_OptionDraft option, int photoIndex) {
+    if (photoIndex < 0 || photoIndex >= option.photos.length) return;
     setState(() {
-      photos.removeAt(photoIndex);
+      option.photos.removeAt(photoIndex);
     });
   }
 
   PollAiDraft _currentAiDraft() {
+    final firstQuestion = _questionDrafts.first;
     return PollAiDraft(
       projectTitle: _titleController.text,
       description: _descriptionController.text,
-      question: _questionController.text,
+      question: firstQuestion.titleController.text,
       targetPopulation: _targetPopulationController.text,
-      options: _optionDrafts.map((item) => item.controller.text).toList(),
+      options:
+          firstQuestion.options.map((item) => item.controller.text).toList(),
     );
   }
 
@@ -177,15 +212,18 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     setState(() {
       _titleController.text = draft.projectTitle;
       _descriptionController.text = draft.description;
-      _questionController.text = draft.question;
       _targetPopulationController.text = draft.targetPopulation;
 
-      // Conserve les photos deja choisies tant qu'il reste assez d'options ;
-      // les options excedentaires (et leurs photos) sont abandonnees.
-      for (var i = options.length; i < _optionDrafts.length; i++) {
-        _optionDrafts[i].dispose();
+      // L'assistant IA reformule la premiere question du questionnaire.
+      // Conserve icones et photos deja choisies tant qu'il reste assez
+      // d'options ; les options excedentaires sont abandonnees.
+      final firstQuestion = _questionDrafts.first;
+      firstQuestion.titleController.text = draft.question;
+      final drafts = firstQuestion.options;
+      for (var i = options.length; i < drafts.length; i++) {
+        drafts[i].dispose();
       }
-      final reused = _optionDrafts.take(options.length).toList();
+      final reused = drafts.take(options.length).toList();
       for (var i = 0; i < reused.length; i++) {
         reused[i].controller.text = options[i];
       }
@@ -193,7 +231,7 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
         reused.add(_OptionDraft(label: options[i]));
       }
 
-      _optionDrafts
+      drafts
         ..clear()
         ..addAll(reused);
 
@@ -529,22 +567,28 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
     try {
       final draftId = 'draft-${DateTime.now().millisecondsSinceEpoch}';
       var photoUrls = const <String>[];
-      final options = <PollOptionDraft>[];
-      final hasOptionPhotos =
-          _optionDrafts.any((option) => option.photos.isNotEmpty);
+      final questions = <PollQuestionDraft>[];
+      final hasUploads = _photos.isNotEmpty ||
+          _questionDrafts.any(
+              (question) => question.options.any((o) => o.photos.isNotEmpty));
 
-      if (_photos.isNotEmpty || hasOptionPhotos) {
-        setState(() => _isUploadingPhotos = true);
-        try {
-          if (_photos.isNotEmpty) {
-            photoUrls = await PollPhotoUploadService.instance.uploadPhotos(
-              photos: _photos,
-              draftId: draftId,
-            );
-          }
+      if (hasUploads) setState(() => _isUploadingPhotos = true);
+      try {
+        if (_photos.isNotEmpty) {
+          photoUrls = await PollPhotoUploadService.instance.uploadPhotos(
+            photos: _photos,
+            draftId: draftId,
+          );
+        }
 
-          for (var index = 0; index < _optionDrafts.length; index++) {
-            final option = _optionDrafts[index];
+        for (var qIndex = 0; qIndex < _questionDrafts.length; qIndex++) {
+          final question = _questionDrafts[qIndex];
+          final title = question.titleController.text.trim();
+          if (title.isEmpty) continue;
+
+          final options = <PollOptionDraft>[];
+          for (var index = 0; index < question.options.length; index++) {
+            final option = question.options[index];
             final label = option.controller.text.trim();
             if (label.isEmpty) continue;
 
@@ -553,30 +597,31 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
               optionPhotoUrls =
                   await PollPhotoUploadService.instance.uploadPhotos(
                 photos: option.photos,
-                draftId: '$draftId-opt-$index',
+                draftId: '$draftId-q$qIndex-opt-$index',
               );
             }
-            options
-                .add(PollOptionDraft(label: label, photoUrls: optionPhotoUrls));
+            options.add(PollOptionDraft(
+              label: label,
+              icon: option.icon,
+              photoUrls: optionPhotoUrls,
+            ));
           }
-        } finally {
-          if (mounted) {
-            setState(() => _isUploadingPhotos = false);
-          }
+          questions.add(PollQuestionDraft(
+            title: title,
+            multiple: question.multiple,
+            options: options,
+          ));
         }
-      } else {
-        for (final option in _optionDrafts) {
-          final label = option.controller.text.trim();
-          if (label.isEmpty) continue;
-          options.add(PollOptionDraft(label: label));
+      } finally {
+        if (mounted && hasUploads) {
+          setState(() => _isUploadingPhotos = false);
         }
       }
 
       await PollService.instance.createPoll(
         projectTitle: _titleController.text,
         description: _descriptionController.text,
-        question: _questionController.text,
-        options: options,
+        questions: questions,
         photoUrls: photoUrls,
         targetPopulation: _targetPopulationController.text,
         openDate: _formatDate(openDate),
@@ -730,22 +775,6 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                         minLines: 3,
                         maxLines: 5,
                       ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: _questionController,
-                        decoration: const InputDecoration(
-                          labelText: 'Question de la consultation',
-                          hintText: 'Ex : Quelle option preferez-vous ?',
-                        ),
-                        minLines: 2,
-                        maxLines: 3,
-                        validator: (value) {
-                          if (value == null || value.trim().isEmpty) {
-                            return 'La question de la consultation est obligatoire.';
-                          }
-                          return null;
-                        },
-                      ),
                     ],
                   ),
                 ),
@@ -755,33 +784,44 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                 _buildPhotosSection(theme),
                 const SizedBox(height: 16),
                 _FormSection(
-                  title: 'Options de vote',
+                  title: 'Questions du questionnaire',
                   action: TextButton.icon(
-                    onPressed: _addOption,
+                    onPressed:
+                        _questionDrafts.length < 10 ? _addQuestion : null,
                     icon: const Icon(Icons.add_rounded),
-                    label: const Text('Ajouter'),
+                    label: const Text('Ajouter une question'),
                   ),
                   child: Column(
                     children: [
                       Text(
-                        'Vous pouvez illustrer chaque option avec jusqu a ${PollPhotoUploadService.maxPhotosPerOption} photos (JPG, PNG ou WebP, 10 Mo max).',
+                        'Le citoyen repond etape par etape (une question par ecran). '
+                        'Chaque option peut porter une icone et jusqu a ${PollPhotoUploadService.maxPhotosPerOption} photos.',
                         style: theme.textTheme.bodyMedium,
                       ),
                       const SizedBox(height: 14),
-                      for (var index = 0; index < _optionDrafts.length; index++)
+                      for (var qIndex = 0;
+                          qIndex < _questionDrafts.length;
+                          qIndex++)
                         Padding(
                           padding: EdgeInsets.only(
-                              bottom:
-                                  index == _optionDrafts.length - 1 ? 0 : 20),
-                          child: _OptionEditor(
-                            index: index,
-                            option: _optionDrafts[index],
-                            canRemove: _optionDrafts.length > 2,
+                              bottom: qIndex == _questionDrafts.length - 1
+                                  ? 0
+                                  : 22),
+                          child: _QuestionEditor(
+                            index: qIndex,
+                            question: _questionDrafts[qIndex],
+                            canRemove: _questionDrafts.length > 1,
                             enabled: !_isSubmitting && !_isUploadingPhotos,
-                            onRemove: () => _removeOption(index),
-                            onAddPhotos: () => _pickOptionPhotos(index),
-                            onRemovePhoto: (photoIndex) =>
-                                _removeOptionPhoto(index, photoIndex),
+                            onRemove: () => _removeQuestion(qIndex),
+                            onToggleMultiple: (value) => setState(
+                                () => _questionDrafts[qIndex].multiple = value),
+                            onAddOption: () =>
+                                _addOption(_questionDrafts[qIndex]),
+                            onRemoveOption: (index) =>
+                                _removeOption(_questionDrafts[qIndex], index),
+                            onPickIcon: _pickOptionIcon,
+                            onAddPhotos: _pickOptionPhotos,
+                            onRemovePhoto: _removeOptionPhoto,
                           ),
                         ),
                     ],
@@ -1036,6 +1076,116 @@ class _PreviewLine extends StatelessWidget {
   }
 }
 
+class _QuestionEditor extends StatelessWidget {
+  const _QuestionEditor({
+    required this.index,
+    required this.question,
+    required this.canRemove,
+    required this.enabled,
+    required this.onRemove,
+    required this.onToggleMultiple,
+    required this.onAddOption,
+    required this.onRemoveOption,
+    required this.onPickIcon,
+    required this.onAddPhotos,
+    required this.onRemovePhoto,
+  });
+
+  final int index;
+  final _QuestionDraft question;
+  final bool canRemove;
+  final bool enabled;
+  final VoidCallback onRemove;
+  final ValueChanged<bool> onToggleMultiple;
+  final VoidCallback onAddOption;
+  final void Function(int optionIndex) onRemoveOption;
+  final void Function(_OptionDraft option) onPickIcon;
+  final void Function(_OptionDraft option) onAddPhotos;
+  final void Function(_OptionDraft option, int photoIndex) onRemovePhoto;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        color:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+        border: Border.all(color: theme.dividerColor.withValues(alpha: 0.55)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text('Question ${index + 1}',
+                    style: theme.textTheme.titleSmall),
+              ),
+              if (canRemove)
+                IconButton(
+                  onPressed: enabled ? onRemove : null,
+                  icon: const Icon(Icons.delete_outline_rounded),
+                  tooltip: 'Supprimer cette question',
+                ),
+            ],
+          ),
+          TextFormField(
+            controller: question.titleController,
+            enabled: enabled,
+            decoration: const InputDecoration(
+              labelText: 'Intitulé de la question',
+              hintText: 'Ex : Quels aménagements jugez-vous prioritaires ?',
+            ),
+            minLines: 1,
+            maxLines: 3,
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) {
+                return 'L\'intitulé de la question est obligatoire.';
+              }
+              return null;
+            },
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Choix multiples'),
+            subtitle: const Text('Le citoyen peut cocher plusieurs réponses.'),
+            value: question.multiple,
+            onChanged: enabled ? onToggleMultiple : null,
+          ),
+          for (var index = 0; index < question.options.length; index++)
+            Padding(
+              padding: EdgeInsets.only(
+                  bottom: index == question.options.length - 1 ? 0 : 14),
+              child: _OptionEditor(
+                index: index,
+                option: question.options[index],
+                canRemove: question.options.length > 2,
+                enabled: enabled,
+                onRemove: () => onRemoveOption(index),
+                onPickIcon: () => onPickIcon(question.options[index]),
+                onAddPhotos: () => onAddPhotos(question.options[index]),
+                onRemovePhoto: (photoIndex) =>
+                    onRemovePhoto(question.options[index], photoIndex),
+              ),
+            ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: enabled ? onAddOption : null,
+              icon: const Icon(Icons.add_rounded),
+              label: const Text('Ajouter une option'),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _OptionEditor extends StatelessWidget {
   const _OptionEditor({
     required this.index,
@@ -1043,6 +1193,7 @@ class _OptionEditor extends StatelessWidget {
     required this.canRemove,
     required this.enabled,
     required this.onRemove,
+    required this.onPickIcon,
     required this.onAddPhotos,
     required this.onRemovePhoto,
   });
@@ -1052,6 +1203,7 @@ class _OptionEditor extends StatelessWidget {
   final bool canRemove;
   final bool enabled;
   final VoidCallback onRemove;
+  final VoidCallback onPickIcon;
   final VoidCallback onAddPhotos;
   final void Function(int photoIndex) onRemovePhoto;
 
@@ -1060,11 +1212,13 @@ class _OptionEditor extends StatelessWidget {
     final theme = Theme.of(context);
     final canAddPhoto = enabled &&
         option.photos.length < PollPhotoUploadService.maxPhotosPerOption;
+    final iconData = pollIconForSlug(option.icon);
 
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
+        color: Colors.white,
         border: Border.all(color: theme.dividerColor.withValues(alpha: 0.5)),
       ),
       child: Column(
@@ -1073,10 +1227,26 @@ class _OptionEditor extends StatelessWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              CircleAvatar(
-                radius: 16,
-                backgroundColor: theme.colorScheme.primaryContainer,
-                child: Text('${index + 1}'),
+              Tooltip(
+                message: 'Choisir une icône',
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(10),
+                  onTap: enabled ? onPickIcon : null,
+                  child: Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: theme.colorScheme.primaryContainer
+                          .withValues(alpha: 0.5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(
+                      iconData ?? Icons.add_reaction_outlined,
+                      size: 20,
+                      color: theme.colorScheme.primary,
+                    ),
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(

@@ -16,21 +16,56 @@ class VoteAccessException implements Exception {
   String toString() => message;
 }
 
+/// Question d'un questionnaire multi-etapes cote citoyen.
+class EligiblePollQuestion {
+  const EligiblePollQuestion({
+    required this.id,
+    required this.title,
+    this.subtitle = '',
+    this.multiple = false,
+    this.options = const <EligiblePollOption>[],
+  });
+
+  final String id;
+  final String title;
+  final String subtitle;
+  final bool multiple;
+  final List<EligiblePollOption> options;
+
+  static EligiblePollQuestion fromJson(Map<String, dynamic> json) {
+    final rawOptions = json['options'] as List<dynamic>? ?? const [];
+    return EligiblePollQuestion(
+      id: (json['id'] as String? ?? '').trim(),
+      title: (json['title'] as String? ?? '').trim(),
+      subtitle: (json['subtitle'] as String? ?? '').trim(),
+      multiple: json['multiple'] == true,
+      options: rawOptions
+          .whereType<Map<String, dynamic>>()
+          .map(EligiblePollOption.fromJson)
+          .where((option) => option.id.isNotEmpty)
+          .toList(growable: false),
+    );
+  }
+}
+
 class EligiblePollOption {
   const EligiblePollOption({
     required this.id,
     required this.label,
+    this.icon = '',
     this.photoUrls = const <String>[],
   });
 
   final String id;
   final String label;
+  final String icon;
   final List<String> photoUrls;
 
   static EligiblePollOption fromJson(Map<String, dynamic> json) {
     return EligiblePollOption(
       id: (json['id'] as String? ?? '').trim(),
       label: (json['label'] as String? ?? '').trim(),
+      icon: (json['icon'] as String? ?? '').trim(),
       photoUrls: (json['photoUrls'] as List<dynamic>? ?? const <dynamic>[])
           .whereType<String>()
           .map((url) => url.trim())
@@ -51,6 +86,7 @@ class EligiblePollModel {
     this.question = '',
     this.photoUrls = const <String>[],
     this.options = const [],
+    this.questions = const [],
   });
 
   final String pollId;
@@ -62,9 +98,25 @@ class EligiblePollModel {
   final String question;
   final List<String> photoUrls;
   final List<EligiblePollOption> options;
+  final List<EligiblePollQuestion> questions;
+
+  /// Questionnaire effectif : questions du backend, sinon pseudo-question
+  /// unique batie sur question/options historiques (meme convention que le
+  /// backend avec l'identifiant 'main').
+  List<EligiblePollQuestion> get effectiveQuestions {
+    if (questions.isNotEmpty) return questions;
+    return [
+      EligiblePollQuestion(
+        id: 'main',
+        title: question,
+        options: options,
+      ),
+    ];
+  }
 
   static EligiblePollModel fromJson(Map<String, dynamic> json) {
     final rawOptions = json['options'] as List<dynamic>? ?? const [];
+    final rawQuestions = json['questions'] as List<dynamic>? ?? const [];
     return EligiblePollModel(
       pollId: json['pollId'] as String? ?? json['id'] as String? ?? '',
       title: json['title'] as String? ??
@@ -85,8 +137,26 @@ class EligiblePollModel {
           .map(EligiblePollOption.fromJson)
           .where((option) => option.id.isNotEmpty)
           .toList(growable: false),
+      questions: rawQuestions
+          .whereType<Map<String, dynamic>>()
+          .map(EligiblePollQuestion.fromJson)
+          .where((q) => q.id.isNotEmpty && q.options.isNotEmpty)
+          .toList(growable: false),
     );
   }
+}
+
+/// Reponse a une question d'un questionnaire multi-etapes.
+class PollAnswer {
+  const PollAnswer({required this.questionId, required this.optionIds});
+
+  final String questionId;
+  final List<String> optionIds;
+
+  Map<String, dynamic> toJson() => {
+        'questionId': questionId,
+        'optionIds': optionIds,
+      };
 }
 
 class VoteAccessValidationResult {
@@ -196,7 +266,8 @@ class VoteAccessService {
   Future<VoteSubmitResult> submitVote({
     required String accessToken,
     required String pollId,
-    required String optionId,
+    String optionId = '',
+    List<PollAnswer> answers = const [],
   }) async {
     try {
       final appCheckToken =
@@ -212,7 +283,9 @@ class VoteAccessService {
             body: jsonEncode({
               'accessToken': accessToken,
               'pollId': pollId,
-              'optionId': optionId,
+              if (optionId.isNotEmpty) 'optionId': optionId,
+              if (answers.isNotEmpty)
+                'answers': answers.map((a) => a.toJson()).toList(),
               'source': 'web',
             }),
           )
