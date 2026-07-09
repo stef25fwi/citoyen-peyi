@@ -1,0 +1,14 @@
+<svg width="360" height="240" viewBox="0 0 360 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustration transition écologique">
+  <rect width="360" height="240" rx="28" fill="#EAF8FF"/>
+  <circle cx="176" cy="121" r="66" fill="#3ACBE6"/>
+  <path d="M113 101C123 73 147 55 176 55C210 55 238 79 242 112C211 111 202 132 177 129C151 126 147 101 113 101Z" fill="#A8E5B6"/>
+  <path d="M120 143C135 176 178 200 216 174C200 159 206 142 185 138C162 134 153 154 120 143Z" fill="#68C77E"/>
+  <path d="M205 72C230 83 243 102 241 124C223 120 215 110 216 95C216 85 210 79 205 72Z" fill="#2CA3D6"/>
+  <path d="M139 78C156 81 165 90 164 105C163 117 153 123 139 124C127 116 119 107 113 101C118 90 126 82 139 78Z" fill="#E7FFF0"/>
+  <path d="M87 175C84 132 120 96 163 99C165 142 130 178 87 175Z" fill="#38B96D"/>
+  <path d="M103 158C119 143 138 126 158 107" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.9"/>
+  <path d="M251 170C220 150 214 106 241 77C273 98 279 141 251 170Z" fill="#2BA66A"/>
+  <path d="M244 151C241 130 241 109 242 87" stroke="#FFFFFF" stroke-width="7" stroke-linecap="round" opacity="0.9"/>
+  <circle cx="176" cy="121" r="66" stroke="#FFFFFF" stroke-width="8" opacity="0.68"/>
+  <path d="M54 204H306" stroke="#117CC4" stroke-width="8" stroke-linecap="round" opacity="0.20"/>
+</svg>
