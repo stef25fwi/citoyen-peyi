@@ -601,8 +601,8 @@ class _ResultsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalVotes =
-        poll.options.fold<int>(0, (sum, option) => sum + option.votes);
+    final questions = poll.effectiveQuestions;
+    final theme = Theme.of(context);
 
     return Card(
       child: Padding(
@@ -610,16 +610,36 @@ class _ResultsCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Resultats agreges',
-                style: Theme.of(context).textTheme.titleLarge),
+            Text('Resultats agreges', style: theme.textTheme.titleLarge),
             const SizedBox(height: 6),
-            Text('$totalVotes vote(s) enregistres'),
+            Text('${poll.totalVoted} participation(s) enregistree(s)'),
             const SizedBox(height: 18),
-            for (final option in poll.options)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 16),
-                child: _ResultRow(option: option, totalVotes: totalVotes),
-              ),
+            for (var qIndex = 0; qIndex < questions.length; qIndex++) ...[
+              if (questions.length > 1) ...[
+                Text(
+                  '${qIndex + 1}. ${questions[qIndex].title}'
+                  '${questions[qIndex].multiple ? ' (choix multiples)' : ''}',
+                  style: theme.textTheme.titleSmall,
+                ),
+                const SizedBox(height: 10),
+              ],
+              for (final option in questions[qIndex].options)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 16),
+                  child: _ResultRow(
+                    option: option,
+                    // Denominateur = participants : exact en choix unique,
+                    // et coherent en choix multiples (un participant peut
+                    // cocher plusieurs options).
+                    totalVotes: poll.totalVoted > 0
+                        ? poll.totalVoted
+                        : questions[qIndex]
+                            .options
+                            .fold<int>(0, (sum, o) => sum + o.votes),
+                  ),
+                ),
+              if (qIndex < questions.length - 1) const Divider(height: 26),
+            ],
           ],
         ),
       ),

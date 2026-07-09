@@ -117,8 +117,7 @@ class PollService {
   Future<PollModel> createPoll({
     required String projectTitle,
     String description = '',
-    required String question,
-    required List<PollOptionDraft> options,
+    required List<PollQuestionDraft> questions,
     List<String> photoUrls = const <String>[],
     String targetPopulation = '',
     required String openDate,
@@ -129,14 +128,23 @@ class PollService {
     final response = await _post('/api/polls', {
       'projectTitle': projectTitle.trim(),
       'description': description.trim(),
-      'question': question.trim(),
-      'options': options
-          .where((option) => option.label.trim().isNotEmpty)
-          .map((option) => {
-                'label': option.label.trim(),
-                'photoUrls': option.photoUrls,
-              })
-          .toList(),
+      'questions': [
+        for (final question in questions)
+          if (question.title.trim().isNotEmpty)
+            PollQuestionDraft(
+              title: question.title.trim(),
+              multiple: question.multiple,
+              options: [
+                for (final option in question.options)
+                  if (option.label.trim().isNotEmpty)
+                    PollOptionDraft(
+                      label: option.label.trim(),
+                      icon: option.icon,
+                      photoUrls: option.photoUrls,
+                    ),
+              ],
+            ).toJson(),
+      ],
       'targetPopulation': targetPopulation.trim(),
       'photoUrls': photoUrls
           .map((url) => url.trim())
@@ -184,8 +192,7 @@ class PollService {
     required String pollId,
     required String projectTitle,
     String description = '',
-    required String question,
-    required List<PollOptionDraft> options,
+    required List<PollQuestionDraft> questions,
     List<String>? photoUrls,
     String targetPopulation = '',
     required String openDate,
@@ -199,7 +206,6 @@ class PollService {
     await _patch('/api/polls/$pollId', {
       'projectTitle': projectTitle.trim(),
       'description': description.trim(),
-      'question': question.trim(),
       'targetPopulation': targetPopulation.trim(),
       if (photoUrls != null)
         'photoUrls': photoUrls
@@ -210,13 +216,23 @@ class PollService {
       'closeDate': closeDate,
       'totalVoters': totalVoters,
       if (canEditOptions)
-        'options': options
-            .where((option) => option.label.trim().isNotEmpty)
-            .map((option) => {
-                  'label': option.label.trim(),
-                  'photoUrls': option.photoUrls,
-                })
-            .toList(),
+        'questions': [
+          for (final question in questions)
+            if (question.title.trim().isNotEmpty)
+              PollQuestionDraft(
+                title: question.title.trim(),
+                multiple: question.multiple,
+                options: [
+                  for (final option in question.options)
+                    if (option.label.trim().isNotEmpty)
+                      PollOptionDraft(
+                        label: option.label.trim(),
+                        icon: option.icon,
+                        photoUrls: option.photoUrls,
+                      ),
+                ],
+              ).toJson(),
+        ],
     });
     return loadPollById(pollId);
   }

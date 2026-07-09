@@ -250,22 +250,38 @@ class _PollResultCard extends StatelessWidget {
                     style: theme.textTheme.bodySmall
                         ?.copyWith(color: const Color(0xFF5A6573))),
               ],
-              if (poll.question.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Text(poll.question, style: theme.textTheme.bodyLarge),
-              ],
               const SizedBox(height: 14),
               if (totalVotes == 0)
                 const Text('Aucun vote enregistre pour le moment.')
               else
-                for (final option in poll.options)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: _ResultBar(
+                // Tallies de TOUTES les questions du questionnaire ; les
+                // consultations historiques apparaissent comme questionnaire
+                // a une question (effectiveQuestions).
+                for (final question in poll.effectiveQuestions) ...[
+                  if (question.title.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 6, top: 4),
+                      child: Text(
+                        question.title +
+                            (question.multiple ? ' (choix multiples)' : ''),
+                        style: theme.textTheme.titleSmall,
+                      ),
+                    ),
+                  for (final option in question.options)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: _ResultBar(
                         label: option.label,
                         votes: option.votes,
-                        total: totalVotes),
-                  ),
+                        // Denominateur = participants (exact en choix unique,
+                        // coherent en choix multiples), repli somme des votes.
+                        total: poll.totalVoted > 0
+                            ? poll.totalVoted
+                            : question.options
+                                .fold<int>(0, (sum, o) => sum + o.votes),
+                      ),
+                    ),
+                ],
               const SizedBox(height: 8),
               Text(
                 'Total des votes: $totalVotes${poll.totalVoters > 0 ? ' / ${poll.totalVoters} attendus' : ''}',
