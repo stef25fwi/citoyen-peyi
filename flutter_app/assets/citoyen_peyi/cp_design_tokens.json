@@ -1,0 +1,54 @@
+{
+  "brand": "Citoyen Peyi",
+  "source": "mockup mobile screens 2, 3 and 4",
+  "screen": {
+    "baseWidth": 390,
+    "minWidth": 360,
+    "maxMobileWidth": 430,
+    "desktopPreviewMaxWidth": 430
+  },
+  "colors": {
+    "primaryBlue": "#0075C9",
+    "primaryBlueDark": "#005CA8",
+    "primaryBlueLight": "#13A7E8",
+    "skyTop": "#F6FCFF",
+    "skySoft": "#EAF8FF",
+    "yellow": "#FFDA29",
+    "yellowDark": "#F5C400",
+    "text": "#143B5A",
+    "textMuted": "#607A94",
+    "border": "#E3EEF6",
+    "card": "#FFFFFF",
+    "navInactive": "#526C86",
+    "success": "#2BA66A"
+  },
+  "radius": {
+    "screen": 28,
+    "headerBottom": 26,
+    "card": 18,
+    "button": 14,
+    "pill": 999
+  },
+  "spacing": {
+    "pageHorizontal": 16,
+    "cardGap": 12,
+    "sectionGap": 16,
+    "buttonHeight": 52,
+    "bottomNavHeight": 72
+  },
+  "shadow": {
+    "card": {
+      "color": "#0075C9",
+      "opacity": 0.10,
+      "blur": 18,
+      "offsetY": 8
+    }
+  },
+  "assets": {
+    "logoFlower": "assets/citoyen_peyi/cp_logo_flower.svg",
+    "publicSpaces": "assets/citoyen_peyi/cp_illustration_public_spaces.svg",
+    "mobilityBus": "assets/citoyen_peyi/cp_illustration_mobility_bus.svg",
+    "ecologyTransition": "assets/citoyen_peyi/cp_illustration_ecology_transition.svg",
+    "opinionSecure": "assets/citoyen_peyi/cp_illustration_opinion_secure.svg"
+  }
+}
