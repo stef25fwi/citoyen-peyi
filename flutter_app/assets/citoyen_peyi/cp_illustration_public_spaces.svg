@@ -1,0 +1,18 @@
+<svg width="360" height="240" viewBox="0 0 360 240" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustration espaces publics">
+  <rect width="360" height="240" rx="28" fill="#EAF8FF"/>
+  <circle cx="288" cy="55" r="34" fill="#FFFFFF"/>
+  <path d="M0 160C42 124 78 134 122 150C177 170 225 146 260 124C301 99 336 110 360 128V240H0V160Z" fill="#CFF3D7"/>
+  <path d="M0 190C59 166 108 180 156 196C222 218 288 186 360 168V240H0V190Z" fill="#9AE7BC"/>
+  <rect x="108" y="129" width="124" height="17" rx="8.5" fill="#EAA63E"/>
+  <rect x="100" y="154" width="140" height="18" rx="9" fill="#D98D2B"/>
+  <rect x="116" y="178" width="108" height="12" rx="6" fill="#B86D25"/>
+  <rect x="117" y="143" width="10" height="54" rx="5" fill="#7C4B24"/>
+  <rect x="213" y="143" width="10" height="54" rx="5" fill="#7C4B24"/>
+  <path d="M67 115C52 110 42 95 42 78C42 55 60 37 83 37C105 37 123 55 123 78C123 101 105 119 83 119C77 119 72 118 67 115Z" fill="#62C77F"/>
+  <path d="M76 129L83 78L91 129H76Z" fill="#6B4A28"/>
+  <path d="M284 91H310V102H284V91Z" fill="#143B5A"/>
+  <path d="M290 103H304L300 190H294L290 103Z" fill="#143B5A"/>
+  <path d="M287 64H307L316 91H278L287 64Z" fill="#FFDA29"/>
+  <path d="M293 70H301L307 88H287L293 70Z" fill="#FFFFFF" opacity="0.65"/>
+  <path d="M41 203H321" stroke="#117CC4" stroke-width="8" stroke-linecap="round" opacity="0.22"/>
+</svg>
