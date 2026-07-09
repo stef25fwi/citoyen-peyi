@@ -213,8 +213,8 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
   Future<void> _pickOptionPhotos(_OptionEditState option) async {
     if (!_canEditOptions || _isSubmitting || _isUploadingPhotos) return;
 
-    final remainingSlots =
-        PollPhotoUploadService.maxPhotosPerOption - option.existingPhotoUrls.length;
+    final remainingSlots = PollPhotoUploadService.maxPhotosPerOption -
+        option.existingPhotoUrls.length;
     if (remainingSlots <= 0) return;
 
     try {
@@ -276,7 +276,9 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
     final closeDate = _closeDate ?? openDate.add(const Duration(days: 1));
     if (!closeDate.isAfter(openDate)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('La date de fermeture doit etre posterieure a la date d\'ouverture.')),
+        const SnackBar(
+            content: Text(
+                'La date de fermeture doit etre posterieure a la date d\'ouverture.')),
       );
       return;
     }
@@ -334,7 +336,8 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
         targetPopulation: _targetPopulationController.text,
         openDate: _formatDate(openDate),
         closeDate: _formatDate(closeDate),
-        totalVoters: int.tryParse(_voterCountController.text.trim()) ?? poll.totalVoters,
+        totalVoters:
+            int.tryParse(_voterCountController.text.trim()) ?? poll.totalVoters,
       );
 
       if (!mounted) return;
@@ -386,7 +389,8 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
                 children: [
                   const Icon(Icons.poll_outlined, size: 42),
                   const SizedBox(height: 12),
-                  Text('Consultation introuvable', style: theme.textTheme.titleLarge),
+                  Text('Consultation introuvable',
+                      style: theme.textTheme.titleLarge),
                 ],
               ),
             ),
@@ -422,14 +426,19 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
                     children: [
                       TextFormField(
                         controller: _titleController,
-                        decoration: const InputDecoration(labelText: 'Titre du projet'),
+                        decoration:
+                            const InputDecoration(labelText: 'Titre du projet'),
                         maxLength: 255,
-                        validator: (value) => value == null || value.trim().isEmpty ? 'Le titre du projet est obligatoire.' : null,
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                                ? 'Le titre du projet est obligatoire.'
+                                : null,
                       ),
                       const SizedBox(height: 16),
                       TextFormField(
                         controller: _descriptionController,
-                        decoration: const InputDecoration(labelText: 'Description'),
+                        decoration:
+                            const InputDecoration(labelText: 'Description'),
                         minLines: 3,
                         maxLines: 5,
                       ),
@@ -473,8 +482,8 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
                                 !_isSubmitting &&
                                 !_isUploadingPhotos,
                             onRemove: () => _removeQuestion(qIndex),
-                            onToggleMultiple: (value) => setState(() =>
-                                _questionStates[qIndex].multiple = value),
+                            onToggleMultiple: (value) => setState(
+                                () => _questionStates[qIndex].multiple = value),
                             onAddOption: () =>
                                 _addOption(_questionStates[qIndex]),
                             onRemoveOption: (index) =>
@@ -517,16 +526,20 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
                         children: [
                           TextFormField(
                             controller: _targetPopulationController,
-                            decoration: const InputDecoration(labelText: 'Population cible'),
+                            decoration: const InputDecoration(
+                                labelText: 'Population cible'),
                           ),
                           const SizedBox(height: 12),
                           TextFormField(
                             controller: _voterCountController,
                             keyboardType: TextInputType.number,
-                            decoration: const InputDecoration(labelText: 'Objectif de participation'),
+                            decoration: const InputDecoration(
+                                labelText: 'Objectif de participation'),
                             validator: (value) {
                               final parsed = int.tryParse((value ?? '').trim());
-                              if (parsed == null || parsed < 1 || parsed > 1000000) {
+                              if (parsed == null ||
+                                  parsed < 1 ||
+                                  parsed > 1000000) {
                                 return 'Saisir une valeur valide.';
                               }
                               return null;
@@ -544,13 +557,21 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
                     if (wide) {
                       return Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [Expanded(child: planning), const SizedBox(width: 16), Expanded(child: capacity)],
+                        children: [
+                          Expanded(child: planning),
+                          const SizedBox(width: 16),
+                          Expanded(child: capacity)
+                        ],
                       );
                     }
 
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [planning, const SizedBox(height: 16), capacity],
+                      children: [
+                        planning,
+                        const SizedBox(height: 16),
+                        capacity
+                      ],
                     );
                   },
                 ),
@@ -561,15 +582,21 @@ class _AdminEditPollPageState extends State<AdminEditPollPage> {
                   runSpacing: 12,
                   children: [
                     OutlinedButton(
-                      onPressed: _isSubmitting ? null : () => Navigator.of(context).pop(),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       child: const Text('Annuler'),
                     ),
                     FilledButton.icon(
                       onPressed: _isSubmitting ? null : _submit,
                       icon: _isSubmitting
-                          ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2))
                           : const Icon(Icons.save_rounded),
-                      label: Text(_isSubmitting ? 'Enregistrement...' : 'Enregistrer'),
+                      label: Text(
+                          _isSubmitting ? 'Enregistrement...' : 'Enregistrer'),
                     ),
                   ],
                 ),
@@ -599,7 +626,9 @@ class _FormSection extends StatelessWidget {
           children: [
             Row(
               children: [
-                Expanded(child: Text(title, style: Theme.of(context).textTheme.titleMedium)),
+                Expanded(
+                    child: Text(title,
+                        style: Theme.of(context).textTheme.titleMedium)),
                 if (action != null) action!,
               ],
             ),
@@ -613,7 +642,8 @@ class _FormSection extends StatelessWidget {
 }
 
 class _DateField extends StatelessWidget {
-  const _DateField({required this.label, required this.value, required this.onTap});
+  const _DateField(
+      {required this.label, required this.value, required this.onTap});
 
   final String label;
   final String value;
@@ -663,8 +693,7 @@ class _QuestionEditCard extends StatelessWidget {
   final void Function(_OptionEditState option) onAddPhotos;
   final void Function(_OptionEditState option, int photoIndex)
       onRemoveExistingPhoto;
-  final void Function(_OptionEditState option, int photoIndex)
-      onRemoveNewPhoto;
+  final void Function(_OptionEditState option, int photoIndex) onRemoveNewPhoto;
 
   @override
   Widget build(BuildContext context) {
@@ -776,8 +805,8 @@ class _OptionEditRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canAddPhoto =
-        enabled && option.photoCount < PollPhotoUploadService.maxPhotosPerOption;
+    final canAddPhoto = enabled &&
+        option.photoCount < PollPhotoUploadService.maxPhotosPerOption;
     final iconData = pollIconForSlug(option.icon);
 
     return Container(

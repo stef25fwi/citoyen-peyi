@@ -10,7 +10,8 @@ import '../widgets/poll_option_icons.dart';
 /// Brouillon d'une option de vote pendant la creation : libelle + icone
 /// facultative + jusqu'a 2 photos locales (pas encore televersees).
 class _OptionDraft {
-  _OptionDraft({String label = ''}) : controller = TextEditingController(text: label);
+  _OptionDraft({String label = ''})
+      : controller = TextEditingController(text: label);
 
   final TextEditingController controller;
   final List<XFile> photos = <XFile>[];
@@ -812,8 +813,8 @@ class _AdminCreatePollPageState extends State<AdminCreatePollPage> {
                             canRemove: _questionDrafts.length > 1,
                             enabled: !_isSubmitting && !_isUploadingPhotos,
                             onRemove: () => _removeQuestion(qIndex),
-                            onToggleMultiple: (value) => setState(() =>
-                                _questionDrafts[qIndex].multiple = value),
+                            onToggleMultiple: (value) => setState(
+                                () => _questionDrafts[qIndex].multiple = value),
                             onAddOption: () =>
                                 _addOption(_questionDrafts[qIndex]),
                             onRemoveOption: (index) =>
@@ -1110,7 +1111,8 @@ class _QuestionEditor extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
-        color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
+        color:
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.25),
         border: Border.all(color: theme.dividerColor.withValues(alpha: 0.55)),
       ),
       child: Column(
@@ -1149,8 +1151,7 @@ class _QuestionEditor extends StatelessWidget {
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
             title: const Text('Choix multiples'),
-            subtitle:
-                const Text('Le citoyen peut cocher plusieurs réponses.'),
+            subtitle: const Text('Le citoyen peut cocher plusieurs réponses.'),
             value: question.multiple,
             onChanged: enabled ? onToggleMultiple : null,
           ),
@@ -1209,8 +1210,8 @@ class _OptionEditor extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canAddPhoto =
-        enabled && option.photos.length < PollPhotoUploadService.maxPhotosPerOption;
+    final canAddPhoto = enabled &&
+        option.photos.length < PollPhotoUploadService.maxPhotosPerOption;
     final iconData = pollIconForSlug(option.icon);
 
     return Container(

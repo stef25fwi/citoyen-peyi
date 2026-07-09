@@ -519,3 +519,29 @@ test('submit vote records survey answers and increments per-question counters', 
   ]);
   assert.equal(ballot.optionId, 'o1');
 });
+
+test('legacy single-option submit maps to the stored single question and rejects multi-question polls', async () => {
+  const single = {
+    polls: {
+      'poll-q1': {
+        id: 'poll-q1', communeId: 'commune-1', status: 'active',
+        options: [{ id: 'a', label: 'A', votes: 0 }, { id: 'b', label: 'B', votes: 0 }],
+        questions: [{ id: 'q1', title: 'Q', multiple: false, options: [{ id: 'a', label: 'A', votes: 0 }, { id: 'b', label: 'B', votes: 0 }] }],
+        totalVoted: 0,
+      },
+    },
+    poll_participations: {}, poll_ballots: {},
+  };
+  const db = new FakeDb(single);
+  const token = { pollId: 'poll-q1', communeId: 'commune-1', participationHash: voteAccess.createParticipationHash('poll-q1', 'a1') };
+  const ok = await voteAccess.submitAnonymousVote({ db, token, pollId: 'poll-q1', optionId: 'b' });
+  assert.equal(ok.status, 200);
+  assert.deepEqual(db.store.polls['poll-q1'].questions[0].options.map((o) => o.votes), [0, 1]);
+
+  const multi = JSON.parse(JSON.stringify(single));
+  multi.polls['poll-q1'].questions.push({ id: 'q2', title: 'Q2', options: [{ id: 'x', label: 'X', votes: 0 }, { id: 'y', label: 'Y', votes: 0 }] });
+  const db2 = new FakeDb(multi);
+  const token2 = { pollId: 'poll-q1', communeId: 'commune-1', participationHash: voteAccess.createParticipationHash('poll-q1', 'a2') };
+  const refused = await voteAccess.submitAnonymousVote({ db: db2, token: token2, pollId: 'poll-q1', optionId: 'b' });
+  assert.equal(refused.status, 400);
+});

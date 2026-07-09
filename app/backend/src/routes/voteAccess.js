@@ -383,10 +383,23 @@ export const submitAnonymousVote = async ({ db, token, pollId, optionId, answers
 
     // Deux formes acceptees : reponses de questionnaire (answers) ou vote
     // historique a option unique (optionId). Le vote historique est converti
-    // en reponse sur la pseudo-question unique.
+    // en reponse sur l'unique question du questionnaire (stockee ou
+    // pseudo-question), et refuse clairement si la consultation compte
+    // plusieurs questions (le client doit alors envoyer answers).
+    const storedQuestions = Array.isArray(poll.questions) ? poll.questions : [];
+    if ((!Array.isArray(answers) || answers.length === 0) && storedQuestions.length > 1) {
+      return {
+        status: 400,
+        errorCode: 'INVALID_OPTION',
+        message: 'Cette consultation comporte plusieurs questions : reponses completes requises.',
+      };
+    }
+    const legacyQuestionId = storedQuestions.length === 1
+      ? String(storedQuestions[0].id || LEGACY_QUESTION_ID)
+      : LEGACY_QUESTION_ID;
     const rawAnswers = Array.isArray(answers) && answers.length > 0
       ? answers
-      : [{ questionId: LEGACY_QUESTION_ID, optionIds: [optionId] }];
+      : [{ questionId: legacyQuestionId, optionIds: [optionId] }];
     const validated = validateAnswers(poll, rawAnswers);
     if (validated.error) {
       return { status: 400, errorCode: 'INVALID_OPTION', message: validated.error };
