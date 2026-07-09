@@ -749,12 +749,27 @@ class _ProfileCardState extends State<_ProfileCard> {
         _keyVisible = true;
         _busy = false;
       });
-    } catch (error) {
+    } on SuperAdminAuthException catch (error) {
       if (!mounted) return;
       setState(() => _busy = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-            content: Text('Régénération impossible : ${error.toString()}')),
+          backgroundColor: Colors.red.shade700,
+          content: Text('Régénération impossible : ${error.message}'),
+        ),
+      );
+    } catch (error, stackTrace) {
+      debugPrint('[SuperAdminDashboard] regenerate admin key failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      setState(() => _busy = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.red.shade700,
+          content: const Text(
+            'Régénération impossible : erreur technique. Reconnectez-vous puis réessayez.',
+          ),
+        ),
       );
     }
   }
