@@ -289,15 +289,25 @@ service cloud.firestore {
       allow read, write: if false;
     }
 
-    // polls: public read, but writes are reserved to the Admin SDK so
-    // the backend can scope updates to the right commune and audit
-    // them. The previous "anonymous voter update" rule is gone because
-    // votes now flow only through /api/vote-access/submit.
+    // polls holds the raw admin-authored document (internal fields,
+    // no sanitization). Only commune admins and the super admin may
+    // read it directly; anonymous/citizen clients must go through the
+    // sanitized public_polls projection below. Writes are reserved to
+    // the Admin SDK so the backend can scope updates to the right
+    // commune and audit them. The previous "anonymous voter update"
+    // rule is gone because votes now flow only through
+    // /api/vote-access/submit.
     match /polls/{document=**} {
       allow write: if false;
       allow read: if isAdminCommune() || isSuperAdmin();
     }
 
+    // public_polls is a sanitized projection of polls, kept in sync by
+    // the backend (syncPublicPollProjection in routes/polls.js) on
+    // every create/update/status-change/delete. Only publishable
+    // statuses (active/closed/archived) are projected; drafts and
+    // scheduled-but-unpublished polls never appear here. This is what
+    // anonymous/citizen clients read for results and eligible polls.
     match /public_polls/{document=**} {
       allow read: if true;
       allow write: if false;

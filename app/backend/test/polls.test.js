@@ -86,3 +86,40 @@ test('buildQuestions preserves existing ids and votes on update', () => {
   assert.equal(questions[0].options[0].id, 'o-keep');
   assert.equal(questions[0].options[0].votes, 7);
 });
+
+test('publicPollPayloadFrom projects multi-question surveys and hides internal-only fields', () => {
+  const poll = {
+    id: 'poll-survey',
+    projectTitle: 'Aménagement',
+    status: 'active',
+    options: [{ id: 'a', label: 'A', votes: 3 }],
+    questions: [
+      {
+        id: 'q1',
+        title: 'Priorités ?',
+        multiple: true,
+        options: [{ id: 'o1', label: 'Parcs', votes: 5, icon: 'park' }],
+      },
+    ],
+    createdBy: 'admin-uid-should-not-leak',
+    totalVoters: 10,
+    totalVoted: 5,
+  };
+  const payload = polls.publicPollPayloadFrom(poll);
+  assert.deepEqual(payload.questions, poll.questions);
+  assert.equal(payload.createdBy, undefined);
+});
+
+test('publicPollPayloadFrom returns null for non-publishable statuses', () => {
+  assert.equal(polls.publicPollPayloadFrom({ id: 'p', status: 'draft' }), null);
+  assert.equal(polls.publicPollPayloadFrom({ id: 'p', status: 'scheduled' }), null);
+  assert.ok(polls.publicPollPayloadFrom({ id: 'p', status: 'active' }));
+});
+
+test('isPublicPollStatus only allows active, closed and archived', () => {
+  assert.equal(polls.isPublicPollStatus('active'), true);
+  assert.equal(polls.isPublicPollStatus('closed'), true);
+  assert.equal(polls.isPublicPollStatus('archived'), true);
+  assert.equal(polls.isPublicPollStatus('draft'), false);
+  assert.equal(polls.isPublicPollStatus('scheduled'), false);
+});

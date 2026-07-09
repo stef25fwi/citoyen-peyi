@@ -101,9 +101,9 @@ const normalizePollForRead = (poll, now = new Date()) => (
   isScheduledPublicationDue(poll, now) ? { ...poll, status: 'active' } : poll
 );
 
-const isPublicPollStatus = (status) => ['active', 'closed', 'archived'].includes(String(status || '').toLowerCase());
+export const isPublicPollStatus = (status) => ['active', 'closed', 'archived'].includes(String(status || '').toLowerCase());
 
-const publicPollPayloadFrom = (poll) => {
+export const publicPollPayloadFrom = (poll) => {
   const normalized = normalizePollForRead(poll);
   if (!isPublicPollStatus(normalized.status)) return null;
   return {
@@ -112,6 +112,7 @@ const publicPollPayloadFrom = (poll) => {
     description: normalized.description || '',
     question: normalized.question || '',
     options: Array.isArray(normalized.options) ? normalized.options : [],
+    questions: Array.isArray(normalized.questions) ? normalized.questions : [],
     photoUrls: Array.isArray(normalized.photoUrls) ? normalized.photoUrls : [],
     targetPopulation: normalized.targetPopulation || '',
     communeId: normalized.communeId || '',

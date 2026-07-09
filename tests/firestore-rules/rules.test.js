@@ -73,16 +73,21 @@ const supportMessageData = (overrides = {}) => ({
   ...overrides,
 });
 
-test('public can read polls', async () => {
+test('raw polls collection is closed to the public; public_polls projection is readable', async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
     await setDoc(doc(ctx.firestore(), 'polls/poll-1'), { id: 'poll-1', status: 'active' });
+    await setDoc(doc(ctx.firestore(), 'public_polls/poll-1'), { id: 'poll-1', status: 'active' });
   });
-  await assertSucceeds(getDoc(doc(anonDb(), 'polls/poll-1')));
+  // Le document brut (polls) reste reserve aux admins : les clients anonymes
+  // et citoyens lisent la projection assainie (public_polls), synchronisee
+  // par le backend (syncPublicPollProjection).
+  await assertFails(getDoc(doc(anonDb(), 'polls/poll-1')));
+  await assertSucceeds(getDoc(doc(anonDb(), 'public_polls/poll-1')));
 });
 
 test('public results read poll aggregates, not anonymous vote collections', async () => {
   await env.withSecurityRulesDisabled(async (ctx) => {
-    await setDoc(doc(ctx.firestore(), 'polls/poll-results'), {
+    await setDoc(doc(ctx.firestore(), 'public_polls/poll-results'), {
       id: 'poll-results',
       status: 'active',
       options: [{ id: 'opt-1', votes: 3 }],
@@ -91,9 +96,15 @@ test('public results read poll aggregates, not anonymous vote collections', asyn
     await setDoc(doc(ctx.firestore(), 'poll_participations/poll-results_hash'), { participationHash: 'x' });
   });
 
-  await assertSucceeds(getDoc(doc(anonDb(), 'polls/poll-results')));
+  await assertSucceeds(getDoc(doc(anonDb(), 'public_polls/poll-results')));
   await assertFails(getDoc(doc(anonDb(), 'poll_ballots/ballot-1')));
   await assertFails(getDoc(doc(anonDb(), 'poll_participations/poll-results_hash')));
+});
+
+test('client cannot write public_polls (must go through backend projection)', async () => {
+  const adminDb = userDb('admin-1', { role: 'commune_admin', admin: true });
+  await assertFails(setDoc(doc(adminDb, 'public_polls/poll-bad'), { id: 'poll-bad', status: 'active' }));
+  await assertFails(setDoc(doc(anonDb(), 'public_polls/poll-bad'), { id: 'poll-bad', status: 'active' }));
 });
 
 test('client cannot write polls (must go through backend)', async () => {
