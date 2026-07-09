@@ -1,0 +1,13 @@
+<svg width="360" height="220" viewBox="0 0 360 220" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Illustration avis sécurisé">
+  <rect width="360" height="220" rx="28" fill="#EAF8FF"/>
+  <rect x="68" y="48" width="144" height="114" rx="20" fill="#FFFFFF" stroke="#B8E7FF" stroke-width="6"/>
+  <path d="M140 78L179 92V121C179 144 164 160 140 168C116 160 101 144 101 121V92L140 78Z" fill="#0075C9"/>
+  <path d="M120 119L134 133L161 102" stroke="#FFFFFF" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="208" y="110" width="64" height="62" rx="14" fill="#FFD729"/>
+  <path d="M224 110V96C224 87.164 231.164 80 240 80C248.836 80 256 87.164 256 96V110" stroke="#143B5A" stroke-width="9" stroke-linecap="round"/>
+  <circle cx="240" cy="139" r="8" fill="#143B5A"/>
+  <rect x="236" y="144" width="8" height="15" rx="4" fill="#143B5A"/>
+  <circle cx="87" cy="57" r="10" fill="#FFDA29"/>
+  <circle cx="280" cy="67" r="14" fill="#74D4F6"/>
+  <path d="M50 187H308" stroke="#117CC4" stroke-width="8" stroke-linecap="round" opacity="0.18"/>
+</svg>
