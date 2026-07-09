@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../services/vote_access_service.dart';
+import '../../widgets/poll_option_icons.dart';
 import '../public_news_page.dart';
 import '../public_results_page.dart';
 
@@ -9,11 +11,13 @@ class CitizenPollQuestionPage extends StatefulWidget {
     this.title = 'Aménagement des espaces publics',
     this.pollId,
     this.accessCode,
+    this.voteAccessService,
   });
 
   final String title;
   final String? pollId;
   final String? accessCode;
+  final VoteAccessService? voteAccessService;
 
   @override
   State<CitizenPollQuestionPage> createState() =>
@@ -21,46 +25,163 @@ class CitizenPollQuestionPage extends StatefulWidget {
 }
 
 class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
-  final Set<String> selectedOptions = {
-    'Espaces verts et parcs',
-    'Éclairage public',
-    'Accessibilité PMR',
-  };
+  VoteAccessService get _voteAccessService =>
+      widget.voteAccessService ?? VoteAccessService.instance;
 
-  bool get canContinue => selectedOptions.isNotEmpty;
-  bool get otherSelected => selectedOptions.contains('Autre');
+  bool _isLoading = true;
+  bool _isSubmitting = false;
+  String? _errorMessage;
+  VoteAccessValidationResult? _validation;
+  EligiblePollModel? _poll;
+  int _stepIndex = 0;
+  final Map<String, Set<String>> _answers = {};
 
-  void _toggleOption(String label) {
+  @override
+  void initState() {
+    super.initState();
+    _loadPoll();
+  }
+
+  Future<void> _loadPoll() async {
+    final pollId = widget.pollId?.trim();
+    final accessCode = widget.accessCode?.trim();
+    if (pollId == null ||
+        pollId.isEmpty ||
+        accessCode == null ||
+        accessCode.isEmpty) {
+      // Pas de session citoyenne valide : le code d'acces reste obligatoire
+      // pour voter, on redirige vers la saisie du code.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        Navigator.of(context).pushReplacementNamed('/access');
+      });
+      return;
+    }
+
     setState(() {
-      if (selectedOptions.contains(label)) {
-        selectedOptions.remove(label);
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result =
+          await _voteAccessService.validateCode(accessCode, pollId: pollId);
+      EligiblePollModel? poll;
+      for (final candidate in result.eligiblePolls) {
+        if (candidate.pollId == pollId) {
+          poll = candidate;
+          break;
+        }
+      }
+      if (!mounted) return;
+      setState(() {
+        _validation = result;
+        _poll = poll;
+        _isLoading = false;
+        _errorMessage =
+            poll == null ? 'Cette consultation n\'est plus disponible.' : null;
+      });
+    } on VoteAccessException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Validation du code impossible. Réessayez plus tard.';
+      });
+    }
+  }
+
+  List<EligiblePollQuestion> get _questions =>
+      _poll?.effectiveQuestions ?? const [];
+
+  EligiblePollQuestion? get _currentQuestion {
+    final questions = _questions;
+    if (_stepIndex < 0 || _stepIndex >= questions.length) return null;
+    return questions[_stepIndex];
+  }
+
+  bool get _canContinue {
+    final question = _currentQuestion;
+    if (question == null) return false;
+    return _answers[question.id]?.isNotEmpty == true;
+  }
+
+  void _toggleOption(EligiblePollQuestion question, String optionId) {
+    setState(() {
+      final selected = _answers.putIfAbsent(question.id, () => <String>{});
+      if (question.multiple) {
+        if (selected.contains(optionId)) {
+          selected.remove(optionId);
+        } else {
+          selected.add(optionId);
+        }
       } else {
-        selectedOptions.add(label);
+        selected
+          ..clear()
+          ..add(optionId);
       }
     });
   }
 
-  void _submitStep() {
-    if (!canContinue) return;
-
-    final pollId = widget.pollId?.trim();
-    final accessCode = widget.accessCode?.trim();
-    if (pollId != null &&
-        pollId.isNotEmpty &&
-        accessCode != null &&
-        accessCode.isNotEmpty) {
-      final routeCode = Uri.encodeComponent(accessCode);
-      final routePollId = Uri.encodeQueryComponent(pollId);
-      Navigator.of(context)
-          .pushReplacementNamed('/vote/$routeCode?poll=$routePollId');
+  void _goNext() {
+    if (!_canContinue || _isSubmitting) return;
+    if (_stepIndex < _questions.length - 1) {
+      setState(() => _stepIndex += 1);
       return;
     }
+    _submitAnswers();
+  }
 
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => _CitizenQuestionStepBridgePage(title: widget.title),
-      ),
-    );
+  Future<void> _submitAnswers() async {
+    final poll = _poll;
+    final validation = _validation;
+    if (poll == null || validation == null || _isSubmitting) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    final answers = _questions
+        .map((question) => PollAnswer(
+              questionId: question.id,
+              optionIds: _answers[question.id]?.toList() ?? const [],
+            ))
+        .toList();
+
+    try {
+      await _voteAccessService.submitVote(
+        accessToken:
+            poll.accessToken.isNotEmpty ? poll.accessToken : validation.accessToken,
+        pollId: poll.pollId,
+        answers: answers,
+      );
+      if (!mounted) return;
+      setState(() => _isSubmitting = false);
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => _CitizenQuestionStepBridgePage(title: widget.title),
+        ),
+      );
+    } on VoteAccessException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorMessage = error.message;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorMessage =
+            'Réseau indisponible. Votre vote n\'a pas été enregistré.';
+      });
+    }
   }
 
   void _onNav(CitizenNavTab tab) {
@@ -94,6 +215,84 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
   @override
   Widget build(BuildContext context) {
     final String headerTitle = _headerTitleFor(widget.title);
+    final questions = _questions;
+    final poll = _poll;
+
+    Widget body;
+    if (_isLoading) {
+      body = const _StatusCard(
+        icon: Icons.hourglass_top_rounded,
+        title: 'Chargement du questionnaire',
+        message: 'Vérification sécurisée de votre code citoyen en cours...',
+      );
+    } else if (poll == null || questions.isEmpty) {
+      body = _StatusCard(
+        icon: Icons.error_outline_rounded,
+        title: 'Consultation indisponible',
+        message: _errorMessage ??
+            'Cette consultation n\'est plus disponible pour votre commune.',
+        actionLabel: 'Retour aux consultations',
+        onPressed: () => Navigator.of(context).pushReplacementNamed(
+          '/citizen/consultations',
+        ),
+      );
+    } else if (poll.hasVoted) {
+      body = const _StatusCard(
+        icon: Icons.verified_rounded,
+        title: 'Merci pour votre participation',
+        message:
+            'Votre réponse à cette consultation a déjà été enregistrée de manière anonyme.',
+      );
+    } else {
+      final question = questions[_stepIndex];
+      final selected = _answers[question.id] ?? const <String>{};
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Étape ${_stepIndex + 1} sur ${questions.length}',
+            style: const TextStyle(
+              color: _CitizenColors.textMuted,
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          const SizedBox(height: 11),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: (_stepIndex + 1) / questions.length,
+              minHeight: 8,
+              backgroundColor: _CitizenColors.skyBlue,
+              valueColor: const AlwaysStoppedAnimation<Color>(
+                _CitizenColors.primaryBlue,
+              ),
+            ),
+          ),
+          const SizedBox(height: 26),
+          _QuestionCard(
+            stepNumber: _stepIndex + 1,
+            question: question,
+            selectedOptionIds: selected,
+            canContinue: _canContinue,
+            isSubmitting: _isSubmitting,
+            isLastStep: _stepIndex == questions.length - 1,
+            onToggle: (optionId) => _toggleOption(question, optionId),
+            onContinue: _goNext,
+          ),
+          if (_errorMessage != null) ...[
+            const SizedBox(height: 14),
+            Text(
+              _errorMessage!,
+              style: const TextStyle(
+                color: Color(0xFFB42318),
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
 
     return Scaffold(
       backgroundColor: _CitizenColors.background,
@@ -122,39 +321,7 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Étape 1 sur 6',
-                        style: TextStyle(
-                          color: _CitizenColors.textMuted,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      const SizedBox(height: 11),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: const LinearProgressIndicator(
-                          value: 1 / 6,
-                          minHeight: 8,
-                          backgroundColor: _CitizenColors.skyBlue,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            _CitizenColors.primaryBlue,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 26),
-                      _QuestionCard(
-                        selectedOptions: selectedOptions,
-                        otherSelected: otherSelected,
-                        canContinue: canContinue,
-                        onToggle: _toggleOption,
-                        onContinue: _submitStep,
-                      ),
-                    ],
-                  ),
+                  child: body,
                 ),
               ),
               _CitizenBottomNav(
@@ -189,6 +356,76 @@ class _MobileFrame extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 430),
         child: child,
+      ),
+    );
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onPressed,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        color: _CitizenColors.white,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(color: _CitizenColors.cardBorder),
+        boxShadow: _CitizenColors.softShadow,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 74,
+            height: 74,
+            decoration: const BoxDecoration(
+              color: _CitizenColors.skyBlue,
+              shape: BoxShape.circle,
+            ),
+            child: Icon(icon, color: _CitizenColors.primaryBlue, size: 42),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: _CitizenColors.textDark,
+              fontSize: 20,
+              height: 1.2,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: _CitizenColors.textMuted,
+              fontSize: 14,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (actionLabel != null && onPressed != null) ...[
+            const SizedBox(height: 18),
+            _YellowContinueButton(enabled: true, onPressed: onPressed!),
+          ],
+        ],
       ),
     );
   }
@@ -250,7 +487,7 @@ class _CitizenQuestionStepBridgePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 18),
                         const Text(
-                          'Votre réponse a bien été enregistrée localement.',
+                          'Votre réponse a bien été enregistrée.',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             color: _CitizenColors.textDark,
@@ -261,7 +498,7 @@ class _CitizenQuestionStepBridgePage extends StatelessWidget {
                         ),
                         const SizedBox(height: 10),
                         Text(
-                          'La suite du questionnaire pour "$title" sera branchée dans une prochaine étape.',
+                          'Merci d\'avoir participé à "$title". Votre vote est anonyme et définitif.',
                           textAlign: TextAlign.center,
                           style: const TextStyle(
                             color: _CitizenColors.textMuted,
@@ -427,21 +664,33 @@ class _CitizenHeader extends StatelessWidget {
 
 class _QuestionCard extends StatelessWidget {
   const _QuestionCard({
-    required this.selectedOptions,
-    required this.otherSelected,
+    required this.stepNumber,
+    required this.question,
+    required this.selectedOptionIds,
     required this.canContinue,
+    required this.isSubmitting,
+    required this.isLastStep,
     required this.onToggle,
     required this.onContinue,
   });
 
-  final Set<String> selectedOptions;
-  final bool otherSelected;
+  final int stepNumber;
+  final EligiblePollQuestion question;
+  final Set<String> selectedOptionIds;
   final bool canContinue;
+  final bool isSubmitting;
+  final bool isLastStep;
   final ValueChanged<String> onToggle;
   final VoidCallback onContinue;
 
   @override
   Widget build(BuildContext context) {
+    final subtitle = question.subtitle.isNotEmpty
+        ? question.subtitle
+        : (question.multiple
+            ? 'Vous pouvez choisir plusieurs réponses'
+            : 'Sélectionnez une réponse');
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
@@ -454,11 +703,9 @@ class _QuestionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            '1. Quels sont les aménagements\n'
-            'que vous jugez prioritaires dans\n'
-            'votre commune ?',
-            style: TextStyle(
+          Text(
+            '$stepNumber. ${question.title}',
+            style: const TextStyle(
               color: _CitizenColors.textDark,
               fontSize: 17,
               height: 1.18,
@@ -466,79 +713,30 @@ class _QuestionCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Vous pouvez choisir plusieurs réponses',
-            style: TextStyle(
+          Text(
+            subtitle,
+            style: const TextStyle(
               color: _CitizenColors.textMuted,
               fontSize: 13,
               fontWeight: FontWeight.w600,
             ),
           ),
           const SizedBox(height: 18),
-          _QuestionOptionTile(
-            label: 'Espaces verts et parcs',
-            icon: Icons.park_rounded,
-            selected: selectedOptions.contains('Espaces verts et parcs'),
-            onTap: () => onToggle('Espaces verts et parcs'),
-          ),
-          _QuestionOptionTile(
-            label: 'Éclairage public',
-            icon: Icons.lightbulb_outline_rounded,
-            selected: selectedOptions.contains('Éclairage public'),
-            onTap: () => onToggle('Éclairage public'),
-          ),
-          _QuestionOptionTile(
-            label: 'Aires de jeux',
-            icon: Icons.sports_esports_rounded,
-            selected: selectedOptions.contains('Aires de jeux'),
-            onTap: () => onToggle('Aires de jeux'),
-          ),
-          _QuestionOptionTile(
-            label: 'Accessibilité PMR',
-            icon: Icons.accessible_forward_rounded,
-            selected: selectedOptions.contains('Accessibilité PMR'),
-            onTap: () => onToggle('Accessibilité PMR'),
-          ),
-          _QuestionOptionTile(
-            label: 'Autre',
-            icon: Icons.more_horiz_rounded,
-            selected: selectedOptions.contains('Autre'),
-            onTap: () => onToggle('Autre'),
-          ),
-          if (otherSelected) ...[
-            const SizedBox(height: 2),
-            TextField(
-              minLines: 2,
-              maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Précisez votre réponse',
-                hintStyle: const TextStyle(
-                  color: _CitizenColors.textMuted,
-                  fontWeight: FontWeight.w500,
-                ),
-                filled: true,
-                fillColor: _CitizenColors.lightBlue,
-                contentPadding: const EdgeInsets.all(14),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: _CitizenColors.cardBorder),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(color: _CitizenColors.cardBorder),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: const BorderSide(
-                    color: _CitizenColors.primaryBlue,
-                    width: 1.4,
-                  ),
-                ),
-              ),
+          for (final option in question.options)
+            _QuestionOptionTile(
+              label: option.label,
+              icon: pollIconForSlug(option.icon) ?? Icons.circle_outlined,
+              selected: selectedOptionIds.contains(option.id),
+              onTap: () => onToggle(option.id),
             ),
-          ],
           const SizedBox(height: 18),
-          _YellowContinueButton(enabled: canContinue, onPressed: onContinue),
+          _YellowContinueButton(
+            enabled: canContinue && !isSubmitting,
+            label: isSubmitting
+                ? 'Enregistrement...'
+                : (isLastStep ? 'Confirmer' : 'Suivant'),
+            onPressed: onContinue,
+          ),
         ],
       ),
     );
@@ -626,10 +824,15 @@ class _QuestionOptionTile extends StatelessWidget {
 }
 
 class _YellowContinueButton extends StatelessWidget {
-  const _YellowContinueButton({required this.enabled, required this.onPressed});
+  const _YellowContinueButton({
+    required this.enabled,
+    required this.onPressed,
+    this.label = 'Suivant',
+  });
 
   final bool enabled;
   final VoidCallback onPressed;
+  final String label;
 
   @override
   Widget build(BuildContext context) {
@@ -638,7 +841,7 @@ class _YellowContinueButton extends StatelessWidget {
       child: Semantics(
         button: true,
         enabled: enabled,
-        label: 'Suivant',
+        label: label,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -650,22 +853,22 @@ class _YellowContinueButton extends StatelessWidget {
                 color: enabled ? _CitizenColors.yellowStrong : _CitizenColors.cardBorder,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Padding(
-                padding: EdgeInsets.symmetric(horizontal: 16),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
                 child: Row(
                   children: [
                     Expanded(
                       child: Text(
-                        'Suivant',
+                        label,
                         textAlign: TextAlign.center,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: _CitizenColors.deepBlue,
                           fontSize: 16,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
                     ),
-                    Icon(
+                    const Icon(
                       Icons.arrow_forward_ios_rounded,
                       size: 16,
                       color: _CitizenColors.deepBlue,
