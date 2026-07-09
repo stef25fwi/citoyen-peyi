@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../services/citizen_public_access_service.dart';
-import '../public_news_page.dart';
-import '../public_results_page.dart';
 import '../../theme/citizen_design_tokens.dart';
 import '../../widgets/citizen/citizen_bottom_nav.dart';
 import '../../widgets/citizen/citizen_card.dart';
+import '../public_news_page.dart';
+import '../public_results_page.dart';
 import 'citizen_consultations_page.dart';
 
 class CitizenHomePage extends StatelessWidget {
@@ -15,6 +16,11 @@ class CitizenHomePage extends StatelessWidget {
   });
 
   final CitizenPublicAccessSession? initialSession;
+
+  static const String flowerLogoAsset =
+      'assets/citoyen_peyi/cp_logo_flower.svg';
+  static const String opinionSecureAsset =
+      'assets/citoyen_peyi/cp_illustration_opinion_secure.svg';
 
   void _onNav(BuildContext context, CitizenNavTab tab) {
     if (tab == CitizenNavTab.home) {
@@ -54,34 +60,52 @@ class CitizenHomePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: CitizenDesignTokens.background,
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            _HomeHeader(communeName: initialSession?.communeName),
-            Expanded(
-              child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
-                child: Column(
-                  children: [
-                    Transform.translate(
-                      offset: const Offset(0, -18),
-                      child: _QuickActionsPanel(initialSession: initialSession),
-                    ),
-                    const SizedBox(height: 2),
-                    const _OpinionInfoCard(),
-                    const SizedBox(height: 24),
-                  ],
+      body: _MobileFrame(
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              _HomeHeader(communeName: initialSession?.communeName),
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                  child: Column(
+                    children: [
+                      Transform.translate(
+                        offset: const Offset(0, -18),
+                        child: _QuickActionsPanel(initialSession: initialSession),
+                      ),
+                      const SizedBox(height: 2),
+                      const _OpinionInfoCard(),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            CitizenBottomNav(
-              activeTab: CitizenNavTab.home,
-              onTabSelected: (tab) => _onNav(context, tab),
-            ),
-          ],
+              CitizenBottomNav(
+                activeTab: CitizenNavTab.home,
+                onTabSelected: (tab) => _onNav(context, tab),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+}
+
+class _MobileFrame extends StatelessWidget {
+  const _MobileFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 430),
+        child: child,
       ),
     );
   }
@@ -104,7 +128,7 @@ class _HomeHeader extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(18, 8, 18, 28),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
         child: Column(
           children: [
             Row(
@@ -143,9 +167,9 @@ class _HomeHeader extends StatelessWidget {
                                     Icons.logout_rounded,
                                     color: CitizenDesignTokens.deepBlue,
                                   ),
-                                  title: const Text('Se deconnecter'),
+                                  title: const Text('Se déconnecter'),
                                   subtitle: const Text(
-                                    'Rester connecte jusqu\'a une deconnexion manuelle.',
+                                    'Rester connecté jusqu’à une déconnexion manuelle.',
                                   ),
                                   onTap: () =>
                                       Navigator.of(sheetContext).pop(true),
@@ -156,13 +180,9 @@ class _HomeHeader extends StatelessWidget {
                         );
                       },
                     );
-                    if (shouldLogout != true || !context.mounted) {
-                      return;
-                    }
+                    if (shouldLogout != true || !context.mounted) return;
                     await CitizenPublicAccessService.instance.clearSession();
-                    if (!context.mounted) {
-                      return;
-                    }
+                    if (!context.mounted) return;
                     Navigator.of(context).pushNamedAndRemoveUntil(
                       '/access',
                       (route) => false,
@@ -195,7 +215,7 @@ class _HomeHeader extends StatelessWidget {
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Notifications a connecter.'),
+                            content: Text('Notifications à connecter.'),
                           ),
                         );
                       },
@@ -241,7 +261,7 @@ class _HomeHeader extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             const Text(
-              'Exprimez-vous, contribuez, participez\na la vie de votre collectivite.',
+              'Exprimez-vous, contribuez, participez\nà la vie de votre collectivité.',
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.white,
@@ -266,19 +286,19 @@ class _QuickActionsPanel extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CitizenCard(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(14),
       child: GridView.count(
         crossAxisCount: 2,
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 14,
-        mainAxisSpacing: 14,
-        childAspectRatio: 0.95,
+        crossAxisSpacing: 12,
+        mainAxisSpacing: 12,
+        childAspectRatio: 1.04,
         children: [
           _QuickActionCard(
             icon: Icons.campaign_rounded,
-            title: 'Actualites',
-            subtitle: 'Suivez les dernieres\ninformations',
+            title: 'Actualités',
+            subtitle: 'Suivez les dernières\ninformations',
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PublicNewsPage()),
@@ -301,8 +321,8 @@ class _QuickActionsPanel extends StatelessWidget {
           ),
           _QuickActionCard(
             icon: Icons.bar_chart_rounded,
-            title: 'Resultats',
-            subtitle: 'Decouvrez les resultats\ndes consultations',
+            title: 'Résultats',
+            subtitle: 'Découvrez les résultats\ndes consultations',
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const PublicResultsPage()),
@@ -311,11 +331,11 @@ class _QuickActionsPanel extends StatelessWidget {
           ),
           _QuickActionCard(
             icon: Icons.info_rounded,
-            title: 'A propos',
+            title: 'À propos',
             subtitle: 'En savoir plus sur la\nplateforme',
             onTap: () {
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Page A propos a connecter.')),
+                const SnackBar(content: Text('Page À propos à connecter.')),
               );
             },
           ),
@@ -346,12 +366,12 @@ class _QuickActionCard extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(18),
           onTap: onTap,
           child: Ink(
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(18),
               border: Border.all(color: CitizenDesignTokens.cardBorder),
               boxShadow: const [
                 BoxShadow(
@@ -362,12 +382,12 @@ class _QuickActionCard extends StatelessWidget {
               ],
             ),
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(icon, size: 44, color: CitizenDesignTokens.primaryBlue),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 10),
                   Text(
                     title,
                     textAlign: TextAlign.center,
@@ -377,14 +397,14 @@ class _QuickActionCard extends StatelessWidget {
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 7),
+                  const SizedBox(height: 6),
                   Text(
                     subtitle,
                     textAlign: TextAlign.center,
                     style: const TextStyle(
                       color: CitizenDesignTokens.textDark,
-                      fontSize: 12.5,
-                      height: 1.25,
+                      fontSize: 12,
+                      height: 1.22,
                       fontWeight: FontWeight.w500,
                     ),
                   ),
@@ -405,70 +425,42 @@ class _OpinionInfoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(18),
+      padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: CitizenDesignTokens.skyBlue,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         border: Border.all(color: CitizenDesignTokens.cardBorder),
       ),
       child: Row(
         children: [
-          Container(
-            width: 86,
-            height: 86,
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.72),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Center(
-                  child: Icon(
-                    Icons.verified_user_rounded,
-                    size: 48,
-                    color: CitizenDesignTokens.primaryBlue,
-                  ),
-                ),
-                Positioned(
-                  right: 8,
-                  bottom: 8,
-                  child: Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      color: CitizenDesignTokens.yellow,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.lock_rounded,
-                      size: 15,
-                      color: CitizenDesignTokens.deepBlue,
-                    ),
-                  ),
-                ),
-              ],
+          ClipRRect(
+            borderRadius: BorderRadius.circular(16),
+            child: SvgPicture.asset(
+              CitizenHomePage.opinionSecureAsset,
+              width: 104,
+              height: 78,
+              fit: BoxFit.cover,
             ),
           ),
-          const SizedBox(width: 18),
-          Expanded(
+          const SizedBox(width: 16),
+          const Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text(
+                Text(
                   'Votre opinion compte !',
                   style: TextStyle(
                     color: CitizenDesignTokens.deepBlue,
-                    fontSize: 17,
+                    fontSize: 16,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Chaque avis est important\npour ameliorer notre\nterritoire.',
+                SizedBox(height: 7),
+                Text(
+                  'Chaque avis est important\npour améliorer notre\nterritoire.',
                   style: TextStyle(
                     color: CitizenDesignTokens.textDark,
-                    fontSize: 14,
+                    fontSize: 13,
                     height: 1.3,
                     fontWeight: FontWeight.w500,
                   ),
@@ -489,39 +481,11 @@ class _MiniFlowerLogo extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
+    return SvgPicture.asset(
+      CitizenHomePage.flowerLogoAsset,
       width: size,
       height: size,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          for (int i = 0; i < 7; i++)
-            Transform.rotate(
-              angle: i * 0.9,
-              child: Align(
-                alignment: Alignment.topCenter,
-                child: Container(
-                  width: size * 0.28,
-                  height: size * 0.45,
-                  decoration: BoxDecoration(
-                    color: i == 1
-                        ? CitizenDesignTokens.yellow
-                        : Colors.white.withValues(alpha: 0.55),
-                    borderRadius: BorderRadius.circular(size),
-                  ),
-                ),
-              ),
-            ),
-          Container(
-            width: size * 0.14,
-            height: size * 0.14,
-            decoration: const BoxDecoration(
-              color: CitizenDesignTokens.yellow,
-              shape: BoxShape.circle,
-            ),
-          ),
-        ],
-      ),
+      fit: BoxFit.contain,
     );
   }
 }
