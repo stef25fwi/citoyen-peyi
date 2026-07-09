@@ -1,0 +1,35 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Logo fleur Citoyen Peyi">
+  <defs>
+    <radialGradient id="center" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(128 128) rotate(90) scale(26)">
+      <stop stop-color="#FFE45C"/>
+      <stop offset="1" stop-color="#FFC600"/>
+    </radialGradient>
+    <linearGradient id="bluePetal" x1="56" y1="30" x2="132" y2="152" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EAF8FF"/>
+      <stop offset="0.55" stop-color="#6ED6FF"/>
+      <stop offset="1" stop-color="#0075C9"/>
+    </linearGradient>
+    <linearGradient id="cyanPetal" x1="83" y1="222" x2="160" y2="84" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1DC9E8"/>
+      <stop offset="0.55" stop-color="#74E5F7"/>
+      <stop offset="1" stop-color="#F0FEFF"/>
+    </linearGradient>
+    <linearGradient id="yellowPetal" x1="217" y1="74" x2="124" y2="137" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFE45C"/>
+      <stop offset="1" stop-color="#FFC400"/>
+    </linearGradient>
+    <filter id="softShadow" x="18" y="18" width="220" height="220" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="12" stdDeviation="14" flood-color="#0062A6" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+  <g filter="url(#softShadow)">
+    <ellipse cx="105" cy="74" rx="38" ry="62" transform="rotate(-34 105 74)" fill="url(#bluePetal)" opacity="0.92"/>
+    <ellipse cx="151" cy="74" rx="38" ry="62" transform="rotate(34 151 74)" fill="#C9F0FF" opacity="0.86"/>
+    <ellipse cx="183" cy="112" rx="35" ry="62" transform="rotate(78 183 112)" fill="url(#yellowPetal)" opacity="0.96"/>
+    <ellipse cx="151" cy="182" rx="36" ry="62" transform="rotate(-24 151 182)" fill="url(#cyanPetal)" opacity="0.90"/>
+    <ellipse cx="83" cy="154" rx="38" ry="62" transform="rotate(52 83 154)" fill="#31BDE8" opacity="0.83"/>
+    <ellipse cx="73" cy="110" rx="35" ry="62" transform="rotate(-78 73 110)" fill="#E7F8FF" opacity="0.82"/>
+    <circle cx="128" cy="128" r="24" fill="url(#center)"/>
+    <circle cx="128" cy="128" r="10" fill="#FFF8D1"/>
+  </g>
+</svg>
