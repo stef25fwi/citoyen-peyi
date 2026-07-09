@@ -132,7 +132,10 @@ class SuperAdminService {
   static const _profilesKey = 'super_admin_profiles_v1';
   static const _codeAlphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
   static final _random = Random.secure();
-  String? get runtimeSuperAdminKey => null;
+  String? get runtimeSuperAdminKey =>
+      AuthSessionStore.instance.currentSession?.isSuperAdmin == true
+          ? 'secure-session'
+          : null;
 
   void _debugLog(String message) {
     if (kDebugMode) {
