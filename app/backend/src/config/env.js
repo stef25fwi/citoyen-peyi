@@ -201,9 +201,9 @@ export const validateEnv = () => {
     errors.push('CORS_ORIGIN doit etre defini explicitement en production (au moins un domaine HTTPS).');
   }
 
-  if (env.isProduction && !env.rateLimitRedisUrl) {
-    errors.push('RATE_LIMIT_REDIS_URL est requis en production pour un rate limiting partage entre instances.');
-  }
+  // RATE_LIMIT_REDIS_URL est recommandé en production, mais ne bloque plus le boot.
+  // Le middleware rateLimit.js bascule sur un store mémoire avec avertissement si
+  // Redis n'est pas configuré, afin de garder le backend disponible.
 
   if (env.isProduction) {
     const insecureOrigins = env.corsOrigins.filter((origin) => /^http:\/\/(localhost|127\.|0\.0\.0\.0)/i.test(origin));
