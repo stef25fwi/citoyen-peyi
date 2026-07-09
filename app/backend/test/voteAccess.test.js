@@ -237,7 +237,13 @@ test('submit vote creates separated participation and anonymous ballot', async (
   assert.equal(participationDocs[0].participationHash, tokenPayload().participationHash);
   assert.equal(participationDocs[0].optionId, undefined);
 
-  assert.deepEqual(Object.keys(ballotDocs[0]).sort(), ['castAt', 'communeId', 'optionId', 'pollId']);
+  assert.deepEqual(
+    Object.keys(ballotDocs[0]).sort(),
+    ['answers', 'castAt', 'communeId', 'optionId', 'pollId'],
+  );
+  assert.deepEqual(ballotDocs[0].answers, [
+    { questionId: voteAccess.LEGACY_QUESTION_ID, optionIds: ['opt-1'] },
+  ]);
   assert.equal(ballotDocs[0].accessCodeId, undefined);
   assert.equal(ballotDocs[0].citizenFingerprintHash, undefined);
   assert.equal(ballotDocs[0].participationHash, undefined);
@@ -326,4 +332,190 @@ test('isPollOpen accepts scheduled polls only after publication date', () => {
     }),
     false,
   );
+});
+test('publicQuestionsForPoll falls back to a single legacy question', () => {
+  const poll = {
+    question: 'Quelle option ?',
+    options: [
+      { id: 'a', label: 'A', votes: 3, icon: 'park' },
+      { id: 'b', label: 'B' },
+    ],
+  };
+  const questions = voteAccess.publicQuestionsForPoll(poll);
+  assert.equal(questions.length, 1);
+  assert.equal(questions[0].id, voteAccess.LEGACY_QUESTION_ID);
+  assert.equal(questions[0].multiple, false);
+  assert.deepEqual(questions[0].options.map((o) => o.id), ['a', 'b']);
+  assert.equal(questions[0].options[0].icon, 'park');
+});
+
+test('publicQuestionsForPoll exposes stored multi-step questions', () => {
+  const poll = {
+    questions: [
+      {
+        id: 'q1',
+        title: 'Priorites ?',
+        multiple: true,
+        options: [
+          { id: 'o1', label: 'Parcs', icon: 'park', votes: 9 },
+          { id: 'o2', label: 'Eclairage', icon: 'lighting' },
+        ],
+      },
+      { id: 'q2', title: 'Choix unique', options: [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }] },
+    ],
+  };
+  const questions = voteAccess.publicQuestionsForPoll(poll);
+  assert.equal(questions.length, 2);
+  assert.equal(questions[0].multiple, true);
+  assert.equal(questions[1].multiple, false);
+  // Les compteurs de votes ne sont pas exposes au citoyen.
+  assert.equal(questions[0].options[0].votes, undefined);
+});
+
+const surveyPoll = {
+  questions: [
+    {
+      id: 'q1',
+      title: 'Multi',
+      multiple: true,
+      options: [{ id: 'o1', label: 'A', votes: 1 }, { id: 'o2', label: 'B' }, { id: 'o3', label: 'C' }],
+    },
+    {
+      id: 'q2',
+      title: 'Simple',
+      multiple: false,
+      options: [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }],
+    },
+  ],
+};
+
+test('validateAnswers accepts a complete valid survey answer set', () => {
+  const result = voteAccess.validateAnswers(surveyPoll, [
+    { questionId: 'q1', optionIds: ['o1', 'o3'] },
+    { questionId: 'q2', optionIds: ['y'] },
+  ]);
+  assert.equal(result.error, undefined);
+  assert.deepEqual(result.answers.get('q1'), ['o1', 'o3']);
+  assert.deepEqual(result.answers.get('q2'), ['y']);
+});
+
+test('validateAnswers rejects incomplete, unknown or plural answers', () => {
+  assert.ok(voteAccess.validateAnswers(surveyPoll, [
+    { questionId: 'q1', optionIds: ['o1'] },
+  ]).error, 'toutes les questions doivent etre repondues');
+  assert.ok(voteAccess.validateAnswers(surveyPoll, [
+    { questionId: 'q1', optionIds: ['o1'] },
+    { questionId: 'q2', optionIds: ['x', 'y'] },
+  ]).error, 'choix unique impose une seule option');
+  assert.ok(voteAccess.validateAnswers(surveyPoll, [
+    { questionId: 'q1', optionIds: ['nope'] },
+    { questionId: 'q2', optionIds: ['x'] },
+  ]).error, 'option inconnue rejetee');
+  assert.ok(voteAccess.validateAnswers(surveyPoll, [
+    { questionId: 'autre', optionIds: ['o1'] },
+    { questionId: 'q2', optionIds: ['x'] },
+  ]).error, 'question inconnue rejetee');
+  assert.ok(voteAccess.validateAnswers(surveyPoll, []).error, 'reponses vides rejetees');
+});
+
+test('validateAnswers handles legacy polls through the pseudo-question', () => {
+  const legacy = { question: 'Q', options: [{ id: 'a', label: 'A' }, { id: 'b', label: 'B' }] };
+  const ok = voteAccess.validateAnswers(legacy, [
+    { questionId: voteAccess.LEGACY_QUESTION_ID, optionIds: ['b'] },
+  ]);
+  assert.deepEqual(ok.answers.get(voteAccess.LEGACY_QUESTION_ID), ['b']);
+  const tooMany = voteAccess.validateAnswers(legacy, [
+    { questionId: voteAccess.LEGACY_QUESTION_ID, optionIds: ['a', 'b'] },
+  ]);
+  assert.ok(tooMany.error);
+});
+
+test('applyAnswersToQuestions increments only selected options', () => {
+  const answers = new Map([['q1', ['o1', 'o3']], ['q2', ['y']]]);
+  const updated = voteAccess.applyAnswersToQuestions(surveyPoll.questions, answers);
+  assert.deepEqual(updated[0].options.map((o) => o.votes ?? 0), [2, 0, 1]);
+  assert.deepEqual(updated[1].options.map((o) => o.votes ?? 0), [0, 1]);
+  // L'original n'est pas mute.
+  assert.equal(surveyPoll.questions[0].options[0].votes, 1);
+});
+
+test('submit vote records survey answers and increments per-question counters', async () => {
+  const db = new FakeDb({
+    polls: {
+      'poll-s': {
+        id: 'poll-s',
+        communeId: 'commune-1',
+        status: 'active',
+        question: 'Q1 miroir',
+        options: [
+          { id: 'o1', label: 'Parcs', votes: 0 },
+          { id: 'o2', label: 'Eclairage', votes: 0 },
+        ],
+        questions: [
+          {
+            id: 'q1',
+            title: 'Priorites ?',
+            multiple: true,
+            options: [
+              { id: 'o1', label: 'Parcs', votes: 0 },
+              { id: 'o2', label: 'Eclairage', votes: 0 },
+              { id: 'o3', label: 'Jeux', votes: 0 },
+            ],
+          },
+          {
+            id: 'q2',
+            title: 'Satisfait ?',
+            multiple: false,
+            options: [
+              { id: 'yes', label: 'Oui', votes: 0 },
+              { id: 'no', label: 'Non', votes: 0 },
+            ],
+          },
+        ],
+        totalVoted: 0,
+      },
+    },
+    poll_participations: {},
+    poll_ballots: {},
+  });
+  const token = {
+    pollId: 'poll-s',
+    communeId: 'commune-1',
+    participationHash: voteAccess.createParticipationHash('poll-s', 'access-1'),
+  };
+
+  const missing = await voteAccess.submitAnonymousVote({
+    db,
+    token,
+    pollId: 'poll-s',
+    optionId: '',
+    answers: [{ questionId: 'q1', optionIds: ['o1'] }],
+  });
+  assert.equal(missing.status, 400, 'q2 sans reponse doit etre refusee');
+
+  const result = await voteAccess.submitAnonymousVote({
+    db,
+    token,
+    pollId: 'poll-s',
+    optionId: '',
+    answers: [
+      { questionId: 'q1', optionIds: ['o1', 'o3'] },
+      { questionId: 'q2', optionIds: ['no'] },
+    ],
+  });
+  assert.equal(result.status, 200);
+
+  const poll = db.store.polls['poll-s'];
+  assert.deepEqual(poll.questions[0].options.map((o) => o.votes), [1, 0, 1]);
+  assert.deepEqual(poll.questions[1].options.map((o) => o.votes), [0, 1]);
+  // Miroir historique : options refletent la premiere question.
+  assert.deepEqual(poll.options.map((o) => o.votes), [1, 0, 1]);
+  assert.equal(poll.totalVoted, 1);
+
+  const ballot = Object.values(db.store.poll_ballots)[0];
+  assert.deepEqual(ballot.answers, [
+    { questionId: 'q1', optionIds: ['o1', 'o3'] },
+    { questionId: 'q2', optionIds: ['no'] },
+  ]);
+  assert.equal(ballot.optionId, 'o1');
 });

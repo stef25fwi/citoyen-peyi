@@ -125,7 +125,8 @@ class _FakeVoteAccessService extends VoteAccessService {
   Future<VoteSubmitResult> submitVote({
     required String accessToken,
     required String pollId,
-    required String optionId,
+    String optionId = '',
+    List<PollAnswer> answers = const [],
   }) {
     submitCalls += 1;
     if (onSubmit != null) {

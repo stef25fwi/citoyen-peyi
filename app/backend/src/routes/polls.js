@@ -137,6 +137,10 @@ const syncPublicPollProjection = async (db, pollId, poll) => {
   await ref.set(payload, { merge: true });
 };
 
+const sanitizeIconSlug = (value) => sanitizeString(value, 40)
+  .toLowerCase()
+  .replace(/[^a-z0-9_-]/g, '');
+
 const buildOptions = (rawOptions, existingOptions = []) => {
   if (!Array.isArray(rawOptions)) return [];
   return rawOptions
@@ -150,7 +154,36 @@ const buildOptions = (rawOptions, existingOptions = []) => {
       const photoUrls = Array.isArray(option?.photoUrls)
         ? sanitizeOptionPhotoUrls(option.photoUrls)
         : (existingOptions[index]?.photoUrls ?? []);
-      return { id, label, votes, photoUrls };
+      const icon = sanitizeIconSlug(option?.icon) || existingOptions[index]?.icon || '';
+      return { id, label, votes, photoUrls, icon };
+    })
+    .filter(Boolean);
+};
+
+// Questionnaire multi-etapes : chaque question porte son propre jeu d'options
+// (avec icone facultative) et peut autoriser le choix multiple. Une
+// consultation SANS champ `questions` reste une consultation a question
+// unique (question/options historiques) : compatibilite ascendante totale.
+const MAX_QUESTIONS = 10;
+
+export const buildQuestions = (rawQuestions, existingQuestions = []) => {
+  if (!Array.isArray(rawQuestions)) return [];
+  return rawQuestions
+    .slice(0, MAX_QUESTIONS)
+    .map((question, index) => {
+      const title = sanitizeString(question?.title ?? question?.label, 300);
+      if (!title) return null;
+      const existing = existingQuestions[index] || {};
+      const id = sanitizeString(question?.id, 64) || existing.id || `q-${crypto.randomBytes(6).toString('hex')}`;
+      const options = buildOptions(question?.options, existing.options || []);
+      if (options.length < 2) return null;
+      return {
+        id,
+        title,
+        subtitle: sanitizeString(question?.subtitle, 300),
+        multiple: question?.multiple === true,
+        options,
+      };
     })
     .filter(Boolean);
 };
@@ -186,12 +219,25 @@ router.get('/', async (req, res, next) => {
 router.post('/', requireMatchingCommune, async (req, res, next) => {
   try {
     const projectTitle = sanitizeString(req.body?.projectTitle, 200);
-    const question = sanitizeString(req.body?.question, 300);
-    const options = buildOptions(req.body?.options);
+    const questions = buildQuestions(req.body?.questions);
+    // Avec un questionnaire multi-etapes, la premiere question sert de
+    // question/options "principales" (compatibilite des listes, resultats
+    // publics et exports existants).
+    const question = questions.length > 0
+      ? questions[0].title
+      : sanitizeString(req.body?.question, 300);
+    const options = questions.length > 0
+      ? questions[0].options
+      : buildOptions(req.body?.options);
     const openDate = sanitizeDate(req.body?.openDate);
     const closeDate = sanitizeDate(req.body?.closeDate);
     const publication = resolveInitialPublication(req.body);
 
+    if (Array.isArray(req.body?.questions) && questions.length === 0) {
+      return res.status(400).json({
+        message: 'Chaque question doit avoir un intitule et au moins deux options.',
+      });
+    }
     if (!projectTitle || !question || options.length < 2 || !openDate || !closeDate) {
       return res.status(400).json({ message: 'Champs obligatoires manquants ou invalides.' });
     }
@@ -213,6 +259,7 @@ router.post('/', requireMatchingCommune, async (req, res, next) => {
       description: sanitizeString(req.body?.description, 2000),
       question,
       options,
+      questions,
       targetPopulation: sanitizeString(req.body?.targetPopulation, 300),
       photoUrls: sanitizePhotoUrls(req.body?.photoUrls),
       openDate,
@@ -357,13 +404,33 @@ router.patch('/:pollId', async (req, res, next) => {
     if (typeof req.body?.scheduledPublishDate === 'string') update.scheduledPublishDate = sanitizeDate(req.body.scheduledPublishDate);
     if (Number.isFinite(Number(req.body?.totalVoters))) update.totalVoters = Math.max(0, Number(req.body.totalVoters));
 
-    if (Array.isArray(req.body?.options)) {
+    if (Array.isArray(req.body?.questions)) {
+      if ((data.totalVoted || 0) > 0) {
+        return res.status(409).json({ message: 'Impossible de modifier les questions apres le premier vote.' });
+      }
+      const questions = buildQuestions(req.body.questions, data.questions || []);
+      if (questions.length === 0) {
+        return res.status(400).json({
+          message: 'Chaque question doit avoir un intitule et au moins deux options.',
+        });
+      }
+      update.questions = questions;
+      update.question = questions[0].title;
+      update.options = questions[0].options;
+    } else if (Array.isArray(req.body?.options)) {
       if ((data.totalVoted || 0) > 0) {
         return res.status(409).json({ message: 'Impossible de modifier les options apres le premier vote.' });
       }
       update.options = buildOptions(req.body.options, data.options || []);
       if (update.options.length < 2) {
         return res.status(400).json({ message: 'Au moins deux options sont requises.' });
+      }
+      // Consultation a question unique : garder le miroir questions coherent.
+      if (Array.isArray(data.questions) && data.questions.length > 0) {
+        update.questions = [
+          { ...data.questions[0], options: update.options },
+          ...data.questions.slice(1),
+        ];
       }
     }
 
