@@ -1,0 +1,6 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Logement">
+  <path d="M32 8L56 28V56H8V28L32 8Z" fill="#0075C9"/>
+  <rect x="18" y="34" width="12" height="12" rx="2" fill="#EAF8FF"/>
+  <rect x="34" y="34" width="12" height="12" rx="2" fill="#EAF8FF"/>
+  <rect x="27" y="48" width="10" height="8" fill="#005CA8"/>
+</svg>

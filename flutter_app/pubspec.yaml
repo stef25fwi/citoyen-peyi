@@ -38,3 +38,4 @@ flutter:
   assets:
     - assets/images/
     - assets/citoyen_peyi/
+    - assets/citoyen_peyi/option_icons/

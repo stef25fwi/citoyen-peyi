@@ -1,0 +1,6 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Aires de jeux">
+  <rect x="14" y="10" width="6" height="44" rx="3" fill="#EA6B3D"/>
+  <path d="M20 12L48 40H20V12Z" fill="#FFA24D"/>
+  <rect x="44" y="40" width="6" height="14" rx="3" fill="#EA6B3D"/>
+  <rect x="8" y="54" width="48" height="5" rx="2.5" fill="#C98A4B"/>
+</svg>

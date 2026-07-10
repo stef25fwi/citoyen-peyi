@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../services/vote_access_service.dart';
 import '../../widgets/poll_option_icons.dart';
@@ -740,6 +741,7 @@ class _QuestionCard extends StatelessWidget {
             _QuestionOptionTile(
               label: option.label,
               icon: pollIconForSlug(option.icon) ?? Icons.circle_outlined,
+              illustrationAsset: pollIllustrationForSlug(option.icon),
               selected: selectedOptionIds.contains(option.id),
               onTap: () => onToggle(option.id),
             ),
@@ -763,12 +765,14 @@ class _QuestionOptionTile extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.onTap,
+    this.illustrationAsset,
   });
 
   final String label;
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
+  final String? illustrationAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -800,7 +804,12 @@ class _QuestionOptionTile extends StatelessWidget {
                   color: _CitizenColors.skyBlue,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: _CitizenColors.primaryBlue, size: 23),
+                child: illustrationAsset != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: SvgPicture.asset(illustrationAsset!),
+                      )
+                    : Icon(icon, color: _CitizenColors.primaryBlue, size: 23),
               ),
               const SizedBox(width: 13),
               Expanded(
