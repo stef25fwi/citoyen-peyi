@@ -1,0 +1,5 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sport">
+  <circle cx="32" cy="32" r="22" fill="#FFA24D"/>
+  <path d="M32 14V50M14 32H50M19 19L45 45M45 19L19 45" stroke="#C9701E" stroke-width="2.4" opacity="0.55"/>
+  <circle cx="32" cy="32" r="8" fill="#EA6B3D"/>
+</svg>

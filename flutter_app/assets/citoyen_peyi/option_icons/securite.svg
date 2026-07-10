@@ -1,0 +1,5 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Sécurité">
+  <path d="M32 6L52 14V28C52 42 44 52 32 58C20 52 12 42 12 28V14L32 6Z" fill="#005CA8"/>
+  <path d="M32 12L46 18V28C46 39 40 46 32 51C24 46 18 39 18 28V18L32 12Z" fill="#0075C9"/>
+  <path d="M24 31L30 37L41 25" stroke="#EAF8FF" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+</svg>

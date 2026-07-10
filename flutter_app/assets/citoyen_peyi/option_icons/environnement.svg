@@ -1,0 +1,5 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Environnement">
+  <path d="M48 14C48 14 22 12 16 34C11 52 30 54 38 46C48 36 48 14 48 14Z" fill="#6FCF7A"/>
+  <path d="M48 14C48 14 46 34 32 42" stroke="#3E9A50" stroke-width="3" stroke-linecap="round" fill="none"/>
+  <rect x="18" y="48" width="6" height="10" rx="2" fill="#8A5A2B"/>
+</svg>

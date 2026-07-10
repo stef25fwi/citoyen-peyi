@@ -20,6 +20,7 @@ class NewPollBadgeService {
   static const _pollCollection = 'public_polls';
 
   final ValueNotifier<bool> hasNew = ValueNotifier<bool>(false);
+  final ValueNotifier<int> newCount = ValueNotifier<int>(0);
 
   StreamSubscription<QuerySnapshot<Map<String, dynamic>>>? _subscription;
   String? _lastScopeKey;
@@ -100,7 +101,9 @@ class NewPollBadgeService {
         .map((doc) => doc.id)
         .toSet();
     final seen = await _seenIds();
-    hasNew.value = liveIds.difference(seen).isNotEmpty;
+    final unseenCount = liveIds.difference(seen).length;
+    newCount.value = unseenCount;
+    hasNew.value = unseenCount > 0;
   }
 
   Future<List<Map<String, dynamic>>> _visiblePollIdsForScope(
@@ -123,6 +126,7 @@ class NewPollBadgeService {
       _subscription = null;
       _lastScopeKey = null;
       hasNew.value = false;
+      newCount.value = 0;
       return;
     }
 
@@ -132,6 +136,7 @@ class NewPollBadgeService {
       _subscription = null;
       _lastScopeKey = null;
       hasNew.value = false;
+      newCount.value = 0;
       return;
     }
 
@@ -144,9 +149,12 @@ class NewPollBadgeService {
     await _subscription?.cancel();
     _lastScopeKey = scope.key;
     _subscription = _queryForScope(db, scope).limit(100).snapshots().listen(
-          (snapshot) => unawaited(_refreshFromDocs(snapshot.docs)),
-          onError: (_) => hasNew.value = false,
-        );
+      (snapshot) => unawaited(_refreshFromDocs(snapshot.docs)),
+      onError: (_) {
+        hasNew.value = false;
+        newCount.value = 0;
+      },
+    );
     await check();
   }
 
@@ -155,12 +163,14 @@ class NewPollBadgeService {
     final db = FirestoreDataService.instance;
     if (db == null) {
       hasNew.value = false;
+      newCount.value = 0;
       return;
     }
 
     final scope = await _communeScope();
     if (scope == null || !scope.hasScope) {
       hasNew.value = false;
+      newCount.value = 0;
       return;
     }
     _lastScope = scope;
@@ -170,6 +180,7 @@ class NewPollBadgeService {
       await _refreshFromDocs(snapshot.docs);
     } catch (_) {
       hasNew.value = false;
+      newCount.value = 0;
     }
   }
 
@@ -178,12 +189,14 @@ class NewPollBadgeService {
     final db = FirestoreDataService.instance;
     if (db == null) {
       hasNew.value = false;
+      newCount.value = 0;
       return;
     }
 
     final scope = _lastScope ?? await _communeScope();
     if (scope == null || !scope.hasScope) {
       hasNew.value = false;
+      newCount.value = 0;
       return;
     }
 
@@ -191,8 +204,10 @@ class NewPollBadgeService {
       final ids = await _visiblePollIdsForScope(db, scope);
       await BrowserStorageService.instance.writeJsonList(_seenKey, ids);
       hasNew.value = false;
+      newCount.value = 0;
     } catch (_) {
       hasNew.value = false;
+      newCount.value = 0;
     }
   }
 }

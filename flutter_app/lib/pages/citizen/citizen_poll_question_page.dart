@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../services/vote_access_service.dart';
 import '../../widgets/poll_option_icons.dart';
@@ -184,6 +186,23 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
     }
   }
 
+  void _shareConsultation(BuildContext context) {
+    final base = Uri.base;
+    final isWebOrigin = base.scheme == 'http' || base.scheme == 'https';
+    final path = isWebOrigin ? '${base.origin}${base.path}' : '';
+    final pollId = widget.pollId?.trim();
+    final link = pollId != null && pollId.isNotEmpty
+        ? '$path#/citizen/consultation/${Uri.encodeComponent(widget.title)}'
+            '?poll=${Uri.encodeQueryComponent(pollId)}'
+        : '$path#/citizen/consultations';
+    final message = 'Donnez votre avis sur « ${widget.title} » : $link';
+
+    Clipboard.setData(ClipboardData(text: message));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Lien de la consultation copié.')),
+    );
+  }
+
   void _onNav(CitizenNavTab tab) {
     if (tab == CitizenNavTab.opinion) {
       Navigator.of(context).pushReplacementNamed('/citizen/consultations');
@@ -305,11 +324,7 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
                 title: headerTitle,
                 trailing: IconButton(
                   tooltip: 'Partager',
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Partage à connecter.')),
-                    );
-                  },
+                  onPressed: () => _shareConsultation(context),
                   icon: const Icon(
                     Icons.share_rounded,
                     color: Colors.white,
@@ -726,6 +741,7 @@ class _QuestionCard extends StatelessWidget {
             _QuestionOptionTile(
               label: option.label,
               icon: pollIconForSlug(option.icon) ?? Icons.circle_outlined,
+              illustrationAsset: pollIllustrationForSlug(option.icon),
               selected: selectedOptionIds.contains(option.id),
               onTap: () => onToggle(option.id),
             ),
@@ -749,12 +765,14 @@ class _QuestionOptionTile extends StatelessWidget {
     required this.icon,
     required this.selected,
     required this.onTap,
+    this.illustrationAsset,
   });
 
   final String label;
   final IconData icon;
   final bool selected;
   final VoidCallback onTap;
+  final String? illustrationAsset;
 
   @override
   Widget build(BuildContext context) {
@@ -786,7 +804,12 @@ class _QuestionOptionTile extends StatelessWidget {
                   color: _CitizenColors.skyBlue,
                   shape: BoxShape.circle,
                 ),
-                child: Icon(icon, color: _CitizenColors.primaryBlue, size: 23),
+                child: illustrationAsset != null
+                    ? Padding(
+                        padding: const EdgeInsets.all(6),
+                        child: SvgPicture.asset(illustrationAsset!),
+                      )
+                    : Icon(icon, color: _CitizenColors.primaryBlue, size: 23),
               ),
               const SizedBox(width: 13),
               Expanded(

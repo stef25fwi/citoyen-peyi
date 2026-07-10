@@ -1,0 +1,8 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Vélo">
+  <circle cx="16" cy="44" r="10" stroke="#1CA79C" stroke-width="4" fill="none"/>
+  <circle cx="48" cy="44" r="10" stroke="#1CA79C" stroke-width="4" fill="none"/>
+  <path d="M16 44L28 20H36L26 44" stroke="#0B6E66" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M26 44H48L36 22" stroke="#0B6E66" stroke-width="4" stroke-linecap="round" fill="none"/>
+  <path d="M28 20H36" stroke="#0B6E66" stroke-width="4" stroke-linecap="round"/>
+  <circle cx="36" cy="20" r="3" fill="#0B6E66"/>
+</svg>

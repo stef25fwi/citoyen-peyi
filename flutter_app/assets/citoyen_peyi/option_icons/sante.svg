@@ -1,0 +1,5 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Santé">
+  <path d="M32 54C32 54 10 40 10 24C10 15 17 9 25 9C29 9 32 11 32 11C32 11 35 9 39 9C47 9 54 15 54 24C54 40 32 54 32 54Z" fill="#E85D5D"/>
+  <rect x="27" y="20" width="10" height="24" rx="2" fill="#FFF3F3"/>
+  <rect x="20" y="27" width="24" height="10" rx="2" fill="#FFF3F3"/>
+</svg>

@@ -28,6 +28,17 @@ IconData? pollIconForSlug(String slug) {
   return null;
 }
 
+/// Illustration plate en couleur pour une option de questionnaire (voir
+/// assets/citoyen_peyi/option_icons/), rendue cote citoyen dans le
+/// questionnaire multi-etapes en remplacement de l'icone Material unie.
+String? pollIllustrationForSlug(String slug) {
+  if (slug.isEmpty) return null;
+  for (final (s, _, _) in kPollOptionIcons) {
+    if (s == slug) return 'assets/citoyen_peyi/option_icons/$slug.svg';
+  }
+  return null;
+}
+
 /// Feuille de selection d'icone commune aux editeurs de consultation.
 Future<String?> showPollOptionIconPicker(BuildContext context) {
   return showModalBottomSheet<String>(

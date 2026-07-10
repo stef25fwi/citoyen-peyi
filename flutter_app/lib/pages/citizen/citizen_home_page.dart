@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../services/citizen_public_access_service.dart';
+import '../../services/new_poll_badge_service.dart';
 import '../../theme/citizen_design_tokens.dart';
 import '../../widgets/citizen/citizen_bottom_nav.dart';
 import '../../widgets/citizen/citizen_card.dart';
+import '../legal_page.dart';
 import '../public_news_page.dart';
 import '../public_results_page.dart';
 import 'citizen_consultations_page.dart';
@@ -65,7 +67,10 @@ class CitizenHomePage extends StatelessWidget {
           bottom: false,
           child: Column(
             children: [
-              _HomeHeader(communeName: initialSession?.communeName),
+              _HomeHeader(
+                communeName: initialSession?.communeName,
+                initialSession: initialSession,
+              ),
               Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
@@ -112,9 +117,10 @@ class _MobileFrame extends StatelessWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({this.communeName});
+  const _HomeHeader({this.communeName, this.initialSession});
 
   final String? communeName;
+  final CitizenPublicAccessSession? initialSession;
 
   @override
   Widget build(BuildContext context) {
@@ -207,47 +213,7 @@ class _HomeHeader extends StatelessWidget {
                     ),
                   ),
                 ),
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    IconButton(
-                      tooltip: 'Notifications',
-                      onPressed: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Notifications à connecter.'),
-                          ),
-                        );
-                      },
-                      icon: const Icon(
-                        Icons.notifications_none_rounded,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ),
-                    Positioned(
-                      right: 5,
-                      top: 4,
-                      child: Container(
-                        width: 22,
-                        height: 22,
-                        alignment: Alignment.center,
-                        decoration: const BoxDecoration(
-                          color: CitizenDesignTokens.yellow,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Text(
-                          '2',
-                          style: TextStyle(
-                            color: CitizenDesignTokens.deepBlue,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                _NotificationsBell(initialSession: initialSession),
               ],
             ),
             const Spacer(),
@@ -274,6 +240,80 @@ class _HomeHeader extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class _NotificationsBell extends StatefulWidget {
+  const _NotificationsBell({this.initialSession});
+
+  final CitizenPublicAccessSession? initialSession;
+
+  @override
+  State<_NotificationsBell> createState() => _NotificationsBellState();
+}
+
+class _NotificationsBellState extends State<_NotificationsBell> {
+  final _badgeSvc = NewPollBadgeService.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _badgeSvc.startListening();
+  }
+
+  void _openConsultations(BuildContext context) {
+    _badgeSvc.markAllSeen();
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            CitizenConsultationsPage(initialSession: widget.initialSession),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<int>(
+      valueListenable: _badgeSvc.newCount,
+      builder: (context, newCount, _) {
+        return Stack(
+          clipBehavior: Clip.none,
+          children: [
+            IconButton(
+              tooltip: 'Nouvelles consultations',
+              onPressed: () => _openConsultations(context),
+              icon: const Icon(
+                Icons.notifications_none_rounded,
+                color: Colors.white,
+                size: 30,
+              ),
+            ),
+            if (newCount > 0)
+              Positioned(
+                right: 5,
+                top: 4,
+                child: Container(
+                  width: 22,
+                  height: 22,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
+                    color: CitizenDesignTokens.yellow,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    newCount > 9 ? '9+' : '$newCount',
+                    style: const TextStyle(
+                      color: CitizenDesignTokens.deepBlue,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        );
+      },
     );
   }
 }
@@ -333,9 +373,10 @@ class _QuickActionsPanel extends StatelessWidget {
             icon: Icons.info_rounded,
             title: 'À propos',
             subtitle: 'En savoir plus sur la\nplateforme',
+            iconInCircle: true,
             onTap: () {
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Page À propos à connecter.')),
+              Navigator.of(context).push(
+                MaterialPageRoute(builder: (_) => const LegalPage()),
               );
             },
           ),
@@ -351,12 +392,14 @@ class _QuickActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.iconInCircle = false,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool iconInCircle;
 
   @override
   Widget build(BuildContext context) {
@@ -386,7 +429,19 @@ class _QuickActionCard extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, size: 44, color: CitizenDesignTokens.primaryBlue),
+                  if (iconInCircle)
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: const BoxDecoration(
+                        color: CitizenDesignTokens.primaryBlue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, size: 26, color: Colors.white),
+                    )
+                  else
+                    Icon(icon,
+                        size: 44, color: CitizenDesignTokens.primaryBlue),
                   const SizedBox(height: 10),
                   Text(
                     title,
