@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../services/debug_log_service.dart';
 import '../services/super_admin_service.dart';
+import '../widgets/debug_log_viewer.dart';
 
 class SuperAdminLoginPage extends StatefulWidget {
   const SuperAdminLoginPage({super.key});
@@ -31,14 +33,21 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/super');
     } on SuperAdminAuthException catch (e) {
+      DebugLogService.instance
+          .log('[SuperAdminLogin]', 'SuperAdminAuthException: ${e.message}');
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
+    } catch (error, stackTrace) {
+      // Ne plus avaler l'erreur reelle : elle est capturee dans le journal de
+      // diagnostic (bouton Debug) pour identifier la cause exacte.
+      DebugLogService.instance.log('[SuperAdminLogin]',
+          'Erreur inattendue: $error\n$stackTrace');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text('Connexion super administrateur impossible.')),
+            content: Text('Connexion super administrateur impossible. '
+                'Ouvrez « Debug » pour voir le detail.')),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -66,9 +75,10 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
             Icon(Icons.admin_panel_settings_rounded,
                 color: theme.colorScheme.primary),
             const SizedBox(width: 10),
-            const Text('Espace Super Administrateur'),
+            const Flexible(child: Text('Espace Super Administrateur')),
           ],
         ),
+        actions: const [DebugLogButton()],
       ),
       body: SafeArea(
         child: Center(

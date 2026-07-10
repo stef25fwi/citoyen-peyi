@@ -13,6 +13,7 @@ import '../services/push_notification_service.dart';
 import '../services/support_ticket_service.dart';
 import '../services/super_admin_service.dart';
 import '../widgets/commune_autocomplete_field.dart';
+import '../widgets/debug_log_viewer.dart';
 import '../widgets/super_admin_controller_activity_tile.dart';
 import '../widgets/super_admin_duplicate_tile.dart';
 
@@ -275,6 +276,7 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
             color: Color(0xFF0F6D8F)),
         leadingWidth: 56,
         actions: [
+          const DebugLogButton(),
           _SupportNavBadge(
             onTap: () =>
                 Navigator.of(context).pushNamed('/super-admin/support'),
