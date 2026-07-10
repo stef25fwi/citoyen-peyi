@@ -4,10 +4,6 @@ import { getFirebaseAdminAppCheck } from '../services/firebaseAdmin.js';
 export const requireAppCheck = async (req, res, next) => {
   if (!env.appCheckEnforced) return next();
 
-  // Super admin bypass: requests with valid super admin key don't require App Check
-  const hasSuperAdminKey = Boolean(req.headers['x-super-admin-key']);
-  if (hasSuperAdminKey) return next();
-
   const token = typeof req.headers['x-firebase-appcheck'] === 'string'
     ? req.headers['x-firebase-appcheck'].trim()
     : '';
