@@ -274,9 +274,9 @@ class _NotificationsBellState extends State<_NotificationsBell> {
 
   @override
   Widget build(BuildContext context) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: _badgeSvc.hasNew,
-      builder: (context, hasNew, _) {
+    return ValueListenableBuilder<int>(
+      valueListenable: _badgeSvc.newCount,
+      builder: (context, newCount, _) {
         return Stack(
           clipBehavior: Clip.none,
           children: [
@@ -289,19 +289,24 @@ class _NotificationsBellState extends State<_NotificationsBell> {
                 size: 30,
               ),
             ),
-            if (hasNew)
+            if (newCount > 0)
               Positioned(
-                right: 9,
-                top: 8,
+                right: 5,
+                top: 4,
                 child: Container(
-                  width: 12,
-                  height: 12,
-                  decoration: BoxDecoration(
+                  width: 22,
+                  height: 22,
+                  alignment: Alignment.center,
+                  decoration: const BoxDecoration(
                     color: CitizenDesignTokens.yellow,
                     shape: BoxShape.circle,
-                    border: Border.all(
+                  ),
+                  child: Text(
+                    newCount > 9 ? '9+' : '$newCount',
+                    style: const TextStyle(
                       color: CitizenDesignTokens.deepBlue,
-                      width: 2,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 12,
                     ),
                   ),
                 ),
@@ -368,6 +373,7 @@ class _QuickActionsPanel extends StatelessWidget {
             icon: Icons.info_rounded,
             title: 'À propos',
             subtitle: 'En savoir plus sur la\nplateforme',
+            iconInCircle: true,
             onTap: () {
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (_) => const LegalPage()),
@@ -386,12 +392,14 @@ class _QuickActionCard extends StatelessWidget {
     required this.title,
     required this.subtitle,
     required this.onTap,
+    this.iconInCircle = false,
   });
 
   final IconData icon;
   final String title;
   final String subtitle;
   final VoidCallback onTap;
+  final bool iconInCircle;
 
   @override
   Widget build(BuildContext context) {
@@ -421,7 +429,19 @@ class _QuickActionCard extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(icon, size: 44, color: CitizenDesignTokens.primaryBlue),
+                  if (iconInCircle)
+                    Container(
+                      width: 48,
+                      height: 48,
+                      decoration: const BoxDecoration(
+                        color: CitizenDesignTokens.primaryBlue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(icon, size: 26, color: Colors.white),
+                    )
+                  else
+                    Icon(icon,
+                        size: 44, color: CitizenDesignTokens.primaryBlue),
                   const SizedBox(height: 10),
                   Text(
                     title,
