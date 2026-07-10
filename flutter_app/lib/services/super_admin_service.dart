@@ -1,13 +1,13 @@
 import 'dart:convert';
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
 import 'auth_session_store.dart';
 import 'backend_diagnostics.dart';
+import 'debug_log_service.dart';
 import 'firebase_auth_service.dart';
 
 class SuperAdminAuthException implements Exception {
@@ -138,9 +138,9 @@ class SuperAdminService {
           : null;
 
   void _debugLog(String message) {
-    if (kDebugMode) {
-      debugPrint('[SuperAdminService] $message');
-    }
+    // Toujours capture dans le journal de diagnostic (visible via le bouton
+    // debug), y compris en build release ou debugPrint est inactif.
+    DebugLogService.instance.log('[SuperAdminService]', message);
   }
 
   void clearRuntimeSuperAdminKey() {
@@ -151,18 +151,23 @@ class SuperAdminService {
   /// header runtime et n'est jamais compilee dans Flutter.
   Future<void> signIn(String accessKey) async {
     final trimmed = accessKey.trim();
+    _debugLog('signIn: debut (cle ${trimmed.length} caracteres)');
     if (trimmed.isEmpty) {
       throw const SuperAdminAuthException('Cle super admin requise.');
     }
 
     final configIssue = BackendDiagnostics.describeConfigIssue();
     if (configIssue != null) {
+      _debugLog('signIn: config backend invalide -> $configIssue');
       throw SuperAdminAuthException(configIssue);
     }
 
     final url = '${AppConfig.apiBaseUrl}/api/auth/super/exchange';
+    _debugLog('signIn: POST $url');
     final appCheckToken =
         await FirebaseAuthService.instance.currentAppCheckToken();
+    _debugLog(
+        'signIn: App Check token ${appCheckToken == null || appCheckToken.isEmpty ? "absent" : "present (${appCheckToken.length} car.)"}');
     late http.Response response;
     try {
       response = await http
@@ -178,11 +183,17 @@ class SuperAdminService {
           )
           .timeout(const Duration(seconds: 10));
     } catch (error) {
+      _debugLog('signIn: ECHEC reseau POST exchange -> $error');
       throw SuperAdminAuthException(
           BackendDiagnostics.describeNetworkError(error, attemptedUrl: url));
     }
 
+    _debugLog('signIn: reponse exchange HTTP ${response.statusCode}');
     if (response.statusCode < 200 || response.statusCode >= 300) {
+      final bodyPreview = response.body.length > 300
+          ? '${response.body.substring(0, 300)}…'
+          : response.body;
+      _debugLog('signIn: corps erreur exchange -> $bodyPreview');
       throw SuperAdminAuthException(_readError(response.body));
     }
 
@@ -190,11 +201,15 @@ class SuperAdminService {
     final customToken = payload['customToken'] as String?;
 
     if (customToken == null || customToken.isEmpty) {
+      _debugLog('signIn: customToken manquant dans la reponse');
       throw const SuperAdminAuthException(
           'Reponse backend invalide (customToken manquant).');
     }
+    _debugLog('signIn: customToken recu (${customToken.length} car.), '
+        'echange Firebase…');
 
     await _firebaseIdTokenFromCustomToken(customToken);
+    _debugLog('signIn: idToken Firebase obtenu, sauvegarde session…');
 
     await AuthSessionStore.instance.save(AuthSession(
       role: 'super_admin',
@@ -204,6 +219,7 @@ class SuperAdminService {
       adminScope: 'global',
       label: 'Super Administrateur',
     ));
+    _debugLog('signIn: SUCCES — session super admin enregistree');
   }
 
   /// Retourne la liste des profils admin via le backend (preferred) ou via
