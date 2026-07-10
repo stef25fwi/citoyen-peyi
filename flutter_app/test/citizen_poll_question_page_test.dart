@@ -1,9 +1,77 @@
 import 'package:citoyen_peyi_flutter/pages/citizen/citizen_poll_question_page.dart';
 import 'package:citoyen_peyi_flutter/services/vote_access_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
+  testWidgets('share button copies a real consultation link to the clipboard',
+      (tester) async {
+    tester.view.physicalSize = const Size(430, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    String? copiedText;
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'Clipboard.setData') {
+          copiedText = (call.arguments as Map)['text'] as String?;
+        }
+        return null;
+      },
+    );
+    addTearDown(() {
+      tester.binding.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
+    final service = _FakeVoteAccessService(
+      validationResult: VoteAccessValidationResult(
+        accessToken: 'token',
+        accessCodeId: 'code-1',
+        communeId: 'commune-1',
+        communeName: 'Fort-de-France',
+        eligiblePolls: const [
+          EligiblePollModel(
+            pollId: 'poll-1',
+            title: 'Aménagement des espaces publics',
+            status: 'active',
+            hasVoted: false,
+            accessToken: 'poll-token',
+            questions: [
+              EligiblePollQuestion(
+                id: 'q1',
+                title: 'Priorités ?',
+                options: [EligiblePollOption(id: 'o1', label: 'Parcs')],
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        home: CitizenPollQuestionPage(
+          title: 'Aménagement des espaces publics',
+          pollId: 'poll-1',
+          accessCode: 'AB12CD34',
+          voteAccessService: service,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('Partager'));
+    await tester.pump();
+
+    expect(copiedText, isNotNull);
+    expect(copiedText, contains('Aménagement des espaces publics'));
+    expect(copiedText, contains('poll=poll-1'));
+    expect(find.text('Lien de la consultation copié.'), findsOneWidget);
+  });
   testWidgets('redirects to /access when there is no citizen access session',
       (tester) async {
     await tester.pumpWidget(

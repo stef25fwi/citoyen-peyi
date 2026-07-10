@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../services/vote_access_service.dart';
 import '../../widgets/poll_option_icons.dart';
@@ -184,6 +185,23 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
     }
   }
 
+  void _shareConsultation(BuildContext context) {
+    final base = Uri.base;
+    final isWebOrigin = base.scheme == 'http' || base.scheme == 'https';
+    final path = isWebOrigin ? '${base.origin}${base.path}' : '';
+    final pollId = widget.pollId?.trim();
+    final link = pollId != null && pollId.isNotEmpty
+        ? '$path#/citizen/consultation/${Uri.encodeComponent(widget.title)}'
+            '?poll=${Uri.encodeQueryComponent(pollId)}'
+        : '$path#/citizen/consultations';
+    final message = 'Donnez votre avis sur « ${widget.title} » : $link';
+
+    Clipboard.setData(ClipboardData(text: message));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Lien de la consultation copié.')),
+    );
+  }
+
   void _onNav(CitizenNavTab tab) {
     if (tab == CitizenNavTab.opinion) {
       Navigator.of(context).pushReplacementNamed('/citizen/consultations');
@@ -305,11 +323,7 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
                 title: headerTitle,
                 trailing: IconButton(
                   tooltip: 'Partager',
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Partage à connecter.')),
-                    );
-                  },
+                  onPressed: () => _shareConsultation(context),
                   icon: const Icon(
                     Icons.share_rounded,
                     color: Colors.white,
