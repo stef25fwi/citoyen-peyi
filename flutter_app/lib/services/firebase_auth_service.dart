@@ -82,8 +82,14 @@ class FirebaseAuthService {
     if (!AppConfig.shouldActivateAppCheck) {
       return null;
     }
-    await initialize();
+    // App Check ne doit JAMAIS faire echouer une connexion : sur certains
+    // navigateurs/domaines, reCAPTCHA (et donc l'initialisation ou la
+    // recuperation du jeton) peut lever une erreur — y compris un
+    // "Null check operator used on a null value" non rattrape. On englobe donc
+    // aussi `initialize()` dans le try et on retombe sur `null` en cas d'echec.
+    // Le backend accepte les appels sans jeton (App Check est opt-in).
     try {
+      await initialize();
       return await FirebaseAppCheck.instance.getToken(forceRefresh);
     } catch (error) {
       if (kDebugMode) {
