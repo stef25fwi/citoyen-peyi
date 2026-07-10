@@ -28,6 +28,7 @@ class AdminProfileModel {
     this.referenceEmail = '',
     required this.accessKey,
     required this.createdAt,
+    this.attachedToExistingCommune = false,
   });
 
   final String id;
@@ -38,6 +39,11 @@ class AdminProfileModel {
   final String referenceEmail;
   final String accessKey;
   final String createdAt;
+
+  /// Vrai lorsque la creation a rattache ce profil a une commune deja
+  /// existante (meme code INSEE) plutot que d'en creer une variante. Transitoire
+  /// (non persiste), renseigne uniquement a la creation.
+  final bool attachedToExistingCommune;
 
   Map<String, dynamic> toJson() => {
         'id': id,
@@ -332,6 +338,8 @@ class SuperAdminService {
       referenceEmail: payload['referenceEmail'] as String? ?? trimmedEmail,
       accessKey: payload['accessKey'] as String? ?? '',
       createdAt: DateTime.now().toIso8601String(),
+      attachedToExistingCommune:
+          payload['attachedToExistingCommune'] as bool? ?? false,
     );
 
     final profiles = await loadProfiles();

@@ -10,6 +10,7 @@ import {
   requireFirebaseAuth,
 } from '../middlewares/requireFirebaseAuth.js';
 import { hashControllerCode } from '../services/keyHashing.js';
+import { resolveCanonicalCommune } from '../services/communeDirectory.js';
 import { logger } from '../services/logger.js';
 
 const router = express.Router();
@@ -138,17 +139,25 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ message: 'Commune requise pour creer un controleur.' });
     }
 
-    const code = generateControllerCode();
     const db = getFirebaseAdminDb();
+    // Consolidation : rattache l'agent a l'identite canonique de la commune
+    // (celle de l'admin communal existant) pour ne pas eparpiller des variantes.
+    const commune = await resolveCanonicalCommune(db, {
+      communeCode: scope.communeCode,
+      communeName: scope.communeName,
+      codePostal: scope.codePostal,
+    });
+
+    const code = generateControllerCode();
     const payload = {
       id: code,
       codeHash: hashControllerCode(code),
       displayCodeMasked: maskCode(code),
       label,
       commune: {
-        name: scope.communeName,
-        code: scope.communeCode,
-        codePostal: scope.codePostal,
+        name: commune.communeName,
+        code: commune.communeCode,
+        codePostal: commune.codePostal,
       },
       createdAt: FieldValue.serverTimestamp(),
       createdBy: req.user?.uid || 'admin',

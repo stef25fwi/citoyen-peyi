@@ -4,6 +4,7 @@ import { FieldValue } from 'firebase-admin/firestore';
 import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/firebaseAdmin.js';
 import { requireFirebaseAuth, requireSuperAdmin } from '../middlewares/requireFirebaseAuth.js';
 import { hashAdminAccessKey } from '../services/keyHashing.js';
+import { resolveCanonicalCommune } from '../services/communeDirectory.js';
 
 const router = express.Router();
 const COLLECTION = 'communeAdmins';
@@ -61,13 +62,13 @@ router.get('/', async (_req, res, next) => {
 router.post('/', async (req, res, next) => {
   try {
     const label = sanitize(req.body?.label, 200);
-    const communeName = sanitize(req.body?.communeName, 200);
+    const inputCommuneName = sanitize(req.body?.communeName, 200);
     const communeCode = sanitize(req.body?.communeCode, 64);
-    const codePostal = sanitize(req.body?.codePostal, 16);
+    const inputCodePostal = sanitize(req.body?.codePostal, 16);
     const rawEmail = sanitize(req.body?.referenceEmail, 200);
     const referenceEmail = normalizeEmail(rawEmail);
 
-    if (!label || !communeName) {
+    if (!label || !inputCommuneName) {
       return res.status(400).json({ message: 'Libelle et commune sont requis.' });
     }
     // E-mail optionnel : s'il est fourni mais mal forme, on refuse plutot que
@@ -76,16 +77,26 @@ router.post('/', async (req, res, next) => {
       return res.status(400).json({ message: 'E-mail de reference invalide.' });
     }
 
+    const db = getFirebaseAdminDb();
+
+    // Consolidation : si un admin existe deja pour ce code INSEE, on reprend
+    // l'identite canonique de la commune (nom + code postal) pour rattacher le
+    // nouveau compte a la commune existante plutot que d'en creer une variante.
+    const commune = await resolveCanonicalCommune(db, {
+      communeCode,
+      communeName: inputCommuneName,
+      codePostal: inputCodePostal,
+    });
+
     const accessKey = generateAccessKey();
     const id = `adm-${crypto.randomBytes(8).toString('hex')}`;
-    const db = getFirebaseAdminDb();
 
     await db.collection(COLLECTION).doc(id).set({
       id,
       label,
-      communeName,
-      communeCode,
-      codePostal,
+      communeName: commune.communeName,
+      communeCode: commune.communeCode,
+      codePostal: commune.codePostal,
       referenceEmail,
       accessKeyHash: hashAdminAccessKey(accessKey),
       createdAt: FieldValue.serverTimestamp(),
@@ -95,11 +106,12 @@ router.post('/', async (req, res, next) => {
     return res.status(201).json({
       id,
       label,
-      communeName,
-      communeCode,
-      codePostal,
+      communeName: commune.communeName,
+      communeCode: commune.communeCode,
+      codePostal: commune.codePostal,
       referenceEmail,
       accessKey,
+      attachedToExistingCommune: commune.matched,
     });
   } catch (error) {
     return next(error);
