@@ -73,9 +73,13 @@ const nodeEnv = optional(process.env.NODE_ENV) || 'development';
 export const env = {
   nodeEnv,
   isProduction: nodeEnv === 'production',
-  appCheckEnforced: optional(process.env.APP_CHECK_ENFORCED)
-    ? optional(process.env.APP_CHECK_ENFORCED) === 'true'
-    : nodeEnv === 'production',
+  // App Check est verrouille en opt-in explicite : il ne bloque les connexions
+  // que si APP_CHECK_ENFORCED=true. Tant que la cle reCAPTCHA et le provider App
+  // Check ne sont pas enregistres pour les domaines de prod (console Firebase),
+  // l'app web ne peut pas produire de jeton valide ; enforcer par defaut
+  // refuserait alors toutes les authentifications (controleur, admin, super
+  // admin) sans apporter de protection reelle.
+  appCheckEnforced: optional(process.env.APP_CHECK_ENFORCED) === 'true',
   port: Number(process.env.PORT || 4000),
   apiBaseUrl: optional(process.env.API_BASE_URL),
   corsOrigins: Array.from(
