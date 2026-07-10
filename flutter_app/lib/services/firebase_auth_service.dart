@@ -6,6 +6,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../config/app_config.dart';
 import '../firebase_options.dart';
@@ -17,6 +18,14 @@ class FirebaseAuthService {
 
   String? _manualIdToken;
   DateTime? _manualIdTokenExpiresAt;
+  // Refresh token REST (endpoint securetoken) : permet de renouveler le idToken
+  // manuel au-dela de son expiration (~1h) et apres un rechargement de page,
+  // quand la connexion SDK directe echoue (App Check) et que la session repose
+  // sur le repli REST. Persiste en local pour survivre au rechargement.
+  String? _manualRefreshToken;
+
+  static const String _manualRefreshTokenKey =
+      'firebase_manual_refresh_token_v1';
 
   Future<void> ensureInitialized() async {
     if (Firebase.apps.isEmpty) {
@@ -184,6 +193,7 @@ class FirebaseAuthService {
 
       final payload = jsonDecode(response.body) as Map<String, dynamic>;
       final idToken = payload['idToken'] as String?;
+      final refreshToken = payload['refreshToken'] as String?;
       final expiresInSeconds =
           int.tryParse(payload['expiresIn']?.toString() ?? '') ?? 3600;
       if (idToken == null || idToken.isEmpty) {
@@ -197,6 +207,10 @@ class FirebaseAuthService {
       _manualIdTokenExpiresAt = DateTime.now()
           .add(Duration(seconds: expiresInSeconds))
           .subtract(const Duration(minutes: 1));
+      if (refreshToken != null && refreshToken.isNotEmpty) {
+        _manualRefreshToken = refreshToken;
+        await _persistManualRefreshToken();
+      }
 
       if (kDebugMode) {
         debugPrint('[FirebaseAuthService] REST fallback success, token '
@@ -246,6 +260,16 @@ class FirebaseAuthService {
       return manualToken;
     }
 
+    // Le idToken manuel a expire (ou a ete perdu au rechargement) : on tente un
+    // rafraichissement via le refresh token REST persistant avant d'abandonner.
+    final refreshed = await _refreshManualIdTokenViaRest();
+    if (refreshed != null && refreshed.isNotEmpty) {
+      if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] Manual REST token refreshed: true');
+      }
+      return refreshed;
+    }
+
     if (kDebugMode) {
       debugPrint('[FirebaseAuthService] Manual REST token present: false');
     }
@@ -268,6 +292,110 @@ class FirebaseAuthService {
     return token;
   }
 
+  /// Renouvelle le idToken manuel a partir du refresh token REST (endpoint
+  /// securetoken). Charge d'abord le refresh token persistant si besoin (apres
+  /// rechargement). Retourne le nouveau idToken, ou null si aucun refresh token
+  /// valide n'est disponible. Ne jette jamais.
+  Future<String?> _refreshManualIdTokenViaRest() async {
+    if (_manualRefreshToken == null || _manualRefreshToken!.isEmpty) {
+      await _loadManualRefreshToken();
+    }
+    final refreshToken = _manualRefreshToken;
+    if (refreshToken == null || refreshToken.isEmpty) return null;
+
+    final apiKey = AppConfig.resolvedFirebaseApiKey.trim();
+    if (apiKey.isEmpty) return null;
+
+    try {
+      final response = await http
+          .post(
+            Uri.https('securetoken.googleapis.com', '/v1/token', {'key': apiKey}),
+            headers: const {
+              'Content-Type': 'application/x-www-form-urlencoded',
+            },
+            body: {
+              'grant_type': 'refresh_token',
+              'refresh_token': refreshToken,
+            },
+          )
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        // Refresh token invalide/revoque : on nettoie la session manuelle.
+        await _clearManualSession();
+        if (kDebugMode) {
+          debugPrint('[FirebaseAuthService] manual refresh rejected: '
+              'HTTP ${response.statusCode}');
+        }
+        return null;
+      }
+
+      final payload = jsonDecode(response.body) as Map<String, dynamic>;
+      final idToken = payload['id_token'] as String?;
+      final newRefresh = payload['refresh_token'] as String?;
+      final expiresIn =
+          int.tryParse(payload['expires_in']?.toString() ?? '') ?? 3600;
+      if (idToken == null || idToken.isEmpty) return null;
+
+      _manualIdToken = idToken;
+      _manualIdTokenExpiresAt = DateTime.now()
+          .add(Duration(seconds: expiresIn))
+          .subtract(const Duration(minutes: 1));
+      if (newRefresh != null && newRefresh.isNotEmpty) {
+        _manualRefreshToken = newRefresh;
+        await _persistManualRefreshToken();
+      }
+      return idToken;
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[FirebaseAuthService] manual refresh failure: $error');
+      }
+      return null;
+    }
+  }
+
+  /// Retourne le idToken manuel valide, ou tente un rafraichissement. Ne jette
+  /// jamais (utilise par currentIdToken).
+  Future<String?> _manualIdTokenOrRefresh() async {
+    final valid = _validManualIdToken;
+    if (valid != null) return valid;
+    return _refreshManualIdTokenViaRest();
+  }
+
+  Future<void> _persistManualRefreshToken() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = _manualRefreshToken;
+      if (token == null || token.isEmpty) {
+        await prefs.remove(_manualRefreshTokenKey);
+      } else {
+        await prefs.setString(_manualRefreshTokenKey, token);
+      }
+    } catch (_) {
+      // Persistance best-effort : un echec ne doit pas casser l'auth.
+    }
+  }
+
+  Future<void> _loadManualRefreshToken() async {
+    if (_manualRefreshToken != null && _manualRefreshToken!.isNotEmpty) return;
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final stored = prefs.getString(_manualRefreshTokenKey);
+      if (stored != null && stored.isNotEmpty) {
+        _manualRefreshToken = stored;
+      }
+    } catch (_) {
+      // Ignore : on retombera sur "session expiree" si rien n'est disponible.
+    }
+  }
+
+  Future<void> _clearManualSession() async {
+    _manualIdToken = null;
+    _manualIdTokenExpiresAt = null;
+    _manualRefreshToken = null;
+    await _persistManualRefreshToken();
+  }
+
   Future<String?> currentIdToken({bool forceRefresh = false}) async {
     // Cette methode ne doit JAMAIS jeter : tout incident (plugin web qui
     // deballe un null, init en cours, etc.) retombe sur le token REST
@@ -286,7 +414,7 @@ class FirebaseAuthService {
         return _validManualIdToken;
       }
       if (user == null) {
-        return _validManualIdToken;
+        return await _manualIdTokenOrRefresh();
       }
       try {
         final token = await user.getIdToken(forceRefresh);
@@ -303,7 +431,7 @@ class FirebaseAuthService {
           } catch (_) {}
         }
       }
-      return _validManualIdToken;
+      return await _manualIdTokenOrRefresh();
     } catch (_) {
       return _validManualIdToken;
     }
@@ -315,8 +443,7 @@ class FirebaseAuthService {
   }
 
   Future<void> signOut() async {
-    _manualIdToken = null;
-    _manualIdTokenExpiresAt = null;
+    await _clearManualSession();
     if (!isConfigured || Firebase.apps.isEmpty) {
       return;
     }
