@@ -230,8 +230,14 @@ class FirebaseAuthService {
   /// long-lived sessions do not silently drift past the 1h expiry.
 
   Future<String> requireFreshIdToken() async {
-    await ensureInitialized();
+    // ensureInitialized() ET l'acces au SDK Firebase sont dans le meme try :
+    // sur certains navigateurs, l'initialisation/App Check peut lever un
+    // "Null check operator used on a null value". Si on abandonnait la, le
+    // repli REST (jeton manuel + refresh token) ci-dessous ne serait jamais
+    // tente et toute action super admin echouerait. On rattrape donc tout et
+    // on retombe sur le repli REST, qui n'a pas besoin du SDK.
     try {
+      await ensureInitialized();
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
         final token = await user.getIdToken(true);
