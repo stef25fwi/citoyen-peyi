@@ -172,9 +172,11 @@ class _SuperAdminDashboardPageState extends State<SuperAdminDashboardPage> {
         onCreated: (profile) async {
           if (!mounted) return;
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Profil administrateur créé'),
-              backgroundColor: Color(0xFF2B9F82),
+            SnackBar(
+              content: Text(profile.attachedToExistingCommune
+                  ? 'Profil rattaché à la commune existante « ${profile.communeName} »'
+                  : 'Profil administrateur créé'),
+              backgroundColor: const Color(0xFF2B9F82),
             ),
           );
           await _loadProfiles();
