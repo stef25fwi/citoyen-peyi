@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 
-import '../pages/access_citizen_page.dart';
+import 'primary_participate_button.dart';
 
 /// Bandeau invitant un citoyen non connecte a rejoindre son espace avec un
-/// bouton « Je participe » qui ouvre la page d'acces citoyen.
+/// bouton « Je participe » identique a celui de la page d'accueil.
 class CitizenConnectInvite extends StatelessWidget {
   const CitizenConnectInvite({
     super.key,
@@ -62,27 +62,7 @@ class CitizenConnectInvite extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              style: FilledButton.styleFrom(
-                backgroundColor: const Color(0xFFFFD83D),
-                foregroundColor: const Color(0xFF0756B8),
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                textStyle: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              onPressed: () =>
-                  Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
-              icon: const Icon(Icons.arrow_forward_rounded),
-              label: const Text('Je participe'),
-            ),
-          ),
+          const PrimaryParticipateButton(widthFactor: 1),
         ],
       ),
     );
