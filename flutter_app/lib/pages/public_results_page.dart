@@ -7,7 +7,6 @@ import '../widgets/citizen/citizen_bottom_nav.dart';
 import '../widgets/citizen_connect_invite.dart';
 import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
-import '../widgets/public_logged_out_placeholder.dart';
 import 'public_news_page.dart';
 
 /// Resultats publics anonymes des consultations.
@@ -115,84 +114,74 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
                   const CitizenConnectInvite(
                     message:
                         'Connectez-vous a votre compte pour participer aux consultations et suivre leurs resultats.',
+                  )
+                else ...[
+                  Text(
+                    'Resultats anonymes des consultations',
+                    style: theme.textTheme.headlineMedium,
+                    textAlign: TextAlign.center,
                   ),
-                Text(
-                  'Resultats anonymes des consultations',
-                  style: theme.textTheme.headlineMedium,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  'Aucune donnee personnelle n\'est affichee. Seuls les totaux par option sont restitues.',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: const Color(0xFF5A6573)),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 18),
-                if (hasAnyPublicPoll) ...[
-                  DropdownButtonFormField<String>(
-                    initialValue: _communeFilter,
-                    decoration: const InputDecoration(labelText: 'Commune'),
-                    items: [
-                      const DropdownMenuItem<String>(
-                          value: null, child: Text('Toutes')),
-                      for (final commune in _communes)
-                        DropdownMenuItem(value: commune, child: Text(commune)),
-                    ],
-                    onChanged: (value) => setState(() => _communeFilter = value),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Aucune donnee personnelle n\'est affichee. Seuls les totaux par option sont restitues.',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: const Color(0xFF5A6573)),
+                    textAlign: TextAlign.center,
                   ),
-                  const SizedBox(height: 12),
-                  DropdownButtonFormField<String>(
-                    initialValue: _statusFilter,
-                    decoration: const InputDecoration(labelText: 'Etat'),
-                    items: const [
-                      DropdownMenuItem(value: 'all', child: Text('Tous')),
-                      DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
-                      DropdownMenuItem(value: 'closed', child: Text('Cloturees')),
-                    ],
-                    onChanged: (value) =>
-                        setState(() => _statusFilter = value ?? 'all'),
-                  ),
-                  const SizedBox(height: 16),
-                ],
-                if (_isLoading)
-                  const Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Center(child: CircularProgressIndicator()))
-                else if (filtered.isEmpty)
-                  hasCitizenSession
-                      ? Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(28),
-                            child: Column(
-                              children: [
-                                const Icon(Icons.bar_chart_rounded,
-                                    size: 42, color: Color(0xFF5A6573)),
-                                const SizedBox(height: 12),
-                                Text('Aucun resultat disponible',
-                                    style: theme.textTheme.titleLarge),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  'Aucune consultation ne correspond aux filtres selectionnes.',
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
+                  const SizedBox(height: 18),
+                  if (hasAnyPublicPoll) ...[
+                    DropdownButtonFormField<String>(
+                      initialValue: _communeFilter,
+                      decoration: const InputDecoration(labelText: 'Commune'),
+                      items: [
+                        const DropdownMenuItem<String>(
+                            value: null, child: Text('Toutes')),
+                        for (final commune in _communes)
+                          DropdownMenuItem(value: commune, child: Text(commune)),
+                      ],
+                      onChanged: (value) => setState(() => _communeFilter = value),
+                    ),
+                    const SizedBox(height: 12),
+                    DropdownButtonFormField<String>(
+                      initialValue: _statusFilter,
+                      decoration: const InputDecoration(labelText: 'Etat'),
+                      items: const [
+                        DropdownMenuItem(value: 'all', child: Text('Tous')),
+                        DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
+                        DropdownMenuItem(value: 'closed', child: Text('Cloturees')),
+                      ],
+                      onChanged: (value) =>
+                          setState(() => _statusFilter = value ?? 'all'),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  if (_isLoading)
+                    const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(child: CircularProgressIndicator()))
+                  else if (filtered.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(28),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.bar_chart_rounded,
+                                size: 42, color: Color(0xFF5A6573)),
+                            const SizedBox(height: 12),
+                            Text('Aucun resultat disponible',
+                                style: theme.textTheme.titleLarge),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Aucune consultation ne correspond aux filtres selectionnes.',
+                              textAlign: TextAlign.center,
                             ),
-                          ),
-                        )
-                      : const PublicLoggedOutPlaceholder(
-                          icon: Icons.bar_chart_rounded,
-                          title: 'Résultats à suivre dans votre espace',
-                          message:
-                              'Une fois connecté, vous retrouverez ici les résultats anonymes publiés par votre commune.',
-                          highlights: [
-                            'Totaux anonymes',
-                            'Suivi des votes',
-                            'Aucune donnée personnelle',
                           ],
-                        )
-                else
-                  for (final poll in filtered) _PollResultCard(poll: poll),
+                        ),
+                      ),
+                    )
+                  else
+                    for (final poll in filtered) _PollResultCard(poll: poll),
+                ],
               ],
             ),
           ),
