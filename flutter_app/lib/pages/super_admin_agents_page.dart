@@ -14,8 +14,10 @@ class SuperAdminAgentsPage extends StatefulWidget {
 
 class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
   bool _isLoading = true;
+  bool _isBulkDeleting = false;
   String? _error;
   List<ControleurProfileModel> _agents = const [];
+  final Set<String> _selectedAgentIds = <String>{};
 
   @override
   void initState() {
@@ -33,6 +35,9 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
       if (!mounted) return;
       setState(() {
         _agents = agents;
+        _selectedAgentIds.removeWhere(
+          (id) => !agents.any((agent) => agent.id == id),
+        );
         _isLoading = false;
       });
     } catch (error) {
@@ -51,7 +56,7 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
         title: const Text('Supprimer cet agent ?'),
         content: Text(
           'L\'agent "${agent.label}" de la commune "${agent.communeName}" '
-          'sera supprimé définitivement. Cette action est irréversible.',
+          'sera désactivé et archivé dans l\'historique des suppressions.',
         ),
         actions: [
           TextButton(
@@ -70,7 +75,7 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
       await ControleurProfileService.instance.deleteProfile(agent.id);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Agent supprimé.')),
+        const SnackBar(content: Text('Agent supprimé et archivé.')),
       );
       await _load();
     } catch (error) {
@@ -78,6 +83,52 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.toString())),
       );
+    }
+  }
+
+  Future<void> _deleteSelectedAgents() async {
+    final ids = _selectedAgentIds.toList(growable: false);
+    if (ids.isEmpty || _isBulkDeleting) return;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Text('Supprimer ${ids.length} agent(s) ?'),
+        content: const Text(
+          'Les agents sélectionnés seront désactivés, retirés des listes actives '
+          'et conservés dans l\'historique des suppressions.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer la sélection'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+
+    setState(() => _isBulkDeleting = true);
+    try {
+      await ControleurProfileService.instance.bulkDeleteProfiles(ids);
+      if (!mounted) return;
+      setState(() => _selectedAgentIds.clear());
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${ids.length} agent(s) supprimé(s) et archivé(s).')),
+      );
+      await _load();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _isBulkDeleting = false);
     }
   }
 
@@ -171,12 +222,34 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
     return grouped;
   }
 
+  void _toggleAgent(String id, bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedAgentIds.add(id);
+      } else {
+        _selectedAgentIds.remove(id);
+      }
+    });
+  }
+
+  void _toggleAllVisible(bool selected) {
+    setState(() {
+      if (selected) {
+        _selectedAgentIds.addAll(_agents.map((agent) => agent.id));
+      } else {
+        _selectedAgentIds.clear();
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final grouped = _groupByCommune();
     final communes = grouped.keys.toList()
       ..sort((a, b) => a.toLowerCase().compareTo(b.toLowerCase()));
+    final allSelected = _agents.isNotEmpty &&
+        _agents.every((agent) => _selectedAgentIds.contains(agent.id));
 
     return Scaffold(
       backgroundColor: const Color(0xFFF6F8FB),
@@ -208,6 +281,15 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
                       ?.copyWith(color: const Color(0xFF64748B)),
                 ),
                 const SizedBox(height: 16),
+                if (_agents.isNotEmpty)
+                  _BulkSelectionBar(
+                    selectedCount: _selectedAgentIds.length,
+                    allSelected: allSelected,
+                    busy: _isBulkDeleting,
+                    onToggleAll: _toggleAllVisible,
+                    onDeleteSelected: _deleteSelectedAgents,
+                  ),
+                if (_agents.isNotEmpty) const SizedBox(height: 12),
                 if (_isLoading)
                   const Padding(
                     padding: EdgeInsets.all(32),
@@ -235,6 +317,8 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
                     _CommuneAgentsCard(
                       commune: commune,
                       agents: grouped[commune]!,
+                      selectedIds: _selectedAgentIds,
+                      onSelectedChanged: _toggleAgent,
                       onRegenerate: _regenerateAgentCode,
                       onDelete: _deleteAgent,
                     ),
@@ -247,16 +331,74 @@ class _SuperAdminAgentsPageState extends State<SuperAdminAgentsPage> {
   }
 }
 
+class _BulkSelectionBar extends StatelessWidget {
+  const _BulkSelectionBar({
+    required this.selectedCount,
+    required this.allSelected,
+    required this.busy,
+    required this.onToggleAll,
+    required this.onDeleteSelected,
+  });
+
+  final int selectedCount;
+  final bool allSelected;
+  final bool busy;
+  final ValueChanged<bool> onToggleAll;
+  final VoidCallback onDeleteSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        child: Wrap(
+          spacing: 12,
+          runSpacing: 8,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          alignment: WrapAlignment.spaceBetween,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Checkbox(value: allSelected, onChanged: (v) => onToggleAll(v == true)),
+                Text(selectedCount == 0
+                    ? 'Sélection multiple'
+                    : '$selectedCount élément(s) sélectionné(s)'),
+              ],
+            ),
+            FilledButton.icon(
+              style: FilledButton.styleFrom(backgroundColor: Colors.red),
+              onPressed: selectedCount == 0 || busy ? null : onDeleteSelected,
+              icon: busy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.delete_sweep_rounded),
+              label: const Text('Supprimer la sélection'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class _CommuneAgentsCard extends StatelessWidget {
   const _CommuneAgentsCard({
     required this.commune,
     required this.agents,
+    required this.selectedIds,
+    required this.onSelectedChanged,
     required this.onRegenerate,
     required this.onDelete,
   });
 
   final String commune;
   final List<ControleurProfileModel> agents;
+  final Set<String> selectedIds;
+  final void Function(String id, bool selected) onSelectedChanged;
   final void Function(ControleurProfileModel agent) onRegenerate;
   final void Function(ControleurProfileModel agent) onDelete;
 
@@ -290,6 +432,11 @@ class _CommuneAgentsCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
+                      Checkbox(
+                        value: selectedIds.contains(agent.id),
+                        onChanged: (selected) =>
+                            onSelectedChanged(agent.id, selected == true),
+                      ),
                       const Icon(Icons.badge_outlined,
                           size: 18, color: Color(0xFF64748B)),
                       const SizedBox(width: 10),
