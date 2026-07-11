@@ -11,6 +11,7 @@ import {
 } from '../middlewares/requireFirebaseAuth.js';
 import { hashControllerCode } from '../services/keyHashing.js';
 import { resolveCanonicalCommune } from '../services/communeDirectory.js';
+import { archiveDeletedRecord } from '../services/deletionArchive.js';
 import { logger } from '../services/logger.js';
 
 const router = express.Router();
@@ -24,6 +25,10 @@ const ensureConfigured = (_req, res, next) => {
 };
 
 const sanitize = (value, max) => (typeof value === 'string' ? value.trim().substring(0, max) : '');
+const normalizeIds = (raw) => (Array.isArray(raw) ? raw : [])
+  .map((value) => sanitize(value, 128))
+  .filter(Boolean)
+  .slice(0, 100);
 
 export const generateControllerCode = () => {
   const hash = crypto.createHash('sha256').update(crypto.randomBytes(32)).digest('hex');
@@ -79,6 +84,30 @@ const assertControllerScope = (req, res, data) => {
     return false;
   }
   return true;
+};
+
+const archiveAndDisableController = async (db, req, loaded, reason = 'manual_delete') => {
+  const data = loaded.doc.data() || {};
+  await archiveDeletedRecord(db, {
+    kind: 'consultation_agent',
+    sourceCollection: COLLECTION,
+    recordId: stripLegacyPrefix(loaded.code),
+    data: { id: stripLegacyPrefix(loaded.code), ...data },
+    deletedBy: req.user?.uid || 'super_admin',
+    reason,
+  });
+  await loaded.ref.set({
+    enabled: false,
+    disabledAt: FieldValue.serverTimestamp(),
+    deletedAt: FieldValue.serverTimestamp(),
+    deletedBy: req.user?.uid || 'super_admin',
+    updatedAt: FieldValue.serverTimestamp(),
+  }, { merge: true });
+  try {
+    await import('../services/firebaseAdmin.js').then(({ getFirebaseAdminAuth }) => getFirebaseAdminAuth().revokeRefreshTokens(`controller:${loaded.code}`));
+  } catch (revokeError) {
+    logger.warn({ err: revokeError, controllerCode: loaded.code }, 'controller_token_revocation_failed');
+  }
 };
 
 const generateUnusedControllerCode = async (db) => {
@@ -171,6 +200,30 @@ router.post('/', async (req, res, next) => {
   }
 });
 
+router.post('/bulk-delete', async (req, res, next) => {
+  try {
+    const ids = normalizeIds(req.body?.ids);
+    if (ids.length === 0) return res.status(400).json({ message: 'Aucun agent selectionne.' });
+    const db = getFirebaseAdminDb();
+    let deleted = 0;
+    const missing = [];
+    for (const id of ids) {
+      const loaded = await loadControllerDoc(db, id);
+      if (!loaded) {
+        missing.push(id);
+        continue;
+      }
+      const data = loaded.doc.data() || {};
+      if (!assertControllerScope(req, res, data)) return undefined;
+      await archiveAndDisableController(db, req, loaded, 'bulk_delete');
+      deleted += 1;
+    }
+    return res.json({ ok: true, deleted, missing });
+  } catch (error) {
+    return next(error);
+  }
+});
+
 router.post('/:controllerCode/regenerate', async (req, res, next) => {
   try {
     const db = getFirebaseAdminDb();
@@ -231,13 +284,7 @@ router.delete('/:controllerCode', async (req, res, next) => {
     if (!loaded) return res.status(404).json({ message: 'Controleur introuvable.' });
     const data = loaded.doc.data() || {};
     if (!assertControllerScope(req, res, data)) return undefined;
-    await loaded.ref.set({ enabled: false, disabledAt: FieldValue.serverTimestamp(), updatedAt: FieldValue.serverTimestamp() }, { merge: true });
-    try {
-      await import('../services/firebaseAdmin.js').then(({ getFirebaseAdminAuth }) => getFirebaseAdminAuth().revokeRefreshTokens(`controller:${loaded.code}`));
-    } catch (revokeError) {
-      // La revocation peut echouer si l'utilisateur Firebase n'a jamais ete cree.
-      logger.warn({ err: revokeError, controllerCode: loaded.code }, 'controller_token_revocation_failed');
-    }
+    await archiveAndDisableController(db, req, loaded, 'manual_delete');
     return res.json({ ok: true });
   } catch (error) {
     return next(error);
