@@ -83,6 +83,12 @@ class PushNotificationService {
     required String rawCode,
     required String communeId,
     required String communeName,
+    // Categorie choisie par le citoyen ('actualites', 'consultations',
+    // 'resultats'). Transmise et persistee cote backend ; seul le trigger
+    // "nouvelle consultation" existe pour l'instant cote serveur (voir
+    // notifyCommunePollPublished), les envois "actualites"/"resultats" ne
+    // sont pas encore declenches.
+    String? category,
   }) async {
     if (!AppConfig.isFirebaseConfigured) return;
     if (communeId.trim().isEmpty && communeName.trim().isEmpty) return;
@@ -127,6 +133,8 @@ class PushNotificationService {
               'platform': kIsWeb ? 'web' : defaultTargetPlatform.name,
               'communeId': communeId.trim(),
               'communeName': communeName.trim(),
+              if (category != null && category.trim().isNotEmpty)
+                'category': category.trim(),
             }),
           )
           .timeout(const Duration(seconds: 10));

@@ -15,6 +15,7 @@ import '../pages/controller_history_page.dart';
 import '../pages/controller_activity_dashboard_page.dart';
 import '../pages/citizen/citizen_consultations_page.dart';
 import '../pages/citizen/citizen_home_page.dart';
+import '../pages/citizen/citizen_profile_page.dart';
 import '../pages/citizen/citizen_poll_question_page.dart';
 import '../pages/citizen/citizen_welcome_page.dart';
 import '../pages/duplicate_request_detail_page.dart';
@@ -196,6 +197,12 @@ class AppRouter {
       case '/citizen/consultations':
         return _page(
           CitizenConsultationsPage(
+              initialSession: _readCitizenAccessSession(settings.arguments)),
+          settings,
+        );
+      case '/citizen/profile':
+        return _page(
+          CitizenProfilePage(
               initialSession: _readCitizenAccessSession(settings.arguments)),
           settings,
         );

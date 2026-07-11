@@ -46,4 +46,40 @@ void main() {
 
     expect(find.text('Donner mon avis'), findsWidgets);
   });
+
+  testWidgets('profile icon opens the citizen profile page', (tester) async {
+    tester.view.physicalSize = const Size(430, 1000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
+    await tester.pumpAndSettle();
+    _drainOverflowExceptions(tester);
+
+    await tester.tap(find.byTooltip('Mon profil'));
+    await tester.pumpAndSettle();
+    _drainOverflowExceptions(tester);
+
+    expect(find.text('Mon profil'), findsOneWidget);
+    expect(find.text('Votre code d\'accès'), findsOneWidget);
+    expect(find.text('Recevoir des notifications'), findsOneWidget);
+  });
+
+  testWidgets('welcome page hero does not overlap the grid below it',
+      (tester) async {
+    tester.view.physicalSize = const Size(430, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
+    await tester.pumpAndSettle();
+    _drainOverflowExceptions(tester);
+
+    // Aucune erreur de layout (overflow/overlap) ne doit remonter, meme sur
+    // un ecran de hauteur reduite : la grille se redimensionne au lieu de
+    // deborder ou de defiler.
+    expect(tester.takeException(), isNull);
+  });
 }
