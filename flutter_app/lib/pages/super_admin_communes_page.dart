@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/poll_models.dart';
 import '../services/citizen_access_code_service.dart';
 import '../services/poll_service.dart';
+import '../services/super_admin_service.dart';
 
 class SuperAdminCommunesPage extends StatefulWidget {
   const SuperAdminCommunesPage({super.key});
@@ -29,6 +30,22 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
     try {
       communes = await CitizenAccessCodeService.instance
           .getCommuneAnalyticsForSuperAdmin();
+
+      // Un compte admin communal supprimé représente une commune retirée du
+      // pilotage actif : on garde ses traces dans l'historique, mais on la
+      // masque des statistiques courantes.
+      final admins = await SuperAdminService.instance.loadProfiles();
+      final activeKeys = admins
+          .expand((admin) => [admin.communeCode, admin.communeName])
+          .whereType<String>()
+          .map((value) => value.trim().toLowerCase())
+          .where((value) => value.isNotEmpty)
+          .toSet();
+      communes = communes.where((commune) {
+        final id = commune.communeId.trim().toLowerCase();
+        final name = commune.communeName.trim().toLowerCase();
+        return activeKeys.contains(id) || activeKeys.contains(name);
+      }).toList();
     } catch (_) {
       // Conserve l'etat precedent en cas d'echec.
     }
@@ -106,7 +123,7 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                     style: theme.textTheme.headlineSmall),
                 const SizedBox(height: 8),
                 Text(
-                  'Vue consolidee des communes actives, basee sur les logs des agents de mobilisation citoyenne et les demandes de doublons deja disponibles dans la plateforme.',
+                  'Vue consolidée des communes actives. Les communes dont le compte admin a été supprimé ne sont plus comptabilisées ici ; elles restent visibles dans l’historique des suppressions.',
                   style: theme.textTheme.bodyMedium
                       ?.copyWith(color: const Color(0xFF64748B)),
                 ),
@@ -121,7 +138,7 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                     child: Padding(
                       padding: EdgeInsets.all(24),
                       child: Text(
-                          'Aucune activite communale disponible pour le moment.'),
+                          'Aucune commune active disponible pour le moment.'),
                     ),
                   )
                 else ...[
@@ -130,7 +147,7 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                     runSpacing: 12,
                     children: [
                       _TopStatCard(
-                        label: 'Communes suivies',
+                        label: 'Communes actives',
                         value: _communes.length.toString(),
                       ),
                       _TopStatCard(
@@ -141,7 +158,7 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                             .toString(),
                       ),
                       _TopStatCard(
-                        label: 'Codes generes',
+                        label: 'Codes générés',
                         value: _communes
                             .fold<int>(
                                 0, (sum, item) => sum + item.codesGenerated)
@@ -158,89 +175,7 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                   ),
                   const SizedBox(height: 18),
                   for (final commune in _communes)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 14),
-                      child: Card(
-                        child: Padding(
-                          padding: const EdgeInsets.all(18),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Expanded(
-                                    child: Text(commune.communeName,
-                                        style: theme.textTheme.titleLarge),
-                                  ),
-                                  Chip(
-                                      label: Text(commune.communeId.isEmpty
-                                          ? 'Commune non codee'
-                                          : commune.communeId)),
-                                ],
-                              ),
-                              const SizedBox(height: 10),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  _MetricChip(
-                                      label: 'Agents actifs',
-                                      value:
-                                          commune.activeControllers.toString()),
-                                  _MetricChip(
-                                      label: 'Codes generes',
-                                      value: commune.codesGenerated.toString()),
-                                  _MetricChip(
-                                      label: 'Doublons detectes',
-                                      value: commune.duplicatesDetected
-                                          .toString()),
-                                  _MetricChip(
-                                      label: 'Demandes pending',
-                                      value:
-                                          commune.pendingRequests.toString()),
-                                  _MetricChip(
-                                      label: 'Taux doublons',
-                                      value:
-                                          '${(commune.duplicateRate * 100).round()}%'),
-                                ],
-                              ),
-                              const SizedBox(height: 12),
-                              Text(
-                                'Dernier code genere: ${commune.lastCodeGeneratedAt ?? 'Aucune activite recente'}',
-                                style: theme.textTheme.bodyMedium
-                                    ?.copyWith(color: const Color(0xFF64748B)),
-                              ),
-                              const SizedBox(height: 12),
-                              Wrap(
-                                spacing: 10,
-                                runSpacing: 10,
-                                children: [
-                                  FilledButton.tonalIcon(
-                                    onPressed: () =>
-                                        Navigator.of(context).pushNamed(
-                                      '/super/activity/commune/${commune.communeId}',
-                                    ),
-                                    icon: const Icon(Icons.analytics_rounded),
-                                    label: const Text('Voir activite'),
-                                  ),
-                                  OutlinedButton.icon(
-                                    onPressed: () =>
-                                        Navigator.of(context).pushNamed(
-                                      '/super/activity',
-                                      arguments: {
-                                        'communeId': commune.communeId
-                                      },
-                                    ),
-                                    icon: const Icon(Icons.filter_alt_rounded),
-                                    label: const Text('Filtrer le tableau'),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
+                    _CommuneCard(commune: commune),
                 ],
                 if (!_isLoading) ...[
                   const SizedBox(height: 28),
@@ -272,6 +207,92 @@ class _SuperAdminCommunesPageState extends State<SuperAdminCommunesPage> {
                 ],
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _CommuneCard extends StatelessWidget {
+  const _CommuneCard({required this.commune});
+
+  final CommuneAnalyticsModel commune;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(commune.communeName,
+                        style: theme.textTheme.titleLarge),
+                  ),
+                  Chip(
+                      label: Text(commune.communeId.isEmpty
+                          ? 'Commune non codée'
+                          : commune.communeId)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  _MetricChip(
+                      label: 'Agents actifs',
+                      value: commune.activeControllers.toString()),
+                  _MetricChip(
+                      label: 'Codes générés',
+                      value: commune.codesGenerated.toString()),
+                  _MetricChip(
+                      label: 'Doublons détectés',
+                      value: commune.duplicatesDetected.toString()),
+                  _MetricChip(
+                      label: 'Demandes pending',
+                      value: commune.pendingRequests.toString()),
+                  _MetricChip(
+                      label: 'Taux doublons',
+                      value: '${(commune.duplicateRate * 100).round()}%'),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Dernier code généré : ${commune.lastCodeGeneratedAt ?? 'Aucune activité récente'}',
+                style: theme.textTheme.bodyMedium
+                    ?.copyWith(color: const Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 12),
+              Wrap(
+                spacing: 10,
+                runSpacing: 10,
+                children: [
+                  FilledButton.tonalIcon(
+                    onPressed: () => Navigator.of(context).pushNamed(
+                      '/super/activity/commune/${commune.communeId}',
+                    ),
+                    icon: const Icon(Icons.analytics_rounded),
+                    label: const Text('Voir activité'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).pushNamed(
+                      '/super/activity',
+                      arguments: {'communeId': commune.communeId},
+                    ),
+                    icon: const Icon(Icons.filter_alt_rounded),
+                    label: const Text('Filtrer le tableau'),
+                  ),
+                ],
+              ),
+            ],
           ),
         ),
       ),
