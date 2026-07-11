@@ -25,6 +25,7 @@ import '../pages/poll_detail_page.dart';
 import '../pages/placeholder_page.dart';
 import '../pages/public_news_page.dart';
 import '../pages/public_results_page.dart';
+import '../pages/public_vote_page.dart';
 import '../pages/super_admin_agents_page.dart';
 import '../pages/super_admin_communes_page.dart';
 import '../pages/super_admin_dashboard_page.dart';
@@ -212,6 +213,8 @@ class AppRouter {
       case '/news':
       case '/actualites':
         return _page(const PublicNewsPage(), settings);
+      case '/donner-mon-avis':
+        return _page(const PublicVotePage(), settings);
       case '/profile':
         return _page(
           const _LegacyRouteRedirectPage(

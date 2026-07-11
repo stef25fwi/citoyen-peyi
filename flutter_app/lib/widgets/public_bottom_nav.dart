@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../services/citizen_public_access_service.dart';
 import '../services/new_poll_badge_service.dart';
 
 enum PublicTab { home, news, vote, results }
@@ -35,7 +36,11 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
   }
 
   void _handleTap(BuildContext context, int index) {
-    final routes = <String>['/', '/news', '/access-citizen', '/results'];
+    final voteRoute =
+        CitizenPublicAccessService.instance.currentSession != null
+            ? '/access-citizen'
+            : '/donner-mon-avis';
+    final routes = <String>['/', '/news', voteRoute, '/results'];
     final targetRoute = routes[index];
     final currentRoute = ModalRoute.of(context)?.settings.name;
 
