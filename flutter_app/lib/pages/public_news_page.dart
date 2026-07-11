@@ -7,6 +7,7 @@ import '../widgets/citizen/citizen_bottom_nav.dart';
 import '../widgets/citizen_connect_invite.dart';
 import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
+import '../widgets/public_logged_out_placeholder.dart';
 import 'public_results_page.dart';
 
 /// Page actualités / projets de la commune.
@@ -58,6 +59,8 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final hasCitizenSession =
+        CitizenPublicAccessService.instance.currentSession != null;
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -74,7 +77,7 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
             child: ListView(
               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
               children: [
-                if (CitizenPublicAccessService.instance.currentSession == null)
+                if (!hasCitizenSession)
                   const CitizenConnectInvite(
                     message:
                         'Connectez-vous a votre compte pour suivre les actualites et participer aux consultations de votre commune.',
@@ -91,25 +94,37 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
                       padding: EdgeInsets.all(32),
                       child: Center(child: CircularProgressIndicator()))
                 else if (_items.isEmpty)
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(28),
-                      child: Column(
-                        children: [
-                          const Icon(Icons.newspaper_rounded,
-                              size: 42, color: Color(0xFF5A6573)),
-                          const SizedBox(height: 12),
-                          Text('Aucune actualité pour le moment',
-                              style: theme.textTheme.titleLarge),
-                          const SizedBox(height: 6),
-                          const Text(
-                            'Les communes peuvent publier ici leurs actualités et projets soumis à consultation. Revenez bientôt.',
-                            textAlign: TextAlign.center,
+                  hasCitizenSession
+                      ? Card(
+                          child: Padding(
+                            padding: const EdgeInsets.all(28),
+                            child: Column(
+                              children: [
+                                const Icon(Icons.newspaper_rounded,
+                                    size: 42, color: Color(0xFF5A6573)),
+                                const SizedBox(height: 12),
+                                Text('Aucune actualité pour le moment',
+                                    style: theme.textTheme.titleLarge),
+                                const SizedBox(height: 6),
+                                const Text(
+                                  'Les communes peuvent publier ici leurs actualités et projets soumis à consultation. Revenez bientôt.',
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
                           ),
-                        ],
-                      ),
-                    ),
-                  )
+                        )
+                      : const PublicLoggedOutPlaceholder(
+                          icon: Icons.newspaper_rounded,
+                          title: 'Actualités accessibles après connexion',
+                          message:
+                              'Votre espace affichera ici les informations de votre commune dès leur publication.',
+                          highlights: [
+                            'Projets communaux',
+                            'Suivi citoyen',
+                            'Accès confidentiel',
+                          ],
+                        )
                 else
                   for (final item in _items) _NewsCard(item: item),
               ],
@@ -117,13 +132,12 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
           ),
         ),
       ),
-      bottomNavigationBar:
-          CitizenPublicAccessService.instance.currentSession != null
-              ? CitizenBottomNav(
-                  activeTab: CitizenNavTab.news,
-                  onTabSelected: _onCitizenNav,
-                )
-              : const PublicBottomNav(currentTab: PublicTab.news),
+      bottomNavigationBar: hasCitizenSession
+          ? CitizenBottomNav(
+              activeTab: CitizenNavTab.news,
+              onTabSelected: _onCitizenNav,
+            )
+          : const PublicBottomNav(currentTab: PublicTab.news),
     );
   }
 
