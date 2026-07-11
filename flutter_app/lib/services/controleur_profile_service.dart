@@ -138,6 +138,16 @@ class ControleurProfileService {
     await _authorizedRequest('DELETE', '/api/controllers/$id');
   }
 
+  Future<void> bulkDeleteProfiles(List<String> ids) async {
+    final uniqueIds = ids.map((id) => id.trim()).where((id) => id.isNotEmpty).toSet().toList();
+    if (uniqueIds.isEmpty) return;
+    await _authorizedRequest(
+      'POST',
+      '/api/controllers/bulk-delete',
+      body: {'ids': uniqueIds},
+    );
+  }
+
   Future<ControleurProfileModel> regenerateProfileCode(String id) async {
     final response = await _authorizedRequest(
       'POST',
