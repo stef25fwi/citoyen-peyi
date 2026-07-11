@@ -40,6 +40,51 @@ class BackupSnapshot {
   }
 }
 
+class DeletedRecord {
+  const DeletedRecord({
+    required this.id,
+    required this.kind,
+    required this.sourceCollection,
+    required this.recordId,
+    required this.reason,
+    required this.deletedBy,
+    required this.deletedAt,
+    required this.data,
+  });
+
+  final String id;
+  final String kind;
+  final String sourceCollection;
+  final String recordId;
+  final String reason;
+  final String deletedBy;
+  final String deletedAt;
+  final Map<String, dynamic> data;
+
+  String get displayTitle {
+    final label = data['label']?.toString().trim() ?? '';
+    final commune = data['communeName']?.toString().trim() ??
+        (data['commune'] is Map ? ((data['commune'] as Map)['name']?.toString().trim() ?? '') : '');
+    if (label.isNotEmpty && commune.isNotEmpty) return '$label · $commune';
+    if (label.isNotEmpty) return label;
+    if (commune.isNotEmpty) return commune;
+    return recordId.isNotEmpty ? recordId : id;
+  }
+
+  static DeletedRecord fromJson(Map<String, dynamic> json) {
+    return DeletedRecord(
+      id: json['id'] as String? ?? '',
+      kind: json['kind'] as String? ?? '',
+      sourceCollection: json['sourceCollection'] as String? ?? '',
+      recordId: json['recordId'] as String? ?? '',
+      reason: json['reason'] as String? ?? '',
+      deletedBy: json['deletedBy'] as String? ?? '',
+      deletedAt: json['deletedAt']?.toString() ?? '',
+      data: (json['data'] as Map?)?.cast<String, dynamic>() ?? const {},
+    );
+  }
+}
+
 class RestoreCollectionReport {
   const RestoreCollectionReport({
     required this.collection,
@@ -113,6 +158,16 @@ class BackupAdminService {
         .whereType<Map<String, dynamic>>()
         .map(BackupSnapshot.fromJson)
         .where((snapshot) => snapshot.id.isNotEmpty)
+        .toList();
+  }
+
+  Future<List<DeletedRecord>> listDeletedRecords() async {
+    final payload = await _request('GET', '/api/backups/deleted-records');
+    final raw = payload['deletedRecords'] as List<dynamic>? ?? const [];
+    return raw
+        .whereType<Map<String, dynamic>>()
+        .map(DeletedRecord.fromJson)
+        .where((record) => record.id.isNotEmpty)
         .toList();
   }
 
