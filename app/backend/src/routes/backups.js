@@ -4,6 +4,7 @@ import { getFirebaseAdminDb, isFirebaseAdminConfigured } from '../services/fireb
 import { requireFirebaseAuth, requireSuperAdmin } from '../middlewares/requireFirebaseAuth.js';
 import { logger } from '../services/logger.js';
 import { COLLECTION_SPECS, collectSnapshot, restoreSnapshot } from '../services/backupService.js';
+import { DELETED_RECORDS_COLLECTION, serializeDeletedRecord } from '../services/deletionArchive.js';
 import {
   deleteSnapshot,
   getSignedDownloadUrl,
@@ -81,6 +82,22 @@ router.get('/', async (_req, res, next) => {
     return res.json({ snapshots: await listSnapshots() });
   } catch (error) {
     logger.error({ err: error }, 'backup_snapshot_list_failed');
+    return next(error);
+  }
+});
+
+// Historique des suppressions : donnees conservees dans Firestore et incluses
+// dans les snapshots via la collection `deleted_records`.
+router.get('/deleted-records', async (_req, res, next) => {
+  try {
+    const snapshot = await getFirebaseAdminDb()
+      .collection(DELETED_RECORDS_COLLECTION)
+      .orderBy('deletedAt', 'desc')
+      .limit(100)
+      .get();
+    return res.json({ deletedRecords: snapshot.docs.map(serializeDeletedRecord) });
+  } catch (error) {
+    logger.error({ err: error }, 'deleted_records_list_failed');
     return next(error);
   }
 });
