@@ -72,6 +72,7 @@ export const registerNotificationSubscription = async ({
   access,
   token,
   platform = 'web',
+  category = '',
   userAgent = '',
 }) => {
   const normalizedToken = normalizeFcmToken(token);
@@ -90,6 +91,7 @@ export const registerNotificationSubscription = async ({
     communeId: sanitizeString(access.communeId, 128),
     communeName: sanitizeString(access.communeName, 200),
     platform: sanitizeString(platform, 40) || 'web',
+    category: sanitizeString(category, 40),
     userAgent: sanitizeString(userAgent, 500),
     enabled: true,
     updatedAt: FieldValue.serverTimestamp(),

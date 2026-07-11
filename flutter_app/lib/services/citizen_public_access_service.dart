@@ -109,8 +109,21 @@ class CitizenPublicAccessService {
 
   SharedPreferences? _preferences;
   CitizenPublicAccessSession? _currentSession;
+  DateTime? _firstConnectionAt;
+  DateTime? _lastConnectionAt;
+
+  static const _firstSeenPrefix = 'citizen_first_seen_';
+  static const _lastSeenPrefix = 'citizen_last_seen_';
 
   CitizenPublicAccessSession? get currentSession => _currentSession;
+
+  /// Date/heure de la toute premiere connexion avec le code citoyen actuel
+  /// (persistee localement, jamais reecrite une fois fixee).
+  DateTime? get firstConnectionAt => _firstConnectionAt;
+
+  /// Date/heure de la derniere connexion (mise a jour a chaque ouverture
+  /// d'une session, nouvelle ou reprise).
+  DateTime? get lastConnectionAt => _lastConnectionAt;
 
   Future<void> initialize() async {
     _preferences ??= await SharedPreferences.getInstance();
@@ -123,6 +136,9 @@ class CitizenPublicAccessService {
     try {
       final data = jsonDecode(raw) as Map<String, dynamic>;
       _currentSession = CitizenPublicAccessSession.fromJson(data);
+      if (_currentSession != null) {
+        await _recordConnection(_currentSession!.accessCode);
+      }
     } catch (_) {
       _currentSession = null;
     }
@@ -132,12 +148,38 @@ class CitizenPublicAccessService {
     _preferences ??= await SharedPreferences.getInstance();
     _currentSession = session;
     await _preferences?.setString(_storageKey, jsonEncode(session.toJson()));
+    await _recordConnection(session.accessCode);
   }
 
   Future<void> clearSession() async {
     _preferences ??= await SharedPreferences.getInstance();
     _currentSession = null;
     await _preferences?.remove(_storageKey);
+  }
+
+  /// Enregistre une connexion pour ce code : fixe la premiere connexion si
+  /// elle n'existe pas encore, met a jour la derniere connexion a chaque
+  /// appel. Persiste par code (survit a une deconnexion/reconnexion avec le
+  /// meme code).
+  Future<void> _recordConnection(String accessCode) async {
+    final code = accessCode.trim();
+    if (code.isEmpty) return;
+    _preferences ??= await SharedPreferences.getInstance();
+
+    final firstKey = '$_firstSeenPrefix$code';
+    final lastKey = '$_lastSeenPrefix$code';
+    final now = DateTime.now();
+
+    final existingFirst = _preferences?.getString(firstKey);
+    if (existingFirst == null || existingFirst.isEmpty) {
+      await _preferences?.setString(firstKey, now.toIso8601String());
+      _firstConnectionAt = now;
+    } else {
+      _firstConnectionAt = DateTime.tryParse(existingFirst) ?? now;
+    }
+
+    await _preferences?.setString(lastKey, now.toIso8601String());
+    _lastConnectionAt = now;
   }
 
   Future<CitizenPublicAccessSession?> openAccess(String rawCode) async {
@@ -281,5 +323,26 @@ class CitizenPublicAccessService {
     if (value is Timestamp) return value.toDate();
     final date = DateTime.tryParse('$value');
     return date;
+  }
+
+  // ---------- Preference de categorie de notification ----------
+
+  static const _notificationCategoryKey = 'citizen_notification_category_v1';
+
+  /// Categorie de notification choisie par le citoyen ('actualites',
+  /// 'consultations' ou 'resultats'), ou null si aucune preference.
+  Future<String?> loadNotificationCategory() async {
+    _preferences ??= await SharedPreferences.getInstance();
+    final value = _preferences?.getString(_notificationCategoryKey);
+    return (value == null || value.isEmpty) ? null : value;
+  }
+
+  Future<void> saveNotificationCategory(String? category) async {
+    _preferences ??= await SharedPreferences.getInstance();
+    if (category == null || category.isEmpty) {
+      await _preferences?.remove(_notificationCategoryKey);
+    } else {
+      await _preferences?.setString(_notificationCategoryKey, category);
+    }
   }
 }

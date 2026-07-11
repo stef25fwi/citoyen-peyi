@@ -10,6 +10,7 @@ import '../legal_page.dart';
 import '../public_news_page.dart';
 import '../public_results_page.dart';
 import 'citizen_consultations_page.dart';
+import 'citizen_profile_page.dart';
 
 class CitizenHomePage extends StatelessWidget {
   const CitizenHomePage({
@@ -58,6 +59,10 @@ class CitizenHomePage extends StatelessWidget {
     }
   }
 
+  // Header fixe : distinct de la zone de contenu flexible ci-dessous pour que
+  // le hero bleu ne recouvre jamais la grille (pas de superposition/overlap).
+  static const double _headerHeight = 190;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -68,22 +73,24 @@ class CitizenHomePage extends StatelessWidget {
           child: Column(
             children: [
               _HomeHeader(
+                height: _headerHeight,
                 communeName: initialSession?.communeName,
                 initialSession: initialSession,
               ),
+              // Pas de scroll : la grille d'actions se redimensionne pour
+              // toujours tenir dans l'espace disponible (page sans scroll,
+              // quelle que soit la hauteur de l'ecran).
               Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Transform.translate(
-                        offset: const Offset(0, -18),
+                      Expanded(
                         child: _QuickActionsPanel(initialSession: initialSession),
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 12),
                       const _OpinionInfoCard(),
-                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -117,15 +124,16 @@ class _MobileFrame extends StatelessWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({this.communeName, this.initialSession});
+  const _HomeHeader({required this.height, this.communeName, this.initialSession});
 
+  final double height;
   final String? communeName;
   final CitizenPublicAccessSession? initialSession;
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 238,
+      height: height,
       width: double.infinity,
       decoration: const BoxDecoration(
         gradient: CitizenDesignTokens.headerGradient,
@@ -134,68 +142,23 @@ class _HomeHeader extends StatelessWidget {
         ),
       ),
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 28),
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 20),
         child: Column(
           children: [
             Row(
               children: [
                 IconButton(
-                  tooltip: 'Menu',
-                  onPressed: () async {
-                    final shouldLogout = await showModalBottomSheet<bool>(
-                      context: context,
-                      backgroundColor: Colors.white,
-                      shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(28),
-                        ),
+                  tooltip: 'Mon profil',
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            CitizenProfilePage(initialSession: initialSession),
                       ),
-                      builder: (sheetContext) {
-                        return SafeArea(
-                          child: Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                const Text(
-                                  'Session citoyenne',
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    color: CitizenDesignTokens.textDark,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w900,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                ListTile(
-                                  leading: const Icon(
-                                    Icons.logout_rounded,
-                                    color: CitizenDesignTokens.deepBlue,
-                                  ),
-                                  title: const Text('Se déconnecter'),
-                                  subtitle: const Text(
-                                    'Rester connecté jusqu’à une déconnexion manuelle.',
-                                  ),
-                                  onTap: () =>
-                                      Navigator.of(sheetContext).pop(true),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    );
-                    if (shouldLogout != true || !context.mounted) return;
-                    await CitizenPublicAccessService.instance.clearSession();
-                    if (!context.mounted) return;
-                    Navigator.of(context).pushNamedAndRemoveUntil(
-                      '/access',
-                      (route) => false,
                     );
                   },
                   icon: const Icon(
-                    Icons.menu_rounded,
+                    Icons.account_circle_rounded,
                     color: Colors.white,
                     size: 31,
                   ),
@@ -327,14 +290,37 @@ class _QuickActionsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return CitizenCard(
       padding: const EdgeInsets.all(14),
-      child: GridView.count(
-        crossAxisCount: 2,
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 1.04,
-        children: [
+      // LayoutBuilder : calcule le ratio des cartes a partir de l'espace
+      // reellement disponible (donne par le parent Expanded), pour que la
+      // grille 2x2 tienne toujours sans scroll, quelle que soit la hauteur
+      // d'ecran.
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const crossAxisCount = 2;
+          const rowCount = 2;
+          const spacing = 12.0;
+          final cellWidth =
+              (constraints.maxWidth - spacing) / crossAxisCount;
+          final cellHeight =
+              (constraints.maxHeight - spacing * (rowCount - 1)) / rowCount;
+          final aspectRatio = cellHeight > 0
+              ? (cellWidth / cellHeight).clamp(0.7, 1.6)
+              : 1.04;
+          return GridView.count(
+            crossAxisCount: crossAxisCount,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisSpacing: spacing,
+            mainAxisSpacing: spacing,
+            childAspectRatio: aspectRatio,
+            children: _quickActionCards(context),
+          );
+        },
+      ),
+    );
+  }
+
+  List<Widget> _quickActionCards(BuildContext context) {
+    return [
           _QuickActionCard(
             icon: Icons.campaign_rounded,
             title: 'Actualités',
@@ -369,20 +355,18 @@ class _QuickActionsPanel extends StatelessWidget {
               );
             },
           ),
-          _QuickActionCard(
-            icon: Icons.info_rounded,
-            title: 'À propos',
-            subtitle: 'En savoir plus sur la\nplateforme',
-            iconInCircle: true,
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const LegalPage()),
-              );
-            },
-          ),
-        ],
+      _QuickActionCard(
+        icon: Icons.info_rounded,
+        title: 'À propos',
+        subtitle: 'En savoir plus sur la\nplateforme',
+        iconInCircle: true,
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const LegalPage()),
+          );
+        },
       ),
-    );
+    ];
   }
 }
 

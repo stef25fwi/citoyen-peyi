@@ -42,6 +42,11 @@ router.post('/subscribe', async (req, res) => {
   const code = normalizeCode(req.body?.code);
   const token = typeof req.body?.token === 'string' ? req.body.token.trim() : '';
   const platform = typeof req.body?.platform === 'string' ? req.body.platform.trim() : 'web';
+  // Categorie preferee par le citoyen ('actualites' | 'consultations' | 'resultats').
+  // Persistee sur l'abonnement pour un futur filtrage cote envoi ; seul le
+  // trigger "nouvelle consultation" existe aujourd'hui (notifyCommunePollPublished).
+  const rawCategory = typeof req.body?.category === 'string' ? req.body.category.trim() : '';
+  const category = ['actualites', 'consultations', 'resultats'].includes(rawCategory) ? rawCategory : '';
 
   if (!code || !token) {
     return res.status(400).json({ ok: false, message: 'Code citoyen et token FCM requis.' });
@@ -62,6 +67,7 @@ router.post('/subscribe', async (req, res) => {
       access,
       token,
       platform,
+      category,
       userAgent: req.get('user-agent') || '',
     });
 
