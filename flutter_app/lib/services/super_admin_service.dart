@@ -370,6 +370,15 @@ class SuperAdminService {
     await _saveProfiles(profiles);
   }
 
+  Future<void> bulkDeleteProfiles(List<String> ids) async {
+    final uniqueIds = ids.map((id) => id.trim()).where((id) => id.isNotEmpty).toSet().toList();
+    if (uniqueIds.isEmpty) return;
+    await _authorizedPost('/api/admins/bulk-delete', {'ids': uniqueIds});
+    final profiles = await loadProfiles();
+    profiles.removeWhere((p) => uniqueIds.contains(p.id));
+    await _saveProfiles(profiles);
+  }
+
   Future<http.Response> _authorizedPost(String path, Object body) async {
     final configIssue = BackendDiagnostics.describeConfigIssue();
     if (configIssue != null) {
