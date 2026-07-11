@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
@@ -10,6 +11,14 @@ class AppTheme {
     const success = Color(0xFF2BA66A);
     const border = Color(0xFFE5E7EB);
     const muted = Color(0xFFF1F3F6);
+
+    const overlayStyle = SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.dark,
+      statusBarBrightness: Brightness.light,
+      systemNavigationBarColor: Colors.white,
+      systemNavigationBarIconBrightness: Brightness.dark,
+    );
 
     final scheme = ColorScheme.fromSeed(
       seedColor: primary,
@@ -57,8 +66,10 @@ class AppTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         backgroundColor: background,
+        surfaceTintColor: Colors.transparent,
         foregroundColor: foreground,
         centerTitle: false,
+        systemOverlayStyle: overlayStyle,
         titleTextStyle: textTheme.titleLarge?.copyWith(fontSize: 18),
         iconTheme: const IconThemeData(color: foreground),
         shape: const Border(bottom: BorderSide(color: border)),
