@@ -596,6 +596,7 @@ class _ResultBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final ratio = total == 0 ? 0.0 : votes / total;
+    final clampedRatio = ratio.clamp(0.0, 1.0).toDouble();
     final percent = (ratio * 100).round();
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -626,7 +627,7 @@ class _ResultBar extends StatelessWidget {
         ClipRRect(
           borderRadius: BorderRadius.circular(10),
           child: LinearProgressIndicator(
-            value: ratio.clamp(0.0, 1.0),
+            value: clampedRatio,
             minHeight: 9,
             backgroundColor: CitizenDesignTokens.skyBlue,
             valueColor: const AlwaysStoppedAnimation<Color>(
