@@ -31,6 +31,7 @@ import '../pages/super_admin_admins_page.dart';
 import '../pages/super_admin_agents_page.dart';
 import '../pages/super_admin_communes_page.dart';
 import '../pages/super_admin_dashboard_page.dart';
+import '../pages/super_admin_backup_hub_page.dart';
 import '../pages/super_admin_backup_page.dart';
 import '../pages/super_admin_deleted_records_page.dart';
 import '../screens/admin/support/admin_create_ticket_screen.dart';
@@ -80,6 +81,9 @@ class AppRouter {
         return _requireRoles(
             settings, const SuperAdminCommunesPage(), const ['super_admin']);
       case '/super/backups':
+        return _requireRoles(
+            settings, const SuperAdminBackupHubPage(), const ['super_admin']);
+      case '/super/backups/list':
         return _requireRoles(
             settings, const SuperAdminBackupPage(), const ['super_admin']);
       case '/super/deleted-records':
