@@ -132,6 +132,10 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                         controller: _codeController,
                         enabled: !_isSubmitting,
                         autofocus: true,
+                        // Code sensible : pas de memorisation clavier ni
+                        // d'autocorrection (qui deformerait le code).
+                        autocorrect: false,
+                        enableSuggestions: false,
                         // Les codes agents font 16 caracteres ; on autorise
                         // jusqu'a 24 pour ne pas tronquer un code colle avec un
                         // eventuel prefixe "CTRL-" (retire ensuite dans onChanged).
