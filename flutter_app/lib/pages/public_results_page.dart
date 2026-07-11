@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/poll_models.dart';
 import '../services/citizen_public_access_service.dart';
 import '../services/poll_service.dart';
+import '../theme/citizen_design_tokens.dart';
 import '../widgets/citizen/citizen_bottom_nav.dart';
 import '../widgets/citizen_connect_invite.dart';
 import '../widgets/debug_log_viewer.dart';
@@ -89,101 +90,61 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final filtered = _filtered;
     final hasAnyPublicPoll = _publicPolls.isNotEmpty;
     final hasCitizenSession =
         CitizenPublicAccessService.instance.currentSession != null;
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Résultats des consultations'),
-        centerTitle: true,
-        actions: const [DebugLogButton(label: '')],
-      ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 960),
-          child: RefreshIndicator(
-            onRefresh: _load,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
-              children: [
-                if (!hasCitizenSession)
-                  const CitizenConnectInvite(
-                    message:
-                        'Connectez-vous a votre compte pour participer aux consultations et suivre leurs resultats.',
-                  )
-                else ...[
-                  Text(
-                    'Resultats anonymes des consultations',
-                    style: theme.textTheme.headlineMedium,
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    'Aucune donnee personnelle n\'est affichee. Seuls les totaux par option sont restitues.',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: const Color(0xFF5A6573)),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 18),
-                  if (hasAnyPublicPoll) ...[
-                    DropdownButtonFormField<String>(
-                      initialValue: _communeFilter,
-                      decoration: const InputDecoration(labelText: 'Commune'),
-                      items: [
-                        const DropdownMenuItem<String>(
-                            value: null, child: Text('Toutes')),
-                        for (final commune in _communes)
-                          DropdownMenuItem(value: commune, child: Text(commune)),
-                      ],
-                      onChanged: (value) => setState(() => _communeFilter = value),
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      initialValue: _statusFilter,
-                      decoration: const InputDecoration(labelText: 'Etat'),
-                      items: const [
-                        DropdownMenuItem(value: 'all', child: Text('Tous')),
-                        DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
-                        DropdownMenuItem(value: 'closed', child: Text('Cloturees')),
-                      ],
-                      onChanged: (value) =>
-                          setState(() => _statusFilter = value ?? 'all'),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                  if (_isLoading)
-                    const Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Center(child: CircularProgressIndicator()))
-                  else if (filtered.isEmpty)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Column(
-                          children: [
-                            const Icon(Icons.bar_chart_rounded,
-                                size: 42, color: Color(0xFF5A6573)),
-                            const SizedBox(height: 12),
-                            Text('Aucun resultat disponible',
-                                style: theme.textTheme.titleLarge),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Aucune consultation ne correspond aux filtres selectionnes.',
-                              textAlign: TextAlign.center,
+      backgroundColor: CitizenDesignTokens.background,
+      body: _MobileFrame(
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              const _ResultsHeader(),
+              Expanded(
+                child: RefreshIndicator(
+                  color: CitizenDesignTokens.primaryBlue,
+                  onRefresh: _load,
+                  child: ListView(
+                    physics: const BouncingScrollPhysics(),
+                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                    children: [
+                      if (!hasCitizenSession)
+                        const CitizenConnectInvite(
+                          message:
+                              'Connectez-vous a votre compte pour participer aux consultations et suivre leurs resultats.',
+                        )
+                      else ...[
+                        const _ResultsIntro(),
+                        const SizedBox(height: 14),
+                        if (hasAnyPublicPoll) ...[
+                          _ResultsFilters(
+                            communes: _communes,
+                            communeFilter: _communeFilter,
+                            statusFilter: _statusFilter,
+                            onCommuneChanged: (value) =>
+                                setState(() => _communeFilter = value),
+                            onStatusChanged: (value) => setState(
+                              () => _statusFilter = value ?? 'all',
                             ),
-                          ],
-                        ),
-                      ),
-                    )
-                  else
-                    for (final poll in filtered) _PollResultCard(poll: poll),
-                ],
-              ],
-            ),
+                          ),
+                          const SizedBox(height: 16),
+                        ],
+                        if (_isLoading)
+                          const _LoadingCard()
+                        else if (filtered.isEmpty)
+                          const _EmptyResultsCard()
+                        else
+                          for (final poll in filtered)
+                            _PollResultCard(poll: poll),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -218,6 +179,257 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
   }
 }
 
+class _MobileFrame extends StatelessWidget {
+  const _MobileFrame({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 430),
+        child: child,
+      ),
+    );
+  }
+}
+
+class _ResultsHeader extends StatelessWidget {
+  const _ResultsHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 92,
+      width: double.infinity,
+      decoration: const BoxDecoration(
+        gradient: CitizenDesignTokens.headerGradient,
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Align(
+              alignment: Alignment.centerLeft,
+              child: IconButton(
+                tooltip: 'Retour',
+                onPressed: () => Navigator.maybePop(context),
+                icon: const Icon(
+                  Icons.arrow_back_ios_new_rounded,
+                  color: Colors.white,
+                  size: 22,
+                ),
+              ),
+            ),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 54),
+              child: Text(
+                'Résultats des\nconsultations',
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 17.5,
+                  height: 1.15,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+            ),
+            const Align(
+              alignment: Alignment.centerRight,
+              child: DebugLogButton(label: ''),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _ResultsIntro extends StatelessWidget {
+  const _ResultsIntro();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(18),
+      decoration: CitizenDesignTokens.cardDecoration,
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.bar_chart_rounded,
+                color: CitizenDesignTokens.primaryBlue,
+                size: 34,
+              ),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Résultats anonymes',
+                  style: TextStyle(
+                    color: CitizenDesignTokens.textDark,
+                    fontSize: 22,
+                    height: 1.1,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: 10),
+          Text(
+            'Aucune donnée personnelle n’est affichée. Seuls les totaux par option sont restitués.',
+            style: TextStyle(
+              color: CitizenDesignTokens.textMuted,
+              fontSize: 14,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ResultsFilters extends StatelessWidget {
+  const _ResultsFilters({
+    required this.communes,
+    required this.communeFilter,
+    required this.statusFilter,
+    required this.onCommuneChanged,
+    required this.onStatusChanged,
+  });
+
+  final Set<String> communes;
+  final String? communeFilter;
+  final String statusFilter;
+  final ValueChanged<String?> onCommuneChanged;
+  final ValueChanged<String?> onStatusChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: CitizenDesignTokens.cardDecoration,
+      child: Column(
+        children: [
+          DropdownButtonFormField<String>(
+            initialValue: communeFilter,
+            decoration: _fieldDecoration('Commune'),
+            items: [
+              const DropdownMenuItem<String>(value: null, child: Text('Toutes')),
+              for (final commune in communes)
+                DropdownMenuItem(value: commune, child: Text(commune)),
+            ],
+            onChanged: onCommuneChanged,
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<String>(
+            initialValue: statusFilter,
+            decoration: _fieldDecoration('État'),
+            items: const [
+              DropdownMenuItem(value: 'all', child: Text('Tous')),
+              DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
+              DropdownMenuItem(value: 'closed', child: Text('Clôturées')),
+            ],
+            onChanged: onStatusChanged,
+          ),
+        ],
+      ),
+    );
+  }
+
+  InputDecoration _fieldDecoration(String label) {
+    return InputDecoration(
+      labelText: label,
+      filled: true,
+      fillColor: CitizenDesignTokens.lightBlue,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+      border: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: CitizenDesignTokens.cardBorder),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: CitizenDesignTokens.cardBorder),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(
+          color: CitizenDesignTokens.primaryBlue,
+          width: 1.4,
+        ),
+      ),
+    );
+  }
+}
+
+class _LoadingCard extends StatelessWidget {
+  const _LoadingCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(28),
+      decoration: CitizenDesignTokens.cardDecoration,
+      child: const Center(
+        child: CircularProgressIndicator(color: CitizenDesignTokens.primaryBlue),
+      ),
+    );
+  }
+}
+
+class _EmptyResultsCard extends StatelessWidget {
+  const _EmptyResultsCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(24),
+      decoration: CitizenDesignTokens.cardDecoration,
+      child: const Column(
+        children: [
+          Icon(
+            Icons.bar_chart_rounded,
+            size: 42,
+            color: CitizenDesignTokens.textMuted,
+          ),
+          SizedBox(height: 12),
+          Text(
+            'Aucun résultat disponible',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: CitizenDesignTokens.textDark,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          SizedBox(height: 6),
+          Text(
+            'Aucune consultation ne correspond aux filtres sélectionnés.',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: CitizenDesignTokens.textMuted,
+              fontSize: 14,
+              height: 1.35,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _PollResultCard extends StatelessWidget {
   const _PollResultCard({required this.poll});
 
@@ -225,96 +437,157 @@ class _PollResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final totalVotes =
-        poll.options.fold<int>(0, (sum, option) => sum + option.votes);
-    final isClosed = poll.status == 'closed';
-    final isArchived = poll.status == 'archived';
-    final statusLabel = isArchived
-        ? 'Archivee'
-        : isClosed
-            ? 'Cloturee'
-            : 'Ouverte';
-    final statusColor = isArchived
-        ? const Color(0xFFE2E8F0)
-        : isClosed
-            ? const Color(0xFFE5E7EB)
-            : const Color(0xFFDCFCE7);
+    final totalVotes = poll.totalVoted > 0
+        ? poll.totalVoted
+        : poll.effectiveQuestions.fold<int>(
+            0,
+            (sum, question) => sum +
+                question.options.fold<int>(0, (inner, option) => inner + option.votes),
+          );
+    final statusLabel = _statusLabel(poll.status);
+    final statusColor = _statusColor(poll.status);
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(18),
+      decoration: CitizenDesignTokens.cardDecoration,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Expanded(
-                      child: Text(poll.projectTitle,
-                          style: theme.textTheme.titleLarge)),
-                  Chip(
-                    label: Text(statusLabel),
-                    backgroundColor: statusColor,
-                  ),
-                ],
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: CitizenDesignTokens.skyBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.how_to_vote_rounded,
+                  color: CitizenDesignTokens.primaryBlue,
+                  size: 24,
+                ),
               ),
-              if (poll.communeName.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(poll.communeName,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: const Color(0xFF5A6573))),
-              ],
-              const SizedBox(height: 14),
-              if (totalVotes == 0)
-                const Text('Aucun vote enregistre pour le moment.')
-              else
-                // Tallies de TOUTES les questions du questionnaire ; les
-                // consultations historiques apparaissent comme questionnaire
-                // a une question (effectiveQuestions).
-                for (final question in poll.effectiveQuestions) ...[
-                  if (question.title.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 6, top: 4),
-                      child: Text(
-                        question.title +
-                            (question.multiple ? ' (choix multiples)' : ''),
-                        style: theme.textTheme.titleSmall,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      poll.projectTitle,
+                      style: const TextStyle(
+                        color: CitizenDesignTokens.textDark,
+                        fontSize: 17,
+                        height: 1.18,
+                        fontWeight: FontWeight.w900,
                       ),
                     ),
-                  for (final option in question.options)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: _ResultBar(
-                        label: option.label,
-                        votes: option.votes,
-                        // Denominateur = participants (exact en choix unique,
-                        // coherent en choix multiples), repli somme des votes.
-                        total: poll.totalVoted > 0
-                            ? poll.totalVoted
-                            : question.options
-                                .fold<int>(0, (sum, o) => sum + o.votes),
+                    if (poll.communeName.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        poll.communeName,
+                        style: const TextStyle(
+                          color: CitizenDesignTokens.textMuted,
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
-                    ),
-                ],
-              const SizedBox(height: 8),
-              Text(
-                'Total des votes: $totalVotes${poll.totalVoters > 0 ? ' / ${poll.totalVoters} attendus' : ''}',
-                style: theme.textTheme.bodySmall
-                    ?.copyWith(color: const Color(0xFF5A6573)),
+                    ],
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  borderRadius: BorderRadius.circular(999),
+                ),
+                child: Text(
+                  statusLabel,
+                  style: const TextStyle(
+                    color: CitizenDesignTokens.textDark,
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
             ],
           ),
-        ),
+          const SizedBox(height: 16),
+          if (totalVotes == 0)
+            const Text(
+              'Aucun vote enregistré pour le moment.',
+              style: TextStyle(
+                color: CitizenDesignTokens.textMuted,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            )
+          else
+            for (final question in poll.effectiveQuestions) ...[
+              if (question.title.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8, top: 4),
+                  child: Text(
+                    question.title + (question.multiple ? ' (choix multiples)' : ''),
+                    style: const TextStyle(
+                      color: CitizenDesignTokens.textDark,
+                      fontSize: 14.5,
+                      height: 1.25,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              for (final option in question.options)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _ResultBar(
+                    label: option.label,
+                    votes: option.votes,
+                    total: poll.totalVoted > 0
+                        ? poll.totalVoted
+                        : question.options
+                            .fold<int>(0, (sum, option) => sum + option.votes),
+                  ),
+                ),
+            ],
+          const SizedBox(height: 8),
+          Text(
+            'Total des votes : $totalVotes${poll.totalVoters > 0 ? ' / ${poll.totalVoters} attendus' : ''}',
+            style: const TextStyle(
+              color: CitizenDesignTokens.textMuted,
+              fontSize: 12.5,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
       ),
     );
+  }
+
+  String _statusLabel(String status) {
+    if (status == 'archived') return 'Archivée';
+    if (status == 'closed') return 'Clôturée';
+    return 'Ouverte';
+  }
+
+  Color _statusColor(String status) {
+    if (status == 'archived') return const Color(0xFFE2E8F0);
+    if (status == 'closed') return const Color(0xFFE5E7EB);
+    return const Color(0xFFDCFCE7);
   }
 }
 
 class _ResultBar extends StatelessWidget {
-  const _ResultBar(
-      {required this.label, required this.votes, required this.total});
+  const _ResultBar({
+    required this.label,
+    required this.votes,
+    required this.total,
+  });
 
   final String label;
   final int votes;
@@ -329,19 +602,36 @@ class _ResultBar extends StatelessWidget {
       children: [
         Row(
           children: [
-            Expanded(child: Text(label)),
-            Text('$votes  ·  $percent%',
-                style: const TextStyle(fontWeight: FontWeight.w600)),
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: CitizenDesignTokens.textDark,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            Text(
+              '$votes · $percent%',
+              style: const TextStyle(
+                color: CitizenDesignTokens.deepBlue,
+                fontSize: 13,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
           ],
         ),
-        const SizedBox(height: 4),
+        const SizedBox(height: 6),
         ClipRRect(
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
           child: LinearProgressIndicator(
-            value: ratio,
-            minHeight: 8,
-            backgroundColor: const Color(0xFFE5E7EB),
-            valueColor: const AlwaysStoppedAnimation(Color(0xFF0F6D8F)),
+            value: ratio.clamp(0.0, 1.0),
+            minHeight: 9,
+            backgroundColor: CitizenDesignTokens.skyBlue,
+            valueColor: const AlwaysStoppedAnimation<Color>(
+              CitizenDesignTokens.primaryBlue,
+            ),
           ),
         ),
       ],
