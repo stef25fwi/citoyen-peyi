@@ -27,10 +27,12 @@ import '../pages/placeholder_page.dart';
 import '../pages/public_news_page.dart';
 import '../pages/public_results_page.dart';
 import '../pages/public_vote_page.dart';
+import '../pages/super_admin_admins_page.dart';
 import '../pages/super_admin_agents_page.dart';
 import '../pages/super_admin_communes_page.dart';
 import '../pages/super_admin_dashboard_page.dart';
 import '../pages/super_admin_backup_page.dart';
+import '../pages/super_admin_deleted_records_page.dart';
 import '../screens/admin/support/admin_create_ticket_screen.dart';
 import '../screens/admin/support/admin_support_list_screen.dart';
 import '../screens/admin/support/admin_ticket_detail_screen.dart';
@@ -80,11 +82,13 @@ class AppRouter {
       case '/super/backups':
         return _requireRoles(
             settings, const SuperAdminBackupPage(), const ['super_admin']);
+      case '/super/deleted-records':
+        return _requireRoles(settings, const SuperAdminDeletedRecordsPage(),
+            const ['super_admin']);
       case '/super/admins':
         return _requireRoles(
           settings,
-          const SuperAdminDashboardPage(
-              initialSection: SuperAdminDashboardSection.admins),
+          const SuperAdminAdminsPage(),
           const ['super_admin'],
         );
       case '/admin':
