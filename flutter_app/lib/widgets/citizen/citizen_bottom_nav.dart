@@ -48,7 +48,7 @@ class CitizenBottomNav extends StatelessWidget {
             tab: CitizenNavTab.news,
             activeTab: activeTab,
             icon: Icons.calendar_month_rounded,
-            label: 'Actualites',
+            label: 'Actualités',
             onTap: onTabSelected,
           ),
           _NavItem(
@@ -62,7 +62,7 @@ class CitizenBottomNav extends StatelessWidget {
             tab: CitizenNavTab.results,
             activeTab: activeTab,
             icon: Icons.bar_chart_rounded,
-            label: 'Resultats',
+            label: 'Résultats',
             onTap: onTabSelected,
           ),
         ],
