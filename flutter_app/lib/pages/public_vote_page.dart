@@ -7,7 +7,6 @@ import '../widgets/citizen/citizen_bottom_nav.dart';
 import '../widgets/citizen_connect_invite.dart';
 import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
-import '../widgets/public_logged_out_placeholder.dart';
 import 'public_news_page.dart';
 import 'public_results_page.dart';
 
@@ -77,52 +76,42 @@ class _PublicVotePageState extends State<PublicVotePage> {
                   const CitizenConnectInvite(
                     message:
                         'Connectez-vous a votre compte pour donner votre avis sur les consultations de votre commune.',
+                  )
+                else ...[
+                  Text(
+                    'Consultations ouvertes de votre commune.',
+                    style: theme.textTheme.bodyMedium
+                        ?.copyWith(color: const Color(0xFF5A6573)),
+                    textAlign: TextAlign.center,
                   ),
-                Text(
-                  'Consultations ouvertes de votre commune.',
-                  style: theme.textTheme.bodyMedium
-                      ?.copyWith(color: const Color(0xFF5A6573)),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 18),
-                if (_isLoading)
-                  const Padding(
-                      padding: EdgeInsets.all(32),
-                      child: Center(child: CircularProgressIndicator()))
-                else if (_openPolls.isEmpty)
-                  hasCitizenSession
-                      ? Card(
-                          child: Padding(
-                            padding: const EdgeInsets.all(28),
-                            child: Column(
-                              children: [
-                                const Icon(Icons.edit_square,
-                                    size: 42, color: Color(0xFF5A6573)),
-                                const SizedBox(height: 12),
-                                Text('Aucune consultation ouverte',
-                                    style: theme.textTheme.titleLarge),
-                                const SizedBox(height: 6),
-                                const Text(
-                                  'Aucune consultation n\'est ouverte pour le moment. Revenez bientôt.',
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
+                  const SizedBox(height: 18),
+                  if (_isLoading)
+                    const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(child: CircularProgressIndicator()))
+                  else if (_openPolls.isEmpty)
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(28),
+                        child: Column(
+                          children: [
+                            const Icon(Icons.edit_square,
+                                size: 42, color: Color(0xFF5A6573)),
+                            const SizedBox(height: 12),
+                            Text('Aucune consultation ouverte',
+                                style: theme.textTheme.titleLarge),
+                            const SizedBox(height: 6),
+                            const Text(
+                              'Aucune consultation n\'est ouverte pour le moment. Revenez bientôt.',
+                              textAlign: TextAlign.center,
                             ),
-                          ),
-                        )
-                      : const PublicLoggedOutPlaceholder(
-                          icon: Icons.edit_square_rounded,
-                          title: 'Votre avis commence ici',
-                          message:
-                              'Entrez votre code citoyen pour retrouver les consultations de votre commune et participer anonymement.',
-                          highlights: [
-                            'Questions ouvertes',
-                            'Vote anonyme',
-                            'Une participation',
                           ],
-                        )
-                else
-                  for (final poll in _openPolls) _OpenPollPreviewCard(poll: poll),
+                        ),
+                      ),
+                    )
+                  else
+                    for (final poll in _openPolls) _OpenPollPreviewCard(poll: poll),
+                ],
               ],
             ),
           ),
