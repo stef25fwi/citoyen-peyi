@@ -211,7 +211,7 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
 
     if (tab == CitizenNavTab.home) {
       Navigator.of(context).pushNamedAndRemoveUntil(
-        '/citizen/welcome',
+        '/citizen/home',
         (route) => route.isFirst,
       );
       return;

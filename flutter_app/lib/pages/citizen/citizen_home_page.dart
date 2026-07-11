@@ -26,10 +26,7 @@ class CitizenHomePage extends StatelessWidget {
 
   void _onNav(BuildContext context, CitizenNavTab tab) {
     if (tab == CitizenNavTab.home) {
-      Navigator.of(context).pushReplacementNamed(
-        '/citizen/welcome',
-        arguments: {'session': initialSession},
-      );
+      // Deja sur l'accueil citoyen.
       return;
     }
 

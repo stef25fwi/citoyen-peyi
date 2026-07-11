@@ -48,7 +48,14 @@ class AppRouter {
     switch (uri.path) {
       case '/':
       case '/accueil':
-        return _page(const HomePage(), settings);
+        final citizenSession =
+            CitizenPublicAccessService.instance.currentSession;
+        return _page(
+          citizenSession != null
+              ? CitizenHomePage(initialSession: citizenSession)
+              : const HomePage(),
+          settings,
+        );
       case '/admin-communal':
         return _page(const AdminLoginPage(), settings);
       case '/admin/login':

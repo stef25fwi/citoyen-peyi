@@ -184,7 +184,7 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
     switch (tab) {
       case CitizenNavTab.home:
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/citizen/welcome',
+          '/citizen/home',
           (route) => route.isFirst,
         );
         break;

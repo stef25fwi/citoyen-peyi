@@ -172,7 +172,7 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
 
     if (tab == _CitizenNavTab.home) {
       Navigator.of(context).pushReplacementNamed(
-        '/citizen/welcome',
+        '/citizen/home',
         arguments: {'session': widget.initialSession},
       );
       return;
