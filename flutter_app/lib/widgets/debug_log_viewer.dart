@@ -1,21 +1,27 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../services/debug_log_service.dart';
 
+const bool _showDebugLogInRelease = bool.fromEnvironment(
+  'SHOW_DEBUG_LOG',
+  defaultValue: false,
+);
+
+bool get _canShowDebugLog => kDebugMode || _showDebugLogInRelease;
+
 /// Ouvre la popup affichant le journal de diagnostic en direct.
 Future<void> showDebugLogDialog(BuildContext context) {
+  if (!_canShowDebugLog) return Future<void>.value();
   return showDialog<void>(
     context: context,
     builder: (_) => const _DebugLogDialog(),
   );
 }
 
-/// Bouton discret ouvrant le journal de diagnostic. A poser sur les ecrans de
-/// connexion (ou toute page publique) pour capturer et copier les erreurs
-/// reelles (utile en release ou la console navigateur n'affiche pas les logs
-/// `kDebugMode`). Avec `label` vide, s'affiche en icone seule (compact pour
-/// une AppBar bondee).
+/// Bouton discret ouvrant le journal de diagnostic. Invisible en production
+/// sauf si le build est lance avec `--dart-define=SHOW_DEBUG_LOG=true`.
 class DebugLogButton extends StatelessWidget {
   const DebugLogButton({super.key, this.label = 'Debug'});
 
@@ -23,6 +29,10 @@ class DebugLogButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (!_canShowDebugLog) {
+      return const SizedBox.shrink();
+    }
+
     if (label.isEmpty) {
       return IconButton(
         tooltip: 'Journal de diagnostic',
