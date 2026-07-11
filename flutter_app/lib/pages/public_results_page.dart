@@ -5,6 +5,7 @@ import '../services/citizen_public_access_service.dart';
 import '../services/poll_service.dart';
 import '../widgets/citizen/citizen_bottom_nav.dart';
 import '../widgets/citizen_connect_invite.dart';
+import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
 import 'public_news_page.dart';
 
@@ -34,7 +35,15 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
 
   Future<void> _load() async {
     setState(() => _isLoading = true);
-    final polls = await PollService.instance.loadPolls();
+    List<PollModel> polls = const [];
+    try {
+      polls = await PollService.instance.loadPolls();
+    } catch (_) {
+      // PollService catche deja la plupart des erreurs reseau/Firestore ; ce
+      // garde-fou evite un ecran bloque sur le spinner si un cas imprevu
+      // remonte quand meme une exception.
+      polls = const [];
+    }
     if (!mounted) return;
     setState(() {
       _polls = polls;
@@ -88,6 +97,7 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
       appBar: AppBar(
         title: const Text('Résultats des consultations'),
         centerTitle: true,
+        actions: const [DebugLogButton(label: '')],
       ),
       body: Center(
         child: ConstrainedBox(

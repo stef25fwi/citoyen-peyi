@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 import 'app.dart';
 import 'services/auth_session_store.dart';
@@ -12,6 +13,17 @@ import 'services/firebase_auth_service.dart';
 Future<void> main() async {
   await runZonedGuarded<Future<void>>(() async {
     WidgetsFlutterBinding.ensureInitialized();
+
+    // google_fonts recupere ses polices (Plus Jakarta Sans, Inter) a
+    // l'execution depuis fonts.gstatic.com. Sur un reseau lent/instable ou
+    // bloque, Flutter Web/CanvasKit peut laisser le texte invisible
+    // indefiniment en attendant ce fichier (bug connu du renderer), alors que
+    // les formes/couleurs environnantes s'affichent normalement — d'ou des
+    // ecrans "bandeau colore sans aucun texte". On desactive le
+    // telechargement a l'execution : le theme retombe alors sur la police
+    // systeme (texte toujours visible, typographie legerement differente)
+    // au lieu de rester invisible en cas d'echec reseau.
+    GoogleFonts.config.allowRuntimeFetching = false;
 
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);

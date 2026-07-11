@@ -12,8 +12,10 @@ Future<void> showDebugLogDialog(BuildContext context) {
 }
 
 /// Bouton discret ouvrant le journal de diagnostic. A poser sur les ecrans de
-/// connexion pour capturer et copier les erreurs reelles (utile en release ou
-/// la console navigateur n'affiche pas les logs `kDebugMode`).
+/// connexion (ou toute page publique) pour capturer et copier les erreurs
+/// reelles (utile en release ou la console navigateur n'affiche pas les logs
+/// `kDebugMode`). Avec `label` vide, s'affiche en icone seule (compact pour
+/// une AppBar bondee).
 class DebugLogButton extends StatelessWidget {
   const DebugLogButton({super.key, this.label = 'Debug'});
 
@@ -21,6 +23,14 @@ class DebugLogButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (label.isEmpty) {
+      return IconButton(
+        tooltip: 'Journal de diagnostic',
+        onPressed: () => showDebugLogDialog(context),
+        icon: const Icon(Icons.bug_report_outlined, size: 20),
+        color: const Color(0xFF6B7280),
+      );
+    }
     return TextButton.icon(
       onPressed: () => showDebugLogDialog(context),
       icon: const Icon(Icons.bug_report_outlined, size: 18),
