@@ -10,6 +10,7 @@ import '../services/new_poll_badge_service.dart';
 import '../services/push_notification_service.dart';
 import '../services/vote_access_service.dart';
 import '../theme/citoyen_theme.dart';
+import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
 import 'legal_page.dart';
 
@@ -188,6 +189,11 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
       body: Stack(
         children: [
           const _AccessBackground(),
+          Positioned(
+            top: 6,
+            right: 6,
+            child: SafeArea(child: DebugLogButton(label: '')),
+          ),
           SafeArea(
             child: Column(
               children: [
@@ -699,12 +705,18 @@ class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
                 const Icon(Icons.check_circle_rounded,
                     color: Color(0xFF16A34A), size: 16),
                 const SizedBox(width: 6),
-                Text(
-                  'Lecture effectuée',
-                  style: GoogleFonts.inter(
-                    color: const Color(0xFF16A34A),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
+                // Flexible (pas Text nu) : sur petit ecran, "Lecture
+                // effectuee" + le lien "Lire les conditions" peuvent
+                // depasser la largeur disponible (RenderFlex overflow).
+                Flexible(
+                  child: Text(
+                    'Lecture effectuée',
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: const Color(0xFF16A34A),
+                      fontWeight: FontWeight.w700,
+                      fontSize: 13,
+                    ),
                   ),
                 ),
               ] else
@@ -717,6 +729,7 @@ class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
                     ),
                   ),
                 ),
+              const SizedBox(width: 8),
               const Spacer(),
               GestureDetector(
                 onTap: _toggleExpanded,

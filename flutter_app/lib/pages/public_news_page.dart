@@ -5,6 +5,7 @@ import '../services/citizen_public_access_service.dart';
 import '../services/firestore_data_service.dart';
 import '../widgets/citizen/citizen_bottom_nav.dart';
 import '../widgets/citizen_connect_invite.dart';
+import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
 import 'public_results_page.dart';
 
@@ -63,6 +64,7 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
       appBar: AppBar(
         title: const Text('Actualités / Projets'),
         centerTitle: true,
+        actions: const [DebugLogButton(label: '')],
       ),
       body: Center(
         child: ConstrainedBox(
