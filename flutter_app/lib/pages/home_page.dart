@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/citoyen_theme.dart';
+import '../widgets/primary_participate_button.dart';
 import '../widgets/public_bottom_nav.dart';
-import 'access_citizen_page.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});
@@ -20,8 +20,7 @@ class HomePage extends StatelessWidget {
 class CitoyenPeyiHomePage extends StatelessWidget {
   const CitoyenPeyiHomePage({super.key});
 
-  static const String logoPath =
-      'assets/citoyen_peyi/logo_citoyen_peyi_transparent.webp';
+  static const String logoPath = cpLogoPath;
 
   static const _statusBarStyle = SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -205,10 +204,8 @@ class _HomeContent extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
-              const _LogoHeaderCard(),
-              SizedBox(height: shortHeight ? 4 : 8),
-              const _StatementCard(),
-              SizedBox(height: shortHeight ? 4 : 8),
+              const _MergedLogoStatementCard(),
+              SizedBox(height: shortHeight ? 6 : 10),
               const _ParticipationCard(),
               SizedBox(height: shortHeight ? 4 : 8),
               const _AdministrationAccess(),
@@ -255,185 +252,150 @@ class _GlassCard extends StatelessWidget {
   }
 }
 
-class _LogoHeaderCard extends StatelessWidget {
-  const _LogoHeaderCard();
+class _MergedLogoStatementCard extends StatelessWidget {
+  const _MergedLogoStatementCard();
 
   @override
   Widget build(BuildContext context) {
     final compact = isCompact(context);
     final shortHeight = MediaQuery.of(context).size.height < 860;
-
-    return _GlassCard(
-      height: compact ? 112 : (shortHeight ? 220 : 260),
-      padding: EdgeInsets.symmetric(horizontal: compact ? 18 : 28),
-      decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.88),
-        borderRadius: BorderRadius.circular(34),
-        border: Border.all(
-          color: cpBorderWhite,
-          width: 1.4,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 32,
-            offset: const Offset(0, 18),
-          ),
-          BoxShadow(
-            color: Colors.white.withValues(alpha: 0.55),
-            blurRadius: 20,
-            offset: const Offset(-8, -8),
-          ),
-        ],
-      ),
-      child: Center(
-        child: Semantics(
-          label: 'Citoyen Peyi',
-          image: true,
-          child: Image.asset(
-            CitoyenPeyiHomePage.logoPath,
-            width: compact ? 220 : (shortHeight ? 700 : 760),
-            height: compact ? 84 : (shortHeight ? 184 : 210),
-            fit: BoxFit.contain,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _StatementCard extends StatelessWidget {
-  const _StatementCard();
-
-  @override
-  Widget build(BuildContext context) {
-    final compact = isCompact(context);
-    final shortHeight = MediaQuery.of(context).size.height < 860;
-    final titleFont = compact ? 22.0 : 40.0;
-    final highlightFont = compact ? 31.0 : 54.0;
+    final titleFont = compact ? 21.0 : 40.0;
+    final highlightFont = compact ? 30.0 : 54.0;
+    final logoHeight = compact ? 82.0 : (shortHeight ? 130.0 : 150.0);
 
     return SizedBox(
       width: double.infinity,
-      height: compact ? 146 : (shortHeight ? 198 : 235),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          _GlassCard(
-            height: compact ? 146 : (shortHeight ? 198 : 235),
-            padding: EdgeInsets.fromLTRB(
-              compact ? 22 : 34,
-              compact ? 18 : (shortHeight ? 20 : 28),
-              compact ? 22 : 34,
-              compact ? 10 : (shortHeight ? 16 : 24),
+      child: _GlassCard(
+        constraints: BoxConstraints(
+          minHeight: compact ? 270 : (shortHeight ? 360 : 430),
+        ),
+        padding: EdgeInsets.fromLTRB(
+          compact ? 18 : 34,
+          compact ? 18 : (shortHeight ? 22 : 30),
+          compact ? 18 : 34,
+          compact ? 18 : (shortHeight ? 22 : 30),
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(30),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Colors.white.withValues(alpha: 0.30),
+              cpBlue.withValues(alpha: 0.48),
+              cpBlue.withValues(alpha: 0.62),
+            ],
+          ),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.65),
+            width: 1.2,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: cpBlueDark.withValues(alpha: 0.16),
+              blurRadius: 28,
+              offset: const Offset(0, 14),
             ),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(28),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withValues(alpha: 0.30),
-                  cpBlue.withValues(alpha: 0.48),
-                  cpBlue.withValues(alpha: 0.62),
-                ],
+          ],
+        ),
+        child: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Positioned(
+              left: compact ? 4 : 42,
+              top: compact ? 118 : (shortHeight ? 180 : 214),
+              child: Icon(
+                Icons.groups_rounded,
+                size: compact ? 44 : 78,
+                color: Colors.white.withValues(alpha: 0.20),
               ),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: 0.65),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: cpBlueDark.withValues(alpha: 0.16),
-                  blurRadius: 28,
-                  offset: const Offset(0, 14),
-                ),
-              ],
             ),
-            child: Stack(
+            Positioned(
+              right: compact ? 4 : 64,
+              top: compact ? 116 : (shortHeight ? 178 : 212),
+              child: Icon(
+                Icons.account_balance_rounded,
+                size: compact ? 50 : 82,
+                color: Colors.white.withValues(alpha: 0.22),
+              ),
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Positioned(
-                  left: compact ? 14 : 42,
-                  top: compact ? 58 : (shortHeight ? 66 : 78),
-                  child: Icon(
-                    Icons.groups_rounded,
-                    size: compact ? 44 : 78,
-                    color: Colors.white.withValues(alpha: 0.22),
+                Semantics(
+                  label: 'Citoyen Peyi',
+                  image: true,
+                  child: Image.asset(
+                    CitoyenPeyiHomePage.logoPath,
+                    height: logoHeight,
+                    width: double.infinity,
+                    fit: BoxFit.contain,
                   ),
                 ),
-                Positioned(
-                  right: compact ? 20 : 64,
-                  top: compact ? 56 : (shortHeight ? 64 : 76),
-                  child: Icon(
-                    Icons.account_balance_rounded,
-                    size: compact ? 50 : 82,
-                    color: Colors.white.withValues(alpha: 0.24),
-                  ),
-                ),
-                Center(
-                  child: Text.rich(
-                    textAlign: TextAlign.center,
-                    TextSpan(
-                      style: GoogleFonts.inter(
-                        height: 1.08,
-                        fontWeight: FontWeight.w800,
-                        color: Colors.white,
-                        fontSize: titleFont,
-                        letterSpacing: -0.5,
-                      ),
-                      children: [
-                        const TextSpan(text: 'Votre collectivité place\n'),
-                        TextSpan(
-                          text: 'votre parole\n',
-                          style: GoogleFonts.inter(
-                            color: cpYellow,
-                            fontSize: highlightFont,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -1.2,
-                            shadows: [
-                              Shadow(
-                                color: Colors.black.withValues(alpha: 0.10),
-                                offset: const Offset(0, 3),
-                                blurRadius: 8,
-                              ),
-                            ],
-                          ),
-                        ),
-                        const TextSpan(text: 'au cœur de l\'action publique'),
-                      ],
+                SizedBox(height: compact ? 12 : 20),
+                Text.rich(
+                  textAlign: TextAlign.center,
+                  TextSpan(
+                    style: GoogleFonts.inter(
+                      height: 1.08,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      fontSize: titleFont,
+                      letterSpacing: -0.5,
                     ),
+                    children: [
+                      const TextSpan(text: 'Votre collectivité place\n'),
+                      TextSpan(
+                        text: 'votre parole\n',
+                        style: GoogleFonts.inter(
+                          color: cpYellow,
+                          fontSize: highlightFont,
+                          fontWeight: FontWeight.w900,
+                          letterSpacing: -1.2,
+                          shadows: [
+                            Shadow(
+                              color: Colors.black.withValues(alpha: 0.10),
+                              offset: const Offset(0, 3),
+                              blurRadius: 8,
+                            ),
+                          ],
+                        ),
+                      ),
+                      const TextSpan(text: 'au cœur de l\'action publique'),
+                    ],
                   ),
                 ),
               ],
             ),
-          ),
-          Positioned(
-            top: -16,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: Container(
-                width: 58,
-                height: 58,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: Colors.white.withValues(alpha: 0.72),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.08),
-                      blurRadius: 14,
-                      offset: const Offset(0, 6),
-                    ),
-                  ],
-                ),
-                child: const Icon(
-                  Icons.format_quote_rounded,
-                  color: cpBlueDark,
-                  size: 34,
+            Positioned(
+              top: -16,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: Container(
+                  width: 58,
+                  height: 58,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.white.withValues(alpha: 0.72),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.08),
+                        blurRadius: 14,
+                        offset: const Offset(0, 6),
+                      ),
+                    ],
+                  ),
+                  child: const Icon(
+                    Icons.format_quote_rounded,
+                    color: cpBlueDark,
+                    size: 34,
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -512,107 +474,10 @@ class _ParticipationCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 16),
-          const _MainParticipateButton(),
+          const PrimaryParticipateButton(),
           const SizedBox(height: 16),
           const _ConfidentialityLine(),
         ],
-      ),
-    );
-  }
-}
-
-class _MainParticipateButton extends StatelessWidget {
-  const _MainParticipateButton();
-
-  @override
-  Widget build(BuildContext context) {
-    final compact = isCompact(context);
-    final buttonHeight = compact ? 72.0 : 92.0;
-    final textSize = compact ? 28.0 : 40.0;
-    final circleSize = compact ? 44.0 : 54.0;
-    final iconSize = compact ? 28.0 : 34.0;
-
-    return FractionallySizedBox(
-      widthFactor: compact ? 1 : 0.82,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(48),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFFFE875),
-              cpYellow,
-              cpYellowStrong,
-            ],
-          ),
-          border: Border.all(
-            color: Colors.white.withValues(alpha: 0.85),
-            width: 1.6,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: cpYellowStrong.withValues(alpha: 0.42),
-              blurRadius: 24,
-              offset: const Offset(0, 10),
-            ),
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.18),
-              blurRadius: 10,
-              offset: const Offset(0, 5),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(48),
-            onTap: () =>
-                Navigator.of(context).pushNamed(AccessCitizenPage.routeName),
-            child: SizedBox(
-              height: buttonHeight,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Center(
-                    child: Text(
-                      'Je participe',
-                      style: GoogleFonts.inter(
-                        color: cpBlueDark,
-                        fontSize: textSize,
-                        fontWeight: FontWeight.w900,
-                        letterSpacing: -0.6,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: compact ? 18 : 30,
-                    child: Container(
-                      width: circleSize,
-                      height: circleSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.white.withValues(alpha: 0.92),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.08),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.arrow_forward_rounded,
-                        color: cpBlueDark,
-                        size: iconSize,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }
