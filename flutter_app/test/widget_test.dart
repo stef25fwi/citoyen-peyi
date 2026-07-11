@@ -73,7 +73,7 @@ void main() {
 
     expect(find.text('Accès citoyen'), findsWidgets);
     expect(
-      find.text('CGU, confidentialité et données personnelles'),
+      find.text('CGU, confidentialité et anonymat'),
       findsOneWidget,
     );
     expect(
@@ -81,22 +81,23 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('Entrez votre code citoyen pour participer anonymement.'),
+      find.text('Entrez votre code pour participer anonymement.'),
       findsOneWidget,
     );
 
-    final disabledButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Valider mon code citoyen'),
+    final submitButtonInkWell = find.ancestor(
+      of: find.text('Valider mon code citoyen'),
+      matching: find.byType(InkWell),
     );
-    expect(disabledButton.onPressed, isNull);
+
+    final disabledButton = tester.widget<InkWell>(submitButtonInkWell);
+    expect(disabledButton.onTap, isNull);
 
     await tester.enterText(find.byType(TextField), 'CP-2026-ABCD');
     await tester.pump();
 
-    final stillDisabledButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Valider mon code citoyen'),
-    );
-    expect(stillDisabledButton.onPressed, isNull);
+    final stillDisabledButton = tester.widget<InkWell>(submitButtonInkWell);
+    expect(stillDisabledButton.onTap, isNull);
 
     final termsAcceptance = find.byKey(
       const ValueKey('accessCitizenTermsAcceptance'),
@@ -117,17 +118,15 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(termsAcceptance, findsOneWidget);
-    expect(find.text('Lecture complète effectuée'), findsOneWidget);
+    expect(find.text('Lecture effectuée'), findsOneWidget);
 
     await tester.ensureVisible(termsAcceptance);
     await tester.pumpAndSettle();
     await tester.tap(termsAcceptance);
     await tester.pump();
 
-    final enabledButton = tester.widget<FilledButton>(
-      find.widgetWithText(FilledButton, 'Valider mon code citoyen'),
-    );
-    expect(enabledButton.onPressed, isNotNull);
+    final enabledButton = tester.widget<InkWell>(submitButtonInkWell);
+    expect(enabledButton.onTap, isNotNull);
   });
 
   testWidgets('commune admin dashboard renders assistance without grey screen',

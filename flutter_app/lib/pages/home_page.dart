@@ -4,23 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import '../theme/citoyen_theme.dart';
 import '../widgets/public_bottom_nav.dart';
 import 'access_citizen_page.dart';
-
-const cpBlueDark = Color(0xFF0756B8);
-const cpBlue = Color(0xFF1A8FE8);
-const cpBlueLight = Color(0xFFBFEFFF);
-const cpBlueSoft = Color(0xFFEAF8FF);
-const cpYellow = Color(0xFFFFD83D);
-const cpYellowStrong = Color(0xFFFFC400);
-const cpWhite = Color(0xFFFFFFFF);
-const cpTextDark = Color(0xFF073F82);
-const cpTextMuted = Color(0xFF65748B);
-const cpBorderWhite = Color(0xBFFFFFFF);
-
-bool isCompact(BuildContext context) {
-  return MediaQuery.of(context).size.width < 700;
-}
 
 class HomePage extends StatelessWidget {
   const HomePage({super.key});

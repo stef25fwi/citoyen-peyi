@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/citizen_commune_store.dart';
@@ -8,6 +9,7 @@ import '../services/citizen_public_access_service.dart';
 import '../services/new_poll_badge_service.dart';
 import '../services/push_notification_service.dart';
 import '../services/vote_access_service.dart';
+import '../theme/citoyen_theme.dart';
 import '../widgets/public_bottom_nav.dart';
 import 'legal_page.dart';
 
@@ -25,10 +27,6 @@ class AccessCitizenPage extends StatefulWidget {
 }
 
 class _AccessCitizenPageState extends State<AccessCitizenPage> {
-  static const _background = Colors.white;
-  static const _foreground = Color(0xFF374151);
-  static const _mutedText = Color(0xFF64748B);
-
   final TextEditingController _codeController = TextEditingController();
 
   bool hasReadLegalTerms = false;
@@ -185,304 +183,210 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Scaffold(
-      backgroundColor: _background,
-      appBar: AppBar(
-        backgroundColor: _background,
-        foregroundColor: _foreground,
-        title: const Text('Accès citoyen'),
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
-          tooltip: 'Retour à l’accueil',
-          onPressed: () => Navigator.of(context).pushNamed('/'),
-        ),
-      ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 18),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    'Accès citoyen',
-                    style: theme.textTheme.headlineMedium?.copyWith(
-                      color: _foreground,
-                      fontWeight: FontWeight.w800,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    'Entrez votre code citoyen pour participer anonymement.',
-                    style: theme.textTheme.bodyLarge?.copyWith(
-                      color: _mutedText,
-                      height: 1.35,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 20),
-                  _ConfidentialityCard(theme: theme),
-                  const SizedBox(height: 14),
-                  _AccessFormCard(
-                    codeController: _codeController,
-                    errorMessage: _errorMessage,
-                    isSubmitting: _isSubmitting,
-                    canValidate: _canValidate,
-                    hasReadLegalTerms: hasReadLegalTerms,
-                    hasAcceptedLegalTerms: hasAcceptedLegalTerms,
-                    onLegalTermsRead: _markLegalTermsRead,
-                    onTermsChanged: (accepted) =>
-                        unawaited(_setAcceptedLegalTerms(accepted)),
-                    onCodeChanged: () => setState(() => _errorMessage = null),
-                    onSubmit: _validateCitizenCode,
-                  ),
-                  const SizedBox(height: 18),
-                  Text(
-                    'Plateforme de consultation citoyenne anonyme.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: _mutedText,
-                      height: 1.25,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-      bottomNavigationBar: const PublicBottomNav(currentTab: PublicTab.vote),
-    );
-  }
-}
-
-class _ConfidentialityCard extends StatelessWidget {
-  const _ConfidentialityCard({required this.theme});
-
-  final ThemeData theme;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Color(0xFFE5E7EB)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              width: 46,
-              height: 46,
-              decoration: BoxDecoration(
-                color: const Color(0xFFEFF6FF),
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: const Icon(
-                Icons.lock_rounded,
-                color: Color(0xFF0D73F2),
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Participation confidentielle',
-                    style: theme.textTheme.titleSmall?.copyWith(
-                      color: const Color(0xFF0F172A),
-                      fontWeight: FontWeight.w800,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Votre code sécurise l’accès et limite les participations multiples. Vos réponses sont exploitées uniquement sous forme statistique.',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: const Color(0xFF475569),
-                      height: 1.32,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LegalTermsConsentPanel extends StatefulWidget {
-  const _LegalTermsConsentPanel({
-    required this.hasReadLegalTerms,
-    required this.hasAcceptedLegalTerms,
-    required this.onReadToEnd,
-    required this.onAcceptedChanged,
-  });
-
-  final bool hasReadLegalTerms;
-  final bool hasAcceptedLegalTerms;
-  final VoidCallback onReadToEnd;
-  final ValueChanged<bool> onAcceptedChanged;
-
-  @override
-  State<_LegalTermsConsentPanel> createState() =>
-      _LegalTermsConsentPanelState();
-}
-
-class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
-  final _scrollController = ScrollController();
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_handleScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _handleScroll());
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_handleScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _handleScroll() {
-    if (widget.hasReadLegalTerms || !_scrollController.hasClients) return;
-    _checkScrollMetrics(_scrollController.position);
-  }
-
-  bool _handleScrollNotification(ScrollNotification notification) {
-    if (!widget.hasReadLegalTerms) {
-      _checkScrollMetrics(notification.metrics);
-    }
-    return false;
-  }
-
-  void _checkScrollMetrics(ScrollMetrics metrics) {
-    if (metrics.maxScrollExtent <= 0 ||
-        metrics.pixels >= metrics.maxScrollExtent - 8) {
-      widget.onReadToEnd();
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasRead = widget.hasReadLegalTerms;
-
-    return Container(
-      key: const ValueKey('accessCitizenLegalPill'),
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF9),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFB6ECE1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+      backgroundColor: Colors.transparent,
+      body: Stack(
         children: [
-          Row(
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: const Icon(
-                  Icons.balance_rounded,
-                  color: Color(0xFF0D73F2),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'CGU, confidentialité et données personnelles',
-                      style: theme.textTheme.titleSmall?.copyWith(
-                        color: const Color(0xFF0F172A),
-                        fontWeight: FontWeight.w800,
+          const _AccessBackground(),
+          SafeArea(
+            child: Column(
+              children: [
+                Expanded(
+                  child: Center(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(18, 20, 18, 12),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 560),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const _AccessLogoHeader(),
+                            const SizedBox(height: 26),
+                            Text(
+                              'Accès citoyen',
+                              style: GoogleFonts.inter(
+                                color: cpTextDark,
+                                fontSize: isCompact(context) ? 30 : 36,
+                                fontWeight: FontWeight.w900,
+                                height: 1.05,
+                                letterSpacing: -0.6,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Entrez votre code pour participer anonymement.',
+                              style: GoogleFonts.inter(
+                                color: cpTextMuted,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                                height: 1.35,
+                              ),
+                            ),
+                            const SizedBox(height: 22),
+                            _AccessFormCard(
+                              codeController: _codeController,
+                              errorMessage: _errorMessage,
+                              isSubmitting: _isSubmitting,
+                              canValidate: _canValidate,
+                              hasReadLegalTerms: hasReadLegalTerms,
+                              hasAcceptedLegalTerms: hasAcceptedLegalTerms,
+                              onLegalTermsRead: _markLegalTermsRead,
+                              onTermsChanged: (accepted) =>
+                                  unawaited(_setAcceptedLegalTerms(accepted)),
+                              onCodeChanged: () =>
+                                  setState(() => _errorMessage = null),
+                              onSubmit: _validateCitizenCode,
+                            ),
+                            const SizedBox(height: 20),
+                            const _FooterNote(),
+                          ],
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      hasRead
-                          ? 'Lecture complète effectuée'
-                          : 'Faites défiler le texte jusqu’à la fin pour accepter',
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: hasRead
-                            ? const Color(0xFF047857)
-                            : const Color(0xFF64748B),
-                        fontWeight: hasRead ? FontWeight.w700 : null,
-                        height: 1.25,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Container(
-            height: 176,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFE5E7EB)),
-            ),
-            child: NotificationListener<ScrollNotification>(
-              onNotification: _handleScrollNotification,
-              child: Scrollbar(
-                controller: _scrollController,
-                thumbVisibility: true,
-                child: SingleChildScrollView(
-                  key: const ValueKey('accessCitizenLegalTermsScroll'),
-                  controller: _scrollController,
-                  padding: const EdgeInsets.fromLTRB(14, 12, 22, 12),
-                  child: Text(
-                    buildFullLegalDocumentText(),
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: const Color(0xFF334155),
-                      height: 1.45,
                     ),
                   ),
                 ),
-              ),
+                const PublicBottomNav(currentTab: PublicTab.vote),
+              ],
             ),
           ),
-          const SizedBox(height: 10),
-          if (hasRead)
-            _TermsAcceptanceRow(
-              hasAcceptedLegalTerms: widget.hasAcceptedLegalTerms,
-              onChanged: widget.onAcceptedChanged,
-            )
-          else
-            Text(
-              'La case d’acceptation apparaîtra à la fin du texte.',
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: const Color(0xFF64748B),
-                height: 1.25,
-              ),
-              textAlign: TextAlign.center,
-            ),
         ],
       ),
+    );
+  }
+}
+
+class _AccessBackground extends StatelessWidget {
+  const _AccessBackground();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            Color(0xFFEAF8FF),
+            Color(0xFFF3FBFF),
+            Colors.white,
+          ],
+          stops: [0.0, 0.35, 1.0],
+        ),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            left: -140,
+            bottom: -60,
+            child: Container(
+              width: 320,
+              height: 320,
+              decoration: BoxDecoration(
+                color: cpBlue.withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(180),
+              ),
+            ),
+          ),
+          Positioned(
+            right: -80,
+            top: 40,
+            child: Opacity(
+              opacity: 0.5,
+              child: CustomPaint(
+                size: const Size(180, 180),
+                painter: _DotGridPainter(),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DotGridPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()..color = cpBlue.withValues(alpha: 0.28);
+    const spacing = 16.0;
+    for (double y = 0; y < size.height; y += spacing) {
+      for (double x = 0; x < size.width; x += spacing) {
+        canvas.drawCircle(Offset(x, y), 1.6, paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
+}
+
+class _AccessLogoHeader extends StatelessWidget {
+  const _AccessLogoHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(
+          child: Container(
+            height: 104,
+            alignment: Alignment.center,
+            padding: const EdgeInsets.symmetric(horizontal: 22),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(28),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 26,
+                  offset: const Offset(0, 14),
+                ),
+              ],
+            ),
+            child: Semantics(
+              label: 'Citoyen Peyi',
+              image: true,
+              child: Image.asset(
+                cpLogoPath,
+                height: 58,
+                fit: BoxFit.contain,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 14),
+        Padding(
+          padding: const EdgeInsets.only(top: 4),
+          child: Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.08),
+                  blurRadius: 14,
+                  offset: const Offset(0, 6),
+                ),
+              ],
+            ),
+            child: Stack(
+              alignment: Alignment.center,
+              children: const [
+                Icon(Icons.shield_outlined, color: cpBlueDark, size: 26),
+                Positioned(
+                  bottom: 10,
+                  right: 11,
+                  child: Icon(Icons.lock_rounded,
+                      color: cpBlueDark, size: 12),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -514,94 +418,374 @@ class _AccessFormCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Color(0xFFE5E7EB)),
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(30),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.07),
+            blurRadius: 32,
+            offset: const Offset(0, 18),
+          ),
+        ],
       ),
-      child: Padding(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            TextField(
-              controller: codeController,
-              enabled: !isSubmitting,
-              textCapitalization: TextCapitalization.characters,
-              textInputAction: TextInputAction.done,
-              // Un code d'acces est sensible : on empeche le clavier de le
-              // memoriser (suggestions/dictionnaire) et l'autocorrection de le
-              // deformer silencieusement (source classique de "code invalide").
-              autocorrect: false,
-              enableSuggestions: false,
-              decoration: InputDecoration(
-                labelText: 'Code citoyen',
-                hintText: 'Code citoyen',
-                filled: true,
-                fillColor: const Color(0xFFF8FAFC),
-                contentPadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(18),
-                  borderSide: const BorderSide(color: Color(0xFFE5E7EB)),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            'Code citoyen',
+            style: GoogleFonts.inter(
+              color: cpTextDark,
+              fontSize: 18,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: codeController,
+            enabled: !isSubmitting,
+            textCapitalization: TextCapitalization.characters,
+            textInputAction: TextInputAction.done,
+            // Un code d'acces est sensible : on empeche le clavier de le
+            // memoriser (suggestions/dictionnaire) et l'autocorrection de le
+            // deformer silencieusement (source classique de "code invalide").
+            autocorrect: false,
+            enableSuggestions: false,
+            style: GoogleFonts.inter(
+              color: cpTextDark,
+              fontWeight: FontWeight.w600,
+              fontSize: 16,
+            ),
+            decoration: InputDecoration(
+              hintText: 'Saisissez votre code citoyen',
+              hintStyle: GoogleFonts.inter(
+                color: const Color(0xFF9AA6B8),
+                fontWeight: FontWeight.w500,
+              ),
+              prefixIcon: const Icon(Icons.key_rounded, color: cpBlueDark),
+              filled: true,
+              fillColor: Colors.white,
+              contentPadding:
+                  const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(color: cpBlue, width: 1.6),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(color: cpBlue, width: 1.6),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(30),
+                borderSide: const BorderSide(color: cpBlueDark, width: 2),
+              ),
+            ),
+            onChanged: (_) => onCodeChanged(),
+            onSubmitted: (_) => onSubmit(),
+          ),
+          const SizedBox(height: 16),
+          const _ConfidentialityBox(),
+          const SizedBox(height: 14),
+          _LegalTermsConsentPanel(
+            hasReadLegalTerms: hasReadLegalTerms,
+            hasAcceptedLegalTerms: hasAcceptedLegalTerms,
+            onReadToEnd: onLegalTermsRead,
+            onAcceptedChanged: onTermsChanged,
+          ),
+          if (errorMessage != null) ...[
+            const SizedBox(height: 12),
+            Text(
+              errorMessage!,
+              style: const TextStyle(
+                color: Color(0xFFB42318),
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+          const SizedBox(height: 18),
+          _SubmitButton(
+            isSubmitting: isSubmitting,
+            canValidate: canValidate,
+            onSubmit: onSubmit,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ConfidentialityBox extends StatelessWidget {
+  const _ConfidentialityBox();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: cpBlueSoft,
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Container(
+            width: 42,
+            height: 42,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(Icons.lock_rounded, color: cpBlueDark, size: 20),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Participation confidentielle',
+                  style: GoogleFonts.inter(
+                    color: cpTextDark,
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  'Vos réponses restent anonymes.',
+                  style: GoogleFonts.inter(
+                    color: cpTextMuted,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _LegalTermsConsentPanel extends StatefulWidget {
+  const _LegalTermsConsentPanel({
+    required this.hasReadLegalTerms,
+    required this.hasAcceptedLegalTerms,
+    required this.onReadToEnd,
+    required this.onAcceptedChanged,
+  });
+
+  final bool hasReadLegalTerms;
+  final bool hasAcceptedLegalTerms;
+  final VoidCallback onReadToEnd;
+  final ValueChanged<bool> onAcceptedChanged;
+
+  @override
+  State<_LegalTermsConsentPanel> createState() =>
+      _LegalTermsConsentPanelState();
+}
+
+class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
+  final _scrollController = ScrollController();
+  late bool _expanded = !widget.hasReadLegalTerms;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_handleScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _handleScroll());
+  }
+
+  @override
+  void didUpdateWidget(covariant _LegalTermsConsentPanel oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.hasReadLegalTerms && widget.hasReadLegalTerms) {
+      // La lecture vient de se terminer : on replie le panneau pour ne
+      // garder que le resume + la case d'acceptation, comme sur la
+      // maquette.
+      setState(() => _expanded = false);
+    }
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_handleScroll);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _handleScroll() {
+    if (widget.hasReadLegalTerms || !_scrollController.hasClients) return;
+    _checkScrollMetrics(_scrollController.position);
+  }
+
+  bool _handleScrollNotification(ScrollNotification notification) {
+    if (!widget.hasReadLegalTerms) {
+      _checkScrollMetrics(notification.metrics);
+    }
+    return false;
+  }
+
+  void _checkScrollMetrics(ScrollMetrics metrics) {
+    if (metrics.maxScrollExtent <= 0 ||
+        metrics.pixels >= metrics.maxScrollExtent - 8) {
+      widget.onReadToEnd();
+    }
+  }
+
+  void _toggleExpanded() => setState(() => _expanded = !_expanded);
+
+  @override
+  Widget build(BuildContext context) {
+    final hasRead = widget.hasReadLegalTerms;
+
+    return Container(
+      key: const ValueKey('accessCitizenLegalPill'),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF0FDF9),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFB6ECE1)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          InkWell(
+            borderRadius: BorderRadius.circular(14),
+            onTap: _toggleExpanded,
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.balance_rounded,
+                    color: cpBlueDark,
+                    size: 20,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'CGU, confidentialité et anonymat',
+                    style: GoogleFonts.inter(
+                      color: cpTextDark,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
+                  ),
+                ),
+                AnimatedRotation(
+                  turns: _expanded ? 0.25 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  child: const Icon(Icons.chevron_right_rounded,
+                      color: cpTextMuted),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              if (hasRead) ...[
+                const Icon(Icons.check_circle_rounded,
+                    color: Color(0xFF16A34A), size: 16),
+                const SizedBox(width: 6),
+                Text(
+                  'Lecture effectuée',
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF16A34A),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+              ] else
+                Expanded(
+                  child: Text(
+                    'Faites défiler le texte jusqu’à la fin pour accepter',
+                    style: GoogleFonts.inter(
+                      color: cpTextMuted,
+                      fontSize: 13,
+                    ),
+                  ),
+                ),
+              const Spacer(),
+              GestureDetector(
+                onTap: _toggleExpanded,
+                child: Text(
+                  'Lire les conditions',
+                  style: GoogleFonts.inter(
+                    color: cpBlueDark,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
-              onChanged: (_) => onCodeChanged(),
-              onSubmitted: (_) => onSubmit(),
+            ],
+          ),
+          if (_expanded) ...[
+            const SizedBox(height: 12),
+            Divider(color: const Color(0xFFB6ECE1).withValues(alpha: 0.8)),
+            const SizedBox(height: 8),
+            Container(
+              height: 176,
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: const Color(0xFFE5E7EB)),
+              ),
+              child: NotificationListener<ScrollNotification>(
+                onNotification: _handleScrollNotification,
+                child: Scrollbar(
+                  controller: _scrollController,
+                  thumbVisibility: true,
+                  child: SingleChildScrollView(
+                    key: const ValueKey('accessCitizenLegalTermsScroll'),
+                    controller: _scrollController,
+                    padding: const EdgeInsets.fromLTRB(14, 12, 22, 12),
+                    child: Text(
+                      buildFullLegalDocumentText(),
+                      style: GoogleFonts.inter(
+                        color: const Color(0xFF334155),
+                        fontSize: 13,
+                        height: 1.45,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 14),
-            _LegalTermsConsentPanel(
-              hasReadLegalTerms: hasReadLegalTerms,
-              hasAcceptedLegalTerms: hasAcceptedLegalTerms,
-              onReadToEnd: onLegalTermsRead,
-              onAcceptedChanged: onTermsChanged,
-            ),
-            if (errorMessage != null) ...[
-              const SizedBox(height: 10),
+            if (!hasRead) ...[
+              const SizedBox(height: 8),
               Text(
-                errorMessage!,
-                style: const TextStyle(
-                  color: Color(0xFFB42318),
-                  fontWeight: FontWeight.w600,
+                'La case d’acceptation apparaîtra à la fin du texte.',
+                style: GoogleFonts.inter(
+                  color: cpTextMuted,
+                  fontSize: 12,
                 ),
                 textAlign: TextAlign.center,
               ),
             ],
-            const SizedBox(height: 16),
-            SizedBox(
-              height: 56,
-              child: FilledButton.icon(
-                onPressed: canValidate ? onSubmit : null,
-                style: FilledButton.styleFrom(
-                  backgroundColor: const Color(0xFF0D73F2),
-                  disabledBackgroundColor: const Color(0xFFE5E7EB),
-                  foregroundColor: Colors.white,
-                  disabledForegroundColor: const Color(0xFF64748B),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  textStyle: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                  ),
-                ),
-                icon: isSubmitting
-                    ? const SizedBox(
-                        width: 18,
-                        height: 18,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.white,
-                        ),
-                      )
-                    : const Icon(Icons.lock_open_rounded),
-                label: const Text('Valider mon code citoyen'),
-              ),
+          ],
+          if (hasRead) ...[
+            const SizedBox(height: 10),
+            Divider(color: const Color(0xFFB6ECE1).withValues(alpha: 0.8)),
+            const SizedBox(height: 6),
+            _TermsAcceptanceRow(
+              hasAcceptedLegalTerms: widget.hasAcceptedLegalTerms,
+              onChanged: widget.onAcceptedChanged,
             ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -618,49 +802,113 @@ class _TermsAcceptanceRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Semantics(
       button: true,
       checked: hasAcceptedLegalTerms,
       label: 'J’ai lu et j’accepte les conditions d’utilisation.',
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        child: InkWell(
-          key: const ValueKey('accessCitizenTermsAcceptance'),
-          borderRadius: BorderRadius.circular(18),
-          onTap: () => onChanged(!hasAcceptedLegalTerms),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(
-                color: hasAcceptedLegalTerms
-                    ? const Color(0xFFB6ECE1)
-                    : const Color(0xFFE5E7EB),
+      child: InkWell(
+        key: const ValueKey('accessCitizenTermsAcceptance'),
+        borderRadius: BorderRadius.circular(14),
+        onTap: () => onChanged(!hasAcceptedLegalTerms),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Checkbox(
+              value: hasAcceptedLegalTerms,
+              onChanged: (value) => onChanged(value ?? false),
+              activeColor: cpBlueDark,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
               ),
             ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Checkbox(
-                  value: hasAcceptedLegalTerms,
-                  onChanged: (value) => onChanged(value ?? false),
-                  activeColor: const Color(0xFF0D73F2),
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                'J’ai lu et j’accepte les conditions d’utilisation.',
+                style: GoogleFonts.inter(
+                  color: cpTextDark,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  height: 1.3,
                 ),
-                const SizedBox(width: 4),
-                Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.only(top: 11),
-                    child: Text(
-                      'J’ai lu et j’accepte les conditions d’utilisation.',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: const Color(0xFF0F172A),
-                        fontWeight: FontWeight.w600,
-                        height: 1.35,
-                      ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _SubmitButton extends StatelessWidget {
+  const _SubmitButton({
+    required this.isSubmitting,
+    required this.canValidate,
+    required this.onSubmit,
+  });
+
+  final bool isSubmitting;
+  final bool canValidate;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = canValidate;
+
+    return Container(
+      height: 58,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(30),
+        gradient: enabled
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFFFFE875),
+                  cpYellow,
+                  cpYellowStrong,
+                ],
+              )
+            : null,
+        color: enabled ? null : const Color(0xFFE5E7EB),
+        boxShadow: enabled
+            ? [
+                BoxShadow(
+                  color: cpYellowStrong.withValues(alpha: 0.38),
+                  blurRadius: 20,
+                  offset: const Offset(0, 10),
+                ),
+              ]
+            : null,
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(30),
+          onTap: enabled ? onSubmit : null,
+          child: Center(
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                if (isSubmitting)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: cpBlueDark,
                     ),
+                  )
+                else
+                  Icon(Icons.lock_rounded,
+                      color: enabled ? cpBlueDark : const Color(0xFF94A3B8)),
+                const SizedBox(width: 10),
+                Text(
+                  'Valider mon code citoyen',
+                  style: GoogleFonts.inter(
+                    color: enabled ? cpBlueDark : const Color(0xFF94A3B8),
+                    fontWeight: FontWeight.w800,
+                    fontSize: 16,
                   ),
                 ),
               ],
@@ -668,6 +916,32 @@ class _TermsAcceptanceRow extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _FooterNote extends StatelessWidget {
+  const _FooterNote();
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        const Icon(Icons.verified_user_outlined, color: cpBlueDark, size: 18),
+        const SizedBox(width: 8),
+        Flexible(
+          child: Text(
+            'Plateforme de consultation citoyenne anonyme',
+            textAlign: TextAlign.center,
+            style: GoogleFonts.inter(
+              color: cpBlueDark,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
