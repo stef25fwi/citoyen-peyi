@@ -102,8 +102,6 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
       return;
     }
 
-    // Normalisation canonique (le backend hache en trim().toUpperCase()) : evite
-    // les echecs dus a une casse differente et garde une session coherente.
     final rawCode = _codeController.text.trim().toUpperCase();
     if (rawCode.isEmpty) {
       _showSnack('Veuillez saisir votre code citoyen.');
@@ -129,7 +127,6 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
       if (!mounted) return;
 
       await CitizenPublicAccessService.instance.saveSession(session);
-
       await CitizenCommuneStore.instance.save(
         communeId: session.communeId,
         communeName: session.communeName,
@@ -137,6 +134,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
       await NewPollBadgeService.instance.startListening();
       await NewPollBadgeService.instance.markAllSeen();
       if (!mounted) return;
+
       unawaited(PushNotificationService.instance.registerForCitizenCommune(
         rawCode: rawCode,
         communeId: session.communeId,
@@ -166,14 +164,10 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
 
   void _resumeCitizenSessionIfAvailable() {
     final session = CitizenPublicAccessService.instance.currentSession;
-    if (session == null) {
-      return;
-    }
+    if (session == null) return;
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
       Navigator.of(context).pushNamedAndRemoveUntil(
         '/citizen/welcome',
         (route) => false,
@@ -200,35 +194,26 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                 Expanded(
                   child: Center(
                     child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(18, 20, 18, 12),
+                      padding: const EdgeInsets.fromLTRB(6, 14, 6, 8),
                       child: ConstrainedBox(
                         constraints: const BoxConstraints(maxWidth: 560),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             const _AccessLogoHeader(),
-                            const SizedBox(height: 26),
+                            const SizedBox(height: 22),
                             Text(
                               'Accès citoyen',
+                              textAlign: TextAlign.center,
                               style: GoogleFonts.inter(
                                 color: cpTextDark,
-                                fontSize: isCompact(context) ? 30 : 36,
+                                fontSize: isCompact(context) ? 32 : 38,
                                 fontWeight: FontWeight.w900,
                                 height: 1.05,
-                                letterSpacing: -0.6,
+                                letterSpacing: -0.7,
                               ),
                             ),
-                            const SizedBox(height: 8),
-                            Text(
-                              'Entrez votre code pour participer anonymement.',
-                              style: GoogleFonts.inter(
-                                color: cpTextMuted,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                                height: 1.35,
-                              ),
-                            ),
-                            const SizedBox(height: 22),
+                            const SizedBox(height: 18),
                             _AccessFormCard(
                               codeController: _codeController,
                               errorMessage: _errorMessage,
@@ -243,7 +228,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                                   setState(() => _errorMessage = null),
                               onSubmit: _validateCitizenCode,
                             ),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 16),
                             const _FooterNote(),
                           ],
                         ),
@@ -331,68 +316,32 @@ class _AccessLogoHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Container(
-            height: 104,
-            alignment: Alignment.center,
-            padding: const EdgeInsets.symmetric(horizontal: 22),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(28),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 26,
-                  offset: const Offset(0, 14),
-                ),
-              ],
-            ),
-            child: Semantics(
-              label: 'Citoyen Peyi',
-              image: true,
-              child: Image.asset(
-                cpLogoPath,
-                height: 58,
-                fit: BoxFit.contain,
-              ),
-            ),
+    return Container(
+      width: double.infinity,
+      height: 116,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
           ),
+        ],
+      ),
+      child: Semantics(
+        label: 'Citoyen Peyi',
+        image: true,
+        child: Image.asset(
+          cpLogoPath,
+          height: 82,
+          width: double.infinity,
+          fit: BoxFit.contain,
         ),
-        const SizedBox(width: 14),
-        Padding(
-          padding: const EdgeInsets.only(top: 4),
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.08),
-                  blurRadius: 14,
-                  offset: const Offset(0, 6),
-                ),
-              ],
-            ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: const [
-                Icon(Icons.shield_outlined, color: cpBlueDark, size: 26),
-                Positioned(
-                  bottom: 10,
-                  right: 11,
-                  child: Icon(Icons.lock_rounded,
-                      color: cpBlueDark, size: 12),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
@@ -425,10 +374,10 @@ class _AccessFormCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        borderRadius: BorderRadius.circular(26),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.07),
@@ -440,12 +389,15 @@ class _AccessFormCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Text(
-            'Code citoyen',
-            style: GoogleFonts.inter(
-              color: cpTextDark,
-              fontSize: 18,
-              fontWeight: FontWeight.w800,
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            child: Text(
+              'Code citoyen',
+              style: GoogleFonts.inter(
+                color: cpTextDark,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
             ),
           ),
           const SizedBox(height: 10),
@@ -454,9 +406,6 @@ class _AccessFormCard extends StatelessWidget {
             enabled: !isSubmitting,
             textCapitalization: TextCapitalization.characters,
             textInputAction: TextInputAction.done,
-            // Un code d'acces est sensible : on empeche le clavier de le
-            // memoriser (suggestions/dictionnaire) et l'autocorrection de le
-            // deformer silencieusement (source classique de "code invalide").
             autocorrect: false,
             enableSuggestions: false,
             style: GoogleFonts.inter(
@@ -474,7 +423,7 @@ class _AccessFormCard extends StatelessWidget {
               filled: true,
               fillColor: Colors.white,
               contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
+                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(30),
                 borderSide: const BorderSide(color: cpBlue, width: 1.6),
@@ -491,9 +440,9 @@ class _AccessFormCard extends StatelessWidget {
             onChanged: (_) => onCodeChanged(),
             onSubmitted: (_) => onSubmit(),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           const _ConfidentialityBox(),
-          const SizedBox(height: 14),
+          const SizedBox(height: 12),
           _LegalTermsConsentPanel(
             hasReadLegalTerms: hasReadLegalTerms,
             hasAcceptedLegalTerms: hasAcceptedLegalTerms,
@@ -511,7 +460,7 @@ class _AccessFormCard extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ],
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           _SubmitButton(
             isSubmitting: isSubmitting,
             canValidate: canValidate,
@@ -529,7 +478,7 @@ class _ConfidentialityBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
         color: cpBlueSoft,
         borderRadius: BorderRadius.circular(18),
@@ -538,15 +487,15 @@ class _ConfidentialityBox extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 42,
-            height: 42,
+            width: 40,
+            height: 40,
             decoration: const BoxDecoration(
               color: Colors.white,
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.lock_rounded, color: cpBlueDark, size: 20),
           ),
-          const SizedBox(width: 14),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -610,9 +559,6 @@ class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
   void didUpdateWidget(covariant _LegalTermsConsentPanel oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (!oldWidget.hasReadLegalTerms && widget.hasReadLegalTerms) {
-      // La lecture vient de se terminer : on replie le panneau pour ne
-      // garder que le resume + la case d'acceptation, comme sur la
-      // maquette.
       setState(() => _expanded = false);
     }
   }
@@ -651,11 +597,11 @@ class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
 
     return Container(
       key: const ValueKey('accessCitizenLegalPill'),
-      padding: const EdgeInsets.all(14),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF0FDF9),
+        color: const Color(0xFFF3F4F6),
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFB6ECE1)),
+        border: Border.all(color: const Color(0xFFE5E7EB)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -678,7 +624,7 @@ class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
                     size: 20,
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
                     'CGU, confidentialité et anonymat',
@@ -705,9 +651,6 @@ class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
                 const Icon(Icons.check_circle_rounded,
                     color: Color(0xFF16A34A), size: 16),
                 const SizedBox(width: 6),
-                // Flexible (pas Text nu) : sur petit ecran, "Lecture
-                // effectuee" + le lien "Lire les conditions" peuvent
-                // depasser la largeur disponible (RenderFlex overflow).
                 Flexible(
                   child: Text(
                     'Lecture effectuée',
@@ -747,7 +690,7 @@ class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
           ),
           if (_expanded) ...[
             const SizedBox(height: 12),
-            Divider(color: const Color(0xFFB6ECE1).withValues(alpha: 0.8)),
+            Divider(color: const Color(0xFFE5E7EB).withValues(alpha: 0.9)),
             const SizedBox(height: 8),
             Container(
               height: 176,
@@ -764,7 +707,7 @@ class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
                   child: SingleChildScrollView(
                     key: const ValueKey('accessCitizenLegalTermsScroll'),
                     controller: _scrollController,
-                    padding: const EdgeInsets.fromLTRB(14, 12, 22, 12),
+                    padding: const EdgeInsets.fromLTRB(12, 12, 20, 12),
                     child: Text(
                       buildFullLegalDocumentText(),
                       style: GoogleFonts.inter(
@@ -791,7 +734,7 @@ class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
           ],
           if (hasRead) ...[
             const SizedBox(height: 10),
-            Divider(color: const Color(0xFFB6ECE1).withValues(alpha: 0.8)),
+            Divider(color: const Color(0xFFE5E7EB).withValues(alpha: 0.9)),
             const SizedBox(height: 6),
             _TermsAcceptanceRow(
               hasAcceptedLegalTerms: widget.hasAcceptedLegalTerms,
@@ -834,7 +777,7 @@ class _TermsAcceptanceRow extends StatelessWidget {
                 borderRadius: BorderRadius.circular(6),
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 2),
             Expanded(
               child: Text(
                 'J’ai lu et j’accepte les conditions d’utilisation.',
@@ -916,12 +859,15 @@ class _SubmitButton extends StatelessWidget {
                   Icon(Icons.lock_rounded,
                       color: enabled ? cpBlueDark : const Color(0xFF94A3B8)),
                 const SizedBox(width: 10),
-                Text(
-                  'Valider mon code citoyen',
-                  style: GoogleFonts.inter(
-                    color: enabled ? cpBlueDark : const Color(0xFF94A3B8),
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
+                Flexible(
+                  child: Text(
+                    'Valider mon code citoyen',
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.inter(
+                      color: enabled ? cpBlueDark : const Color(0xFF94A3B8),
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                    ),
                   ),
                 ),
               ],
