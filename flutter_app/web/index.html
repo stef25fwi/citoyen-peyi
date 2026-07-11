@@ -9,6 +9,15 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Citoyen Peyi</title>
     <link rel="manifest" href="manifest.json">
+    <!-- Prechauffe DNS/TLS vers le backend et les services Firebase/Google pour
+         accelerer le premier appel (connexion, validation de code, chargement
+         des consultations). Simples indices : sans effet si un hote change. -->
+    <link rel="preconnect" href="https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://firestore.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://identitytoolkit.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://securetoken.googleapis.com" crossorigin>
+    <link rel="dns-prefetch" href="https://fonts.gstatic.com">
     <style>
       html, body { background-color: #9BE4FF; margin: 0; padding: 0; }
     </style>

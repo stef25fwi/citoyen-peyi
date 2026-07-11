@@ -103,7 +103,9 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
       return;
     }
 
-    final rawCode = _codeController.text.trim();
+    // Normalisation canonique (le backend hache en trim().toUpperCase()) : evite
+    // les echecs dus a une casse differente et garde une session coherente.
+    final rawCode = _codeController.text.trim().toUpperCase();
     if (rawCode.isEmpty) {
       _showSnack('Veuillez saisir votre code citoyen.');
       return;
@@ -529,6 +531,11 @@ class _AccessFormCard extends StatelessWidget {
               enabled: !isSubmitting,
               textCapitalization: TextCapitalization.characters,
               textInputAction: TextInputAction.done,
+              // Un code d'acces est sensible : on empeche le clavier de le
+              // memoriser (suggestions/dictionnaire) et l'autocorrection de le
+              // deformer silencieusement (source classique de "code invalide").
+              autocorrect: false,
+              enableSuggestions: false,
               decoration: InputDecoration(
                 labelText: 'Code citoyen',
                 hintText: 'Code citoyen',
