@@ -5,6 +5,7 @@ import '../services/citizen_public_access_service.dart';
 import '../services/poll_service.dart';
 import '../theme/citizen_design_tokens.dart';
 import '../widgets/citizen/citizen_bottom_nav.dart';
+import '../widgets/citizen/citizen_header.dart';
 import '../widgets/citizen_connect_invite.dart';
 import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
@@ -102,7 +103,11 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
           bottom: false,
           child: Column(
             children: [
-              const _ResultsHeader(),
+              const CitizenHeader(
+      title: 'Résultats des consultations',
+      height: 92,
+      trailing: DebugLogButton(label: ''),
+    ),
               Expanded(
                 child: RefreshIndicator(
                   color: CitizenDesignTokens.primaryBlue,
@@ -190,60 +195,6 @@ class _MobileFrame extends StatelessWidget {
       child: ConstrainedBox(
         constraints: const BoxConstraints(maxWidth: 430),
         child: child,
-      ),
-    );
-  }
-}
-
-class _ResultsHeader extends StatelessWidget {
-  const _ResultsHeader();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 92,
-      width: double.infinity,
-      decoration: const BoxDecoration(
-        gradient: CitizenDesignTokens.headerGradient,
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 12),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: IconButton(
-                tooltip: 'Retour',
-                onPressed: () => Navigator.maybePop(context),
-                icon: const Icon(
-                  Icons.arrow_back_ios_new_rounded,
-                  color: Colors.white,
-                  size: 22,
-                ),
-              ),
-            ),
-            const Padding(
-              padding: EdgeInsets.symmetric(horizontal: 54),
-              child: Text(
-                'Résultats des\nconsultations',
-                textAlign: TextAlign.center,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 17.5,
-                  height: 1.15,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ),
-            const Align(
-              alignment: Alignment.centerRight,
-              child: DebugLogButton(label: ''),
-            ),
-          ],
-        ),
       ),
     );
   }
