@@ -19,9 +19,13 @@ class CitizenHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
+      width: double.infinity,
       height: height,
       decoration: const BoxDecoration(
         gradient: CitizenDesignTokens.headerGradient,
+        borderRadius: BorderRadius.vertical(
+          bottom: Radius.circular(32),
+        ),
       ),
       child: SafeArea(
         bottom: false,
@@ -34,6 +38,7 @@ class CitizenHeader extends StatelessWidget {
                 Align(
                   alignment: Alignment.centerLeft,
                   child: IconButton(
+                    tooltip: 'Retour',
                     onPressed: () => Navigator.maybePop(context),
                     icon: const Icon(
                       Icons.arrow_back_ios_new_rounded,
