@@ -10,7 +10,7 @@ class PublicBottomNav extends StatefulWidget {
   const PublicBottomNav({
     required this.currentTab,
     this.backgroundColor = Colors.white,
-    this.indicatorColor = const Color(0xFFF1F5F9),
+    this.indicatorColor = const Color(0xFFE7F5FF),
     super.key,
   });
 
@@ -27,7 +27,6 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
 
   static const _activeColor = Color(0xFF0756B8);
   static const _inactiveColor = Color(0xFF536173);
-  static const _activeBackground = Color(0xFFE7F5FF);
 
   @override
   void initState() {
@@ -44,9 +43,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
     final targetRoute = routes[index];
     final currentRoute = ModalRoute.of(context)?.settings.name;
 
-    if (currentRoute == targetRoute) {
-      return;
-    }
+    if (currentRoute == targetRoute) return;
 
     Navigator.of(context).pushReplacementNamed(
       targetRoute,
@@ -60,56 +57,70 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
 
     return Material(
       color: Colors.transparent,
-      child: Container(
-        height: compact ? 58 : 64,
-        width: double.infinity,
-        decoration: BoxDecoration(
-          color: Colors.white.withValues(alpha: 0.98),
-          border: Border(
-            top: BorderSide(
-              color: Colors.black.withValues(alpha: 0.08),
-              width: 0.8,
+      child: SafeArea(
+        top: false,
+        child: Container(
+          height: compact ? 76 : 72,
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+          decoration: BoxDecoration(
+            color: widget.backgroundColor.withValues(alpha: 0.98),
+            border: Border(
+              top: BorderSide(
+                color: Colors.black.withValues(alpha: 0.08),
+                width: 0.8,
+              ),
             ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.06),
+                blurRadius: 14,
+                offset: const Offset(0, -4),
+              ),
+            ],
           ),
-        ),
-        child: ValueListenableBuilder<bool>(
-          valueListenable: _badgeSvc.hasNew,
-          builder: (context, hasNew, _) {
-            return Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
-                _NavItem(
-                  icon: Icons.home_rounded,
-                  label: 'Accueil',
-                  selected: widget.currentTab == PublicTab.home,
-                  compact: compact,
-                  onTap: () => _handleTap(context, 0),
-                ),
-                _NavItem(
-                  icon: Icons.article_outlined,
-                  label: 'Actualités',
-                  selected: widget.currentTab == PublicTab.news,
-                  compact: compact,
-                  onTap: () => _handleTap(context, 1),
-                ),
-                _NavItem(
-                  icon: Icons.edit_square,
-                  label: 'Donner mon avis',
-                  selected: widget.currentTab == PublicTab.vote,
-                  compact: compact,
-                  showBadge: hasNew,
-                  onTap: () => _handleTap(context, 2),
-                ),
-                _NavItem(
-                  icon: Icons.bar_chart_rounded,
-                  label: 'Résultats',
-                  selected: widget.currentTab == PublicTab.results,
-                  compact: compact,
-                  onTap: () => _handleTap(context, 3),
-                ),
-              ],
-            );
-          },
+          child: ValueListenableBuilder<bool>(
+            valueListenable: _badgeSvc.hasNew,
+            builder: (context, hasNew, _) {
+              return Row(
+                children: [
+                  _NavItem(
+                    icon: Icons.home_rounded,
+                    label: 'Accueil',
+                    selected: widget.currentTab == PublicTab.home,
+                    compact: compact,
+                    indicatorColor: widget.indicatorColor,
+                    onTap: () => _handleTap(context, 0),
+                  ),
+                  _NavItem(
+                    icon: Icons.article_outlined,
+                    label: 'Actualités',
+                    selected: widget.currentTab == PublicTab.news,
+                    compact: compact,
+                    indicatorColor: widget.indicatorColor,
+                    onTap: () => _handleTap(context, 1),
+                  ),
+                  _NavItem(
+                    icon: Icons.edit_square,
+                    label: 'Donner mon avis',
+                    selected: widget.currentTab == PublicTab.vote,
+                    compact: compact,
+                    indicatorColor: widget.indicatorColor,
+                    showBadge: hasNew,
+                    onTap: () => _handleTap(context, 2),
+                  ),
+                  _NavItem(
+                    icon: Icons.bar_chart_rounded,
+                    label: 'Résultats',
+                    selected: widget.currentTab == PublicTab.results,
+                    compact: compact,
+                    indicatorColor: widget.indicatorColor,
+                    onTap: () => _handleTap(context, 3),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       ),
     );
@@ -122,6 +133,7 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.compact,
+    required this.indicatorColor,
     required this.onTap,
     this.showBadge = false,
   });
@@ -130,6 +142,7 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool selected;
   final bool compact;
+  final Color indicatorColor;
   final bool showBadge;
   final VoidCallback onTap;
 
@@ -138,12 +151,13 @@ class _NavItem extends StatelessWidget {
     final iconColor = selected
         ? _PublicBottomNavState._activeColor
         : _PublicBottomNavState._inactiveColor;
-    final iconSize = selected ? 24.0 : 20.0;
+    final iconSize = selected ? 27.0 : 23.0;
     final labelStyle = GoogleFonts.inter(
-      fontSize: compact ? 9 : 10.5,
+      fontSize: compact ? 10.5 : 11,
       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
       color: iconColor,
-      letterSpacing: -0.1,
+      letterSpacing: -0.15,
+      height: 1.05,
     );
 
     Widget iconWidget = Icon(icon, color: iconColor, size: iconSize);
@@ -152,37 +166,43 @@ class _NavItem extends StatelessWidget {
     }
 
     return Expanded(
-      child: Center(
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(28),
             onTap: onTap,
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              curve: Curves.easeOut,
-              width: selected ? (compact ? 74 : 94) : (compact ? 56 : 72),
-              height: selected ? 46 : 42,
-              decoration: BoxDecoration(
-                color: selected
-                    ? _PublicBottomNavState._activeBackground
-                    : Colors.transparent,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  iconWidget,
-                  const SizedBox(height: 1),
-                  Text(
-                    label,
-                    textAlign: TextAlign.center,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: labelStyle,
-                  ),
-                ],
+            child: Center(
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOutCubic,
+                constraints: BoxConstraints(
+                  minWidth: compact ? 68 : 82,
+                  maxWidth: compact ? 112 : 130,
+                ),
+                height: 58,
+                decoration: BoxDecoration(
+                  color: selected ? indicatorColor : Colors.transparent,
+                  borderRadius: BorderRadius.circular(28),
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    iconWidget,
+                    const SizedBox(height: 3),
+                    Text(
+                      label,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: labelStyle,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
