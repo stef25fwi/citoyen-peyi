@@ -1,0 +1,372 @@
+name: Apply citizen page chrome
+
+on:
+  push:
+    paths:
+      - '.github/workflows/apply-citizen-page-chrome.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply targeted Flutter UI changes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          ROOT = Path('flutter_app/lib/pages')
+
+          def add_after(text: str, anchor: str, addition: str) -> str:
+              if addition.strip() in text:
+                  return text
+              if anchor not in text:
+                  raise SystemExit(f'Import anchor not found: {anchor!r}')
+              return text.replace(anchor, anchor + addition, 1)
+
+          def replace_build_before(text: str, new_block: str, end_marker: str = '\n  void _onCitizenNav') -> str:
+              build_index = text.index('  Widget build(BuildContext context)')
+              start = text.index('    return Scaffold(', build_index)
+              end = text.index(end_marker, start)
+              return text[:start] + new_block + text[end:]
+
+          def remove_class_before(text: str, class_name: str, next_class_name: str) -> str:
+              start_marker = f'class {class_name} '
+              next_marker = f'class {next_class_name} '
+              start = text.index(start_marker)
+              end = text.index(next_marker, start)
+              return text[:start] + text[end:]
+
+          overlay = """const SystemUiOverlayStyle(
+                statusBarColor: Colors.white,
+                statusBarIconBrightness: Brightness.dark,
+                statusBarBrightness: Brightness.light,
+                systemStatusBarContrastEnforced: false,
+              )"""
+
+          # Actualités / Projets
+          path = ROOT / 'public_news_page.dart'
+          text = path.read_text()
+          text = add_after(
+              text,
+              "import 'package:flutter/material.dart';\n",
+              "import 'package:flutter/services.dart';\n",
+          )
+          text = add_after(
+              text,
+              "import '../services/firestore_data_service.dart';\n",
+              "import '../theme/citizen_design_tokens.dart';\n",
+          )
+          text = add_after(
+              text,
+              "import '../widgets/citizen/citizen_bottom_nav.dart';\n",
+              "import '../widgets/citizen/citizen_header.dart';\n",
+          )
+          news_build = f"""    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: {overlay},
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: SafeArea(
+              bottom: false,
+              child: ColoredBox(
+                color: CitizenDesignTokens.background,
+                child: Column(
+                  children: [
+                    const CitizenHeader(
+                      title: 'Actualités / Projets',
+                      trailing: DebugLogButton(label: ''),
+                    ),
+                    Expanded(
+                      child: RefreshIndicator(
+                        color: CitizenDesignTokens.primaryBlue,
+                        onRefresh: _load,
+                        child: ListView(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
+                          children: [
+                            if (!hasCitizenSession)
+                              const CitizenConnectInvite(
+                                message:
+                                    'Connectez-vous a votre compte pour suivre les actualites et participer aux consultations de votre commune.',
+                              )
+                            else ...[
+                              Text(
+                                'Informations communales et projets soumis à consultation.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: const Color(0xFF5A6573),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 18),
+                              if (_isLoading)
+                                const Padding(
+                                  padding: EdgeInsets.all(32),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              else if (_items.isEmpty)
+                                Card(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(28),
+                                    child: Column(
+                                      children: [
+                                        const Icon(
+                                          Icons.newspaper_rounded,
+                                          size: 42,
+                                          color: Color(0xFF5A6573),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'Aucune actualité pour le moment',
+                                          style: theme.textTheme.titleLarge,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        const Text(
+                                          'Les communes peuvent publier ici leurs actualités et projets soumis à consultation. Revenez bientôt.',
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
+                                for (final item in _items)
+                                  _NewsCard(item: item),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ),
+        bottomNavigationBar: hasCitizenSession
+            ? CitizenBottomNav(
+                activeTab: CitizenNavTab.news,
+                onTabSelected: _onCitizenNav,
+              )
+            : const PublicBottomNav(currentTab: PublicTab.news),
+      ),
+    );
+"""
+          text = replace_build_before(text, news_build)
+          path.write_text(text)
+
+          # Donner mon avis
+          path = ROOT / 'citizen/citizen_consultations_page.dart'
+          text = path.read_text()
+          text = add_after(
+              text,
+              "import 'package:flutter/material.dart';\n",
+              "import 'package:flutter/services.dart';\n",
+          )
+          text = add_after(
+              text,
+              "import '../../services/citizen_public_access_service.dart';\n",
+              "import '../../widgets/citizen/citizen_header.dart';\n",
+          )
+          consultations_build = f"""    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: {overlay},
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: _MobileFrame(
+          child: SafeArea(
+            bottom: false,
+            child: ColoredBox(
+              color: _CitizenColors.background,
+              child: Column(
+                children: [
+                  CitizenHeader(
+                    title: 'Donner mon avis',
+                    trailing: IconButton(
+                      tooltip: 'Se déconnecter',
+                      onPressed: _logoutCitizen,
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                        color: Colors.white,
+                        size: 22,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                      child: Column(
+                        children: [
+                          _FilterTabs(
+                            selectedIndex: selectedFilter,
+                            onChanged: (index) {
+                              setState(() => selectedFilter = index);
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          if (selectedFilter == 0)
+                            if (resolvedConsultations.isEmpty)
+                              const _EmptyState(
+                                message:
+                                    'Aucune consultation en cours pour le moment.',
+                              )
+                            else
+                              ...resolvedConsultations.map(
+                                (consultation) => _ConsultationCard(
+                                  consultation: consultation,
+                                  onPressed: () =>
+                                      _openConsultation(consultation),
+                                ),
+                              )
+                          else
+                            _EmptyState(
+                              message: selectedFilter == 1
+                                  ? 'Aucune consultation à venir pour le moment.'
+                                  : 'Aucune consultation terminée à afficher.',
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  _CitizenBottomNav(
+                    activeTab: _CitizenNavTab.opinion,
+                    onTabSelected: _onBottomNav,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+"""
+          text = replace_build_before(text, consultations_build, '\n  }\n}\n\nclass _MobileFrame')
+          text = remove_class_before(text, '_CitizenHeader', '_FilterTabs')
+          text = text.replace(
+              "\n  static const LinearGradient headerGradient = LinearGradient(\n"
+              "    begin: Alignment.topLeft,\n"
+              "    end: Alignment.bottomRight,\n"
+              "    colors: [primaryBlue, deepBlue],\n"
+              "  );\n",
+              "\n",
+          )
+          path.write_text(text)
+
+          # Résultats des consultations
+          path = ROOT / 'public_results_page.dart'
+          text = path.read_text()
+          text = add_after(
+              text,
+              "import 'package:flutter/material.dart';\n",
+              "import 'package:flutter/services.dart';\n",
+          )
+          text = add_after(
+              text,
+              "import '../widgets/citizen/citizen_bottom_nav.dart';\n",
+              "import '../widgets/citizen/citizen_header.dart';\n",
+          )
+          results_build = f"""    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: {overlay},
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: _MobileFrame(
+          child: SafeArea(
+            bottom: false,
+            child: ColoredBox(
+              color: CitizenDesignTokens.background,
+              child: Column(
+                children: [
+                  const CitizenHeader(
+                    title: 'Résultats des consultations',
+                    trailing: DebugLogButton(label: ''),
+                  ),
+                  Expanded(
+                    child: RefreshIndicator(
+                      color: CitizenDesignTokens.primaryBlue,
+                      onRefresh: _load,
+                      child: ListView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                        children: [
+                          if (!hasCitizenSession)
+                            const CitizenConnectInvite(
+                              message:
+                                  'Connectez-vous a votre compte pour participer aux consultations et suivre leurs resultats.',
+                            )
+                          else ...[
+                            const _ResultsIntro(),
+                            const SizedBox(height: 14),
+                            if (hasAnyPublicPoll) ...[
+                              _ResultsFilters(
+                                communes: _communes,
+                                communeFilter: _communeFilter,
+                                statusFilter: _statusFilter,
+                                onCommuneChanged: (value) =>
+                                    setState(() => _communeFilter = value),
+                                onStatusChanged: (value) => setState(
+                                  () => _statusFilter = value ?? 'all',
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_isLoading)
+                              const _LoadingCard()
+                            else if (filtered.isEmpty)
+                              const _EmptyResultsCard()
+                            else
+                              for (final poll in filtered)
+                                _PollResultCard(poll: poll),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+        bottomNavigationBar: hasCitizenSession
+            ? CitizenBottomNav(
+                activeTab: CitizenNavTab.results,
+                onTabSelected: _onCitizenNav,
+              )
+            : const PublicBottomNav(currentTab: PublicTab.results),
+      ),
+    );
+"""
+          text = replace_build_before(text, results_build)
+          text = remove_class_before(text, '_ResultsHeader', '_ResultsIntro')
+          path.write_text(text)
+          PY
+
+      - name: Check patch
+        run: |
+          git diff --check
+          git diff -- flutter_app/lib/pages/public_news_page.dart \
+            flutter_app/lib/pages/citizen/citizen_consultations_page.dart \
+            flutter_app/lib/pages/public_results_page.dart
+
+      - name: Commit changes
+        run: |
+          if git diff --quiet; then
+            echo 'No changes to commit.'
+            exit 0
+          fi
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add flutter_app/lib/pages/public_news_page.dart \
+            flutter_app/lib/pages/citizen/citizen_consultations_page.dart \
+            flutter_app/lib/pages/public_results_page.dart
+          git commit -m 'style: harmonise les pages citoyennes et la barre système'
+          git push
