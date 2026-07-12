@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../services/citizen_public_access_service.dart';
 import '../services/firestore_data_service.dart';
+import '../theme/citizen_design_tokens.dart';
 import '../widgets/citizen/citizen_bottom_nav.dart';
+import '../widgets/citizen/citizen_header.dart';
 import '../widgets/citizen_connect_invite.dart';
 import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
@@ -61,72 +64,103 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
     final hasCitizenSession =
         CitizenPublicAccessService.instance.currentSession != null;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('Actualités / Projets'),
-        centerTitle: true,
-        actions: const [DebugLogButton(label: '')],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemStatusBarContrastEnforced: false,
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 760),
-          child: RefreshIndicator(
-            onRefresh: _load,
-            child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
-              children: [
-                if (!hasCitizenSession)
-                  const CitizenConnectInvite(
-                    message:
-                        'Connectez-vous a votre compte pour suivre les actualites et participer aux consultations de votre commune.',
-                  )
-                else ...[
-                  Text(
-                    'Informations communales et projets soumis à consultation.',
-                    style: theme.textTheme.bodyMedium
-                        ?.copyWith(color: const Color(0xFF5A6573)),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 18),
-                  if (_isLoading)
-                    const Padding(
-                        padding: EdgeInsets.all(32),
-                        child: Center(child: CircularProgressIndicator()))
-                  else if (_items.isEmpty)
-                    Card(
-                      child: Padding(
-                        padding: const EdgeInsets.all(28),
-                        child: Column(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: SafeArea(
+              bottom: false,
+              child: ColoredBox(
+                color: CitizenDesignTokens.background,
+                child: Column(
+                  children: [
+                    const CitizenHeader(
+                      title: 'Actualités / Projets',
+                      trailing: DebugLogButton(label: ''),
+                    ),
+                    Expanded(
+                      child: RefreshIndicator(
+                        color: CitizenDesignTokens.primaryBlue,
+                        onRefresh: _load,
+                        child: ListView(
+                          physics: const BouncingScrollPhysics(),
+                          padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
                           children: [
-                            const Icon(Icons.newspaper_rounded,
-                                size: 42, color: Color(0xFF5A6573)),
-                            const SizedBox(height: 12),
-                            Text('Aucune actualité pour le moment',
-                                style: theme.textTheme.titleLarge),
-                            const SizedBox(height: 6),
-                            const Text(
-                              'Les communes peuvent publier ici leurs actualités et projets soumis à consultation. Revenez bientôt.',
-                              textAlign: TextAlign.center,
-                            ),
+                            if (!hasCitizenSession)
+                              const CitizenConnectInvite(
+                                message:
+                                    'Connectez-vous a votre compte pour suivre les actualites et participer aux consultations de votre commune.',
+                              )
+                            else ...[
+                              Text(
+                                'Informations communales et projets soumis à consultation.',
+                                style: theme.textTheme.bodyMedium?.copyWith(
+                                  color: const Color(0xFF5A6573),
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 18),
+                              if (_isLoading)
+                                const Padding(
+                                  padding: EdgeInsets.all(32),
+                                  child: Center(
+                                    child: CircularProgressIndicator(),
+                                  ),
+                                )
+                              else if (_items.isEmpty)
+                                Card(
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(28),
+                                    child: Column(
+                                      children: [
+                                        const Icon(
+                                          Icons.newspaper_rounded,
+                                          size: 42,
+                                          color: Color(0xFF5A6573),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        Text(
+                                          'Aucune actualité pour le moment',
+                                          style: theme.textTheme.titleLarge,
+                                        ),
+                                        const SizedBox(height: 6),
+                                        const Text(
+                                          'Les communes peuvent publier ici leurs actualités et projets soumis à consultation. Revenez bientôt.',
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                )
+                              else
+                                for (final item in _items)
+                                  _NewsCard(item: item),
+                            ],
                           ],
                         ),
                       ),
-                    )
-                  else
-                    for (final item in _items) _NewsCard(item: item),
-                ],
-              ],
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ),
+        bottomNavigationBar: hasCitizenSession
+            ? CitizenBottomNav(
+                activeTab: CitizenNavTab.news,
+                onTabSelected: _onCitizenNav,
+              )
+            : const PublicBottomNav(currentTab: PublicTab.news),
       ),
-      bottomNavigationBar: hasCitizenSession
-          ? CitizenBottomNav(
-              activeTab: CitizenNavTab.news,
-              onTabSelected: _onCitizenNav,
-            )
-          : const PublicBottomNav(currentTab: PublicTab.news),
     );
   }
 
@@ -169,26 +203,34 @@ class _NewsCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (item.communeName.isNotEmpty)
-                Text(item.communeName.toUpperCase(),
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.labelSmall
-                        ?.copyWith(color: const Color(0xFF5A6573))),
-              const SizedBox(height: 4),
-              Text(item.title,
+                Text(
+                  item.communeName.toUpperCase(),
                   textAlign: TextAlign.center,
-                  style: theme.textTheme.titleLarge),
+                  style: theme.textTheme.labelSmall
+                      ?.copyWith(color: const Color(0xFF5A6573)),
+                ),
+              const SizedBox(height: 4),
+              Text(
+                item.title,
+                textAlign: TextAlign.center,
+                style: theme.textTheme.titleLarge,
+              ),
               if (item.publishedAt.isNotEmpty) ...[
                 const SizedBox(height: 4),
-                Text(item.publishedAt,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodySmall
-                        ?.copyWith(color: const Color(0xFF5A6573))),
+                Text(
+                  item.publishedAt,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodySmall
+                      ?.copyWith(color: const Color(0xFF5A6573)),
+                ),
               ],
               if (item.body.isNotEmpty) ...[
                 const SizedBox(height: 10),
-                Text(item.body,
-                    textAlign: TextAlign.center,
-                    style: theme.textTheme.bodyLarge),
+                Text(
+                  item.body,
+                  textAlign: TextAlign.center,
+                  style: theme.textTheme.bodyLarge,
+                ),
               ],
             ],
           ),
