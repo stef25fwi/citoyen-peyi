@@ -222,14 +222,12 @@ class _GlassCard extends StatelessWidget {
     required this.child,
     required this.decoration,
     this.padding,
-    this.height,
     this.constraints,
   });
 
   final Widget child;
   final BoxDecoration decoration;
   final EdgeInsetsGeometry? padding;
-  final double? height;
   final BoxConstraints? constraints;
 
   @override
@@ -241,7 +239,6 @@ class _GlassCard extends StatelessWidget {
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
         child: Container(
-          height: height,
           constraints: constraints,
           decoration: decoration,
           padding: padding,

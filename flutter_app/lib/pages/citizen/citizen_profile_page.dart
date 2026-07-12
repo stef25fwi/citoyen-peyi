@@ -22,7 +22,8 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> {
   bool _isSavingCategory = false;
 
   CitizenPublicAccessSession? get _session =>
-      widget.initialSession ?? CitizenPublicAccessService.instance.currentSession;
+      widget.initialSession ??
+      CitizenPublicAccessService.instance.currentSession;
 
   @override
   void initState() {
@@ -264,10 +265,8 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> {
                             onPressed: _logout,
                             style: OutlinedButton.styleFrom(
                               foregroundColor: const Color(0xFFDC2626),
-                              side: const BorderSide(
-                                  color: Color(0xFFFCA5A5)),
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
+                              side: const BorderSide(color: Color(0xFFFCA5A5)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(
                                     CitizenDesignTokens.radiusButton),
@@ -356,12 +355,16 @@ class _SectionTitle extends StatelessWidget {
       children: [
         Icon(icon, size: 19, color: CitizenDesignTokens.primaryBlue),
         const SizedBox(width: 8),
-        Text(
-          title,
-          style: const TextStyle(
-            color: CitizenDesignTokens.textDark,
-            fontSize: 15.5,
-            fontWeight: FontWeight.w900,
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: CitizenDesignTokens.textDark,
+              fontSize: 15.5,
+              fontWeight: FontWeight.w900,
+            ),
           ),
         ),
       ],
@@ -425,13 +428,11 @@ class _CategoryTile extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusSmall),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusSmall),
           onTap: onTap,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 160),
-            padding:
-                const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
             decoration: BoxDecoration(
               color: selected
                   ? CitizenDesignTokens.skyBlue
@@ -459,8 +460,7 @@ class _CategoryTile extends StatelessWidget {
                     style: TextStyle(
                       color: CitizenDesignTokens.textDark,
                       fontSize: 14.5,
-                      fontWeight:
-                          selected ? FontWeight.w800 : FontWeight.w600,
+                      fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
                     ),
                   ),
                 ),

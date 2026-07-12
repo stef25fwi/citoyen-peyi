@@ -61,7 +61,7 @@ class CitizenHomePage extends StatelessWidget {
 
   // Header fixe : distinct de la zone de contenu flexible ci-dessous pour que
   // le hero bleu ne recouvre jamais la grille (pas de superposition/overlap).
-  static const double _headerHeight = 190;
+  static const double _headerHeight = 210;
 
   @override
   Widget build(BuildContext context) {
@@ -87,7 +87,8 @@ class CitizenHomePage extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       Expanded(
-                        child: _QuickActionsPanel(initialSession: initialSession),
+                        child:
+                            _QuickActionsPanel(initialSession: initialSession),
                       ),
                       const SizedBox(height: 12),
                       const _OpinionInfoCard(),
@@ -124,7 +125,8 @@ class _MobileFrame extends StatelessWidget {
 }
 
 class _HomeHeader extends StatelessWidget {
-  const _HomeHeader({required this.height, this.communeName, this.initialSession});
+  const _HomeHeader(
+      {required this.height, this.communeName, this.initialSession});
 
   final double height;
   final String? communeName;
@@ -299,13 +301,11 @@ class _QuickActionsPanel extends StatelessWidget {
           const crossAxisCount = 2;
           const rowCount = 2;
           const spacing = 12.0;
-          final cellWidth =
-              (constraints.maxWidth - spacing) / crossAxisCount;
+          final cellWidth = (constraints.maxWidth - spacing) / crossAxisCount;
           final cellHeight =
               (constraints.maxHeight - spacing * (rowCount - 1)) / rowCount;
-          final aspectRatio = cellHeight > 0
-              ? (cellWidth / cellHeight).clamp(0.7, 1.6)
-              : 1.04;
+          final aspectRatio =
+              cellHeight > 0 ? (cellWidth / cellHeight).clamp(0.7, 1.6) : 1.04;
           return GridView.count(
             crossAxisCount: crossAxisCount,
             physics: const NeverScrollableScrollPhysics(),
@@ -321,40 +321,40 @@ class _QuickActionsPanel extends StatelessWidget {
 
   List<Widget> _quickActionCards(BuildContext context) {
     return [
-          _QuickActionCard(
-            icon: Icons.campaign_rounded,
-            title: 'Actualités',
-            subtitle: 'Suivez les dernières\ninformations',
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PublicNewsPage()),
-              );
-            },
-          ),
-          _QuickActionCard(
-            icon: Icons.chat_bubble_rounded,
-            title: 'Donner mon avis',
-            subtitle: 'Participez aux sondages\net consultations',
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => CitizenConsultationsPage(
-                    initialSession: initialSession,
-                  ),
-                ),
-              );
-            },
-          ),
-          _QuickActionCard(
-            icon: Icons.bar_chart_rounded,
-            title: 'Résultats',
-            subtitle: 'Découvrez les résultats\ndes consultations',
-            onTap: () {
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (_) => const PublicResultsPage()),
-              );
-            },
-          ),
+      _QuickActionCard(
+        icon: Icons.campaign_rounded,
+        title: 'Actualités',
+        subtitle: 'Suivez les dernières\ninformations',
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PublicNewsPage()),
+          );
+        },
+      ),
+      _QuickActionCard(
+        icon: Icons.chat_bubble_rounded,
+        title: 'Donner mon avis',
+        subtitle: 'Participez aux sondages\net consultations',
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => CitizenConsultationsPage(
+                initialSession: initialSession,
+              ),
+            ),
+          );
+        },
+      ),
+      _QuickActionCard(
+        icon: Icons.bar_chart_rounded,
+        title: 'Résultats',
+        subtitle: 'Découvrez les résultats\ndes consultations',
+        onTap: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => const PublicResultsPage()),
+          );
+        },
+      ),
       _QuickActionCard(
         icon: Icons.info_rounded,
         title: 'À propos',
@@ -408,47 +408,70 @@ class _QuickActionCard extends StatelessWidget {
                 ),
               ],
             ),
-            child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (iconInCircle)
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: const BoxDecoration(
-                        color: CitizenDesignTokens.primaryBlue,
-                        shape: BoxShape.circle,
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return Padding(
+                  padding: const EdgeInsets.all(10),
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.center,
+                    child: SizedBox(
+                      width: constraints.maxWidth - 20,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          if (iconInCircle)
+                            Container(
+                              width: 44,
+                              height: 44,
+                              decoration: const BoxDecoration(
+                                color: CitizenDesignTokens.primaryBlue,
+                                shape: BoxShape.circle,
+                              ),
+                              child: Icon(
+                                icon,
+                                size: 24,
+                                color: Colors.white,
+                              ),
+                            )
+                          else
+                            Icon(
+                              icon,
+                              size: 40,
+                              color: CitizenDesignTokens.primaryBlue,
+                            ),
+                          const SizedBox(height: 8),
+                          Text(
+                            title,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: CitizenDesignTokens.textDark,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
+                          const SizedBox(height: 5),
+                          Text(
+                            subtitle,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: CitizenDesignTokens.textDark,
+                              fontSize: 11.5,
+                              height: 1.18,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
                       ),
-                      child: Icon(icon, size: 26, color: Colors.white),
-                    )
-                  else
-                    Icon(icon,
-                        size: 44, color: CitizenDesignTokens.primaryBlue),
-                  const SizedBox(height: 10),
-                  Text(
-                    title,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: CitizenDesignTokens.textDark,
-                      fontSize: 15.5,
-                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  const SizedBox(height: 6),
-                  Text(
-                    subtitle,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: CitizenDesignTokens.textDark,
-                      fontSize: 12,
-                      height: 1.22,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                ],
-              ),
+                );
+              },
             ),
           ),
         ),

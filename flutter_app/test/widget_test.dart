@@ -81,7 +81,7 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.text('Entrez votre code pour participer anonymement.'),
+      find.text('Saisissez votre code citoyen'),
       findsOneWidget,
     );
 
@@ -158,12 +158,14 @@ void main() {
     expect(find.text('Assistance'), findsWidgets);
     expect(find.text('Nouveau ticket d’assistance'), findsOneWidget);
     expect(find.text('Mes tickets'), findsOneWidget);
-    expect(find.text('Impossible de charger l’assistance pour le moment.'), findsOneWidget);
+    expect(find.text('Impossible de charger l’assistance pour le moment.'),
+        findsOneWidget);
     expect(find.text('Réessayer'), findsOneWidget);
     expect(find.text('Aucune session chargée.'), findsNothing);
   });
 
-  testWidgets('commune admin assistance page renders on mobile without grey screen',
+  testWidgets(
+      'commune admin assistance page renders on mobile without grey screen',
       (WidgetTester tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -193,7 +195,8 @@ void main() {
     expect(find.text('Assistance'), findsWidgets);
     expect(find.byTooltip('Nouveau ticket'), findsOneWidget);
     expect(
-      find.text('Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
+      find.text(
+          'Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
       findsOneWidget,
     );
   });
@@ -233,7 +236,8 @@ void main() {
     expect(find.byTooltip('Nouveau ticket'), findsNothing);
     expect(find.widgetWithText(FilledButton, 'Nouveau ticket'), findsOneWidget);
     expect(
-      find.text('Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
+      find.text(
+          'Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
       findsOneWidget,
     );
     expect(find.text('Aucune session chargée.'), findsNothing);
@@ -278,7 +282,8 @@ void main() {
     expect(find.text('Assistance'), findsWidgets);
     expect(find.byTooltip('Nouveau ticket'), findsOneWidget);
     expect(
-      find.text('Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
+      find.text(
+          'Impossible de charger les tickets pour le moment. Vérifiez votre connexion puis réessayez.'),
       findsOneWidget,
     );
     expect(find.text('Réessayer'), findsOneWidget);
@@ -301,13 +306,15 @@ void main() {
 
   testWidgets('super admin assistance page has clear unavailable state',
       (WidgetTester tester) async {
-    await tester.pumpWidget(const MaterialApp(home: SuperAdminSupportListScreen()));
+    await tester
+        .pumpWidget(const MaterialApp(home: SuperAdminSupportListScreen()));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 50));
 
     expect(find.text('Tickets assistance'), findsWidgets);
     expect(
-      find.text('Impossible de charger les tickets d’assistance pour le moment.'),
+      find.text(
+          'Impossible de charger les tickets d’assistance pour le moment.'),
       findsOneWidget,
     );
   });
@@ -379,6 +386,7 @@ void main() {
       ),
     );
 
-    expect(find.text('Le ticket est passé au statut : En cours.'), findsOneWidget);
+    expect(
+        find.text('Le ticket est passé au statut : En cours.'), findsOneWidget);
   });
 }
