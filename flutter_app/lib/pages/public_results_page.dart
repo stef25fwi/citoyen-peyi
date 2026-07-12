@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/poll_models.dart';
 import '../services/citizen_public_access_service.dart';
@@ -96,69 +97,79 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
     final hasCitizenSession =
         CitizenPublicAccessService.instance.currentSession != null;
 
-    return Scaffold(
-      backgroundColor: CitizenDesignTokens.background,
-      body: _MobileFrame(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              const CitizenHeader(
-      title: 'Résultats des consultations',
-      height: 92,
-      trailing: DebugLogButton(label: ''),
-    ),
-              Expanded(
-                child: RefreshIndicator(
-                  color: CitizenDesignTokens.primaryBlue,
-                  onRefresh: _load,
-                  child: ListView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                    children: [
-                      if (!hasCitizenSession)
-                        const CitizenConnectInvite(
-                          message:
-                              'Connectez-vous a votre compte pour participer aux consultations et suivre leurs resultats.',
-                        )
-                      else ...[
-                        const _ResultsIntro(),
-                        const SizedBox(height: 14),
-                        if (hasAnyPublicPoll) ...[
-                          _ResultsFilters(
-                            communes: _communes,
-                            communeFilter: _communeFilter,
-                            statusFilter: _statusFilter,
-                            onCommuneChanged: (value) =>
-                                setState(() => _communeFilter = value),
-                            onStatusChanged: (value) => setState(
-                              () => _statusFilter = value ?? 'all',
-                            ),
-                          ),
-                          const SizedBox(height: 16),
-                        ],
-                        if (_isLoading)
-                          const _LoadingCard()
-                        else if (filtered.isEmpty)
-                          const _EmptyResultsCard()
-                        else
-                          for (final poll in filtered)
-                            _PollResultCard(poll: poll),
-                      ],
-                    ],
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemStatusBarContrastEnforced: false,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: _MobileFrame(
+          child: SafeArea(
+            bottom: false,
+            child: ColoredBox(
+              color: CitizenDesignTokens.background,
+              child: Column(
+                children: [
+                  const CitizenHeader(
+                    title: 'Résultats des consultations',
+                    trailing: DebugLogButton(label: ''),
                   ),
-                ),
+                  Expanded(
+                    child: RefreshIndicator(
+                      color: CitizenDesignTokens.primaryBlue,
+                      onRefresh: _load,
+                      child: ListView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
+                        children: [
+                          if (!hasCitizenSession)
+                            const CitizenConnectInvite(
+                              message:
+                                  'Connectez-vous a votre compte pour participer aux consultations et suivre leurs resultats.',
+                            )
+                          else ...[
+                            const _ResultsIntro(),
+                            const SizedBox(height: 14),
+                            if (hasAnyPublicPoll) ...[
+                              _ResultsFilters(
+                                communes: _communes,
+                                communeFilter: _communeFilter,
+                                statusFilter: _statusFilter,
+                                onCommuneChanged: (value) =>
+                                    setState(() => _communeFilter = value),
+                                onStatusChanged: (value) => setState(
+                                  () => _statusFilter = value ?? 'all',
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                            ],
+                            if (_isLoading)
+                              const _LoadingCard()
+                            else if (filtered.isEmpty)
+                              const _EmptyResultsCard()
+                            else
+                              for (final poll in filtered)
+                                _PollResultCard(poll: poll),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
         ),
+        bottomNavigationBar: hasCitizenSession
+            ? CitizenBottomNav(
+                activeTab: CitizenNavTab.results,
+                onTabSelected: _onCitizenNav,
+              )
+            : const PublicBottomNav(currentTab: PublicTab.results),
       ),
-      bottomNavigationBar: hasCitizenSession
-          ? CitizenBottomNav(
-              activeTab: CitizenNavTab.results,
-              onTabSelected: _onCitizenNav,
-            )
-          : const PublicBottomNav(currentTab: PublicTab.results),
     );
   }
 
@@ -275,7 +286,10 @@ class _ResultsFilters extends StatelessWidget {
             initialValue: communeFilter,
             decoration: _fieldDecoration('Commune'),
             items: [
-              const DropdownMenuItem<String>(value: null, child: Text('Toutes')),
+              const DropdownMenuItem<String>(
+                value: null,
+                child: Text('Toutes'),
+              ),
               for (final commune in communes)
                 DropdownMenuItem(value: commune, child: Text(commune)),
             ],
@@ -332,7 +346,9 @@ class _LoadingCard extends StatelessWidget {
       padding: const EdgeInsets.all(28),
       decoration: CitizenDesignTokens.cardDecoration,
       child: const Center(
-        child: CircularProgressIndicator(color: CitizenDesignTokens.primaryBlue),
+        child: CircularProgressIndicator(
+          color: CitizenDesignTokens.primaryBlue,
+        ),
       ),
     );
   }
@@ -392,8 +408,12 @@ class _PollResultCard extends StatelessWidget {
         ? poll.totalVoted
         : poll.effectiveQuestions.fold<int>(
             0,
-            (sum, question) => sum +
-                question.options.fold<int>(0, (inner, option) => inner + option.votes),
+            (sum, question) =>
+                sum +
+                question.options.fold<int>(
+                  0,
+                  (inner, option) => inner + option.votes,
+                ),
           );
     final statusLabel = _statusLabel(poll.status);
     final statusColor = _statusColor(poll.status);
@@ -452,7 +472,8 @@ class _PollResultCard extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: statusColor,
                   borderRadius: BorderRadius.circular(999),
@@ -484,7 +505,8 @@ class _PollResultCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8, top: 4),
                   child: Text(
-                    question.title + (question.multiple ? ' (choix multiples)' : ''),
+                    question.title +
+                        (question.multiple ? ' (choix multiples)' : ''),
                     style: const TextStyle(
                       color: CitizenDesignTokens.textDark,
                       fontSize: 14.5,
@@ -501,8 +523,10 @@ class _PollResultCard extends StatelessWidget {
                     votes: option.votes,
                     total: poll.totalVoted > 0
                         ? poll.totalVoted
-                        : question.options
-                            .fold<int>(0, (sum, option) => sum + option.votes),
+                        : question.options.fold<int>(
+                            0,
+                            (sum, option) => sum + option.votes,
+                          ),
                   ),
                 ),
             ],
