@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../../services/citizen_public_access_service.dart';
+import '../../widgets/citizen/citizen_header.dart';
 import '../public_news_page.dart';
 import '../public_results_page.dart';
 import 'citizen_poll_question_page.dart';
@@ -144,10 +146,15 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
     if (lower.contains('transport') || lower.contains('mobilité')) {
       return Icons.directions_bus_rounded;
     }
-    if (lower.contains('écolog') || lower.contains('ecolog') || lower.contains('environ')) {
+    if (lower.contains('écolog') ||
+        lower.contains('ecolog') ||
+        lower.contains('environ')) {
       return Icons.public_rounded;
     }
-    if (lower.contains('parc') || lower.contains('espace') || lower.contains('aménagement') || lower.contains('amenagement')) {
+    if (lower.contains('parc') ||
+        lower.contains('espace') ||
+        lower.contains('aménagement') ||
+        lower.contains('amenagement')) {
       return Icons.park_rounded;
     }
     return Icons.forum_rounded;
@@ -158,10 +165,15 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
     if (lower.contains('transport') || lower.contains('mobilité')) {
       return 'assets/citoyen_peyi/cp_illustration_mobility_bus.svg';
     }
-    if (lower.contains('écolog') || lower.contains('ecolog') || lower.contains('environ')) {
+    if (lower.contains('écolog') ||
+        lower.contains('ecolog') ||
+        lower.contains('environ')) {
       return 'assets/citoyen_peyi/cp_illustration_ecology_transition.svg';
     }
-    if (lower.contains('parc') || lower.contains('espace') || lower.contains('aménagement') || lower.contains('amenagement')) {
+    if (lower.contains('parc') ||
+        lower.contains('espace') ||
+        lower.contains('aménagement') ||
+        lower.contains('amenagement')) {
       return 'assets/citoyen_peyi/cp_illustration_public_spaces.svg';
     }
     return null;
@@ -202,66 +214,78 @@ class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
   Widget build(BuildContext context) {
     final resolvedConsultations = _resolvedConsultations();
 
-    return Scaffold(
-      backgroundColor: _CitizenColors.background,
-      body: _MobileFrame(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              _CitizenHeader(
-                title: 'Donner mon avis',
-                trailing: IconButton(
-                  tooltip: 'Se déconnecter',
-                  onPressed: _logoutCitizen,
-                  icon: const Icon(
-                    Icons.logout_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
-                  child: Column(
-                    children: [
-                      _FilterTabs(
-                        selectedIndex: selectedFilter,
-                        onChanged: (index) {
-                          setState(() => selectedFilter = index);
-                        },
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemStatusBarContrastEnforced: false,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: _MobileFrame(
+          child: SafeArea(
+            bottom: false,
+            child: ColoredBox(
+              color: _CitizenColors.background,
+              child: Column(
+                children: [
+                  CitizenHeader(
+                    title: 'Donner mon avis',
+                    trailing: IconButton(
+                      tooltip: 'Se déconnecter',
+                      onPressed: _logoutCitizen,
+                      icon: const Icon(
+                        Icons.logout_rounded,
+                        color: Colors.white,
+                        size: 22,
                       ),
-                      const SizedBox(height: 16),
-                      if (selectedFilter == 0)
-                        if (resolvedConsultations.isEmpty)
-                          const _EmptyState(
-                            message:
-                                'Aucune consultation en cours pour le moment.',
-                          )
-                        else
-                          ...resolvedConsultations.map(
-                            (consultation) => _ConsultationCard(
-                              consultation: consultation,
-                              onPressed: () => _openConsultation(consultation),
-                            ),
-                          )
-                      else
-                        _EmptyState(
-                          message: selectedFilter == 1
-                              ? 'Aucune consultation à venir pour le moment.'
-                              : 'Aucune consultation terminée à afficher.',
-                        ),
-                    ],
+                    ),
                   ),
-                ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      padding: const EdgeInsets.fromLTRB(16, 14, 16, 24),
+                      child: Column(
+                        children: [
+                          _FilterTabs(
+                            selectedIndex: selectedFilter,
+                            onChanged: (index) {
+                              setState(() => selectedFilter = index);
+                            },
+                          ),
+                          const SizedBox(height: 16),
+                          if (selectedFilter == 0)
+                            if (resolvedConsultations.isEmpty)
+                              const _EmptyState(
+                                message:
+                                    'Aucune consultation en cours pour le moment.',
+                              )
+                            else
+                              ...resolvedConsultations.map(
+                                (consultation) => _ConsultationCard(
+                                  consultation: consultation,
+                                  onPressed: () =>
+                                      _openConsultation(consultation),
+                                ),
+                              )
+                          else
+                            _EmptyState(
+                              message: selectedFilter == 1
+                                  ? 'Aucune consultation à venir pour le moment.'
+                                  : 'Aucune consultation terminée à afficher.',
+                            ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  _CitizenBottomNav(
+                    activeTab: _CitizenNavTab.opinion,
+                    onTabSelected: _onBottomNav,
+                  ),
+                ],
               ),
-              _CitizenBottomNav(
-                activeTab: _CitizenNavTab.opinion,
-                onTabSelected: _onBottomNav,
-              ),
-            ],
+            ),
           ),
         ),
       ),
@@ -300,12 +324,6 @@ class _CitizenColors {
   static const Color background = Color(0xFFF6FCFF);
   static const Color badgeBlue = Color(0xFF28C7F3);
 
-  static const LinearGradient headerGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primaryBlue, deepBlue],
-  );
-
   static List<BoxShadow> softShadow = const [
     BoxShadow(
       color: Color(0x1A0075C9),
@@ -313,62 +331,6 @@ class _CitizenColors {
       offset: Offset(0, 8),
     ),
   ];
-}
-
-class _CitizenHeader extends StatelessWidget {
-  const _CitizenHeader({required this.title, this.trailing});
-
-  final String title;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 92,
-      width: double.infinity,
-      decoration: const BoxDecoration(gradient: _CitizenColors.headerGradient),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  tooltip: 'Retour',
-                  onPressed: () => Navigator.maybePop(context),
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 54),
-                child: Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 18,
-                    height: 1.15,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-              if (trailing != null)
-                Align(alignment: Alignment.centerRight, child: trailing!),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 }
 
 class _FilterTabs extends StatelessWidget {
@@ -398,7 +360,9 @@ class _FilterTabs extends StatelessWidget {
                 duration: const Duration(milliseconds: 180),
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: selected ? _CitizenColors.primaryBlue : Colors.transparent,
+                  color: selected
+                      ? _CitizenColors.primaryBlue
+                      : Colors.transparent,
                   borderRadius: BorderRadius.circular(999),
                 ),
                 child: Text(
@@ -449,11 +413,17 @@ class _ConsultationCard extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              _IllustrationBox(icon: consultation.icon, asset: consultation.asset),
+              _IllustrationBox(
+                icon: consultation.icon,
+                asset: consultation.asset,
+              ),
             ],
           ),
           const SizedBox(height: 12),
-          _YellowActionButton(label: 'Je donne mon avis', onPressed: onPressed),
+          _YellowActionButton(
+            label: 'Je donne mon avis',
+            onPressed: onPressed,
+          ),
         ],
       ),
     );
@@ -560,7 +530,11 @@ class _IllustrationBox extends StatelessWidget {
         child: assetPath == null
             ? Container(
                 color: _CitizenColors.skyBlue,
-                child: Icon(icon, size: 48, color: _CitizenColors.primaryBlue),
+                child: Icon(
+                  icon,
+                  size: 48,
+                  color: _CitizenColors.primaryBlue,
+                ),
               )
             : SvgPicture.asset(assetPath, fit: BoxFit.cover),
       ),
@@ -602,8 +576,11 @@ class _YellowActionButton extends StatelessWidget {
                     ),
                   ),
                 ),
-                const Icon(Icons.arrow_forward_ios_rounded,
-                    size: 15, color: _CitizenColors.deepBlue),
+                const Icon(
+                  Icons.arrow_forward_ios_rounded,
+                  size: 15,
+                  color: _CitizenColors.deepBlue,
+                ),
               ],
             ),
           ),
@@ -639,10 +616,34 @@ class _CitizenBottomNav extends StatelessWidget {
       ),
       child: Row(
         children: [
-          _BottomNavItem(tab: _CitizenNavTab.home, activeTab: activeTab, icon: Icons.home_rounded, label: 'Accueil', onTap: onTabSelected),
-          _BottomNavItem(tab: _CitizenNavTab.news, activeTab: activeTab, icon: Icons.calendar_month_rounded, label: 'Actualités', onTap: onTabSelected),
-          _BottomNavItem(tab: _CitizenNavTab.opinion, activeTab: activeTab, icon: Icons.how_to_vote_rounded, label: 'Donner mon avis', onTap: onTabSelected),
-          _BottomNavItem(tab: _CitizenNavTab.results, activeTab: activeTab, icon: Icons.bar_chart_rounded, label: 'Résultats', onTap: onTabSelected),
+          _BottomNavItem(
+            tab: _CitizenNavTab.home,
+            activeTab: activeTab,
+            icon: Icons.home_rounded,
+            label: 'Accueil',
+            onTap: onTabSelected,
+          ),
+          _BottomNavItem(
+            tab: _CitizenNavTab.news,
+            activeTab: activeTab,
+            icon: Icons.calendar_month_rounded,
+            label: 'Actualités',
+            onTap: onTabSelected,
+          ),
+          _BottomNavItem(
+            tab: _CitizenNavTab.opinion,
+            activeTab: activeTab,
+            icon: Icons.how_to_vote_rounded,
+            label: 'Donner mon avis',
+            onTap: onTabSelected,
+          ),
+          _BottomNavItem(
+            tab: _CitizenNavTab.results,
+            activeTab: activeTab,
+            icon: Icons.bar_chart_rounded,
+            label: 'Résultats',
+            onTap: onTabSelected,
+          ),
         ],
       ),
     );
@@ -678,10 +679,18 @@ class _BottomNavItem extends StatelessWidget {
               duration: const Duration(milliseconds: 180),
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
               decoration: BoxDecoration(
-                color: isActive ? _CitizenColors.skyBlue : Colors.transparent,
+                color: isActive
+                    ? _CitizenColors.skyBlue
+                    : Colors.transparent,
                 borderRadius: BorderRadius.circular(22),
               ),
-              child: Icon(icon, size: 22, color: isActive ? _CitizenColors.primaryBlue : _CitizenColors.textMuted),
+              child: Icon(
+                icon,
+                size: 22,
+                color: isActive
+                    ? _CitizenColors.primaryBlue
+                    : _CitizenColors.textMuted,
+              ),
             ),
             const SizedBox(height: 2),
             Text(
@@ -690,7 +699,9 @@ class _BottomNavItem extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
-                color: isActive ? _CitizenColors.primaryBlue : _CitizenColors.textMuted,
+                color: isActive
+                    ? _CitizenColors.primaryBlue
+                    : _CitizenColors.textMuted,
                 fontSize: 10.5,
                 fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
               ),
