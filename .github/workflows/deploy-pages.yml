@@ -21,7 +21,7 @@ jobs:
     environment:
       name: github-pages
     env:
-      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      API_BASE_URL: ${{ vars.API_BASE_URL || 'https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app' }}
     defaults:
       run:
         working-directory: flutter_app
@@ -42,19 +42,25 @@ jobs:
       - name: Install dependencies
         run: flutter pub get
 
-      - name: Validate required Pages config
+      - name: Resolve and validate API_BASE_URL
         run: |
-          if [ -z "$API_BASE_URL" ]; then
-            echo "Repository variable API_BASE_URL is required for GitHub Pages builds." >&2
-            exit 1
-          fi
+          clean="$(printf '%s' "$API_BASE_URL" | tr -d '\r\n')"
+          case "$clean" in
+            https://*) ;;
+            *)
+              echo "API_BASE_URL HTTPS est requis pour le build GitHub Pages." >&2
+              exit 1
+              ;;
+          esac
+          echo "API_BASE_URL=$clean" >> "$GITHUB_ENV"
+          echo "Backend compile: $clean"
 
       - name: Build site
         env:
           RECAPTCHA_SITE_KEY: ${{ vars.RECAPTCHA_SITE_KEY }}
         run: >-
           flutter build web --release --base-href "/${GITHUB_REPOSITORY#*/}/"
-          --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
+          --dart-define=API_BASE_URL=$API_BASE_URL
           --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}
           --dart-define=FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }}
           --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
@@ -63,6 +69,17 @@ jobs:
           --dart-define=FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }}
           --dart-define=PUSH_VAPID_KEY=${{ vars.PUSH_VAPID_KEY }}
           ${RECAPTCHA_SITE_KEY:+--dart-define=RECAPTCHA_SITE_KEY=$RECAPTCHA_SITE_KEY}
+
+      - name: Verify compiled backend URL
+        run: |
+          if ! grep -Fq "$API_BASE_URL" build/web/main.dart.js; then
+            echo "L'URL backend n'est pas presente dans l'artefact Flutter compile." >&2
+            exit 1
+          fi
+          if grep -Fq "http://localhost:4000" build/web/main.dart.js; then
+            echo "Le build de production contient encore une reference localhost." >&2
+            exit 1
+          fi
 
       - name: Add SPA fallback
         run: |

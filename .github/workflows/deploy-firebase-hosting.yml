@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     env:
-      API_BASE_URL: ${{ vars.API_BASE_URL }}
+      API_BASE_URL: ${{ vars.API_BASE_URL || 'https://citoyen-peyi-backend-up6de3cljq-ew.a.run.app' }}
     defaults:
       run:
         working-directory: flutter_app
@@ -45,12 +45,18 @@ jobs:
       - name: Install Flutter dependencies
         run: flutter pub get
 
-      - name: Validate API_BASE_URL
+      - name: Resolve and validate API_BASE_URL
         run: |
-          if [ -z "$API_BASE_URL" ]; then
-            echo "Repository variable API_BASE_URL est requis." >&2
-            exit 1
-          fi
+          clean="$(printf '%s' "$API_BASE_URL" | tr -d '\r\n')"
+          case "$clean" in
+            https://*) ;;
+            *)
+              echo "API_BASE_URL HTTPS est requis pour le build de production." >&2
+              exit 1
+              ;;
+          esac
+          echo "API_BASE_URL=$clean" >> "$GITHUB_ENV"
+          echo "Backend compile: $clean"
 
       - name: Build Flutter web
         run: >-
@@ -58,7 +64,7 @@ jobs:
           --release
           --pwa-strategy=none
           --base-href /
-          --dart-define=API_BASE_URL=${{ vars.API_BASE_URL }}
+          --dart-define=API_BASE_URL=$API_BASE_URL
           --dart-define=FIREBASE_API_KEY=${{ secrets.FIREBASE_API_KEY }}
           --dart-define=FIREBASE_AUTH_DOMAIN=${{ secrets.FIREBASE_AUTH_DOMAIN }}
           --dart-define=FIREBASE_PROJECT_ID=${{ secrets.FIREBASE_PROJECT_ID }}
@@ -66,6 +72,17 @@ jobs:
           --dart-define=FIREBASE_MESSAGING_SENDER_ID=${{ secrets.FIREBASE_MESSAGING_SENDER_ID }}
           --dart-define=FIREBASE_APP_ID=${{ secrets.FIREBASE_APP_ID }}
           --dart-define=PUSH_VAPID_KEY=${{ vars.PUSH_VAPID_KEY }}
+
+      - name: Verify compiled backend URL
+        run: |
+          if ! grep -Fq "$API_BASE_URL" build/web/main.dart.js; then
+            echo "L'URL backend n'est pas presente dans l'artefact Flutter compile." >&2
+            exit 1
+          fi
+          if grep -Fq "http://localhost:4000" build/web/main.dart.js; then
+            echo "Le build de production contient encore une reference localhost." >&2
+            exit 1
+          fi
 
       - name: Install firebase-tools
         working-directory: .
@@ -85,3 +102,4 @@ jobs:
         run: |
           echo "### Firebase Hosting deploye" >> "$GITHUB_STEP_SUMMARY"
           echo "- https://citoyen-peyi.web.app" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Backend compile: $API_BASE_URL" >> "$GITHUB_STEP_SUMMARY"
