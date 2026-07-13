@@ -2,6 +2,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter/material.dart';
 
 import '../services/legal_document_exporter.dart';
+import '../theme/citizen_design_tokens.dart';
+import '../widgets/citizen/citizen_header.dart';
 import '../widgets/public_bottom_nav.dart';
 import 'access_citizen_page.dart';
 
@@ -40,125 +42,145 @@ class LegalPage extends StatelessWidget {
       );
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF0F172A),
-        title: const Text('Informations légales'),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemStatusBarContrastEnforced: false,
       ),
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 18),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 820),
-              child: Card(
-                elevation: 0,
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(24),
-                  side: const BorderSide(color: Color(0xFFE5E7EB)),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Center(
-                        child: Container(
-                          width: 74,
-                          height: 74,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFEFF6FF),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: ColoredBox(
+              color: CitizenDesignTokens.background,
+              child: Column(
+                children: [
+                  const CitizenHeader(title: 'Informations légales'),
+                  Expanded(
+                    child: SafeArea(
+                      top: false,
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(12, 18, 12, 24),
+                        child: Card(
+                          elevation: 0,
+                          color: Colors.white,
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
+                            side: const BorderSide(color: Color(0xFFE5E7EB)),
                           ),
-                          child: const Icon(
-                            Icons.gavel_rounded,
-                            color: Color(0xFF0D73F2),
-                            size: 36,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Center(
-                        child: Text(
-                          'CGU, confidentialité, anonymat et données personnelles',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: const Color(0xFF64748B),
-                            height: 1.4,
-                          ),
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-                      const SizedBox(height: 18),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: [
-                          OutlinedButton.icon(
-                            onPressed: copyLegalText,
-                            icon: const Icon(Icons.copy_rounded),
-                            label: const Text('Copier le texte complet'),
-                          ),
-                          OutlinedButton.icon(
-                            onPressed: downloadLegalText,
-                            icon: const Icon(Icons.download_rounded),
-                            label: const Text('Télécharger (.txt)'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                      const _LegalSection(data: _preambleSection),
-                      const Divider(height: 34, color: Color(0xFFE5E7EB)),
-                      for (final section in _legalSections)
-                        _LegalSection(data: section),
-                      const Divider(height: 34, color: Color(0xFFE5E7EB)),
-                      Text(
-                        'Mentions légales',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          color: const Color(0xFF0D73F2),
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      for (final block in _legalNoticeBlocks)
-                        _LegalNoticeBlock(block: block),
-                      const SizedBox(height: 10),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: FilledButton.icon(
-                          key: const ValueKey('legalAcknowledgementButton'),
-                          style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF0D73F2),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(18),
+                          child: Padding(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Center(
+                                  child: Container(
+                                    width: 74,
+                                    height: 74,
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFEFF6FF),
+                                      borderRadius: BorderRadius.circular(24),
+                                    ),
+                                    child: const Icon(
+                                      Icons.gavel_rounded,
+                                      color: Color(0xFF0D73F2),
+                                      size: 36,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                Center(
+                                  child: Text(
+                                    'CGU, confidentialité, anonymat et données personnelles',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: const Color(0xFF64748B),
+                                      height: 1.4,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ),
+                                const SizedBox(height: 18),
+                                Wrap(
+                                  spacing: 10,
+                                  runSpacing: 10,
+                                  children: [
+                                    OutlinedButton.icon(
+                                      onPressed: copyLegalText,
+                                      icon: const Icon(Icons.copy_rounded),
+                                      label:
+                                          const Text('Copier le texte complet'),
+                                    ),
+                                    OutlinedButton.icon(
+                                      onPressed: downloadLegalText,
+                                      icon: const Icon(Icons.download_rounded),
+                                      label: const Text('Télécharger (.txt)'),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 24),
+                                const _LegalSection(data: _preambleSection),
+                                const Divider(
+                                    height: 34, color: Color(0xFFE5E7EB)),
+                                for (final section in _legalSections)
+                                  _LegalSection(data: section),
+                                const Divider(
+                                    height: 34, color: Color(0xFFE5E7EB)),
+                                Text(
+                                  'Mentions légales',
+                                  style: theme.textTheme.titleLarge?.copyWith(
+                                    color: const Color(0xFF0D73F2),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+                                for (final block in _legalNoticeBlocks)
+                                  _LegalNoticeBlock(block: block),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  height: 54,
+                                  child: FilledButton.icon(
+                                    key: const ValueKey(
+                                        'legalAcknowledgementButton'),
+                                    style: FilledButton.styleFrom(
+                                      backgroundColor: const Color(0xFF0D73F2),
+                                      foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(18),
+                                      ),
+                                    ),
+                                    onPressed: () {
+                                      if (Navigator.of(context).canPop()) {
+                                        Navigator.of(context).pop();
+                                        return;
+                                      }
+                                      Navigator.of(context)
+                                          .pushReplacementNamed(
+                                        AccessCitizenPage.routeName,
+                                      );
+                                    },
+                                    icon: const Icon(Icons.check_rounded),
+                                    label: const Text('J’ai pris connaissance'),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          onPressed: () {
-                            if (Navigator.of(context).canPop()) {
-                              Navigator.of(context).pop();
-                              return;
-                            }
-                            Navigator.of(context).pushReplacementNamed(
-                              AccessCitizenPage.routeName,
-                            );
-                          },
-                          icon: const Icon(Icons.check_rounded),
-                          label: const Text('J’ai pris connaissance'),
                         ),
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ),
         ),
+        bottomNavigationBar: const PublicBottomNav(currentTab: PublicTab.vote),
       ),
-      bottomNavigationBar: const PublicBottomNav(currentTab: PublicTab.vote),
     );
   }
 }

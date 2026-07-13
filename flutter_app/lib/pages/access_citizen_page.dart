@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -10,6 +11,7 @@ import '../services/new_poll_badge_service.dart';
 import '../services/push_notification_service.dart';
 import '../services/vote_access_service.dart';
 import '../theme/citoyen_theme.dart';
+import '../widgets/citizen/citizen_header.dart';
 import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
 import 'legal_page.dart';
@@ -178,41 +180,36 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.transparent,
-      body: Stack(
-        children: [
-          const _AccessBackground(),
-          Positioned(
-            top: 6,
-            right: 6,
-            child: SafeArea(child: DebugLogButton(label: '')),
-          ),
-          SafeArea(
-            child: Column(
-              children: [
-                Expanded(
-                  child: Center(
-                    child: SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(6, 14, 6, 8),
-                      child: ConstrainedBox(
-                        constraints: const BoxConstraints(maxWidth: 560),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemStatusBarContrastEnforced: false,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Stack(
+          children: [
+            const _AccessBackground(),
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 430),
+                child: Column(
+                  children: [
+                    const CitizenHeader(
+                      title: 'Accès citoyen',
+                      showBack: false,
+                      trailing: DebugLogButton(label: ''),
+                    ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(12, 18, 12, 18),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             const _AccessLogoHeader(),
-                            const SizedBox(height: 22),
-                            Text(
-                              'Accès citoyen',
-                              textAlign: TextAlign.center,
-                              style: GoogleFonts.inter(
-                                color: cpTextDark,
-                                fontSize: isCompact(context) ? 32 : 38,
-                                fontWeight: FontWeight.w900,
-                                height: 1.05,
-                                letterSpacing: -0.7,
-                              ),
-                            ),
                             const SizedBox(height: 18),
                             _AccessFormCard(
                               codeController: _codeController,
@@ -234,13 +231,13 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                         ),
                       ),
                     ),
-                  ),
+                    const PublicBottomNav(currentTab: PublicTab.vote),
+                  ],
                 ),
-                const PublicBottomNav(currentTab: PublicTab.vote),
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
