@@ -1,0 +1,67 @@
+name: Validate citizen validation fix PR
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'flutter_app/lib/pages/access_citizen_page.dart'
+      - 'flutter_app/test/access_citizen_false_error_test.dart'
+      - 'tool/apply_citizen_validation_fix.py'
+      - '.github/workflows/validate-citizen-validation-fix-pr.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  flutter:
+    if: github.head_ref == 'fix/citizen-validation-false-error' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: fix/citizen-validation-false-error
+          fetch-depth: 0
+
+      - name: Apply validation flow fix
+        run: python3 tool/apply_citizen_validation_fix.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Format changed files
+        working-directory: flutter_app
+        run: >-
+          dart format
+          lib/pages/access_citizen_page.dart
+          test/access_citizen_false_error_test.dart
+
+      - name: Analyze
+        working-directory: flutter_app
+        run: flutter analyze
+
+      - name: Run regression test
+        working-directory: flutter_app
+        run: flutter test test/access_citizen_false_error_test.dart
+
+      - name: Run citizen flow tests
+        working-directory: flutter_app
+        run: flutter test test/citizen_full_flow_test.dart test/widget_test.dart
+
+      - name: Publish validated fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add flutter_app tool/apply_citizen_validation_fix.py
+          if git diff --cached --quiet; then
+            echo 'No validated changes to publish.'
+          else
+            git commit -m 'fix: évite le faux échec après validation citoyenne'
+            git push origin HEAD:fix/citizen-validation-false-error
+          fi
