@@ -102,9 +102,7 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
       body: RefreshIndicator(
         color: CitizenDesignTokens.primaryBlue,
         onRefresh: _load,
-        child: ListView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 26),
+        child: PublicResponsiveList(
           children: [
             if (!connected)
               const CitizenConnectInvite(
@@ -186,37 +184,63 @@ class _ResultsFilters extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: CitizenDesignTokens.cardDecoration,
-      child: Column(
-        children: [
-          DropdownButtonFormField<String>(
-            initialValue: communeFilter,
-            decoration: _fieldDecoration('Commune'),
-            items: [
-              const DropdownMenuItem<String>(
-                value: null,
-                child: Text('Toutes'),
-              ),
-              for (final commune in communes)
-                DropdownMenuItem(value: commune, child: Text(commune)),
-            ],
-            onChanged: onCommuneChanged,
+    final communeField = DropdownButtonFormField<String>(
+      initialValue: communeFilter,
+      isExpanded: true,
+      decoration: _fieldDecoration('Commune'),
+      items: [
+        const DropdownMenuItem<String>(
+          value: null,
+          child: Text('Toutes'),
+        ),
+        for (final commune in communes)
+          DropdownMenuItem(
+            value: commune,
+            child: Text(
+              commune,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
-          const SizedBox(height: 12),
-          DropdownButtonFormField<String>(
-            initialValue: statusFilter,
-            decoration: _fieldDecoration('État'),
-            items: const [
-              DropdownMenuItem(value: 'all', child: Text('Tous')),
-              DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
-              DropdownMenuItem(value: 'closed', child: Text('Clôturées')),
-            ],
-            onChanged: onStatusChanged,
-          ),
-        ],
-      ),
+      ],
+      onChanged: onCommuneChanged,
+    );
+    final statusField = DropdownButtonFormField<String>(
+      initialValue: statusFilter,
+      isExpanded: true,
+      decoration: _fieldDecoration('État'),
+      items: const [
+        DropdownMenuItem(value: 'all', child: Text('Tous')),
+        DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
+        DropdownMenuItem(value: 'closed', child: Text('Clôturées')),
+      ],
+      onChanged: onStatusChanged,
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final horizontal = constraints.maxWidth >= 620;
+        return Container(
+          padding: const EdgeInsets.all(14),
+          decoration: CitizenDesignTokens.cardDecoration,
+          child: horizontal
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: communeField),
+                    const SizedBox(width: 12),
+                    Expanded(child: statusField),
+                  ],
+                )
+              : Column(
+                  children: [
+                    communeField,
+                    const SizedBox(height: 12),
+                    statusField,
+                  ],
+                ),
+        );
+      },
     );
   }
 
@@ -271,129 +295,144 @@ class _PollResultCard extends StatelessWidget {
     final statusLabel = _statusLabel(poll.status);
     final statusColor = _statusColor(poll.status);
 
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
-      decoration: CitizenDesignTokens.cardDecoration,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: const BoxDecoration(
-                  color: CitizenDesignTokens.skyBlue,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.how_to_vote_rounded,
-                  color: CitizenDesignTokens.primaryBlue,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      poll.projectTitle,
-                      style: const TextStyle(
-                        color: CitizenDesignTokens.textDark,
-                        fontSize: 16,
-                        height: 1.25,
-                        fontWeight: FontWeight.w900,
-                      ),
-                    ),
-                    if (poll.communeName.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        poll.communeName,
-                        style: const TextStyle(
-                          color: CitizenDesignTokens.textMuted,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              const SizedBox(width: 8),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                decoration: BoxDecoration(
-                  color: statusColor,
-                  borderRadius: BorderRadius.circular(999),
-                ),
-                child: Text(
-                  statusLabel,
-                  style: const TextStyle(
-                    color: CitizenDesignTokens.textDark,
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ),
-            ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 380;
+        final statusChip = Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: statusColor,
+            borderRadius: BorderRadius.circular(999),
           ),
-          const SizedBox(height: 16),
-          if (totalVotes == 0)
-            const Text(
-              'Aucun vote enregistré pour le moment.',
-              style: TextStyle(
-                color: CitizenDesignTokens.textMuted,
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
+          child: Text(
+            statusLabel,
+            style: const TextStyle(
+              color: CitizenDesignTokens.textDark,
+              fontSize: 11.5,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+        );
+        final titleBlock = Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: compact ? 40 : 44,
+              height: compact ? 40 : 44,
+              decoration: const BoxDecoration(
+                color: CitizenDesignTokens.skyBlue,
+                shape: BoxShape.circle,
               ),
-            )
-          else
-            for (final question in poll.effectiveQuestions) ...[
-              if (question.title.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8, top: 4),
-                  child: Text(
-                    question.title +
-                        (question.multiple ? ' (choix multiples)' : ''),
+              child: Icon(
+                Icons.how_to_vote_rounded,
+                color: CitizenDesignTokens.primaryBlue,
+                size: compact ? 22 : 24,
+              ),
+            ),
+            SizedBox(width: compact ? 10 : 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    poll.projectTitle,
                     style: const TextStyle(
                       color: CitizenDesignTokens.textDark,
-                      fontSize: 14,
-                      height: 1.3,
+                      fontSize: 16,
+                      height: 1.25,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
-                ),
-              for (final option in question.options)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ResultBar(
-                    label: option.label,
-                    votes: option.votes,
-                    total: poll.totalVoted > 0
-                        ? poll.totalVoted
-                        : question.options.fold<int>(
-                            0,
-                            (sum, option) => sum + option.votes,
-                          ),
-                  ),
-                ),
-            ],
-          const SizedBox(height: 8),
-          Text(
-            'Total des votes : $totalVotes${poll.totalVoters > 0 ? ' / ${poll.totalVoters} attendus' : ''}',
-            style: const TextStyle(
-              color: CitizenDesignTokens.textMuted,
-              fontSize: 12.5,
-              fontWeight: FontWeight.w700,
+                  if (poll.communeName.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      poll.communeName,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        color: CitizenDesignTokens.textMuted,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ),
+            if (!compact) ...[
+              const SizedBox(width: 8),
+              statusChip,
+            ],
+          ],
+        );
+
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.all(compact ? 16 : 18),
+          decoration: CitizenDesignTokens.cardDecoration,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              titleBlock,
+              if (compact) ...[
+                const SizedBox(height: 10),
+                statusChip,
+              ],
+              const SizedBox(height: 16),
+              if (totalVotes == 0)
+                const Text(
+                  'Aucun vote enregistré pour le moment.',
+                  style: TextStyle(
+                    color: CitizenDesignTokens.textMuted,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                  ),
+                )
+              else
+                for (final question in poll.effectiveQuestions) ...[
+                  if (question.title.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 8, top: 4),
+                      child: Text(
+                        question.title +
+                            (question.multiple ? ' (choix multiples)' : ''),
+                        style: const TextStyle(
+                          color: CitizenDesignTokens.textDark,
+                          fontSize: 14,
+                          height: 1.3,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  for (final option in question.options)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _ResultBar(
+                        label: option.label,
+                        votes: option.votes,
+                        total: poll.totalVoted > 0
+                            ? poll.totalVoted
+                            : question.options.fold<int>(
+                                0,
+                                (sum, option) => sum + option.votes,
+                              ),
+                      ),
+                    ),
+                ],
+              const SizedBox(height: 8),
+              Text(
+                'Total des votes : $totalVotes${poll.totalVoters > 0 ? ' / ${poll.totalVoters} attendus' : ''}',
+                style: const TextStyle(
+                  color: CitizenDesignTokens.textMuted,
+                  fontSize: 12.5,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -430,10 +469,13 @@ class _ResultBar extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Expanded(
               child: Text(
                 label,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
                   color: CitizenDesignTokens.textDark,
                   fontSize: 14,
@@ -441,6 +483,7 @@ class _ResultBar extends StatelessWidget {
                 ),
               ),
             ),
+            const SizedBox(width: 8),
             Text(
               '$votes · $percent%',
               style: const TextStyle(
