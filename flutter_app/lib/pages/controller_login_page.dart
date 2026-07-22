@@ -1,18 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/controller_auth_service.dart';
-
-class _ControllerLoginTheme {
-  static const background = Color(0xFFF6F7F9);
-  static const mutedForeground = Color(0xFF64748B);
-  static const border = Color(0xFFE5E7EB);
-  static const primary = Color(0xFF0D73F2);
-  static const gradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [Color(0xFF0D73F2), Color(0xFF4F70F5)],
-  );
-}
+import '../theme/citizen_design_tokens.dart';
 
 class ControllerLoginPage extends StatefulWidget {
   const ControllerLoginPage({super.key});
@@ -32,20 +21,14 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
   }
 
   Future<void> _submit() async {
-    if (_isSubmitting || _codeController.text.trim().isEmpty) {
-      return;
-    }
+    if (_isSubmitting || _codeController.text.trim().isEmpty) return;
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    setState(() => _isSubmitting = true);
 
     try {
       final result = await ControllerAuthService.instance
           .signInWithCode(_codeController.text);
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       final commune = result.session.commune?.name;
       final message = commune == null || commune.isEmpty
@@ -56,107 +39,113 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
           .showSnackBar(SnackBar(content: Text(message)));
       Navigator.of(context).pushReplacementNamed('/controleur');
     } on ControllerAuthException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(error.message)));
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final canSubmit =
+        !_isSubmitting && _codeController.text.trim().isNotEmpty;
+
     return Scaffold(
-      backgroundColor: _ControllerLoginTheme.background,
+      backgroundColor: CitizenDesignTokens.background,
       appBar: AppBar(
-        title: const Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.assignment_turned_in_rounded,
-                color: _ControllerLoginTheme.primary, size: 22),
-            SizedBox(width: 8),
-            Text('Espace agent de mobilisation citoyenne',
-                style: TextStyle(fontSize: 14)),
-          ],
-        ),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pushNamed('/'),
         ),
+        title: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.assignment_turned_in_rounded,
+              color: CitizenDesignTokens.primaryBlue,
+              size: 22,
+            ),
+            SizedBox(width: CitizenDesignTokens.space8),
+            Flexible(
+              child: Text(
+                'Espace agent de mobilisation citoyenne',
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
+        ),
       ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: CitizenDesignTokens.softBackgroundGradient,
+        ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: Padding(
+                padding: const EdgeInsets.all(CitizenDesignTokens.space20),
+                child: Container(
+                  padding: const EdgeInsets.all(CitizenDesignTokens.space24),
+                  decoration: CitizenDesignTokens.elevatedCardDecoration,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 56,
-                        height: 56,
+                        width: 62,
+                        height: 62,
                         decoration: BoxDecoration(
-                          color:
-                              theme.colorScheme.primary.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(18),
+                          color: CitizenDesignTokens.surfaceBlue,
+                          borderRadius: BorderRadius.circular(
+                            CitizenDesignTokens.radiusButton,
+                          ),
+                          border: Border.all(
+                            color: CitizenDesignTokens.cardBorder,
+                          ),
                         ),
-                        child: const Icon(Icons.key_rounded,
-                            size: 28, color: _ControllerLoginTheme.primary),
+                        child: const Icon(
+                          Icons.badge_outlined,
+                          size: 30,
+                          color: CitizenDesignTokens.primaryBlue,
+                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Text('Connexion agent de mobilisation citoyenne',
-                          style: theme.textTheme.titleLarge?.copyWith(
-                              fontSize: 18, fontWeight: FontWeight.w700),
-                          textAlign: TextAlign.center),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: CitizenDesignTokens.space16),
                       Text(
-                        'Entrez le code fourni par un administrateur pour acceder a l\'interface de verification des pieces.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                            color: _ControllerLoginTheme.mutedForeground),
+                        'Connexion agent',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                        ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: CitizenDesignTokens.space8),
+                      Text(
+                        'Saisissez le code remis par votre administrateur pour accéder aux outils de mobilisation citoyenne.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: CitizenDesignTokens.textMuted,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: CitizenDesignTokens.space24),
                       TextField(
                         controller: _codeController,
                         enabled: !_isSubmitting,
                         autofocus: true,
-                        // Code sensible : pas de memorisation clavier ni
-                        // d'autocorrection (qui deformerait le code).
                         autocorrect: false,
                         enableSuggestions: false,
-                        // Les codes agents font 16 caracteres ; on autorise
-                        // jusqu'a 24 pour ne pas tronquer un code colle avec un
-                        // eventuel prefixe "CTRL-" (retire ensuite dans onChanged).
                         maxLength: 24,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                            fontSize: 16,
-                            letterSpacing: 1,
-                            fontWeight: FontWeight.w600),
-                        decoration: InputDecoration(
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          letterSpacing: 1.2,
+                        ),
+                        decoration: const InputDecoration(
                           counterText: '',
-                          hintText: 'Ex : A3F2B1C97D5E4B08',
-                          filled: true,
-                          fillColor: Colors.white,
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 14),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: const BorderSide(
-                                color: _ControllerLoginTheme.border),
-                          ),
+                          hintText: 'Ex. A3F2B1C97D5E4B08',
+                          prefixIcon: Icon(Icons.key_rounded),
                         ),
                         onChanged: (value) {
                           var normalized = value.toUpperCase();
@@ -168,26 +157,45 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                                 _codeController.value.copyWith(
                               text: normalized,
                               selection: TextSelection.collapsed(
-                                  offset: normalized.length),
+                                offset: normalized.length,
+                              ),
                             );
                           }
                           setState(() {});
                         },
-                        onSubmitted: (_) => _submit(),
+                        onSubmitted: (_) {
+                          if (canSubmit) _submit();
+                        },
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: CitizenDesignTokens.space16),
                       SizedBox(
                         width: double.infinity,
-                        child: _LoginGradientButton(
-                          onPressed: _isSubmitting ||
-                                  _codeController.text.trim().isEmpty
-                              ? null
-                              : _submit,
-                          isLoading: _isSubmitting,
-                          label: _isSubmitting
-                              ? 'Connexion en cours...'
-                              : 'Acceder a mon profil',
+                        child: FilledButton.icon(
+                          onPressed: canSubmit ? _submit : null,
+                          icon: _isSubmitting
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: CitizenDesignTokens.white,
+                                  ),
+                                )
+                              : const Icon(Icons.arrow_forward_rounded),
+                          label: Text(
+                            _isSubmitting
+                                ? 'Connexion en cours…'
+                                : 'Accéder à mon espace',
+                          ),
                         ),
+                      ),
+                      const SizedBox(height: CitizenDesignTokens.space12),
+                      Text(
+                        'L’accès est limité au périmètre de votre commune.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: CitizenDesignTokens.textSubtle,
+                        ),
+                        textAlign: TextAlign.center,
                       ),
                     ],
                   ),
@@ -195,71 +203,6 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _LoginGradientButton extends StatelessWidget {
-  const _LoginGradientButton({
-    required this.onPressed,
-    required this.label,
-    this.isLoading = false,
-  });
-
-  final VoidCallback? onPressed;
-  final String label;
-  final bool isLoading;
-
-  @override
-  Widget build(BuildContext context) {
-    final enabled = onPressed != null;
-
-    return InkWell(
-      borderRadius: BorderRadius.circular(18),
-      onTap: enabled ? onPressed : null,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        height: 54,
-        decoration: BoxDecoration(
-          gradient: enabled ? _ControllerLoginTheme.gradient : null,
-          color: enabled ? null : const Color(0xFFF1F3F6),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isLoading)
-              const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(
-                      strokeWidth: 2, color: Colors.white))
-            else ...[
-              Text(
-                label,
-                style: TextStyle(
-                  color: enabled
-                      ? Colors.white
-                      : _ControllerLoginTheme.mutedForeground,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Icon(Icons.arrow_forward_rounded,
-                  color: enabled
-                      ? Colors.white
-                      : _ControllerLoginTheme.mutedForeground,
-                  size: 18),
-            ],
-            if (isLoading) ...[
-              const SizedBox(width: 10),
-              Text(label,
-                  style: const TextStyle(
-                      color: Colors.white, fontWeight: FontWeight.w800)),
-            ],
-          ],
         ),
       ),
     );
