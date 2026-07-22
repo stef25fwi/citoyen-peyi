@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../services/auth_session_store.dart';
 import '../services/citizen_access_code_service.dart';
 import '../services/firebase_auth_service.dart';
+import 'controller_profile_page.dart';
 
 class ControllerDashboardPage extends StatefulWidget {
   const ControllerDashboardPage({super.key});
@@ -47,6 +48,32 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
     });
   }
 
+  Future<void> _signOut() async {
+    try {
+      await FirebaseAuthService.instance.signOut();
+    } catch (error, stackTrace) {
+      debugPrint('[ControllerDashboard] signOut failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+    try {
+      await AuthSessionStore.instance.clear();
+    } catch (error, stackTrace) {
+      debugPrint('[ControllerDashboard] session clear failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+    }
+    if (!mounted) return;
+    Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
+  }
+
+  void _openProfile({int initialTab = 0}) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        settings: const RouteSettings(name: '/controleur/profil'),
+        builder: (_) => ControllerProfilePage(initialTab: initialTab),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final session = AuthSessionStore.instance.currentSession;
@@ -59,24 +86,13 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
       appBar: AppBar(
         title: const Text('Tableau de bord agent de mobilisation citoyenne'),
         actions: [
+          IconButton(
+            tooltip: 'Mon profil',
+            onPressed: _openProfile,
+            icon: const Icon(Icons.person_outline_rounded),
+          ),
           TextButton(
-            onPressed: () async {
-              try {
-                await FirebaseAuthService.instance.signOut();
-              } catch (error, stackTrace) {
-                debugPrint('[ControllerDashboard] signOut failed: $error');
-                debugPrintStack(stackTrace: stackTrace);
-              }
-              try {
-                await AuthSessionStore.instance.clear();
-              } catch (error, stackTrace) {
-                debugPrint(
-                    '[ControllerDashboard] session clear failed: $error');
-                debugPrintStack(stackTrace: stackTrace);
-              }
-              if (!context.mounted) return;
-              Navigator.of(context).pushNamedAndRemoveUntil('/', (_) => false);
-            },
+            onPressed: _signOut,
             child: const Text('Deconnexion'),
           ),
         ],
@@ -87,7 +103,7 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
           child: RefreshIndicator(
             onRefresh: _load,
             child: ListView(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 20),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 20),
               children: [
                 Card(
                   child: Padding(
@@ -95,24 +111,33 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
                     child: Row(
                       children: [
                         const CircleAvatar(
-                            radius: 28, child: Icon(Icons.badge_outlined)),
+                          radius: 28,
+                          child: Icon(Icons.badge_outlined),
+                        ),
                         const SizedBox(width: 16),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                  session?.label ??
-                                      'Agent de mobilisation citoyenne',
-                                  style:
-                                      Theme.of(context).textTheme.titleLarge),
+                                session?.label ??
+                                    'Agent de mobilisation citoyenne',
+                                style: Theme.of(context).textTheme.titleLarge,
+                              ),
                               const SizedBox(height: 4),
                               Text(
-                                  'Commune : ${session?.commune?.name ?? 'Non renseignee'}${session?.commune?.codePostal == null ? '' : ' · CP ${session!.commune!.codePostal}'}'),
+                                'Commune : ${session?.commune?.name ?? 'Non renseignee'}${session?.commune?.codePostal == null ? '' : ' · CP ${session!.commune!.codePostal}'}',
+                              ),
                               Text(
-                                  'Mode ${session?.modeLabel ?? '-'} · role controller'),
+                                'Mode ${session?.modeLabel ?? '-'} · rôle agent de consultation',
+                              ),
                             ],
                           ),
+                        ),
+                        IconButton(
+                          tooltip: 'Ouvrir mon profil',
+                          onPressed: _openProfile,
+                          icon: const Icon(Icons.chevron_right_rounded),
                         ),
                       ],
                     ),
@@ -124,21 +149,25 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
                   runSpacing: 12,
                   children: [
                     _MetricCard(
-                        label: 'Codes citoyens',
-                        value: '${_codes.length}',
-                        icon: Icons.vpn_key_rounded),
+                      label: 'Codes citoyens',
+                      value: '${_codes.length}',
+                      icon: Icons.vpn_key_rounded,
+                    ),
                     _MetricCard(
-                        label: 'Codes actifs',
-                        value: '$activeCodes',
-                        icon: Icons.verified_rounded),
+                      label: 'Codes actifs',
+                      value: '$activeCodes',
+                      icon: Icons.verified_rounded,
+                    ),
                     _MetricCard(
-                        label: 'Votes publics',
-                        value: '$usedCodes',
-                        icon: Icons.how_to_vote_rounded),
+                      label: 'Codes utilisés',
+                      value: '$usedCodes',
+                      icon: Icons.how_to_vote_rounded,
+                    ),
                     _MetricCard(
-                        label: 'Doublons en attente',
-                        value: '$pendingDuplicates',
-                        icon: Icons.content_copy_rounded),
+                      label: 'Doublons en attente',
+                      value: '$pendingDuplicates',
+                      icon: Icons.content_copy_rounded,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 18),
@@ -148,24 +177,31 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('Parcours agent de mobilisation citoyenne',
-                            style: Theme.of(context).textTheme.titleLarge),
+                        Text(
+                          'Parcours agent de mobilisation citoyenne',
+                          style: Theme.of(context).textTheme.titleLarge,
+                        ),
                         const SizedBox(height: 12),
                         const _StepLine(
-                            index: 1,
-                            text: 'Verification physique de l\'eligibilite'),
+                          index: 1,
+                          text: 'Verification physique de l\'eligibilite',
+                        ),
                         const _StepLine(
-                            index: 2,
-                            text: 'Saisie des donnees minimales autorisees'),
+                          index: 2,
+                          text: 'Saisie des donnees minimales autorisees',
+                        ),
                         const _StepLine(
-                            index: 3,
-                            text: 'Generation du code citoyen anonyme'),
+                          index: 3,
+                          text: 'Generation du code citoyen anonyme',
+                        ),
                         const _StepLine(
-                            index: 4,
-                            text: 'Remise du code ou du QR au citoyen'),
+                          index: 4,
+                          text: 'Remise du code ou du QR au citoyen',
+                        ),
                         const _StepLine(
-                            index: 5,
-                            text: 'Doublon eventuel : demande de regeneration'),
+                          index: 5,
+                          text: 'Doublon eventuel : demande de regeneration',
+                        ),
                         const SizedBox(height: 16),
                         Wrap(
                           spacing: 12,
@@ -178,10 +214,9 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
                               label: const Text('Generer un acces citoyen'),
                             ),
                             FilledButton.tonalIcon(
-                              onPressed: () => Navigator.of(context)
-                                  .pushNamed('/controleur/historique'),
+                              onPressed: () => _openProfile(initialTab: 1),
                               icon: const Icon(Icons.history_rounded),
-                              label: const Text('Voir mon historique'),
+                              label: const Text('Mon activité'),
                             ),
                           ],
                         ),
@@ -190,19 +225,25 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                Text('Historique recent',
-                    style: Theme.of(context).textTheme.titleLarge),
+                Text(
+                  'Historique recent',
+                  style: Theme.of(context).textTheme.titleLarge,
+                ),
                 const SizedBox(height: 10),
                 if (_isLoading)
                   const Center(
-                      child: Padding(
-                          padding: EdgeInsets.all(24),
-                          child: CircularProgressIndicator()))
+                    child: Padding(
+                      padding: EdgeInsets.all(24),
+                      child: CircularProgressIndicator(),
+                    ),
+                  )
                 else if (_codes.isEmpty)
                   const Card(
-                      child: Padding(
-                          padding: EdgeInsets.all(20),
-                          child: Text('Aucun code citoyen genere.')))
+                    child: Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text('Aucun code citoyen genere.'),
+                    ),
+                  )
                 else
                   for (final code in _codes.take(8))
                     Card(
@@ -210,7 +251,8 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
                         leading: const Icon(Icons.key_rounded),
                         title: Text(code.accessCode),
                         subtitle: Text(
-                            '${code.communeName} · ${code.createdAt}\nStatut : ${code.status}${code.usedForLogin ? ' · vote public utilise' : ''}'),
+                          '${code.communeName} · ${code.createdAt}\nStatut : ${code.status}${code.usedForLogin ? ' · code utilisé' : ''}',
+                        ),
                         isThreeLine: true,
                       ),
                     ),
@@ -224,8 +266,11 @@ class _ControllerDashboardPageState extends State<ControllerDashboardPage> {
 }
 
 class _MetricCard extends StatelessWidget {
-  const _MetricCard(
-      {required this.label, required this.value, required this.icon});
+  const _MetricCard({
+    required this.label,
+    required this.value,
+    required this.icon,
+  });
 
   final String label;
   final String value;
@@ -266,8 +311,9 @@ class _StepLine extends StatelessWidget {
       child: Row(
         children: [
           CircleAvatar(
-              radius: 13,
-              child: Text('$index', style: const TextStyle(fontSize: 12))),
+            radius: 13,
+            child: Text('$index', style: const TextStyle(fontSize: 12)),
+          ),
           const SizedBox(width: 10),
           Expanded(child: Text(text)),
         ],

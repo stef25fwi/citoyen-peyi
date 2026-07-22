@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 void main() {
   testWidgets('À propos ouvre la vraie page d’informations légales',
       (tester) async {
-    tester.view.physicalSize = const Size(430, 932);
+    tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -13,18 +13,16 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
     await tester.pumpAndSettle();
 
-    final about = find.text('À propos de Citoyen Peyi');
-    await tester.ensureVisible(about);
-    await tester.tap(about);
+    await tester.tap(find.text('À propos de Citoyen Peyi'));
     await tester.pumpAndSettle();
 
     expect(find.text('Informations légales'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('la cloche ouvre la liste réelle des consultations',
+  testWidgets('la cloche ouvre le centre de notifications citoyennes',
       (tester) async {
-    tester.view.physicalSize = const Size(430, 932);
+    tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -32,16 +30,17 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Nouvelles consultations'));
+    await tester.tap(find.byTooltip('Notifications citoyennes'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Donner mon avis'), findsWidgets);
-    expect(find.text('Aucune consultation en cours'), findsOneWidget);
+    expect(find.text('Mes notifications'), findsOneWidget);
+    expect(find.text('Tout marquer comme lu'), findsOneWidget);
+    expect(find.text('Aucune notification pour le moment'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
   testWidgets('le bouton profil ouvre le profil citoyen', (tester) async {
-    tester.view.physicalSize = const Size(430, 932);
+    tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -59,6 +58,7 @@ void main() {
   });
 
   for (final size in const <Size>[
+    Size(320, 568),
     Size(360, 640),
     Size(390, 844),
     Size(430, 932),
@@ -81,4 +81,19 @@ void main() {
       expect(tester.takeException(), isNull);
     });
   }
+
+  testWidgets('l accueil smartphone tient sans zone de défilement',
+      (tester) async {
+    tester.view.physicalSize = const Size(360, 640);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(SingleChildScrollView), findsNothing);
+    expect(find.text('Je participe'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }
