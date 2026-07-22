@@ -46,9 +46,26 @@ jobs:
         working-directory: flutter_app
         run: flutter analyze
 
-      - name: Run regression test
+      - id: regression
+        name: Run regression test
+        continue-on-error: true
         working-directory: flutter_app
-        run: flutter test test/access_citizen_false_error_test.dart
+        run: |
+          set -o pipefail
+          flutter test test/access_citizen_false_error_test.dart 2>&1 | tee ../citizen-validation-test.log
+
+      - name: Upload regression diagnostic
+        if: steps.regression.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: citizen-validation-test-diagnostic
+          path: citizen-validation-test.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Stop after regression failure
+        if: steps.regression.outcome == 'failure'
+        run: exit 1
 
       - name: Run citizen flow tests
         working-directory: flutter_app
