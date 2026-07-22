@@ -127,6 +127,21 @@ class _ParticipationHero""",
     ):
         changed.append("citizen_home_page.dart: fermeture du LayoutBuilder")
 
+    # Le Positioned de gauche ne peut plus rester const car sa largeur dépend
+    # désormais de la contrainte calculée par le LayoutBuilder.
+    if replace_once(
+        citizen_home,
+        """          const Positioned(
+            left: 10,
+            top: 20,
+""",
+        """          Positioned(
+            left: 10,
+            top: 20,
+""",
+    ):
+        changed.append("citizen_home_page.dart: retire le const devenu invalide")
+
     print("Corrections responsive appliquées :")
     for item in changed:
         print(f"- {item}")
