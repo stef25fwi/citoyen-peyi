@@ -64,7 +64,8 @@ void main() {
     Size(430, 932),
     Size(768, 1024),
   ]) {
-    testWidgets('accueil connecté sans overflow en ${size.width}x${size.height}',
+    testWidgets(
+        'accueil connecté sans overflow en ${size.width}x${size.height}',
         (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;

@@ -25,13 +25,14 @@ class CitizenConsultationsPage extends StatefulWidget {
       _CitizenConsultationsPageState();
 }
 
-class _CitizenConsultationsPageState
-    extends State<CitizenConsultationsPage> {
+class _CitizenConsultationsPageState extends State<CitizenConsultationsPage> {
   CitizenPublicAccessSession? get _session =>
-      widget.initialSession ?? CitizenPublicAccessService.instance.currentSession;
+      widget.initialSession ??
+      CitizenPublicAccessService.instance.currentSession;
 
   List<PollModel> get _polls {
-    final polls = List<PollModel>.from(_session?.openPolls ?? const <PollModel>[]);
+    final polls =
+        List<PollModel>.from(_session?.openPolls ?? const <PollModel>[]);
     polls.sort((a, b) => a.closeDate.compareTo(b.closeDate));
     return polls;
   }
@@ -44,10 +45,12 @@ class _CitizenConsultationsPageState
 
   void _openConsultation(PollModel poll) {
     if (poll.id.trim().isEmpty) return;
-    Navigator.of(context).push(
+    Navigator.of(context)
+        .push(
       MaterialPageRoute(
         settings: RouteSettings(
-          name: '/citizen/consultation/${Uri.encodeComponent(poll.projectTitle)}',
+          name:
+              '/citizen/consultation/${Uri.encodeComponent(poll.projectTitle)}',
         ),
         builder: (_) => CitizenPollQuestionPage(
           title: poll.projectTitle,
@@ -56,7 +59,8 @@ class _CitizenConsultationsPageState
           voteAccessService: widget.voteAccessService,
         ),
       ),
-    ).then((_) {
+    )
+        .then((_) {
       if (mounted) setState(() {});
     });
   }

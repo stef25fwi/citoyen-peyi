@@ -586,7 +586,8 @@ class _CodeCitizenField extends StatelessWidget {
             fontWeight: FontWeight.w700,
             fontSize: 16.5,
           ),
-          prefixIcon: const Icon(Icons.key_rounded, color: cpBlueDark, size: 31),
+          prefixIcon:
+              const Icon(Icons.key_rounded, color: cpBlueDark, size: 31),
           prefixIconConstraints: const BoxConstraints(minWidth: 62),
           filled: true,
           fillColor: Colors.white,

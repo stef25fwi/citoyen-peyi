@@ -289,58 +289,58 @@ class _WelcomeHero extends StatelessWidget {
         return SizedBox(
           height: compact ? 196 : 184,
           child: Stack(
-        children: [
-          Positioned(
-            left: 10,
-            top: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bonjour !',
-                  style: TextStyle(
-                    color: CitizenDesignTokens.deepBlue,
-                    fontSize: 31,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                SizedBox(height: 9),
-                SizedBox(
-                  width: textWidth,
-                  child: Text(
-                    'Merci d’agir pour votre\ncommune et votre communauté',
-                    style: TextStyle(
-                      color: CitizenDesignTokens.textMuted,
-                      fontSize: 18,
-                      height: 1.35,
-                      fontWeight: FontWeight.w500,
+            children: [
+              Positioned(
+                left: 10,
+                top: 20,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Bonjour !',
+                      style: TextStyle(
+                        color: CitizenDesignTokens.deepBlue,
+                        fontSize: 31,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
-                  ),
+                    SizedBox(height: 9),
+                    SizedBox(
+                      width: textWidth,
+                      child: Text(
+                        'Merci d’agir pour votre\ncommune et votre communauté',
+                        style: TextStyle(
+                          color: CitizenDesignTokens.textMuted,
+                          fontSize: 18,
+                          height: 1.35,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    SizedBox(height: 14),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: CitizenDesignTokens.yellowStrong,
+                        borderRadius: BorderRadius.all(Radius.circular(999)),
+                      ),
+                      child: SizedBox(width: 42, height: 5),
+                    ),
+                  ],
                 ),
-                SizedBox(height: 14),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: CitizenDesignTokens.yellowStrong,
-                    borderRadius: BorderRadius.all(Radius.circular(999)),
-                  ),
-                  child: SizedBox(width: 42, height: 5),
-                ),
-              ],
-            ),
-          ),
-          Positioned(
-            right: -10,
-            bottom: -4,
-            child: Opacity(
-              opacity: 0.9,
-              child: SvgPicture.asset(
-                CitizenHomePage.opinionSecureAsset,
-                width: illustrationWidth,
-                height: compact ? 126 : 150,
-                fit: BoxFit.contain,
               ),
-            ),
-          ),
+              Positioned(
+                right: -10,
+                bottom: -4,
+                child: Opacity(
+                  opacity: 0.9,
+                  child: SvgPicture.asset(
+                    CitizenHomePage.opinionSecureAsset,
+                    width: illustrationWidth,
+                    height: compact ? 126 : 150,
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ),
             ],
           ),
         );

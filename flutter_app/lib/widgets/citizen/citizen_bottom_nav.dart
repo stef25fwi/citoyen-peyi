@@ -39,7 +39,8 @@ class CitizenNavigation {
     Navigator.of(context).pushReplacementNamed(
       target,
       arguments: {
-        'session': session ?? CitizenPublicAccessService.instance.currentSession,
+        'session':
+            session ?? CitizenPublicAccessService.instance.currentSession,
         'disableTransition': true,
       },
     );
