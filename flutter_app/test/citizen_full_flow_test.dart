@@ -244,7 +244,8 @@ class _FakeVoteAccessService extends VoteAccessService {
   Future<VoteSubmitResult> submitVote({
     required String accessToken,
     required String pollId,
-    required List<PollAnswer> answers,
+    String optionId = '',
+    List<PollAnswer> answers = const [],
   }) async {
     return const VoteSubmitResult(
       receiptId: 'receipt-test',
