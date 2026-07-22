@@ -27,7 +27,7 @@ jobs:
 
       - name: Apply targeted fixes
         run: |
-          echo 'Applying final citizen flow fixes.'
+          echo 'Applying final citizen flow fixes after CI update.'
           python3 - <<'PY'
           from pathlib import Path
 
