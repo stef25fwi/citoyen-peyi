@@ -1,0 +1,75 @@
+name: Validate citizen home notifications
+
+on:
+  push:
+    branches:
+      - feat/citizen-home-notifications-agent-activity
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/citizen-home-notifications-agent-activity
+          fetch-depth: 0
+
+      - name: Apply deterministic Dart fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('flutter_app/lib/pages/controller_profile_page.dart')
+          text = path.read_text()
+          text = text.replace(
+              'initialIndex: widget.initialTab.clamp(0, 1),',
+              'initialIndex: widget.initialTab.clamp(0, 1).toInt(),',
+          )
+          text = text.replace(
+              'width: width.clamp(140, 280),',
+              'width: width.clamp(140.0, 280.0).toDouble(),',
+          )
+          path.write_text(text)
+          PY
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Format changed Dart files
+        working-directory: flutter_app
+        run: >-
+          dart format
+          lib/services/new_poll_badge_service.dart
+          lib/pages/citizen/citizen_home_page.dart
+          lib/pages/controller_profile_page.dart
+          lib/pages/controller_dashboard_page.dart
+          test/citizen_home_page_test.dart
+
+      - name: Analyze
+        working-directory: flutter_app
+        run: flutter analyze
+
+      - name: Test citizen home
+        working-directory: flutter_app
+        run: flutter test test/citizen_home_page_test.dart
+
+      - name: Publish validated formatting
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add flutter_app
+          if git diff --cached --quiet; then
+            echo 'No changes to publish.'
+          else
+            git commit -m 'style: valide et formate accueil notifications activité'
+            git push origin HEAD:feat/citizen-home-notifications-agent-activity
+          fi
