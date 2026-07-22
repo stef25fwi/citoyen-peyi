@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../services/citizen_public_access_service.dart';
 import '../services/new_poll_badge_service.dart';
+import '../theme/citizen_design_tokens.dart';
 
 enum PublicTab { home, news, vote, results }
 
 class PublicBottomNav extends StatefulWidget {
   const PublicBottomNav({
     required this.currentTab,
-    this.backgroundColor = Colors.white,
-    this.indicatorColor = const Color(0xFFE7F5FF),
+    this.backgroundColor = CitizenDesignTokens.surface,
+    this.indicatorColor = CitizenDesignTokens.skyBlue,
     super.key,
   });
 
@@ -24,9 +24,6 @@ class PublicBottomNav extends StatefulWidget {
 
 class _PublicBottomNavState extends State<PublicBottomNav> {
   final _badgeSvc = NewPollBadgeService.instance;
-
-  static const _activeColor = Color(0xFF0756B8);
-  static const _inactiveColor = Color(0xFF536173);
 
   @override
   void initState() {
@@ -61,31 +58,30 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
 
   @override
   Widget build(BuildContext context) {
-    final compact = MediaQuery.of(context).size.width < 700;
+    final width = MediaQuery.sizeOf(context).width;
+    final compact = width < 700;
+    final veryCompact = width < 360;
 
     return Material(
       color: Colors.transparent,
       child: SafeArea(
         top: false,
         child: Container(
-          height: compact ? 76 : 72,
+          height: veryCompact ? 70 : (compact ? 76 : 74),
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 5),
+          padding: EdgeInsets.symmetric(
+            horizontal: veryCompact ? 2 : 6,
+            vertical: veryCompact ? 4 : 6,
+          ),
           decoration: BoxDecoration(
             color: widget.backgroundColor.withValues(alpha: 0.98),
-            border: Border(
+            border: const Border(
               top: BorderSide(
-                color: Colors.black.withValues(alpha: 0.08),
-                width: 0.8,
+                color: CitizenDesignTokens.divider,
+                width: 1,
               ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.06),
-                blurRadius: 14,
-                offset: const Offset(0, -4),
-              ),
-            ],
+            boxShadow: CitizenDesignTokens.navigationShadow,
           ),
           child: ValueListenableBuilder<bool>(
             valueListenable: _badgeSvc.hasNew,
@@ -97,6 +93,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
                     label: 'Accueil',
                     selected: widget.currentTab == PublicTab.home,
                     compact: compact,
+                    veryCompact: veryCompact,
                     indicatorColor: widget.indicatorColor,
                     onTap: () => _handleTap(context, 0),
                   ),
@@ -105,14 +102,16 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
                     label: 'Actualités',
                     selected: widget.currentTab == PublicTab.news,
                     compact: compact,
+                    veryCompact: veryCompact,
                     indicatorColor: widget.indicatorColor,
                     onTap: () => _handleTap(context, 1),
                   ),
                   _NavItem(
                     icon: Icons.edit_square,
-                    label: 'Donner mon avis',
+                    label: veryCompact ? 'Mon avis' : 'Donner mon avis',
                     selected: widget.currentTab == PublicTab.vote,
                     compact: compact,
+                    veryCompact: veryCompact,
                     indicatorColor: widget.indicatorColor,
                     showBadge: hasNew,
                     onTap: () => _handleTap(context, 2),
@@ -122,6 +121,7 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
                     label: 'Résultats',
                     selected: widget.currentTab == PublicTab.results,
                     compact: compact,
+                    veryCompact: veryCompact,
                     indicatorColor: widget.indicatorColor,
                     onTap: () => _handleTap(context, 3),
                   ),
@@ -141,6 +141,7 @@ class _NavItem extends StatelessWidget {
     required this.label,
     required this.selected,
     required this.compact,
+    required this.veryCompact,
     required this.indicatorColor,
     required this.onTap,
     this.showBadge = false,
@@ -150,18 +151,22 @@ class _NavItem extends StatelessWidget {
   final String label;
   final bool selected;
   final bool compact;
+  final bool veryCompact;
   final Color indicatorColor;
   final bool showBadge;
   final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final iconColor = selected
-        ? _PublicBottomNavState._activeColor
-        : _PublicBottomNavState._inactiveColor;
-    final iconSize = selected ? 27.0 : 23.0;
-    final labelStyle = GoogleFonts.inter(
-      fontSize: compact ? 10.5 : 11,
+        ? CitizenDesignTokens.deepBlue
+        : CitizenDesignTokens.textMuted;
+    final iconSize = veryCompact
+        ? (selected ? 23.0 : 21.0)
+        : (selected ? 26.0 : 23.0);
+    final labelStyle = theme.textTheme.labelSmall?.copyWith(
+      fontSize: veryCompact ? 9.5 : (compact ? 10.5 : 11),
       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
       color: iconColor,
       letterSpacing: -0.15,
@@ -181,27 +186,38 @@ class _NavItem extends StatelessWidget {
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            borderRadius: BorderRadius.circular(28),
+            borderRadius:
+                BorderRadius.circular(CitizenDesignTokens.radiusButton),
             onTap: onTap,
             child: Center(
               child: AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+                duration: CitizenDesignTokens.motionFast,
                 curve: Curves.easeOutCubic,
                 constraints: BoxConstraints(
-                  minWidth: compact ? 68 : 82,
-                  maxWidth: compact ? 112 : 130,
+                  minWidth: veryCompact ? 58 : (compact ? 68 : 82),
+                  maxWidth: veryCompact ? 90 : (compact ? 112 : 130),
                 ),
-                height: 58,
+                height: veryCompact ? 54 : 58,
                 decoration: BoxDecoration(
                   color: selected ? indicatorColor : Colors.transparent,
-                  borderRadius: BorderRadius.circular(28),
+                  borderRadius:
+                      BorderRadius.circular(CitizenDesignTokens.radiusButton),
+                  border: selected
+                      ? Border.all(
+                          color: CitizenDesignTokens.cardBorder,
+                          width: 0.8,
+                        )
+                      : null,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
+                padding: EdgeInsets.symmetric(
+                  horizontal: veryCompact ? 3 : 5,
+                  vertical: 5,
+                ),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     iconWidget,
-                    const SizedBox(height: 3),
+                    SizedBox(height: veryCompact ? 2 : 3),
                     Text(
                       label,
                       textAlign: TextAlign.center,
