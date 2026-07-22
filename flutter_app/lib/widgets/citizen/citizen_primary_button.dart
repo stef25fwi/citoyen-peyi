@@ -18,21 +18,32 @@ class CitizenPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isEnabled = enabled && onPressed != null;
+    final borderRadius =
+        BorderRadius.circular(CitizenDesignTokens.radiusButton);
 
     return Opacity(
-      opacity: isEnabled ? 1 : 0.55,
+      opacity: isEnabled ? 1 : 0.62,
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           onTap: isEnabled ? onPressed : null,
-          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusButton),
+          borderRadius: borderRadius,
           child: Ink(
-            height: 58,
-            decoration: CitizenDesignTokens.primaryButtonDecoration.copyWith(
-              color: isEnabled
-                  ? CitizenDesignTokens.yellow
-                  : CitizenDesignTokens.cardBorder,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient:
+                  isEnabled ? CitizenDesignTokens.actionGradient : null,
+              color: isEnabled ? null : CitizenDesignTokens.backgroundStrong,
+              borderRadius: borderRadius,
+              border: Border.all(
+                color: isEnabled
+                    ? CitizenDesignTokens.yellowStrong
+                    : CitizenDesignTokens.cardBorder,
+              ),
+              boxShadow:
+                  isEnabled ? CitizenDesignTokens.softShadow : const [],
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),
@@ -43,18 +54,24 @@ class CitizenPrimaryButton extends StatelessWidget {
                     child: Text(
                       label,
                       textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: CitizenDesignTokens.deepBlue,
-                        fontSize: 18,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        color: isEnabled
+                            ? CitizenDesignTokens.navy
+                            : CitizenDesignTokens.textMuted,
+                        fontSize: 17,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
                   if (showArrow)
-                    const Icon(
+                    Icon(
                       Icons.arrow_forward_ios_rounded,
-                      size: 18,
-                      color: CitizenDesignTokens.deepBlue,
+                      size: 17,
+                      color: isEnabled
+                          ? CitizenDesignTokens.navy
+                          : CitizenDesignTokens.textMuted,
                     ),
                 ],
               ),
