@@ -209,7 +209,7 @@ class _ResultsFilters extends StatelessWidget {
             initialValue: statusFilter,
             decoration: _fieldDecoration('État'),
             items: const [
-              DropdownMenuItem(value: 'all', child: Text('Tous')), 
+              DropdownMenuItem(value: 'all', child: Text('Tous')),
               DropdownMenuItem(value: 'open', child: Text('Ouvertes')),
               DropdownMenuItem(value: 'closed', child: Text('Clôturées')),
             ],
