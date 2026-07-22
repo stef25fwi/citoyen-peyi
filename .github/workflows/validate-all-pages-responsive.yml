@@ -77,16 +77,14 @@ jobs:
           set -o pipefail
           flutter analyze 2>&1 | tee ../responsive-analyze.log
 
-      - name: Publish analyze diagnostic
+      - name: Upload analyze diagnostic
         if: steps.analyze.outcome == 'failure'
-        run: |
-          mkdir -p .github/diagnostics
-          cp responsive-analyze.log .github/diagnostics/responsive-analyze.log
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add .github/diagnostics/responsive-analyze.log
-          git commit -m 'ci: publie le diagnostic responsive Flutter'
-          git push origin HEAD:feat/all-pages-full-responsive
+        uses: actions/upload-artifact@v4
+        with:
+          name: responsive-analyze-diagnostic
+          path: responsive-analyze.log
+          if-no-files-found: error
+          retention-days: 7
 
       - name: Stop after analyze failure
         if: steps.analyze.outcome == 'failure'
