@@ -46,10 +46,19 @@ def main() -> None:
           height: 226,
 """,
         """        child: Ink(
-          constraints: const BoxConstraints(minHeight: 226),
 """,
     ):
-        changed.append("citizen_home_page.dart: hero participation à hauteur flexible")
+        changed.append("citizen_home_page.dart: hero participation à hauteur naturelle")
+
+    if replace_once(
+        citizen_home,
+        """        child: Ink(
+          constraints: const BoxConstraints(minHeight: 226),
+""",
+        """        child: Ink(
+""",
+    ):
+        changed.append("citizen_home_page.dart: retire la contrainte non supportée par Ink")
 
     if replace_once(
         citizen_home,
