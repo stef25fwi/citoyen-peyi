@@ -4,18 +4,22 @@ on:
   pull_request:
     branches: [main]
     types: [opened, synchronize, reopened]
+  push:
+    branches:
+      - fix/citizen-flow-ui-final
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
   autofix:
-    if: startsWith(github.head_ref, 'fix/citizen-flow-ui-')
+    if: startsWith(github.head_ref || github.ref_name, 'fix/citizen-flow-ui-')
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
-          ref: ${{ github.head_ref }}
+          ref: ${{ github.head_ref || github.ref_name }}
           fetch-depth: 0
 
       - name: Apply fixes
@@ -102,6 +106,8 @@ jobs:
         run: |
           cd flutter_app
           dart format lib/pages/access_citizen_page.dart lib/pages/citizen/citizen_profile_page.dart
+          flutter pub get
+          flutter analyze
           cd ..
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
@@ -110,5 +116,5 @@ jobs:
             echo 'No fix required.'
           else
             git commit -m 'fix: corrige les erreurs Flutter du parcours citoyen'
-            git push origin HEAD:${{ github.head_ref }}
+            git push origin HEAD:${{ github.head_ref || github.ref_name }}
           fi
