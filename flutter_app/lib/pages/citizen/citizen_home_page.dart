@@ -290,7 +290,7 @@ class _WelcomeHero extends StatelessWidget {
           height: compact ? 196 : 184,
           child: Stack(
         children: [
-          const Positioned(
+          Positioned(
             left: 10,
             top: 20,
             child: Column(
