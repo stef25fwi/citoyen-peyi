@@ -408,20 +408,39 @@ class _CategoryChoice extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RadioListTile<String>(
-      value: value,
-      groupValue: selected,
-      onChanged: (next) {
-        if (next != null) onChanged(next);
-      },
-      contentPadding: EdgeInsets.zero,
-      activeColor: CitizenDesignTokens.primaryBlue,
-      secondary: Icon(icon, color: CitizenDesignTokens.primaryBlue),
-      title: Text(
-        label,
-        style: const TextStyle(
-          color: CitizenDesignTokens.textDark,
-          fontWeight: FontWeight.w700,
+    final isSelected = selected == value;
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusSmall),
+        onTap: () => onChanged(value),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              Icon(icon, color: CitizenDesignTokens.primaryBlue),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: CitizenDesignTokens.textDark,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Icon(
+                isSelected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                color: isSelected
+                    ? CitizenDesignTokens.primaryBlue
+                    : CitizenDesignTokens.textMuted,
+              ),
+            ],
+          ),
         ),
       ),
     );
