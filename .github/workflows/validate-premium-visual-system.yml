@@ -9,11 +9,12 @@ on:
     paths:
       - 'flutter_app/lib/theme/**'
       - 'flutter_app/lib/widgets/**'
-      - 'flutter_app/lib/pages/admin_login_page.dart'
-      - 'flutter_app/lib/pages/controller_login_page.dart'
-      - 'flutter_app/lib/pages/super_admin_login_page.dart'
+      - 'flutter_app/lib/pages/**'
+      - 'flutter_app/lib/main.dart'
+      - 'flutter_app/pubspec.yaml'
       - 'flutter_app/test/premium_theme_test.dart'
       - 'docs/design/audit-harmonisation-premium-2026-07.md'
+      - 'tool/apply_premium_font_resilience.py'
       - '.github/workflows/validate-premium-visual-system.yml'
   workflow_dispatch:
 
@@ -30,6 +31,22 @@ jobs:
           ref: feat/premium-visual-system
           fetch-depth: 0
 
+      - name: Apply resilient premium typography
+        run: python3 tool/apply_premium_font_resilience.py
+
+      - name: Publish typography migration
+        if: github.event_name == 'push'
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add flutter_app docs/design/audit-harmonisation-premium-2026-07.md
+          if git diff --cached --quiet; then
+            echo 'No typography migration changes to publish.'
+          else
+            git commit -m 'design: rend la typographie premium disponible hors ligne'
+            git push origin HEAD:feat/premium-visual-system
+          fi
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -43,16 +60,20 @@ jobs:
         working-directory: flutter_app
         run: >-
           dart format
+          lib/main.dart
           lib/theme/app_theme.dart
           lib/theme/citizen_design_tokens.dart
           lib/theme/citoyen_theme.dart
           lib/widgets/app_responsive_viewport.dart
           lib/widgets/public_page_ui.dart
           lib/widgets/public_bottom_nav.dart
+          lib/widgets/primary_participate_button.dart
           lib/widgets/citizen/citizen_header.dart
           lib/widgets/citizen/citizen_bottom_nav.dart
           lib/widgets/citizen/citizen_card.dart
           lib/widgets/citizen/citizen_primary_button.dart
+          lib/pages/home_page.dart
+          lib/pages/access_citizen_page.dart
           lib/pages/admin_login_page.dart
           lib/pages/controller_login_page.dart
           lib/pages/super_admin_login_page.dart
