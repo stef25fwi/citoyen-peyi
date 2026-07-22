@@ -93,135 +93,154 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
           gradient: CitizenDesignTokens.softBackgroundGradient,
         ),
         child: SafeArea(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 500),
-              child: Padding(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.all(CitizenDesignTokens.space20),
-                child: Container(
-                  padding: const EdgeInsets.all(CitizenDesignTokens.space24),
-                  decoration: CitizenDesignTokens.elevatedCardDecoration,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 62,
-                        height: 62,
-                        decoration: BoxDecoration(
-                          color: CitizenDesignTokens.superAdminSoft,
-                          borderRadius: BorderRadius.circular(
-                            CitizenDesignTokens.radiusButton,
-                          ),
-                          border: Border.all(
-                            color: CitizenDesignTokens.superAdminAccent
-                                .withValues(alpha: 0.18),
-                          ),
-                        ),
-                        child: const Icon(
-                          Icons.admin_panel_settings_rounded,
-                          size: 30,
-                          color: CitizenDesignTokens.superAdminAccent,
-                        ),
-                      ),
-                      const SizedBox(height: CitizenDesignTokens.space16),
-                      Text(
-                        'Connexion Super Admin',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w800,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: CitizenDesignTokens.space8),
-                      Text(
-                        'Pilotez les communes, les administrateurs, les sauvegardes et la supervision globale de la plateforme.',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: CitizenDesignTokens.textMuted,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: CitizenDesignTokens.space24),
-                      TextField(
-                        controller: _keyController,
-                        obscureText: _obscure,
-                        enabled: !_isSubmitting,
-                        autofocus: true,
-                        textAlign: TextAlign.center,
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          letterSpacing: 1,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Clé super administrateur',
-                          prefixIcon: const Icon(
-                            Icons.key_rounded,
-                            color: CitizenDesignTokens.superAdminAccent,
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(
-                              CitizenDesignTokens.radiusField,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight -
+                        (CitizenDesignTokens.space20 * 2),
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 500),
+                      child: Container(
+                        padding:
+                            const EdgeInsets.all(CitizenDesignTokens.space24),
+                        decoration:
+                            CitizenDesignTokens.elevatedCardDecoration,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 62,
+                              height: 62,
+                              decoration: BoxDecoration(
+                                color: CitizenDesignTokens.superAdminSoft,
+                                borderRadius: BorderRadius.circular(
+                                  CitizenDesignTokens.radiusButton,
+                                ),
+                                border: Border.all(
+                                  color: CitizenDesignTokens.superAdminAccent
+                                      .withValues(alpha: 0.18),
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.admin_panel_settings_rounded,
+                                size: 30,
+                                color: CitizenDesignTokens.superAdminAccent,
+                              ),
                             ),
-                            borderSide: const BorderSide(
-                              color: CitizenDesignTokens.superAdminAccent,
-                              width: 1.8,
+                            const SizedBox(
+                                height: CitizenDesignTokens.space16),
+                            Text(
+                              'Connexion Super Admin',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                          ),
-                          suffixIcon: IconButton(
-                            tooltip: _obscure
-                                ? 'Afficher la clé'
-                                : 'Masquer la clé',
-                            icon: Icon(
-                              _obscure
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
+                            const SizedBox(
+                                height: CitizenDesignTokens.space8),
+                            Text(
+                              'Pilotez les communes, les administrateurs, les sauvegardes et la supervision globale de la plateforme.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: CitizenDesignTokens.textMuted,
+                              ),
+                              textAlign: TextAlign.center,
                             ),
-                            onPressed: () =>
-                                setState(() => _obscure = !_obscure),
-                          ),
-                        ),
-                        onChanged: (_) => setState(() {}),
-                        onSubmitted: (_) {
-                          if (canSubmit) _handleSubmit();
-                        },
-                      ),
-                      const SizedBox(height: CitizenDesignTokens.space16),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          style: FilledButton.styleFrom(
-                            backgroundColor:
-                                CitizenDesignTokens.superAdminAccent,
-                          ),
-                          onPressed: canSubmit ? _handleSubmit : null,
-                          icon: _isSubmitting
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    color: CitizenDesignTokens.white,
+                            const SizedBox(
+                                height: CitizenDesignTokens.space24),
+                            TextField(
+                              controller: _keyController,
+                              obscureText: _obscure,
+                              enabled: !_isSubmitting,
+                              autofocus: true,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                letterSpacing: 1,
+                              ),
+                              decoration: InputDecoration(
+                                hintText: 'Clé super administrateur',
+                                prefixIcon: const Icon(
+                                  Icons.key_rounded,
+                                  color: CitizenDesignTokens.superAdminAccent,
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(
+                                    CitizenDesignTokens.radiusField,
                                   ),
-                                )
-                              : const Icon(Icons.arrow_forward_rounded),
-                          label: Text(
-                            _isSubmitting
-                                ? 'Connexion en cours…'
-                                : 'Accéder au panneau Super Admin',
-                          ),
+                                  borderSide: const BorderSide(
+                                    color:
+                                        CitizenDesignTokens.superAdminAccent,
+                                    width: 1.8,
+                                  ),
+                                ),
+                                suffixIcon: IconButton(
+                                  tooltip: _obscure
+                                      ? 'Afficher la clé'
+                                      : 'Masquer la clé',
+                                  icon: Icon(
+                                    _obscure
+                                        ? Icons.visibility_outlined
+                                        : Icons.visibility_off_outlined,
+                                  ),
+                                  onPressed: () =>
+                                      setState(() => _obscure = !_obscure),
+                                ),
+                              ),
+                              onChanged: (_) => setState(() {}),
+                              onSubmitted: (_) {
+                                if (canSubmit) _handleSubmit();
+                              },
+                            ),
+                            const SizedBox(
+                                height: CitizenDesignTokens.space16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                style: FilledButton.styleFrom(
+                                  backgroundColor:
+                                      CitizenDesignTokens.superAdminAccent,
+                                ),
+                                onPressed: canSubmit ? _handleSubmit : null,
+                                icon: _isSubmitting
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: CitizenDesignTokens.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.arrow_forward_rounded),
+                                label: Text(
+                                  _isSubmitting
+                                      ? 'Connexion en cours…'
+                                      : 'Accéder au panneau Super Admin',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(
+                                height: CitizenDesignTokens.space12),
+                            Text(
+                              'La clé est vérifiée par le serveur et n’est jamais intégrée au code de l’application.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: CitizenDesignTokens.textSubtle,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
                         ),
                       ),
-                      const SizedBox(height: CitizenDesignTokens.space12),
-                      Text(
-                        'La clé est vérifiée par le serveur et n’est jamais intégrée au code de l’application.',
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: CitizenDesignTokens.textSubtle,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),
