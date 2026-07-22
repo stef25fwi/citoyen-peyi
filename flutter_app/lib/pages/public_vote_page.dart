@@ -75,9 +75,7 @@ class _PublicVotePageState extends State<PublicVotePage> {
       body: RefreshIndicator(
         color: CitizenDesignTokens.primaryBlue,
         onRefresh: _load,
-        child: ListView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 26),
+        child: PublicResponsiveList(
           children: [
             if (!connected)
               const CitizenConnectInvite(
@@ -128,28 +126,30 @@ class _ConnectedCallToAction extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(18),
-      decoration: CitizenDesignTokens.cardDecoration,
-      child: Column(
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 360;
+        return Container(
+          padding: EdgeInsets.all(compact ? 16 : 18),
+          decoration: CitizenDesignTokens.cardDecoration,
+          child: Column(
             children: [
-              const CircleAvatar(
-                radius: 28,
-                backgroundColor: CitizenDesignTokens.skyBlue,
-                child: Icon(
-                  Icons.how_to_vote_rounded,
-                  color: CitizenDesignTokens.primaryBlue,
-                  size: 30,
+              if (compact) ...[
+                const CircleAvatar(
+                  radius: 26,
+                  backgroundColor: CitizenDesignTokens.skyBlue,
+                  child: Icon(
+                    Icons.how_to_vote_rounded,
+                    color: CitizenDesignTokens.primaryBlue,
+                    size: 28,
+                  ),
                 ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
+                const SizedBox(height: 12),
+                Text(
                   count == 0
                       ? 'Aucune consultation disponible pour votre commune.'
                       : '$count consultation${count > 1 ? 's' : ''} disponible${count > 1 ? 's' : ''} pour votre commune.',
+                  textAlign: TextAlign.center,
                   style: const TextStyle(
                     color: CitizenDesignTokens.textDark,
                     fontSize: 14,
@@ -157,21 +157,48 @@ class _ConnectedCallToAction extends StatelessWidget {
                     fontWeight: FontWeight.w700,
                   ),
                 ),
+              ] else
+                Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 28,
+                      backgroundColor: CitizenDesignTokens.skyBlue,
+                      child: Icon(
+                        Icons.how_to_vote_rounded,
+                        color: CitizenDesignTokens.primaryBlue,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Text(
+                        count == 0
+                            ? 'Aucune consultation disponible pour votre commune.'
+                            : '$count consultation${count > 1 ? 's' : ''} disponible${count > 1 ? 's' : ''} pour votre commune.',
+                        style: const TextStyle(
+                          color: CitizenDesignTokens.textDark,
+                          fontSize: 14,
+                          height: 1.4,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  onPressed: onPressed,
+                  iconAlignment: IconAlignment.end,
+                  icon: const Icon(Icons.arrow_forward_rounded),
+                  label: const Text('Accéder à mes consultations'),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onPressed,
-              iconAlignment: IconAlignment.end,
-              icon: const Icon(Icons.arrow_forward_rounded),
-              label: const Text('Accéder à mes consultations'),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
@@ -184,64 +211,78 @@ class _OpenPollPreviewCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusCard),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusCard),
-          onTap: onPressed,
-          child: Container(
-            padding: const EdgeInsets.all(18),
-            decoration: CitizenDesignTokens.cardDecoration,
-            child: Row(
-              children: [
-                const CircleAvatar(
-                  radius: 27,
-                  backgroundColor: CitizenDesignTokens.skyBlue,
-                  child: Icon(
-                    Icons.forum_outlined,
-                    color: CitizenDesignTokens.primaryBlue,
-                  ),
-                ),
-                const SizedBox(width: 13),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        poll.projectTitle,
-                        style: const TextStyle(
-                          color: CitizenDesignTokens.textDark,
-                          fontSize: 16,
-                          height: 1.25,
-                          fontWeight: FontWeight.w900,
-                        ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 340;
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Material(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusCard),
+            child: InkWell(
+              borderRadius:
+                  BorderRadius.circular(CitizenDesignTokens.radiusCard),
+              onTap: onPressed,
+              child: Container(
+                padding: EdgeInsets.all(compact ? 16 : 18),
+                decoration: CitizenDesignTokens.cardDecoration,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    CircleAvatar(
+                      radius: compact ? 24 : 27,
+                      backgroundColor: CitizenDesignTokens.skyBlue,
+                      child: const Icon(
+                        Icons.forum_outlined,
+                        color: CitizenDesignTokens.primaryBlue,
                       ),
-                      if (poll.communeName.isNotEmpty) ...[
-                        const SizedBox(height: 4),
-                        Text(
-                          poll.communeName,
-                          style: const TextStyle(
-                            color: CitizenDesignTokens.textMuted,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
+                    ),
+                    SizedBox(width: compact ? 10 : 13),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            poll.projectTitle,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: CitizenDesignTokens.textDark,
+                              fontSize: 16,
+                              height: 1.25,
+                              fontWeight: FontWeight.w900,
+                            ),
                           ),
-                        ),
-                      ],
+                          if (poll.communeName.isNotEmpty) ...[
+                            const SizedBox(height: 4),
+                            Text(
+                              poll.communeName,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                color: CitizenDesignTokens.textMuted,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    if (!compact) ...[
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.lock_outline_rounded,
+                        color: CitizenDesignTokens.deepBlue,
+                      ),
                     ],
-                  ),
+                  ],
                 ),
-                const Icon(
-                  Icons.lock_outline_rounded,
-                  color: CitizenDesignTokens.deepBlue,
-                ),
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
