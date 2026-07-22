@@ -1,9 +1,10 @@
 name: Fix citizen PR
 
 on:
-  push:
+  pull_request:
     branches:
-      - fix/citizen-flow-ui-complete
+      - main
+    types: [opened, synchronize, reopened]
   workflow_dispatch:
 
 permissions:
@@ -11,6 +12,7 @@ permissions:
 
 jobs:
   fix:
+    if: github.head_ref == 'fix/citizen-flow-ui-complete'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
