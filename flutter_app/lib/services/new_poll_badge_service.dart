@@ -129,7 +129,8 @@ class NewPollBadgeService {
     final status = (data['status'] as String? ?? '').trim().toLowerCase();
     final explicitlyPublished = data['resultsPublished'] == true ||
         data['resultPublished'] == true ||
-        _readDate(data['resultsPublishedAt'] ?? data['resultPublishedAt']) != null;
+        _readDate(data['resultsPublishedAt'] ?? data['resultPublishedAt']) !=
+            null;
     return explicitlyPublished || ['closed', 'archived'].contains(status);
   }
 
@@ -189,8 +190,7 @@ class NewPollBadgeService {
     for (final doc in _newsDocs) {
       final data = doc.data();
       if (!_matchesScope(data, scope)) continue;
-      final title =
-          (data['title'] as String? ?? 'Nouvelle actualité').trim();
+      final title = (data['title'] as String? ?? 'Nouvelle actualité').trim();
       final communeName = (data['communeName'] as String? ?? '').trim();
       items.add(
         CitizenNotificationItem(
@@ -221,7 +221,8 @@ class NewPollBadgeService {
 
     final items = _buildNotifications(scope);
     final seen = await _seenIds();
-    final unseenCount = items.where((item) => !seen.contains(item.storageId)).length;
+    final unseenCount =
+        items.where((item) => !seen.contains(item.storageId)).length;
     notifications.value = items;
     newCount.value = unseenCount;
     hasNew.value = unseenCount > 0;
@@ -266,14 +267,16 @@ class NewPollBadgeService {
     await _newsSubscription?.cancel();
     _lastScopeKey = scope.key;
 
-    _pollSubscription = db.collection(_pollCollection).limit(100).snapshots().listen(
+    _pollSubscription =
+        db.collection(_pollCollection).limit(100).snapshots().listen(
       (snapshot) {
         _pollDocs = snapshot.docs;
         unawaited(_refresh());
       },
       onError: (_) => unawaited(check()),
     );
-    _newsSubscription = db.collection(_newsCollection).limit(100).snapshots().listen(
+    _newsSubscription =
+        db.collection(_newsCollection).limit(100).snapshots().listen(
       (snapshot) {
         _newsDocs = snapshot.docs;
         unawaited(_refresh());

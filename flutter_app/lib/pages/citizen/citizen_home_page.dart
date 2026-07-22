@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -340,9 +342,7 @@ class _NotificationActionState extends State<_NotificationAction> {
   }
 
   Future<void> _openNotifications() async {
-    await _service.check();
-    if (!mounted) return;
-
+    unawaited(_service.check());
     final selected = await showModalBottomSheet<CitizenNotificationItem>(
       context: context,
       isScrollControlled: true,
@@ -376,7 +376,8 @@ class _NotificationActionState extends State<_NotificationAction> {
                 right: -2,
                 top: -4,
                 child: Container(
-                  constraints: const BoxConstraints(minWidth: 18, minHeight: 18),
+                  constraints:
+                      const BoxConstraints(minWidth: 18, minHeight: 18),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   alignment: Alignment.center,
                   decoration: const BoxDecoration(
@@ -523,8 +524,8 @@ class _CompactWelcome extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      height: dense ? 48 : 58,
-      padding: EdgeInsets.symmetric(horizontal: 14, vertical: dense ? 7 : 10),
+      height: dense ? 46 : 60,
+      padding: EdgeInsets.symmetric(horizontal: 14, vertical: dense ? 5 : 6),
       decoration: BoxDecoration(
         color: CitizenDesignTokens.lightBlue,
         borderRadius: BorderRadius.circular(18),
@@ -550,7 +551,8 @@ class _CompactWelcome extends StatelessWidget {
                   'Bonjour !',
                   style: TextStyle(
                     color: CitizenDesignTokens.deepBlue,
-                    fontSize: dense ? 17 : 19,
+                    fontSize: dense ? 16 : 18,
+                    height: 1,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
@@ -561,7 +563,8 @@ class _CompactWelcome extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: CitizenDesignTokens.textMuted,
-                      fontSize: 12.5,
+                      fontSize: 11.5,
+                      height: 1,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -916,9 +919,17 @@ class _WideHowItWorks extends StatelessWidget {
             SizedBox(height: 14),
             Row(
               children: [
-                Expanded(child: _WideStep(icon: Icons.edit_outlined, label: '1. Je participe')),
-                Expanded(child: _WideStep(icon: Icons.lock_outline_rounded, label: '2. C’est anonyme')),
-                Expanded(child: _WideStep(icon: Icons.bar_chart_rounded, label: '3. Je vois les résultats')),
+                Expanded(
+                    child: _WideStep(
+                        icon: Icons.edit_outlined, label: '1. Je participe')),
+                Expanded(
+                    child: _WideStep(
+                        icon: Icons.lock_outline_rounded,
+                        label: '2. C’est anonyme')),
+                Expanded(
+                    child: _WideStep(
+                        icon: Icons.bar_chart_rounded,
+                        label: '3. Je vois les résultats')),
               ],
             ),
           ],

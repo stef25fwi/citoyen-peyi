@@ -28,7 +28,7 @@ class _ControllerProfilePageState extends State<ControllerProfilePage>
     _tabController = TabController(
       length: 2,
       vsync: this,
-      initialIndex: widget.initialTab.clamp(0, 1),
+      initialIndex: widget.initialTab.clamp(0, 1).toInt(),
     );
     _load();
   }
@@ -310,7 +310,7 @@ class _ActivityMetric extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: width.clamp(140, 280),
+      width: width.clamp(140.0, 280.0).toDouble(),
       child: Card(
         child: Padding(
           padding: const EdgeInsets.all(14),
