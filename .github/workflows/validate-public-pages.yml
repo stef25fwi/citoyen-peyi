@@ -46,5 +46,26 @@ jobs:
           fi
       - working-directory: flutter_app
         run: flutter analyze
-      - working-directory: flutter_app
-        run: flutter test
+      - name: Run shared public UI test
+        working-directory: flutter_app
+        run: flutter test test/public_page_ui_test.dart
+      - id: full_tests
+        name: Run full Flutter suite and capture log
+        working-directory: flutter_app
+        run: |
+          set +e
+          flutter test 2>&1 | tee ../.github/public-pages-test.log
+          status=${PIPESTATUS[0]}
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Publish failing test log
+        if: steps.full_tests.outputs.status != '0'
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/public-pages-test.log
+          git commit -m 'test: publie le diagnostic des pages publiques'
+          git push origin HEAD:fix/uniformise-public-pages
+      - name: Fail when full suite failed
+        if: steps.full_tests.outputs.status != '0'
+        run: exit 1
