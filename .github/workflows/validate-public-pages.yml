@@ -12,6 +12,9 @@ on:
       - '.github/workflows/validate-public-pages.yml'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   flutter:
     if: github.head_ref == 'fix/uniformise-public-pages'
@@ -20,6 +23,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: fix/uniformise-public-pages
+          fetch-depth: 0
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
@@ -34,6 +38,24 @@ jobs:
       - name: Run shared public UI test
         working-directory: flutter_app
         run: flutter test test/public_page_ui_test.dart
-      - name: Run full Flutter suite
+      - id: full_tests
+        name: Run full Flutter suite and capture diagnostic
         working-directory: flutter_app
-        run: flutter test
+        run: |
+          set +e
+          flutter test > ../docs/public-pages-test-diagnostic.txt 2>&1
+          status=$?
+          echo "status=$status" >> "$GITHUB_OUTPUT"
+          echo "Flutter test exit status: $status"
+          exit 0
+      - name: Publish failing test diagnostic
+        if: steps.full_tests.outputs.status != '0'
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add docs/public-pages-test-diagnostic.txt
+          git commit -m 'test: publie le diagnostic Flutter des pages publiques'
+          git push origin HEAD:fix/uniformise-public-pages
+      - name: Fail when full suite failed
+        if: always() && steps.full_tests.outputs.status != '0'
+        run: exit 1
