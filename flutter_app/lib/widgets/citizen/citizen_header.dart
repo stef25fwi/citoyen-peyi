@@ -6,7 +6,7 @@ class CitizenHeader extends StatelessWidget {
   const CitizenHeader({
     super.key,
     required this.title,
-    this.showBack = true,
+    this.showBack = false,
     this.trailing,
     this.height = 104,
   });
