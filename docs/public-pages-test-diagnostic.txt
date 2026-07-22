@@ -1,0 +1,409 @@
+Resolving dependencies...
+Downloading packages...
+  _flutterfire_internals 1.3.59 (1.3.75 available)
+  cloud_firestore 5.6.12 (6.7.1 available)
+  cloud_firestore_platform_interface 6.6.12 (8.0.5 available)
+  cloud_firestore_web 4.4.12 (5.7.1 available)
+  code_assets 1.0.0 (1.2.1 available)
+  cross_file 0.3.5+2 (0.3.5+4 available)
+  equatable 2.0.8 (2.1.0 available)
+  firebase_app_check 0.3.2+10 (0.4.5+2 available)
+  firebase_app_check_platform_interface 0.1.1+10 (0.4.1+2 available)
+  firebase_app_check_web 0.2.0+14 (0.2.5+2 available)
+  firebase_auth 5.7.0 (6.5.6 available)
+  firebase_auth_platform_interface 7.7.3 (9.0.5 available)
+  firebase_auth_web 5.15.3 (6.2.5 available)
+  firebase_core 3.15.2 (4.12.1 available)
+  firebase_core_platform_interface 6.0.3 (8.0.0 available)
+  firebase_core_web 2.24.1 (3.9.1 available)
+  firebase_messaging 15.2.10 (16.4.3 available)
+  firebase_messaging_platform_interface 4.6.10 (4.9.2 available)
+  firebase_messaging_web 3.10.10 (4.2.3 available)
+  firebase_storage 12.4.10 (13.4.5 available)
+  firebase_storage_platform_interface 5.2.10 (6.0.5 available)
+  firebase_storage_web 3.10.17 (3.11.11 available)
+  fl_chart 0.69.2 (1.2.0 available)
+  flutter_lints 5.0.0 (6.0.0 available)
+  google_fonts 6.3.3 (8.2.0 available)
+  hooks 1.0.3 (2.1.0 available)
+  image_picker 1.2.2 (1.2.3 available)
+  lints 5.1.1 (6.1.0 available)
+  matcher 0.12.19 (0.12.20 available)
+  meta 1.18.0 (1.19.0 available)
+  native_toolchain_c 0.17.6 (0.19.3 available)
+  objective_c 9.3.0 (9.4.1 available)
+  package_config 2.2.0 (3.0.0 available)
+  path_provider 2.1.5 (2.1.6 available)
+  path_provider_linux 2.2.1 (2.2.2 available)
+  path_provider_platform_interface 2.1.2 (2.1.3 available)
+  qr 3.0.2 (4.0.0 available)
+  record_use 0.6.0 (1.0.0 available)
+  shared_preferences_android 2.4.23 (2.4.27 available)
+  test_api 0.7.11 (0.7.13 available)
+  vector_math 2.2.0 (2.4.0 available)
+  vm_service 15.1.0 (15.2.0 available)
+Got dependencies!
+42 packages have newer versions incompatible with dependency constraints.
+Try `flutter pub outdated` for more information.
+
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/vote_access_service_test.dart: VoteAccessService.parseCodeOrQrUrl extracts raw code
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/vote_access_service_test.dart: VoteAccessService.parseCodeOrQrUrl extracts code from query parameter
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/vote_access_service_test.dart: VoteAccessService.parseCodeOrQrUrl extracts token from vote route
+::group::✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/vote_access_service_test.dart: VoteAccessService.validateCode returns parsed payload on success
+[FirebaseAuthService] AppCheck token failed: [core/no-app] No Firebase App '[DEFAULT]' has been created - call Firebase.initializeApp()
+::endgroup::
+::group::✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/vote_access_service_test.dart: VoteAccessService.validateCode throws VoteAccessException on API error
+[FirebaseAuthService] AppCheck token failed: [core/no-app] No Firebase App '[DEFAULT]' has been created - call Firebase.initializeApp()
+::endgroup::
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/commune_lookup_service_test.dart: CommuneLookupService normalisation normalizeCommuneName trims and collapses whitespace
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/commune_lookup_service_test.dart: CommuneLookupService normalisation normalizeInsee uppercases and strips spaces (handles 2A/2B)
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/commune_lookup_service_test.dart: CommuneLookupService normalisation normalizePostal keeps digits only, max 5
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/commune_lookup_service_test.dart: CommuneLookupService normalisation CommuneSuggestion.fromApi normalises every field
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/commune_lookup_service_test.dart: CommuneLookupService normalisation CommuneSuggestion.fromApi rejects entries without name or code
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: home screen renders
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: home mobile shows admin access within the viewport
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/backend_diagnostics_test.dart: BackendDiagnostics.describeConfigIssue signale une URL vide
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/backend_diagnostics_test.dart: BackendDiagnostics.describeConfigIssue signale une URL invalide
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/backend_diagnostics_test.dart: BackendDiagnostics.describeConfigIssue signale le mixed-content quand la page est HTTPS et l'API en HTTP non-loopback
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/backend_diagnostics_test.dart: BackendDiagnostics.describeConfigIssue signale localhost HTTP depuis une page HTTPS de production
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/backend_diagnostics_test.dart: BackendDiagnostics.describeConfigIssue autorise une configuration valide
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/backend_diagnostics_test.dart: BackendDiagnostics.describeNetworkError mentionne le timeout
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/backend_diagnostics_test.dart: BackendDiagnostics.describeNetworkError mentionne CORS et l'URL pour ClientException
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/backend_diagnostics_test.dart: BackendDiagnostics.describeNetworkError fallback generique pour erreur inconnue
+::group::❌ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: citizen access requires legal terms before code validation (failed)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Faites défiler le texte jusqu’à la fin pour
+accepter": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart:79:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart line 79
+The test description was:
+  citizen access requires legal terms before code validation
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Test failed. See exception logs above.
+The test description was: citizen access requires legal terms before code validation
+
+::endgroup::
+::group::✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: commune admin dashboard renders assistance without grey screen
+[AdminDashboard] loadProfiles failed: Session Firebase manquante, reconnectez-vous.
+#0      ControleurProfileService._authorizedRequest (package:citoyen_peyi_flutter/services/controleur_profile_service.dart:168:7)
+<asynchronous suspension>
+#1      ControleurProfileService.loadProfiles (package:citoyen_peyi_flutter/services/controleur_profile_service.dart:98:22)
+<asynchronous suspension>
+#2      _AdminDashboardPageState._load (package:citoyen_peyi_flutter/pages/admin_dashboard_page.dart:68:21)
+<asynchronous suspension>
+::endgroup::
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: commune admin assistance page renders on mobile without grey screen
+::group::✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: commune admin assistance button opens support page
+[AdminDashboard] loadProfiles failed: Session Firebase manquante, reconnectez-vous.
+#0      ControleurProfileService._authorizedRequest (package:citoyen_peyi_flutter/services/controleur_profile_service.dart:168:7)
+<asynchronous suspension>
+#1      ControleurProfileService.loadProfiles (package:citoyen_peyi_flutter/services/controleur_profile_service.dart:98:22)
+<asynchronous suspension>
+#2      _AdminDashboardPageState._load (package:citoyen_peyi_flutter/pages/admin_dashboard_page.dart:68:21)
+<asynchronous suspension>
+::endgroup::
+::group::✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: commune admin assistance button opens support page on mobile
+[AdminDashboard] loadProfiles failed: Session Firebase manquante, reconnectez-vous.
+#0      ControleurProfileService._authorizedRequest (package:citoyen_peyi_flutter/services/controleur_profile_service.dart:168:7)
+<asynchronous suspension>
+#1      ControleurProfileService.loadProfiles (package:citoyen_peyi_flutter/services/controleur_profile_service.dart:98:22)
+<asynchronous suspension>
+#2      _AdminDashboardPageState._load (package:citoyen_peyi_flutter/pages/admin_dashboard_page.dart:68:21)
+<asynchronous suspension>
+::endgroup::
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: admin ticket form validates required fields
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: super admin assistance page has clear unavailable state
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: ticket card displays unread support badge
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/widget_test.dart: system support messages render as centered notes
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_poll_question_page_test.dart: share button copies a real consultation link to the clipboard
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_poll_question_page_test.dart: redirects to /access when there is no citizen access session
+::group::❌ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_poll_question_page_test.dart: steps through a multi-question survey and submits real answers (failed)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following assertion was thrown running a test:
+The finder "Found 0 widgets with text "Suivant": []" (used in a call to "tap()") could not find any
+matching widgets.
+
+When the exception was thrown, this was the stack:
+#0      WidgetController._getElementPoint (package:flutter_test/src/controller.dart:2095:7)
+#1      WidgetController.getCenter (package:flutter_test/src/controller.dart:1947:12)
+#2      WidgetController.tap (package:flutter_test/src/controller.dart:1080:7)
+#3      main.<anonymous closure> (file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_poll_question_page_test.dart:153:18)
+<asynchronous suspension>
+#4      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#5      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+The test description was:
+  steps through a multi-question survey and submits real answers
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Test failed. See exception logs above.
+The test description was: steps through a multi-question survey and submits real answers
+
+::endgroup::
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/public_page_ui_test.dart: public page components use the shared typography and spacing
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/vote_page_test.dart: VotePage shows already voted state
+✅ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/vote_page_test.dart: VotePage prevents double submission while request is pending
+::group::❌ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_full_flow_test.dart: accueil public → code → accueil connecté → vote → confirmation → déconnexion (failed)
+unhandled element <filter/>; Picture key: Svg loader
+══╡ EXCEPTION CAUGHT BY RENDERING LIBRARY ╞═════════════════════════════════════════════════════════
+The following assertion was thrown during layout:
+A RenderFlex overflowed by 45 pixels on the bottom.
+
+The relevant error-causing widget was:
+  Column
+  Column:file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/lib/pages/citizen/citizen_home_page.dart:385:15
+
+The overflowing RenderFlex has an orientation of Axis.vertical.
+The edge of the RenderFlex that is overflowing has been marked in the rendering with a yellow and
+black striped pattern. This is usually caused by the contents being too big for the RenderFlex.
+Consider applying a flex factor (e.g. using an Expanded widget) to force the children of the
+RenderFlex to fit within the available space instead of being sized to their natural size.
+This is considered an error condition because it indicates that there is content that cannot be
+seen. If the content is legitimately bigger than the available space, consider clipping it with a
+ClipRect widget before putting it in the flex, or using a scrollable container rather than a Flex,
+like a ListView.
+The specific RenderFlex in question is: RenderFlex#f57e0 relayoutBoundary=up1 OVERFLOWING:
+  creator: Column ← Stack ← Builder ← Padding-[GlobalKey#0fa76] ← SizedBox ← Ink ← Listener ←
+    RawGestureDetector ← GestureDetector ← Semantics ← DefaultSelectionStyle ← Builder ← ⋯
+  parentData: not positioned; offset=Offset(0.0, 0.0) (can use size)
+  constraints: BoxConstraints(0.0<=w<=348.0, 0.0<=h<=180.0)
+  size: Size(348.0, 180.0)
+  direction: vertical
+  mainAxisAlignment: start
+  mainAxisSize: max
+  crossAxisAlignment: start
+  textDirection: ltr
+  verticalDirection: down
+  spacing: 0.0
+◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤◢◤
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: exactly one matching candidate
+  Actual: _TextWidgetFinder:<Found 0 widgets with text "Quel projet préférez-vous ?": []>
+   Which: means none were found but one was expected
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_full_flow_test.dart:87:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_full_flow_test.dart line 87
+The test description was:
+  accueil public → code → accueil connecté → vote → confirmation → déconnexion
+════════════════════════════════════════════════════════════════════════════════════════════════════
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following message was thrown:
+Multiple exceptions (2) were detected during the running of the current test, and at least one was
+unexpected.
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Warning: At least one test in this suite creates an HttpClient. When running a test suite that uses
+TestWidgetsFlutterBinding, all HTTP requests will return status code 400, and no network request
+will actually be made. Any test expecting a real network connection and status code will fail.
+To test code that needs an HttpClient, provide your own HttpClient implementation to the code under
+test, so that your test can consistently provide a testable response to the code under test.
+Test failed. See exception logs above.
+The test description was: accueil public → code → accueil connecté → vote → confirmation → déconnexion
+
+::endgroup::
+::group::❌ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart: À propos ouvre la vraie page d’informations légales (failed)
+unhandled element <filter/>; Picture key: Svg loader
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: FlutterError:<A RenderFlex overflowed by 45 pixels on the bottom.>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart:22:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart line 22
+The test description was:
+  À propos ouvre la vraie page d’informations légales
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Test failed. See exception logs above.
+The test description was: À propos ouvre la vraie page d’informations légales
+
+::endgroup::
+::group::❌ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart: la cloche ouvre la liste réelle des consultations (failed)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: FlutterError:<A RenderFlex overflowed by 45 pixels on the bottom.>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart:40:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart line 40
+The test description was:
+  la cloche ouvre la liste réelle des consultations
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Test failed. See exception logs above.
+The test description was: la cloche ouvre la liste réelle des consultations
+
+::endgroup::
+::group::❌ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart: le bouton profil ouvre le profil citoyen (failed)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: FlutterError:<A RenderFlex overflowed by 45 pixels on the bottom.>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart:58:5)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart line 58
+The test description was:
+  le bouton profil ouvre le profil citoyen
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Test failed. See exception logs above.
+The test description was: le bouton profil ouvre le profil citoyen
+
+::endgroup::
+::group::❌ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart: accueil connecté sans overflow en 360.0x640.0 (failed)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: FlutterError:<A RenderFlex overflowed by 98 pixels on the bottom.>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart:80:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart line 80
+The test description was:
+  accueil connecté sans overflow en 360.0x640.0
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Test failed. See exception logs above.
+The test description was: accueil connecté sans overflow en 360.0x640.0
+
+::endgroup::
+::group::❌ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart: accueil connecté sans overflow en 390.0x844.0 (failed)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: FlutterError:<A RenderFlex overflowed by 77 pixels on the bottom.>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart:80:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart line 80
+The test description was:
+  accueil connecté sans overflow en 390.0x844.0
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Test failed. See exception logs above.
+The test description was: accueil connecté sans overflow en 390.0x844.0
+
+::endgroup::
+::group::❌ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart: accueil connecté sans overflow en 430.0x932.0 (failed)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: FlutterError:<A RenderFlex overflowed by 45 pixels on the bottom.>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart:80:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart line 80
+The test description was:
+  accueil connecté sans overflow en 430.0x932.0
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Test failed. See exception logs above.
+The test description was: accueil connecté sans overflow en 430.0x932.0
+
+::endgroup::
+::group::❌ /home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart: accueil connecté sans overflow en 768.0x1024.0 (failed)
+══╡ EXCEPTION CAUGHT BY FLUTTER TEST FRAMEWORK ╞════════════════════════════════════════════════════
+The following TestFailure was thrown running a test:
+Expected: null
+  Actual: FlutterError:<A RenderFlex overflowed by 45 pixels on the bottom.>
+
+When the exception was thrown, this was the stack:
+#4      main.<anonymous closure> (file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart:80:7)
+<asynchronous suspension>
+#5      testWidgets.<anonymous closure>.<anonymous closure> (package:flutter_test/src/widget_tester.dart:192:15)
+<asynchronous suspension>
+#6      TestWidgetsFlutterBinding._runTestBody (package:flutter_test/src/binding.dart:1952:5)
+<asynchronous suspension>
+<asynchronous suspension>
+(elided one frame from package:stack_trace)
+
+This was caught by the test expectation on the following line:
+  file:///home/runner/work/citoyen-peyi/citoyen-peyi/flutter_app/test/citizen_home_page_test.dart line 80
+The test description was:
+  accueil connecté sans overflow en 768.0x1024.0
+════════════════════════════════════════════════════════════════════════════════════════════════════
+Test failed. See exception logs above.
+The test description was: accueil connecté sans overflow en 768.0x1024.0
+
+::endgroup::
+
+::error::33 tests passed, 10 failed.
