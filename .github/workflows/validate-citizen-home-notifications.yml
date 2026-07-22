@@ -31,8 +31,9 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          path = Path('flutter_app/lib/pages/controller_profile_page.dart')
-          text = path.read_text()
+
+          profile = Path('flutter_app/lib/pages/controller_profile_page.dart')
+          text = profile.read_text()
           text = text.replace(
               'initialIndex: widget.initialTab.clamp(0, 1),',
               'initialIndex: widget.initialTab.clamp(0, 1).toInt(),',
@@ -41,7 +42,28 @@ jobs:
               'width: width.clamp(140, 280),',
               'width: width.clamp(140.0, 280.0).toDouble(),',
           )
-          path.write_text(text)
+          profile.write_text(text)
+
+          home = Path('flutter_app/lib/pages/citizen/citizen_home_page.dart')
+          text = home.read_text()
+          text = text.replace(
+              'height: dense ? 48 : 58,',
+              'height: dense ? 46 : 60,',
+          )
+          text = text.replace(
+              'padding: EdgeInsets.symmetric(horizontal: 14, vertical: dense ? 7 : 10),',
+              'padding: EdgeInsets.symmetric(horizontal: 14, vertical: dense ? 5 : 6),',
+          )
+          text = text.replace(
+              'fontSize: dense ? 17 : 19,\n                    fontWeight: FontWeight.w900,',
+              'fontSize: dense ? 16 : 18,\n                    height: 1,\n                    fontWeight: FontWeight.w900,',
+          )
+          text = text.replace(
+              'fontSize: 12.5,\n                      fontWeight: FontWeight.w600,',
+              'fontSize: 11.5,\n                      height: 1,\n                      fontWeight: FontWeight.w600,',
+              1,
+          )
+          home.write_text(text)
           PY
 
       - uses: subosito/flutter-action@v2
