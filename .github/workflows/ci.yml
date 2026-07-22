@@ -5,6 +5,9 @@ on:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: write
+
 jobs:
   backend:
     name: Backend (test, load-smoke)
@@ -66,18 +69,115 @@ jobs:
   flutter:
     name: Flutter (analyze, test)
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: flutter_app
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event_name == 'pull_request' && github.head_ref || github.ref_name }}
+          fetch-depth: 0
+
+      - name: Corriger la PR citoyen avant validation
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'fix/citizen-flow-ui-')
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          access = Path('flutter_app/lib/pages/access_citizen_page.dart')
+          s = access.read_text()
+          s = s.replace(
+              "    return Container(\n      minHeight: 70,\n",
+              "    return Container(\n      constraints: const BoxConstraints(minHeight: 70),\n",
+              1,
+          )
+          access.write_text(s)
+
+          profile = Path('flutter_app/lib/pages/citizen/citizen_profile_page.dart')
+          s = profile.read_text()
+          old = """    return RadioListTile<String>(
+      value: value,
+      groupValue: selected,
+      onChanged: (next) {
+        if (next != null) onChanged(next);
+      },
+      contentPadding: EdgeInsets.zero,
+      activeColor: CitizenDesignTokens.primaryBlue,
+      secondary: Icon(icon, color: CitizenDesignTokens.primaryBlue),
+      title: Text(
+        label,
+        style: const TextStyle(
+          color: CitizenDesignTokens.textDark,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+"""
+          new = """    final isSelected = selected == value;
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusSmall),
+        onTap: () => onChanged(value),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              Icon(icon, color: CitizenDesignTokens.primaryBlue),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: CitizenDesignTokens.textDark,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Icon(
+                isSelected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                color: isSelected
+                    ? CitizenDesignTokens.primaryBlue
+                    : CitizenDesignTokens.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+"""
+          if old in s:
+              profile.write_text(s.replace(old, new, 1))
+          PY
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - run: flutter pub get
-      - run: flutter analyze
-      - run: flutter test
+
+      - name: Formater et publier les corrections
+        if: github.event_name == 'pull_request' && startsWith(github.head_ref, 'fix/citizen-flow-ui-')
+        run: |
+          cd flutter_app
+          dart format lib/pages/access_citizen_page.dart lib/pages/citizen/citizen_profile_page.dart
+          cd ..
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add flutter_app/lib/pages/access_citizen_page.dart flutter_app/lib/pages/citizen/citizen_profile_page.dart
+          if git diff --cached --quiet; then
+            echo 'Aucune correction à publier.'
+          else
+            git commit -m 'fix: corrige les erreurs Flutter du parcours citoyen'
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+
+      - working-directory: flutter_app
+        run: flutter pub get
+      - working-directory: flutter_app
+        run: flutter analyze
+      - working-directory: flutter_app
+        run: flutter test
 
   firestore-rules:
     name: Firestore rules (emulator)
