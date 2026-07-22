@@ -20,9 +20,15 @@ def remove_google_fonts(text: str) -> str:
 
 
 def update_app_theme(text: str) -> str:
+    foundation_import = "import 'package:flutter/foundation.dart';\n"
+    material_import = "import 'package:flutter/material.dart';\n"
+
+    # Les workflows peuvent rejouer la migration plusieurs fois. On normalise
+    # d'abord les imports pour garantir un résultat strictement idempotent.
+    text = text.replace(foundation_import, "")
     text = text.replace(
-        "import 'package:flutter/material.dart';\n",
-        "import 'package:flutter/foundation.dart';\nimport 'package:flutter/material.dart';\n",
+        material_import,
+        foundation_import + material_import,
         1,
     )
     text = text.replace("import 'package:google_fonts/google_fonts.dart';\n", "")
