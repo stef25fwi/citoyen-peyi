@@ -1,22 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../services/citizen_public_access_service.dart';
 import '../services/firestore_data_service.dart';
 import '../theme/citizen_design_tokens.dart';
 import '../widgets/citizen/citizen_bottom_nav.dart';
-import '../widgets/citizen/citizen_header.dart';
 import '../widgets/citizen_connect_invite.dart';
-import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
+import '../widgets/public_page_ui.dart';
 import 'public_results_page.dart';
 
-/// Page actualités / projets de la commune.
-///
-/// Lit la collection Firestore `public_news` (champs: title, body, communeName,
-/// publishedAt, link). Si la collection est vide ou indisponible, un empty
-/// state honnête est affiché.
 class PublicNewsPage extends StatefulWidget {
   const PublicNewsPage({super.key});
 
@@ -35,7 +28,7 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
   }
 
   Future<void> _load() async {
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
     final db = FirestoreDataService.instance;
     List<_NewsItem> items = const [];
     if (db != null) {
@@ -60,106 +53,49 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final hasCitizenSession =
-        CitizenPublicAccessService.instance.currentSession != null;
+    final session = CitizenPublicAccessService.instance.currentSession;
+    final connected = session != null;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemStatusBarContrastEnforced: false,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: SafeArea(
-              bottom: false,
-              child: ColoredBox(
-                color: CitizenDesignTokens.background,
-                child: Column(
-                  children: [
-                    const CitizenHeader(
-                      title: 'Actualités / Projets',
-                      trailing: DebugLogButton(label: ''),
-                    ),
-                    Expanded(
-                      child: RefreshIndicator(
-                        color: CitizenDesignTokens.primaryBlue,
-                        onRefresh: _load,
-                        child: ListView(
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(16, 18, 16, 24),
-                          children: [
-                            if (!hasCitizenSession)
-                              const CitizenConnectInvite(
-                                message:
-                                    'Connectez-vous a votre compte pour suivre les actualites et participer aux consultations de votre commune.',
-                              )
-                            else ...[
-                              Text(
-                                'Informations communales et projets soumis à consultation.',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: const Color(0xFF5A6573),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 18),
-                              if (_isLoading)
-                                const Padding(
-                                  padding: EdgeInsets.all(32),
-                                  child: Center(
-                                    child: CircularProgressIndicator(),
-                                  ),
-                                )
-                              else if (_items.isEmpty)
-                                Card(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(28),
-                                    child: Column(
-                                      children: [
-                                        const Icon(
-                                          Icons.newspaper_rounded,
-                                          size: 42,
-                                          color: Color(0xFF5A6573),
-                                        ),
-                                        const SizedBox(height: 12),
-                                        Text(
-                                          'Aucune actualité pour le moment',
-                                          style: theme.textTheme.titleLarge,
-                                        ),
-                                        const SizedBox(height: 6),
-                                        const Text(
-                                          'Les communes peuvent publier ici leurs actualités et projets soumis à consultation. Revenez bientôt.',
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                )
-                              else
-                                for (final item in _items)
-                                  _NewsCard(item: item),
-                            ],
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+    return PublicPageShell(
+      title: 'Actualités / Projets',
+      navigationBar: connected
+          ? CitizenBottomNav(
+              activeTab: CitizenNavTab.news,
+              onTabSelected: _onCitizenNav,
+            )
+          : const PublicBottomNav(currentTab: PublicTab.news),
+      body: RefreshIndicator(
+        color: CitizenDesignTokens.primaryBlue,
+        onRefresh: _load,
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 26),
+          children: [
+            if (!connected)
+              const CitizenConnectInvite(
+                message:
+                    'Connectez-vous avec votre code citoyen pour suivre votre commune et participer anonymement aux consultations.',
               ),
+            const PublicPageIntro(
+              icon: Icons.article_rounded,
+              title: 'Actualités et projets',
+              description:
+                  'Retrouvez les informations communales et les projets présentés aux citoyens.',
             ),
-          ),
-        ),
-        bottomNavigationBar: hasCitizenSession
-            ? CitizenBottomNav(
-                activeTab: CitizenNavTab.news,
-                onTabSelected: _onCitizenNav,
+            const SizedBox(height: 14),
+            if (_isLoading)
+              const PublicLoadingState()
+            else if (_items.isEmpty)
+              const PublicEmptyState(
+                icon: Icons.newspaper_rounded,
+                title: 'Aucune actualité pour le moment',
+                message:
+                    'Les communes publieront ici leurs actualités et leurs projets. Revenez prochainement.',
               )
-            : const PublicBottomNav(currentTab: PublicTab.news),
+            else
+              for (final item in _items) _NewsCard(item: item),
+          ],
+        ),
       ),
     );
   }
@@ -168,7 +104,7 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
     switch (tab) {
       case CitizenNavTab.home:
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/citizen/welcome',
+          '/citizen/home',
           (route) => route.isFirst,
         );
         break;
@@ -193,48 +129,84 @@ class _NewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Card(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(18),
+      decoration: CitizenDesignTokens.cardDecoration,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (item.communeName.isNotEmpty)
-                Text(
-                  item.communeName.toUpperCase(),
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.labelSmall
-                      ?.copyWith(color: const Color(0xFF5A6573)),
+              Container(
+                width: 44,
+                height: 44,
+                decoration: const BoxDecoration(
+                  color: CitizenDesignTokens.skyBlue,
+                  shape: BoxShape.circle,
                 ),
-              const SizedBox(height: 4),
-              Text(
-                item.title,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.titleLarge,
+                child: const Icon(
+                  Icons.article_outlined,
+                  color: CitizenDesignTokens.primaryBlue,
+                  size: 24,
+                ),
               ),
-              if (item.publishedAt.isNotEmpty) ...[
-                const SizedBox(height: 4),
-                Text(
-                  item.publishedAt,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodySmall
-                      ?.copyWith(color: const Color(0xFF5A6573)),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        color: CitizenDesignTokens.textDark,
+                        fontSize: 16,
+                        height: 1.25,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    if (item.communeName.isNotEmpty) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        item.communeName,
+                        style: const TextStyle(
+                          color: CitizenDesignTokens.textMuted,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
-              ],
-              if (item.body.isNotEmpty) ...[
-                const SizedBox(height: 10),
-                Text(
-                  item.body,
-                  textAlign: TextAlign.center,
-                  style: theme.textTheme.bodyLarge,
-                ),
-              ],
+              ),
             ],
           ),
-        ),
+          if (item.publishedAt.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              item.publishedAt,
+              style: const TextStyle(
+                color: CitizenDesignTokens.textMuted,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+          if (item.body.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              item.body,
+              style: const TextStyle(
+                color: CitizenDesignTokens.textDark,
+                fontSize: 14,
+                height: 1.4,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
       ),
     );
   }
