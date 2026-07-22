@@ -40,9 +40,8 @@ class PublicPageShell extends StatelessWidget {
                 : viewportWidth >= 800
                     ? 900.0
                     : availableWidth;
-            final frameWidth = availableWidth < frameLimit
-                ? availableWidth
-                : frameLimit;
+            final frameWidth =
+                availableWidth < frameLimit ? availableWidth : frameLimit;
             final wide = viewportWidth >= 600;
             final headerHeight = viewportWidth < 360
                 ? 96.0
@@ -71,8 +70,7 @@ class PublicPageShell extends StatelessWidget {
                                 title: title,
                                 showBack: false,
                                 height: headerHeight,
-                                trailing:
-                                    const DebugLogButton(label: ''),
+                                trailing: const DebugLogButton(label: ''),
                               ),
                               Expanded(child: body),
                               navigationBar,
@@ -124,7 +122,8 @@ class PublicResponsiveList extends StatelessWidget {
             : width >= 700
                 ? 720.0
                 : available;
-        final contentWidth = available < contentLimit ? available : contentLimit;
+        final contentWidth =
+            available < contentLimit ? available : contentLimit;
 
         return ListView(
           controller: controller,
