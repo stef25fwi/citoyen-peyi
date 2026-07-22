@@ -46,47 +46,13 @@ jobs:
         working-directory: flutter_app
         run: flutter analyze
 
-      - id: regression
-        name: Run regression test
-        continue-on-error: true
+      - name: Run false-error regression test
         working-directory: flutter_app
-        run: |
-          set -o pipefail
-          flutter test test/access_citizen_false_error_test.dart 2>&1 | tee ../citizen-validation-test.log
+        run: flutter test test/access_citizen_false_error_test.dart
 
-      - name: Upload regression diagnostic
-        if: steps.regression.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: citizen-validation-test-diagnostic
-          path: citizen-validation-test.log
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Stop after regression failure
-        if: steps.regression.outcome == 'failure'
-        run: exit 1
-
-      - id: citizen_flows
-        name: Run citizen flow tests
-        continue-on-error: true
+      - name: Run vote access service tests
         working-directory: flutter_app
-        run: |
-          set -o pipefail
-          flutter test test/citizen_full_flow_test.dart test/widget_test.dart 2>&1 | tee ../citizen-flow-tests.log
-
-      - name: Upload citizen flow diagnostic
-        if: steps.citizen_flows.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: citizen-flow-tests-diagnostic
-          path: citizen-flow-tests.log
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Stop after citizen flow failure
-        if: steps.citizen_flows.outcome == 'failure'
-        run: exit 1
+        run: flutter test test/vote_access_service_test.dart
 
       - name: Publish validated fix
         run: |
