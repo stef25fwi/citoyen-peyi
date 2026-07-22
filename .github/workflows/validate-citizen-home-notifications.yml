@@ -46,6 +46,8 @@ jobs:
 
           home = Path('flutter_app/lib/pages/citizen/citizen_home_page.dart')
           text = home.read_text()
+          if not text.startswith("import 'dart:async';"):
+              text = "import 'dart:async';\n\n" + text
           text = text.replace(
               'height: dense ? 48 : 58,',
               'height: dense ? 46 : 60,',
@@ -62,6 +64,10 @@ jobs:
               'fontSize: 12.5,\n                      fontWeight: FontWeight.w600,',
               'fontSize: 11.5,\n                      height: 1,\n                      fontWeight: FontWeight.w600,',
               1,
+          )
+          text = text.replace(
+              '  Future<void> _openNotifications() async {\n    await _service.check();\n    if (!mounted) return;\n\n    final selected = await showModalBottomSheet<CitizenNotificationItem>(',
+              '  Future<void> _openNotifications() async {\n    unawaited(_service.check());\n    final selected = await showModalBottomSheet<CitizenNotificationItem>(',
           )
           home.write_text(text)
           PY
