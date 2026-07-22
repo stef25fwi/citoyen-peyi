@@ -8,7 +8,6 @@ class AppTheme {
   const AppTheme._();
 
   static ThemeData light() {
-    const tokens = CitizenDesignTokens;
     const overlayStyle = SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.dark,
@@ -29,101 +28,95 @@ class AppTheme {
       error: CitizenDesignTokens.error,
       surface: CitizenDesignTokens.surface,
       onSurface: CitizenDesignTokens.textDark,
-      surfaceContainerLowest: CitizenDesignTokens.white,
-      surfaceContainerLow: CitizenDesignTokens.surfaceMuted,
-      surfaceContainer: CitizenDesignTokens.background,
-      surfaceContainerHigh: CitizenDesignTokens.backgroundStrong,
-      outline: CitizenDesignTokens.cardBorder,
-      outlineVariant: CitizenDesignTokens.divider,
     );
 
-    final baseTextTheme = GoogleFonts.interTextTheme();
-    final textTheme = baseTextTheme.copyWith(
-      displayLarge: baseTextTheme.displayLarge?.copyWith(
+    final base = GoogleFonts.interTextTheme();
+    final textTheme = base.copyWith(
+      displayLarge: base.displayLarge?.copyWith(
         fontSize: 54,
         fontWeight: FontWeight.w900,
         height: 1.03,
         letterSpacing: -1.8,
         color: CitizenDesignTokens.textDark,
       ),
-      displayMedium: baseTextTheme.displayMedium?.copyWith(
+      displayMedium: base.displayMedium?.copyWith(
         fontSize: 42,
         fontWeight: FontWeight.w900,
         height: 1.06,
         letterSpacing: -1.25,
         color: CitizenDesignTokens.textDark,
       ),
-      headlineLarge: baseTextTheme.headlineLarge?.copyWith(
+      headlineLarge: base.headlineLarge?.copyWith(
         fontSize: 34,
         fontWeight: FontWeight.w900,
         height: 1.1,
         letterSpacing: -0.8,
         color: CitizenDesignTokens.textDark,
       ),
-      headlineMedium: baseTextTheme.headlineMedium?.copyWith(
+      headlineMedium: base.headlineMedium?.copyWith(
         fontSize: 28,
-        fontWeight: FontWeight.w850,
+        fontWeight: FontWeight.w800,
         height: 1.12,
         letterSpacing: -0.55,
         color: CitizenDesignTokens.textDark,
       ),
-      headlineSmall: baseTextTheme.headlineSmall?.copyWith(
+      headlineSmall: base.headlineSmall?.copyWith(
         fontSize: 23,
-        fontWeight: FontWeight.w850,
+        fontWeight: FontWeight.w800,
         height: 1.16,
         letterSpacing: -0.35,
         color: CitizenDesignTokens.textDark,
       ),
-      titleLarge: baseTextTheme.titleLarge?.copyWith(
+      titleLarge: base.titleLarge?.copyWith(
         fontSize: 20,
-        fontWeight: FontWeight.w850,
+        fontWeight: FontWeight.w800,
         height: 1.18,
         letterSpacing: -0.25,
         color: CitizenDesignTokens.textDark,
       ),
-      titleMedium: baseTextTheme.titleMedium?.copyWith(
+      titleMedium: base.titleMedium?.copyWith(
         fontSize: 16,
-        fontWeight: FontWeight.w750,
+        fontWeight: FontWeight.w700,
         height: 1.25,
         color: CitizenDesignTokens.textDark,
       ),
-      titleSmall: baseTextTheme.titleSmall?.copyWith(
+      titleSmall: base.titleSmall?.copyWith(
         fontSize: 14,
-        fontWeight: FontWeight.w750,
+        fontWeight: FontWeight.w700,
         height: 1.25,
         color: CitizenDesignTokens.textDark,
       ),
-      bodyLarge: baseTextTheme.bodyLarge?.copyWith(
+      bodyLarge: base.bodyLarge?.copyWith(
         fontSize: 16,
         height: 1.52,
         color: CitizenDesignTokens.textDark,
       ),
-      bodyMedium: baseTextTheme.bodyMedium?.copyWith(
+      bodyMedium: base.bodyMedium?.copyWith(
         fontSize: 14,
         height: 1.48,
         color: CitizenDesignTokens.textDark,
       ),
-      bodySmall: baseTextTheme.bodySmall?.copyWith(
+      bodySmall: base.bodySmall?.copyWith(
         fontSize: 12,
         height: 1.42,
         color: CitizenDesignTokens.textMuted,
       ),
-      labelLarge: baseTextTheme.labelLarge?.copyWith(
+      labelLarge: base.labelLarge?.copyWith(
         fontSize: 15,
         fontWeight: FontWeight.w800,
         letterSpacing: -0.1,
       ),
-      labelMedium: baseTextTheme.labelMedium?.copyWith(
+      labelMedium: base.labelMedium?.copyWith(
         fontSize: 12,
-        fontWeight: FontWeight.w750,
+        fontWeight: FontWeight.w700,
       ),
-      labelSmall: baseTextTheme.labelSmall?.copyWith(
+      labelSmall: base.labelSmall?.copyWith(
         fontSize: 11,
         fontWeight: FontWeight.w700,
       ),
     );
 
-    final interactiveOverlay = WidgetStateProperty.resolveWith<Color?>((states) {
+    final overlay = WidgetStateProperty.resolveWith<Color?>((states) {
       if (states.contains(WidgetState.pressed)) {
         return CitizenDesignTokens.deepBlue.withValues(alpha: 0.12);
       }
@@ -133,6 +126,10 @@ class AppTheme {
       }
       return null;
     });
+
+    final roundedButton = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusButton),
+    );
 
     return ThemeData(
       useMaterial3: true,
@@ -202,14 +199,14 @@ class AppTheme {
         fillColor: CitizenDesignTokens.surfaceMuted,
         labelStyle: textTheme.bodyMedium?.copyWith(
           color: CitizenDesignTokens.textMuted,
-          fontWeight: FontWeight.w650,
+          fontWeight: FontWeight.w600,
         ),
         hintStyle: textTheme.bodyMedium?.copyWith(
           color: CitizenDesignTokens.textSubtle,
         ),
         errorStyle: textTheme.bodySmall?.copyWith(
           color: CitizenDesignTokens.error,
-          fontWeight: FontWeight.w650,
+          fontWeight: FontWeight.w600,
         ),
         border: OutlineInputBorder(
           borderRadius:
@@ -273,13 +270,8 @@ class AppTheme {
           ),
           elevation: const WidgetStatePropertyAll(0),
           textStyle: WidgetStatePropertyAll(textTheme.labelLarge),
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(CitizenDesignTokens.radiusButton),
-            ),
-          ),
-          overlayColor: interactiveOverlay,
+          shape: WidgetStatePropertyAll(roundedButton),
+          overlayColor: overlay,
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
@@ -294,13 +286,8 @@ class AppTheme {
           foregroundColor:
               const WidgetStatePropertyAll(CitizenDesignTokens.white),
           textStyle: WidgetStatePropertyAll(textTheme.labelLarge),
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(CitizenDesignTokens.radiusButton),
-            ),
-          ),
-          overlayColor: interactiveOverlay,
+          shape: WidgetStatePropertyAll(roundedButton),
+          overlayColor: overlay,
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -315,13 +302,8 @@ class AppTheme {
             BorderSide(color: CitizenDesignTokens.cardBorder, width: 1.2),
           ),
           textStyle: WidgetStatePropertyAll(textTheme.labelLarge),
-          shape: WidgetStatePropertyAll(
-            RoundedRectangleBorder(
-              borderRadius:
-                  BorderRadius.circular(CitizenDesignTokens.radiusButton),
-            ),
-          ),
-          overlayColor: interactiveOverlay,
+          shape: WidgetStatePropertyAll(roundedButton),
+          overlayColor: overlay,
         ),
       ),
       textButtonTheme: TextButtonThemeData(
@@ -335,14 +317,14 @@ class AppTheme {
                   BorderRadius.circular(CitizenDesignTokens.radiusSmall),
             ),
           ),
-          overlayColor: interactiveOverlay,
+          overlayColor: overlay,
         ),
       ),
       iconButtonTheme: IconButtonThemeData(
         style: ButtonStyle(
           foregroundColor:
               const WidgetStatePropertyAll(CitizenDesignTokens.textDark),
-          overlayColor: interactiveOverlay,
+          overlayColor: overlay,
         ),
       ),
       floatingActionButtonTheme: const FloatingActionButtonThemeData(
@@ -370,7 +352,7 @@ class AppTheme {
             color: selected
                 ? CitizenDesignTokens.deepBlue
                 : CitizenDesignTokens.textMuted,
-            fontWeight: selected ? FontWeight.w800 : FontWeight.w650,
+            fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
           );
         }),
         iconTheme: WidgetStateProperty.resolveWith((states) {
@@ -414,9 +396,9 @@ class AppTheme {
         unselectedLabelColor: CitizenDesignTokens.textMuted,
         labelStyle: textTheme.labelLarge,
         unselectedLabelStyle: textTheme.labelLarge?.copyWith(
-          fontWeight: FontWeight.w650,
+          fontWeight: FontWeight.w600,
         ),
-        overlayColor: interactiveOverlay,
+        overlayColor: overlay,
       ),
       listTileTheme: ListTileThemeData(
         iconColor: CitizenDesignTokens.primaryBlue,
@@ -435,7 +417,7 @@ class AppTheme {
         backgroundColor: CitizenDesignTokens.navy,
         contentTextStyle: textTheme.bodyMedium?.copyWith(
           color: CitizenDesignTokens.white,
-          fontWeight: FontWeight.w650,
+          fontWeight: FontWeight.w600,
         ),
         actionTextColor: CitizenDesignTokens.yellow,
         shape: RoundedRectangleBorder(
@@ -463,7 +445,7 @@ class AppTheme {
         ),
         textStyle: textTheme.bodySmall?.copyWith(
           color: CitizenDesignTokens.white,
-          fontWeight: FontWeight.w650,
+          fontWeight: FontWeight.w600,
         ),
       ),
       dividerTheme: const DividerThemeData(
@@ -488,10 +470,9 @@ class AppTheme {
       ),
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith((states) {
-          if (states.contains(WidgetState.selected)) {
-            return CitizenDesignTokens.primaryBlue;
-          }
-          return CitizenDesignTokens.textMuted;
+          return states.contains(WidgetState.selected)
+              ? CitizenDesignTokens.primaryBlue
+              : CitizenDesignTokens.textMuted;
         }),
       ),
       switchTheme: SwitchThemeData(
