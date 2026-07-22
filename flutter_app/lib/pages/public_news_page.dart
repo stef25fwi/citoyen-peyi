@@ -67,9 +67,7 @@ class _PublicNewsPageState extends State<PublicNewsPage> {
       body: RefreshIndicator(
         color: CitizenDesignTokens.primaryBlue,
         onRefresh: _load,
-        child: ListView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.fromLTRB(16, 18, 16, 26),
+        child: PublicResponsiveList(
           children: [
             if (!connected)
               const CitizenConnectInvite(
@@ -129,85 +127,90 @@ class _NewsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(18),
-      decoration: CitizenDesignTokens.cardDecoration,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact = constraints.maxWidth < 340;
+        return Container(
+          width: double.infinity,
+          margin: const EdgeInsets.only(bottom: 12),
+          padding: EdgeInsets.all(compact ? 16 : 18),
+          decoration: CitizenDesignTokens.cardDecoration,
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: const BoxDecoration(
-                  color: CitizenDesignTokens.skyBlue,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(
-                  Icons.article_outlined,
-                  color: CitizenDesignTokens.primaryBlue,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.title,
-                      style: const TextStyle(
-                        color: CitizenDesignTokens.textDark,
-                        fontSize: 16,
-                        height: 1.25,
-                        fontWeight: FontWeight.w900,
-                      ),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: compact ? 40 : 44,
+                    height: compact ? 40 : 44,
+                    decoration: const BoxDecoration(
+                      color: CitizenDesignTokens.skyBlue,
+                      shape: BoxShape.circle,
                     ),
-                    if (item.communeName.isNotEmpty) ...[
-                      const SizedBox(height: 4),
-                      Text(
-                        item.communeName,
-                        style: const TextStyle(
-                          color: CitizenDesignTokens.textMuted,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
+                    child: Icon(
+                      Icons.article_outlined,
+                      color: CitizenDesignTokens.primaryBlue,
+                      size: compact ? 22 : 24,
+                    ),
+                  ),
+                  SizedBox(width: compact ? 10 : 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          item.title,
+                          style: const TextStyle(
+                            color: CitizenDesignTokens.textDark,
+                            fontSize: 16,
+                            height: 1.25,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
-                      ),
-                    ],
-                  ],
-                ),
+                        if (item.communeName.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Text(
+                            item.communeName,
+                            style: const TextStyle(
+                              color: CitizenDesignTokens.textMuted,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+                  ),
+                ],
               ),
+              if (item.publishedAt.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  item.publishedAt,
+                  style: const TextStyle(
+                    color: CitizenDesignTokens.textMuted,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              if (item.body.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Text(
+                  item.body,
+                  style: const TextStyle(
+                    color: CitizenDesignTokens.textDark,
+                    fontSize: 14,
+                    height: 1.4,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
             ],
           ),
-          if (item.publishedAt.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              item.publishedAt,
-              style: const TextStyle(
-                color: CitizenDesignTokens.textMuted,
-                fontSize: 12.5,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          if (item.body.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              item.body,
-              style: const TextStyle(
-                color: CitizenDesignTokens.textDark,
-                fontSize: 14,
-                height: 1.4,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ],
-      ),
+        );
+      },
     );
   }
 }
