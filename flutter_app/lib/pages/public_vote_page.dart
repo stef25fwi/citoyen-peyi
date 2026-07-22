@@ -1,15 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../models/poll_models.dart';
 import '../services/citizen_public_access_service.dart';
 import '../services/poll_service.dart';
 import '../theme/citizen_design_tokens.dart';
 import '../widgets/citizen/citizen_bottom_nav.dart';
-import '../widgets/citizen/citizen_header.dart';
 import '../widgets/citizen_connect_invite.dart';
-import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
+import '../widgets/public_page_ui.dart';
 
 class PublicVotePage extends StatefulWidget {
   const PublicVotePage({super.key});
@@ -62,94 +60,61 @@ class _PublicVotePageState extends State<PublicVotePage> {
     final session = CitizenPublicAccessService.instance.currentSession;
     final connected = session != null;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemStatusBarContrastEnforced: false,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
-            child: SafeArea(
-              bottom: false,
-              child: ColoredBox(
-                color: CitizenDesignTokens.background,
-                child: Column(
-                  children: [
-                    const CitizenHeader(
-                      title: 'Donner mon avis',
-                      showBack: false,
-                      trailing: DebugLogButton(label: ''),
-                    ),
-                    Expanded(
-                      child: RefreshIndicator(
-                        color: CitizenDesignTokens.primaryBlue,
-                        onRefresh: _load,
-                        child: ListView(
-                          physics: const BouncingScrollPhysics(),
-                          padding: const EdgeInsets.fromLTRB(16, 18, 16, 26),
-                          children: [
-                            if (!connected)
-                              const CitizenConnectInvite(
-                                message:
-                                    'Connectez-vous avec votre code citoyen pour participer anonymement aux consultations de votre commune.',
-                              )
-                            else
-                              _ConnectedCallToAction(
-                                count: session.openPolls.length,
-                                onPressed: _openCitizenConsultations,
-                              ),
-                            const SizedBox(height: 18),
-                            const Text(
-                              'Consultations actuellement ouvertes',
-                              style: TextStyle(
-                                color: CitizenDesignTokens.textDark,
-                                fontSize: 18,
-                                fontWeight: FontWeight.w900,
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            if (_isLoading)
-                              const Padding(
-                                padding: EdgeInsets.all(34),
-                                child: Center(
-                                  child: CircularProgressIndicator(),
-                                ),
-                              )
-                            else if (_openPolls.isEmpty)
-                              const _EmptyPublicPolls()
-                            else
-                              for (final poll in _openPolls)
-                                _OpenPollPreviewCard(
-                                  poll: poll,
-                                  onPressed: _openCitizenConsultations,
-                                ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (connected)
-                      CitizenBottomNav(
-                        activeTab: CitizenNavTab.opinion,
-                        onTabSelected: (tab) => CitizenNavigation.open(
-                          context,
-                          tab,
-                          session: session,
-                        ),
-                      ),
-                  ],
-                ),
+    return PublicPageShell(
+      title: 'Donner mon avis',
+      navigationBar: connected
+          ? CitizenBottomNav(
+              activeTab: CitizenNavTab.opinion,
+              onTabSelected: (tab) => CitizenNavigation.open(
+                context,
+                tab,
+                session: session,
               ),
+            )
+          : const PublicBottomNav(currentTab: PublicTab.vote),
+      body: RefreshIndicator(
+        color: CitizenDesignTokens.primaryBlue,
+        onRefresh: _load,
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 26),
+          children: [
+            if (!connected)
+              const CitizenConnectInvite(
+                message:
+                    'Connectez-vous avec votre code citoyen pour participer anonymement aux consultations de votre commune.',
+              )
+            else ...[
+              _ConnectedCallToAction(
+                count: session.openPolls.length,
+                onPressed: _openCitizenConsultations,
+              ),
+              const SizedBox(height: 18),
+            ],
+            const PublicPageIntro(
+              icon: Icons.how_to_vote_rounded,
+              title: 'Consultations ouvertes',
+              description:
+                  'Découvrez les projets actuellement proposés et connectez-vous pour transmettre votre avis anonymement.',
             ),
-          ),
+            const SizedBox(height: 14),
+            if (_isLoading)
+              const PublicLoadingState()
+            else if (_openPolls.isEmpty)
+              const PublicEmptyState(
+                icon: Icons.event_busy_rounded,
+                title: 'Aucune consultation ouverte',
+                message:
+                    'Revenez prochainement pour découvrir les nouveaux projets soumis à votre avis.',
+              )
+            else
+              for (final poll in _openPolls)
+                _OpenPollPreviewCard(
+                  poll: poll,
+                  onPressed: _openCitizenConsultations,
+                ),
+          ],
         ),
-        bottomNavigationBar: connected
-            ? null
-            : const PublicBottomNav(currentTab: PublicTab.vote),
       ),
     );
   }
@@ -187,8 +152,9 @@ class _ConnectedCallToAction extends StatelessWidget {
                       : '$count consultation${count > 1 ? 's' : ''} disponible${count > 1 ? 's' : ''} pour votre commune.',
                   style: const TextStyle(
                     color: CitizenDesignTokens.textDark,
-                    height: 1.3,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 14,
+                    height: 1.4,
+                    fontWeight: FontWeight.w700,
                   ),
                 ),
               ),
@@ -202,46 +168,6 @@ class _ConnectedCallToAction extends StatelessWidget {
               iconAlignment: IconAlignment.end,
               icon: const Icon(Icons.arrow_forward_rounded),
               label: const Text('Accéder à mes consultations'),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _EmptyPublicPolls extends StatelessWidget {
-  const _EmptyPublicPolls();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(24),
-      decoration: CitizenDesignTokens.cardDecoration,
-      child: const Column(
-        children: [
-          Icon(
-            Icons.event_busy_rounded,
-            size: 42,
-            color: CitizenDesignTokens.textMuted,
-          ),
-          SizedBox(height: 12),
-          Text(
-            'Aucune consultation ouverte',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: CitizenDesignTokens.textDark,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            'Revenez prochainement pour découvrir les nouveaux projets soumis à votre avis.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: CitizenDesignTokens.textMuted,
-              height: 1.35,
             ),
           ),
         ],
@@ -289,6 +215,7 @@ class _OpenPollPreviewCard extends StatelessWidget {
                         style: const TextStyle(
                           color: CitizenDesignTokens.textDark,
                           fontSize: 16,
+                          height: 1.25,
                           fontWeight: FontWeight.w900,
                         ),
                       ),
@@ -298,6 +225,7 @@ class _OpenPollPreviewCard extends StatelessWidget {
                           poll.communeName,
                           style: const TextStyle(
                             color: CitizenDesignTokens.textMuted,
+                            fontSize: 13,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
