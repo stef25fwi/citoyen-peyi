@@ -1,22 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 import '../models/poll_models.dart';
 import '../services/citizen_public_access_service.dart';
 import '../services/poll_service.dart';
 import '../theme/citizen_design_tokens.dart';
 import '../widgets/citizen/citizen_bottom_nav.dart';
-import '../widgets/citizen/citizen_header.dart';
 import '../widgets/citizen_connect_invite.dart';
-import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
+import '../widgets/public_page_ui.dart';
 import 'public_news_page.dart';
 
-/// Resultats publics anonymes des consultations.
-///
-/// Affiche les sondages ouverts, clotures ou archives rattaches a une commune.
-/// Aucune donnee personnelle n'est exposee: seuls le nombre de votes par
-/// option, le total et la commune sont restitues.
 class PublicResultsPage extends StatefulWidget {
   const PublicResultsPage({super.key});
 
@@ -30,6 +23,13 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
   String? _communeFilter;
   String _statusFilter = 'all';
 
+  static const _publicStatuses = {
+    'active',
+    'open',
+    'closed',
+    'archived',
+  };
+
   @override
   void initState() {
     super.initState();
@@ -37,14 +37,11 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
   }
 
   Future<void> _load() async {
-    setState(() => _isLoading = true);
+    if (mounted) setState(() => _isLoading = true);
     List<PollModel> polls = const [];
     try {
       polls = await PollService.instance.loadPolls();
     } catch (_) {
-      // PollService catche deja la plupart des erreurs reseau/Firestore ; ce
-      // garde-fou evite un ecran bloque sur le spinner si un cas imprevu
-      // remonte quand meme une exception.
       polls = const [];
     }
     if (!mounted) return;
@@ -54,12 +51,6 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
     });
   }
 
-  /// Statuts visibles publiquement : les brouillons et les consultations
-  /// programmees (non encore publiees) ne doivent jamais apparaitre cote
-  /// citoyen, meme si la lecture Firestore renvoie toute la collection.
-  static const _publicStatuses = {'active', 'closed', 'archived'};
-
-  /// Consultations reellement publiables (exclut draft / scheduled).
   List<PollModel> get _publicPolls =>
       _polls.where((poll) => _publicStatuses.contains(poll.status)).toList();
 
@@ -71,7 +62,11 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
             poll.communeName.toLowerCase() == _communeFilter!.toLowerCase();
         if (!matchById && !matchByName) return false;
       }
-      if (_statusFilter == 'open' && poll.status != 'active') return false;
+      if (_statusFilter == 'open' &&
+          poll.status != 'active' &&
+          poll.status != 'open') {
+        return false;
+      }
       if (_statusFilter == 'closed' &&
           poll.status != 'closed' &&
           poll.status != 'archived') {
@@ -93,82 +88,61 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
   @override
   Widget build(BuildContext context) {
     final filtered = _filtered;
-    final hasAnyPublicPoll = _publicPolls.isNotEmpty;
-    final hasCitizenSession =
-        CitizenPublicAccessService.instance.currentSession != null;
+    final session = CitizenPublicAccessService.instance.currentSession;
+    final connected = session != null;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
-        statusBarIconBrightness: Brightness.dark,
-        statusBarBrightness: Brightness.light,
-        systemStatusBarContrastEnforced: false,
-      ),
-      child: Scaffold(
-        backgroundColor: Colors.white,
-        body: _MobileFrame(
-          child: SafeArea(
-            bottom: false,
-            child: ColoredBox(
-              color: CitizenDesignTokens.background,
-              child: Column(
-                children: [
-                  const CitizenHeader(
-                    title: 'Résultats des consultations',
-                    trailing: DebugLogButton(label: ''),
-                  ),
-                  Expanded(
-                    child: RefreshIndicator(
-                      color: CitizenDesignTokens.primaryBlue,
-                      onRefresh: _load,
-                      child: ListView(
-                        physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(16, 16, 16, 24),
-                        children: [
-                          if (!hasCitizenSession)
-                            const CitizenConnectInvite(
-                              message:
-                                  'Connectez-vous a votre compte pour participer aux consultations et suivre leurs resultats.',
-                            )
-                          else ...[
-                            const _ResultsIntro(),
-                            const SizedBox(height: 14),
-                            if (hasAnyPublicPoll) ...[
-                              _ResultsFilters(
-                                communes: _communes,
-                                communeFilter: _communeFilter,
-                                statusFilter: _statusFilter,
-                                onCommuneChanged: (value) =>
-                                    setState(() => _communeFilter = value),
-                                onStatusChanged: (value) => setState(
-                                  () => _statusFilter = value ?? 'all',
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                            ],
-                            if (_isLoading)
-                              const _LoadingCard()
-                            else if (filtered.isEmpty)
-                              const _EmptyResultsCard()
-                            else
-                              for (final poll in filtered)
-                                _PollResultCard(poll: poll),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
+    return PublicPageShell(
+      title: 'Résultats',
+      navigationBar: connected
+          ? CitizenBottomNav(
+              activeTab: CitizenNavTab.results,
+              onTabSelected: _onCitizenNav,
+            )
+          : const PublicBottomNav(currentTab: PublicTab.results),
+      body: RefreshIndicator(
+        color: CitizenDesignTokens.primaryBlue,
+        onRefresh: _load,
+        child: ListView(
+          physics: const BouncingScrollPhysics(),
+          padding: const EdgeInsets.fromLTRB(16, 18, 16, 26),
+          children: [
+            if (!connected)
+              const CitizenConnectInvite(
+                message:
+                    'Connectez-vous avec votre code citoyen pour participer anonymement et suivre les consultations de votre commune.',
               ),
+            const PublicPageIntro(
+              icon: Icons.bar_chart_rounded,
+              title: 'Résultats des consultations',
+              description:
+                  'Consultez les résultats anonymes publiés. Aucune donnée personnelle n’est affichée.',
             ),
-          ),
-        ),
-        bottomNavigationBar: hasCitizenSession
-            ? CitizenBottomNav(
-                activeTab: CitizenNavTab.results,
-                onTabSelected: _onCitizenNav,
+            const SizedBox(height: 14),
+            if (!_isLoading && _publicPolls.isNotEmpty) ...[
+              _ResultsFilters(
+                communes: _communes,
+                communeFilter: _communeFilter,
+                statusFilter: _statusFilter,
+                onCommuneChanged: (value) =>
+                    setState(() => _communeFilter = value),
+                onStatusChanged: (value) =>
+                    setState(() => _statusFilter = value ?? 'all'),
+              ),
+              const SizedBox(height: 14),
+            ],
+            if (_isLoading)
+              const PublicLoadingState()
+            else if (filtered.isEmpty)
+              const PublicEmptyState(
+                icon: Icons.bar_chart_rounded,
+                title: 'Aucun résultat disponible',
+                message:
+                    'Aucune consultation publiée ne correspond aux filtres sélectionnés.',
               )
-            : const PublicBottomNav(currentTab: PublicTab.results),
+            else
+              for (final poll in filtered) _PollResultCard(poll: poll),
+          ],
+        ),
       ),
     );
   }
@@ -177,7 +151,7 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
     switch (tab) {
       case CitizenNavTab.home:
         Navigator.of(context).pushNamedAndRemoveUntil(
-          '/citizen/welcome',
+          '/citizen/home',
           (route) => route.isFirst,
         );
         break;
@@ -192,71 +166,6 @@ class _PublicResultsPageState extends State<PublicResultsPage> {
       case CitizenNavTab.results:
         break;
     }
-  }
-}
-
-class _MobileFrame extends StatelessWidget {
-  const _MobileFrame({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 430),
-        child: child,
-      ),
-    );
-  }
-}
-
-class _ResultsIntro extends StatelessWidget {
-  const _ResultsIntro();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: CitizenDesignTokens.cardDecoration,
-      child: const Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.bar_chart_rounded,
-                color: CitizenDesignTokens.primaryBlue,
-                size: 34,
-              ),
-              SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  'Résultats anonymes',
-                  style: TextStyle(
-                    color: CitizenDesignTokens.textDark,
-                    fontSize: 22,
-                    height: 1.1,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: 10),
-          Text(
-            'Aucune donnée personnelle n’est affichée. Seuls les totaux par option sont restitués.',
-            style: TextStyle(
-              color: CitizenDesignTokens.textMuted,
-              fontSize: 14,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }
 
@@ -314,6 +223,11 @@ class _ResultsFilters extends StatelessWidget {
   InputDecoration _fieldDecoration(String label) {
     return InputDecoration(
       labelText: label,
+      labelStyle: const TextStyle(
+        color: CitizenDesignTokens.textMuted,
+        fontSize: 14,
+        fontWeight: FontWeight.w700,
+      ),
       filled: true,
       fillColor: CitizenDesignTokens.lightBlue,
       contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -331,67 +245,6 @@ class _ResultsFilters extends StatelessWidget {
           color: CitizenDesignTokens.primaryBlue,
           width: 1.4,
         ),
-      ),
-    );
-  }
-}
-
-class _LoadingCard extends StatelessWidget {
-  const _LoadingCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(28),
-      decoration: CitizenDesignTokens.cardDecoration,
-      child: const Center(
-        child: CircularProgressIndicator(
-          color: CitizenDesignTokens.primaryBlue,
-        ),
-      ),
-    );
-  }
-}
-
-class _EmptyResultsCard extends StatelessWidget {
-  const _EmptyResultsCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(24),
-      decoration: CitizenDesignTokens.cardDecoration,
-      child: const Column(
-        children: [
-          Icon(
-            Icons.bar_chart_rounded,
-            size: 42,
-            color: CitizenDesignTokens.textMuted,
-          ),
-          SizedBox(height: 12),
-          Text(
-            'Aucun résultat disponible',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: CitizenDesignTokens.textDark,
-              fontSize: 20,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          SizedBox(height: 6),
-          Text(
-            'Aucune consultation ne correspond aux filtres sélectionnés.',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: CitizenDesignTokens.textMuted,
-              fontSize: 14,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
       ),
     );
   }
@@ -420,7 +273,7 @@ class _PollResultCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.all(18),
       decoration: CitizenDesignTokens.cardDecoration,
       child: Column(
@@ -451,8 +304,8 @@ class _PollResultCard extends StatelessWidget {
                       poll.projectTitle,
                       style: const TextStyle(
                         color: CitizenDesignTokens.textDark,
-                        fontSize: 17,
-                        height: 1.18,
+                        fontSize: 16,
+                        height: 1.25,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
@@ -462,7 +315,7 @@ class _PollResultCard extends StatelessWidget {
                         poll.communeName,
                         style: const TextStyle(
                           color: CitizenDesignTokens.textMuted,
-                          fontSize: 12.5,
+                          fontSize: 13,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
@@ -509,8 +362,8 @@ class _PollResultCard extends StatelessWidget {
                         (question.multiple ? ' (choix multiples)' : ''),
                     style: const TextStyle(
                       color: CitizenDesignTokens.textDark,
-                      fontSize: 14.5,
-                      height: 1.25,
+                      fontSize: 14,
+                      height: 1.3,
                       fontWeight: FontWeight.w900,
                     ),
                   ),
