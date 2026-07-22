@@ -63,23 +63,19 @@ class CitizenBottomNav extends StatelessWidget {
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 360;
         return Container(
-          height: compact ? 72 : CitizenDesignTokens.bottomNavHeight,
+          height: compact ? 70 : CitizenDesignTokens.bottomNavHeight,
           padding: EdgeInsets.fromLTRB(
-            compact ? 4 : 10,
-            compact ? 5 : 7,
-            compact ? 4 : 10,
-            compact ? 7 : 9,
+            compact ? 3 : 8,
+            compact ? 4 : 6,
+            compact ? 3 : 8,
+            compact ? 6 : 8,
           ),
           decoration: const BoxDecoration(
-            color: CitizenDesignTokens.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
-            boxShadow: [
-              BoxShadow(
-                color: Color(0x1A005A9C),
-                blurRadius: 18,
-                offset: Offset(0, -6),
-              ),
-            ],
+            color: CitizenDesignTokens.surface,
+            border: Border(
+              top: BorderSide(color: CitizenDesignTokens.divider),
+            ),
+            boxShadow: CitizenDesignTokens.navigationShadow,
           ),
           child: Row(
             children: [
@@ -142,7 +138,11 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final isActive = tab == activeTab;
+    final color = isActive
+        ? CitizenDesignTokens.deepBlue
+        : CitizenDesignTokens.textMuted;
 
     return Expanded(
       child: Semantics(
@@ -150,13 +150,15 @@ class _NavItem extends StatelessWidget {
         selected: isActive,
         label: label,
         child: InkWell(
-          borderRadius: BorderRadius.circular(24),
+          borderRadius:
+              BorderRadius.circular(CitizenDesignTokens.radiusButton),
           onTap: () => onTap(tab),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
               AnimatedContainer(
-                duration: const Duration(milliseconds: 180),
+                duration: CitizenDesignTokens.motionFast,
+                curve: Curves.easeOutCubic,
                 padding: EdgeInsets.symmetric(
                   horizontal: compact ? 8 : 15,
                   vertical: compact ? 4 : 5,
@@ -165,14 +167,19 @@ class _NavItem extends StatelessWidget {
                   color: isActive
                       ? CitizenDesignTokens.skyBlue
                       : Colors.transparent,
-                  borderRadius: BorderRadius.circular(22),
+                  borderRadius:
+                      BorderRadius.circular(CitizenDesignTokens.radiusButton),
+                  border: isActive
+                      ? Border.all(
+                          color: CitizenDesignTokens.cardBorder,
+                          width: 0.8,
+                        )
+                      : null,
                 ),
                 child: Icon(
                   icon,
                   size: compact ? (isActive ? 23 : 21) : (isActive ? 25 : 23),
-                  color: isActive
-                      ? CitizenDesignTokens.deepBlue
-                      : CitizenDesignTokens.textDark.withValues(alpha: 0.72),
+                  color: color,
                 ),
               ),
               SizedBox(height: compact ? 2 : 3),
@@ -181,13 +188,11 @@ class _NavItem extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: TextStyle(
+                style: theme.textTheme.labelSmall?.copyWith(
                   fontSize: compact ? 9.5 : 10.5,
                   height: 1,
                   fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                  color: isActive
-                      ? CitizenDesignTokens.deepBlue
-                      : CitizenDesignTokens.textDark.withValues(alpha: 0.72),
+                  color: color,
                 ),
               ),
             ],
