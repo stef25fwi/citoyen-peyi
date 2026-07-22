@@ -7,30 +7,132 @@ on:
       - '.github/workflows/flutter-diagnostic-pr.yml'
 
 permissions:
-  contents: read
+  contents: write
   pull-requests: write
 
 jobs:
   diagnose:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: flutter_app
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+
+      - name: Apply citizen flow fixes
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          access = Path('flutter_app/lib/pages/access_citizen_page.dart')
+          s = access.read_text()
+          old = """    return Container(
+      minHeight: 70,
+"""
+          new = """    return Container(
+      constraints: const BoxConstraints(minHeight: 70),
+"""
+          if old in s:
+              access.write_text(s.replace(old, new, 1))
+
+          profile = Path('flutter_app/lib/pages/citizen/citizen_profile_page.dart')
+          s = profile.read_text()
+          old = """    return RadioListTile<String>(
+      value: value,
+      groupValue: selected,
+      onChanged: (next) {
+        if (next != null) onChanged(next);
+      },
+      contentPadding: EdgeInsets.zero,
+      activeColor: CitizenDesignTokens.primaryBlue,
+      secondary: Icon(icon, color: CitizenDesignTokens.primaryBlue),
+      title: Text(
+        label,
+        style: const TextStyle(
+          color: CitizenDesignTokens.textDark,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+"""
+          new = """    final isSelected = selected == value;
+    return Semantics(
+      button: true,
+      selected: isSelected,
+      label: label,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusSmall),
+        onTap: () => onChanged(value),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Row(
+            children: [
+              Icon(icon, color: CitizenDesignTokens.primaryBlue),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: const TextStyle(
+                    color: CitizenDesignTokens.textDark,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Icon(
+                isSelected
+                    ? Icons.radio_button_checked_rounded
+                    : Icons.radio_button_off_rounded,
+                color: isSelected
+                    ? CitizenDesignTokens.primaryBlue
+                    : CitizenDesignTokens.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+"""
+          if old in s:
+              profile.write_text(s.replace(old, new, 1))
+          PY
+
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
-      - run: flutter pub get
+
+      - name: Format fixes
+        run: |
+          cd flutter_app
+          dart format lib/pages/access_citizen_page.dart lib/pages/citizen/citizen_profile_page.dart
+
+      - name: Commit automatic fixes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add flutter_app/lib/pages/access_citizen_page.dart flutter_app/lib/pages/citizen/citizen_profile_page.dart
+          if git diff --cached --quiet; then
+            echo 'No automatic fix required.'
+          else
+            git commit -m 'fix: corrige les erreurs analyze du parcours citoyen'
+            git push origin HEAD:${{ github.head_ref }}
+          fi
+
+      - name: Flutter pub get
+        working-directory: flutter_app
+        run: flutter pub get
+
       - id: analyze
+        name: Flutter analyze
         continue-on-error: true
+        working-directory: flutter_app
         run: |
           set +e
           flutter analyze > /tmp/flutter-analyze.log 2>&1
           status=$?
           echo "status=$status" >> "$GITHUB_OUTPUT"
           exit 0
+
       - name: Comment diagnostic
         uses: actions/github-script@v7
         with:
@@ -45,6 +147,7 @@ jobs:
               issue_number: context.issue.number,
               body,
             });
+
       - name: Fail if analyze failed
         if: steps.analyze.outputs.status != '0'
         run: exit 1
