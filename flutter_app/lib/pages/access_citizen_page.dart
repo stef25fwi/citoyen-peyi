@@ -614,7 +614,7 @@ class _ConfidentialityBox extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      minHeight: 70,
+      constraints: const BoxConstraints(minHeight: 70),
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: BoxDecoration(
         color: const Color(0xFFEAF6FF),

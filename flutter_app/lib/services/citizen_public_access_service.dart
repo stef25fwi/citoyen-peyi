@@ -31,6 +31,19 @@ class CitizenPublicAccessSession {
 
   bool hasVoted(String pollId) => votedPollIds.contains(pollId);
 
+  CitizenPublicAccessSession copyWith({
+    List<PollModel>? openPolls,
+    Set<String>? votedPollIds,
+  }) {
+    return CitizenPublicAccessSession(
+      accessCode: accessCode,
+      communeId: communeId,
+      communeName: communeName,
+      openPolls: openPolls ?? this.openPolls,
+      votedPollIds: votedPollIds ?? this.votedPollIds,
+    );
+  }
+
   Map<String, dynamic> toJson() => {
         'accessCode': accessCode,
         'communeId': communeId,
@@ -40,16 +53,12 @@ class CitizenPublicAccessSession {
       };
 
   static CitizenPublicAccessSession? fromJson(Object? raw) {
-    if (raw is! Map<String, dynamic>) {
-      return null;
-    }
+    if (raw is! Map<String, dynamic>) return null;
 
     final accessCode = raw['accessCode'] as String? ?? '';
     final communeId = raw['communeId'] as String? ?? '';
     final communeName = raw['communeName'] as String? ?? '';
-    if (accessCode.trim().isEmpty || communeId.trim().isEmpty) {
-      return null;
-    }
+    if (accessCode.trim().isEmpty || communeId.trim().isEmpty) return null;
 
     final rawPolls = (raw['openPolls'] as List<dynamic>? ?? const <dynamic>[])
         .whereType<Map<String, dynamic>>()
@@ -87,8 +96,10 @@ class CitizenPollAccessRecord {
   final String votedAt;
   final String communeId;
 
-  static CitizenPollAccessRecord fromJson(Map<String, dynamic> json,
-      {String? id}) {
+  static CitizenPollAccessRecord fromJson(
+    Map<String, dynamic> json, {
+    String? id,
+  }) {
     return CitizenPollAccessRecord(
       id: id ?? json['id'] as String? ?? '',
       accessCodeHash: json['accessCodeHash'] as String? ?? '',
@@ -114,15 +125,10 @@ class CitizenPublicAccessService {
 
   static const _firstSeenPrefix = 'citizen_first_seen_';
   static const _lastSeenPrefix = 'citizen_last_seen_';
+  static const _notificationCategoryKey = 'citizen_notification_category_v1';
 
   CitizenPublicAccessSession? get currentSession => _currentSession;
-
-  /// Date/heure de la toute premiere connexion avec le code citoyen actuel
-  /// (persistee localement, jamais reecrite une fois fixee).
   DateTime? get firstConnectionAt => _firstConnectionAt;
-
-  /// Date/heure de la derniere connexion (mise a jour a chaque ouverture
-  /// d'une session, nouvelle ou reprise).
   DateTime? get lastConnectionAt => _lastConnectionAt;
 
   Future<void> initialize() async {
@@ -157,10 +163,6 @@ class CitizenPublicAccessService {
     await _preferences?.remove(_storageKey);
   }
 
-  /// Enregistre une connexion pour ce code : fixe la premiere connexion si
-  /// elle n'existe pas encore, met a jour la derniere connexion a chaque
-  /// appel. Persiste par code (survit a une deconnexion/reconnexion avec le
-  /// meme code).
   Future<void> _recordConnection(String accessCode) async {
     final code = accessCode.trim();
     if (code.isEmpty) return;
@@ -191,40 +193,44 @@ class CitizenPublicAccessService {
     return null;
   }
 
-  /// Construit une session citoyen directement depuis le résultat de validation
-  /// backend, utilisé comme fallback quand la lecture Firestore côté client est
-  /// bloquée par les règles de sécurité (ex: citizen_access_codes en prod).
   CitizenPublicAccessSession sessionFromValidation({
     required String rawCode,
     required VoteAccessValidationResult validation,
   }) {
     final code = resolveVoteAccessCode(rawCode) ?? rawCode.trim();
     final openPolls = validation.eligiblePolls
-        .where((p) => p.status == 'open' && !p.hasVoted)
+        .where(
+          (poll) =>
+              (poll.status == 'open' || poll.status == 'active') &&
+              !poll.hasVoted,
+        )
         .map(
-          (p) => PollModel(
-            id: p.pollId,
-            projectTitle: p.title,
-            description: p.description,
-            question: p.question,
-            options: p.options
-                .asMap()
-                .entries
-                .map((e) => PollOptionModel(
-                    id: e.value.id, label: e.value.label, votes: 0))
-                .toList(),
-            photoUrls: p.photoUrls,
+          (poll) => PollModel(
+            id: poll.pollId,
+            projectTitle: poll.title,
+            description: poll.description,
+            question: poll.question,
+            options: poll.options
+                .map(
+                  (option) => PollOptionModel(
+                    id: option.id,
+                    label: option.label,
+                    votes: 0,
+                  ),
+                )
+                .toList(growable: false),
+            photoUrls: poll.photoUrls,
             openDate: '',
             closeDate: '',
-            status: 'open',
+            status: 'active',
             totalVoters: 0,
             totalVoted: 0,
           ),
         )
-        .toList();
+        .toList(growable: false);
     final votedPollIds = validation.eligiblePolls
-        .where((p) => p.hasVoted)
-        .map((p) => p.pollId)
+        .where((poll) => poll.hasVoted)
+        .map((poll) => poll.pollId)
         .toSet();
     final session = CitizenPublicAccessSession(
       accessCode: code,
@@ -237,9 +243,33 @@ class CitizenPublicAccessService {
     return session;
   }
 
-  Future<bool> hasVoted(
-      {required String accessCode, required String pollId}) async {
-    return false;
+  Future<bool> hasVoted({
+    required String accessCode,
+    required String pollId,
+  }) async {
+    final session = _currentSession;
+    if (session == null) return false;
+    final normalized = resolveVoteAccessCode(accessCode) ?? accessCode.trim();
+    if (session.accessCode.trim() != normalized.trim()) return false;
+    return session.hasVoted(pollId);
+  }
+
+  Future<void> markVoted({
+    required String accessCode,
+    required String pollId,
+  }) async {
+    final session = _currentSession;
+    if (session == null || pollId.trim().isEmpty) return;
+    final normalized = resolveVoteAccessCode(accessCode) ?? accessCode.trim();
+    if (session.accessCode.trim() != normalized.trim()) return;
+
+    final nextVoted = <String>{...session.votedPollIds, pollId.trim()};
+    final nextPolls = session.openPolls
+        .where((poll) => poll.id.trim() != pollId.trim())
+        .toList(growable: false);
+    await saveSession(
+      session.copyWith(openPolls: nextPolls, votedPollIds: nextVoted),
+    );
   }
 
   Future<List<DateTime>> loadVoteDatesForCurrentCommune() async {
@@ -268,11 +298,6 @@ class CitizenPublicAccessService {
     return const <DateTime>[];
   }
 
-  Future<void> markVoted(
-      {required String accessCode, required String pollId}) async {
-    return;
-  }
-
   Future<List<CitizenPollAccessRecord>> loadVoteRecords({
     String? pollId,
     String? communeId,
@@ -294,8 +319,12 @@ class CitizenPublicAccessService {
         final snapshot =
             await query.orderBy('votedAt', descending: true).limit(limit).get();
         records = snapshot.docs
-            .map((doc) =>
-                CitizenPollAccessRecord.fromJson(doc.data(), id: doc.id))
+            .map(
+              (doc) => CitizenPollAccessRecord.fromJson(
+                doc.data(),
+                id: doc.id,
+              ),
+            )
             .toList();
       } catch (_) {
         records = <CitizenPollAccessRecord>[];
@@ -305,9 +334,7 @@ class CitizenPublicAccessService {
     }
 
     return records.where((item) {
-      if (pollId?.isNotEmpty == true && item.pollId != pollId) {
-        return false;
-      }
+      if (pollId?.isNotEmpty == true && item.pollId != pollId) return false;
       if (communeId?.isNotEmpty == true &&
           item.communeId.isNotEmpty &&
           item.communeId != communeId) {
@@ -321,28 +348,30 @@ class CitizenPublicAccessService {
   DateTime? _asDateTime(Object? value) {
     if (value == null) return null;
     if (value is Timestamp) return value.toDate();
-    final date = DateTime.tryParse('$value');
-    return date;
+    return DateTime.tryParse('$value');
   }
 
-  // ---------- Preference de categorie de notification ----------
+  String get _scopedNotificationCategoryKey {
+    final session = _currentSession;
+    final scope = session == null
+        ? 'anonymous'
+        : '${session.communeId}_${session.accessCode}';
+    return '${_notificationCategoryKey}_$scope';
+  }
 
-  static const _notificationCategoryKey = 'citizen_notification_category_v1';
-
-  /// Categorie de notification choisie par le citoyen ('actualites',
-  /// 'consultations' ou 'resultats'), ou null si aucune preference.
   Future<String?> loadNotificationCategory() async {
     _preferences ??= await SharedPreferences.getInstance();
-    final value = _preferences?.getString(_notificationCategoryKey);
-    return (value == null || value.isEmpty) ? null : value;
+    final value = _preferences?.getString(_scopedNotificationCategoryKey);
+    return value == null || value.isEmpty ? null : value;
   }
 
   Future<void> saveNotificationCategory(String? category) async {
     _preferences ??= await SharedPreferences.getInstance();
+    final key = _scopedNotificationCategoryKey;
     if (category == null || category.isEmpty) {
-      await _preferences?.remove(_notificationCategoryKey);
+      await _preferences?.remove(key);
     } else {
-      await _preferences?.setString(_notificationCategoryKey, category);
+      await _preferences?.setString(key, category);
     }
   }
 }

@@ -2,15 +2,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
+import '../../services/citizen_public_access_service.dart';
 import '../../services/vote_access_service.dart';
+import '../../theme/citizen_design_tokens.dart';
+import '../../widgets/citizen/citizen_bottom_nav.dart';
+import '../../widgets/citizen/citizen_header.dart';
 import '../../widgets/poll_option_icons.dart';
-import '../public_news_page.dart';
-import '../public_results_page.dart';
 
 class CitizenPollQuestionPage extends StatefulWidget {
   const CitizenPollQuestionPage({
     super.key,
-    this.title = 'Aménagement des espaces publics',
+    this.title = 'Consultation',
     this.pollId,
     this.accessCode,
     this.voteAccessService,
@@ -27,7 +29,7 @@ class CitizenPollQuestionPage extends StatefulWidget {
 }
 
 class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
-  VoteAccessService get _voteAccessService =>
+  VoteAccessService get _service =>
       widget.voteAccessService ?? VoteAccessService.instance;
 
   bool _isLoading = true;
@@ -38,6 +40,9 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
   int _stepIndex = 0;
   final Map<String, Set<String>> _answers = {};
 
+  CitizenPublicAccessSession? get _session =>
+      CitizenPublicAccessService.instance.currentSession;
+
   @override
   void initState() {
     super.initState();
@@ -46,13 +51,11 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
 
   Future<void> _loadPoll() async {
     final pollId = widget.pollId?.trim();
-    final accessCode = widget.accessCode?.trim();
+    final accessCode = widget.accessCode?.trim() ?? _session?.accessCode.trim();
     if (pollId == null ||
         pollId.isEmpty ||
         accessCode == null ||
         accessCode.isEmpty) {
-      // Pas de session citoyenne valide : le code d'acces reste obligatoire
-      // pour voter, on redirige vers la saisie du code.
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
         Navigator.of(context).pushReplacementNamed('/access');
@@ -66,22 +69,22 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
     });
 
     try {
-      final result =
-          await _voteAccessService.validateCode(accessCode, pollId: pollId);
-      EligiblePollModel? poll;
+      final result = await _service.validateCode(accessCode, pollId: pollId);
+      EligiblePollModel? selectedPoll;
       for (final candidate in result.eligiblePolls) {
         if (candidate.pollId == pollId) {
-          poll = candidate;
+          selectedPoll = candidate;
           break;
         }
       }
       if (!mounted) return;
       setState(() {
         _validation = result;
-        _poll = poll;
+        _poll = selectedPoll;
         _isLoading = false;
-        _errorMessage =
-            poll == null ? 'Cette consultation n\'est plus disponible.' : null;
+        _errorMessage = selectedPoll == null
+            ? 'Cette consultation n’est plus disponible.'
+            : null;
       });
     } on VoteAccessException catch (error) {
       if (!mounted) return;
@@ -93,35 +96,32 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Validation du code impossible. Réessayez plus tard.';
+        _errorMessage =
+            'Validation du code impossible. Réessayez plus tard.';
       });
     }
   }
 
   List<EligiblePollQuestion> get _questions =>
-      _poll?.effectiveQuestions ?? const [];
+      _poll?.effectiveQuestions ?? const <EligiblePollQuestion>[];
 
   EligiblePollQuestion? get _currentQuestion {
-    final questions = _questions;
-    if (_stepIndex < 0 || _stepIndex >= questions.length) return null;
-    return questions[_stepIndex];
+    if (_stepIndex < 0 || _stepIndex >= _questions.length) return null;
+    return _questions[_stepIndex];
   }
 
   bool get _canContinue {
     final question = _currentQuestion;
-    if (question == null) return false;
-    return _answers[question.id]?.isNotEmpty == true;
+    return question != null && _answers[question.id]?.isNotEmpty == true;
   }
 
   void _toggleOption(EligiblePollQuestion question, String optionId) {
     setState(() {
       final selected = _answers.putIfAbsent(question.id, () => <String>{});
       if (question.multiple) {
-        if (selected.contains(optionId)) {
-          selected.remove(optionId);
-        } else {
-          selected.add(optionId);
-        }
+        selected.contains(optionId)
+            ? selected.remove(optionId)
+            : selected.add(optionId);
       } else {
         selected
           ..clear()
@@ -142,6 +142,7 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
   Future<void> _submitAnswers() async {
     final poll = _poll;
     final validation = _validation;
+    final accessCode = widget.accessCode?.trim() ?? _session?.accessCode.trim();
     if (poll == null || validation == null || _isSubmitting) return;
 
     setState(() {
@@ -150,24 +151,32 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
     });
 
     final answers = _questions
-        .map((question) => PollAnswer(
-              questionId: question.id,
-              optionIds: _answers[question.id]?.toList() ?? const [],
-            ))
-        .toList();
+        .map(
+          (question) => PollAnswer(
+            questionId: question.id,
+            optionIds: _answers[question.id]?.toList() ?? const <String>[],
+          ),
+        )
+        .toList(growable: false);
 
     try {
-      await _voteAccessService.submitVote(
+      await _service.submitVote(
         accessToken:
             poll.accessToken.isNotEmpty ? poll.accessToken : validation.accessToken,
         pollId: poll.pollId,
         answers: answers,
       );
+      if (accessCode != null && accessCode.isNotEmpty) {
+        await CitizenPublicAccessService.instance.markVoted(
+          accessCode: accessCode,
+          pollId: poll.pollId,
+        );
+      }
       if (!mounted) return;
-      setState(() => _isSubmitting = false);
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (_) => _CitizenQuestionStepBridgePage(title: widget.title),
+          settings: const RouteSettings(name: '/citizen/vote-confirmation'),
+          builder: (_) => _VoteConfirmationPage(title: widget.title),
         ),
       );
     } on VoteAccessException catch (error) {
@@ -181,119 +190,95 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
       setState(() {
         _isSubmitting = false;
         _errorMessage =
-            'Réseau indisponible. Votre vote n\'a pas été enregistré.';
+            'Réseau indisponible. Votre vote n’a pas été enregistré.';
       });
     }
   }
 
-  void _shareConsultation(BuildContext context) {
-    final base = Uri.base;
-    final isWebOrigin = base.scheme == 'http' || base.scheme == 'https';
-    final path = isWebOrigin ? '${base.origin}${base.path}' : '';
+  void _shareConsultation() {
     final pollId = widget.pollId?.trim();
+    final base = Uri.base;
+    final origin = base.scheme == 'http' || base.scheme == 'https'
+        ? '${base.origin}${base.path}'
+        : '';
     final link = pollId != null && pollId.isNotEmpty
-        ? '$path#/citizen/consultation/${Uri.encodeComponent(widget.title)}'
-            '?poll=${Uri.encodeQueryComponent(pollId)}'
-        : '$path#/citizen/consultations';
-    final message = 'Donnez votre avis sur « ${widget.title} » : $link';
-
-    Clipboard.setData(ClipboardData(text: message));
+        ? '$origin#/citizen/consultation/${Uri.encodeComponent(widget.title)}?poll=${Uri.encodeQueryComponent(pollId)}'
+        : '$origin#/citizen/consultations';
+    Clipboard.setData(
+      ClipboardData(text: 'Donnez votre avis sur « ${widget.title} » : $link'),
+    );
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Lien de la consultation copié.')),
     );
   }
 
-  void _onNav(CitizenNavTab tab) {
-    if (tab == CitizenNavTab.opinion) {
-      Navigator.of(context).pushReplacementNamed('/citizen/consultations');
-      return;
-    }
-
-    if (tab == CitizenNavTab.home) {
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        '/citizen/welcome',
-        (route) => route.isFirst,
-      );
-      return;
-    }
-
-    if (tab == CitizenNavTab.news) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const PublicNewsPage()),
-      );
-      return;
-    }
-
-    if (tab == CitizenNavTab.results) {
-      Navigator.of(context).push(
-        MaterialPageRoute(builder: (_) => const PublicResultsPage()),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
-    final String headerTitle = _headerTitleFor(widget.title);
+    final session = _session;
     final questions = _questions;
     final poll = _poll;
 
-    Widget body;
+    Widget content;
     if (_isLoading) {
-      body = const _StatusCard(
+      content = const _StatusCard(
         icon: Icons.hourglass_top_rounded,
         title: 'Chargement du questionnaire',
-        message: 'Vérification sécurisée de votre code citoyen en cours...',
+        message: 'Vérification sécurisée de votre code citoyen en cours…',
       );
     } else if (poll == null || questions.isEmpty) {
-      body = _StatusCard(
+      content = _StatusCard(
         icon: Icons.error_outline_rounded,
         title: 'Consultation indisponible',
         message: _errorMessage ??
-            'Cette consultation n\'est plus disponible pour votre commune.',
+            'Cette consultation n’est plus disponible pour votre commune.',
         actionLabel: 'Retour aux consultations',
         onPressed: () => Navigator.of(context).pushReplacementNamed(
           '/citizen/consultations',
+          arguments: {'session': session},
         ),
       );
     } else if (poll.hasVoted) {
-      body = const _StatusCard(
+      content = _StatusCard(
         icon: Icons.verified_rounded,
         title: 'Merci pour votre participation',
         message:
             'Votre réponse à cette consultation a déjà été enregistrée de manière anonyme.',
+        actionLabel: 'Retour aux consultations',
+        onPressed: () => Navigator.of(context).pushReplacementNamed(
+          '/citizen/consultations',
+          arguments: {'session': session},
+        ),
       );
     } else {
       final question = questions[_stepIndex];
       final selected = _answers[question.id] ?? const <String>{};
-      body = Column(
+      content = Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             'Étape ${_stepIndex + 1} sur ${questions.length}',
             style: const TextStyle(
-              color: _CitizenColors.textMuted,
+              color: CitizenDesignTokens.textMuted,
               fontSize: 14,
               fontWeight: FontWeight.w700,
             ),
           ),
-          const SizedBox(height: 11),
+          const SizedBox(height: 10),
           ClipRRect(
-            borderRadius: BorderRadius.circular(10),
+            borderRadius: BorderRadius.circular(999),
             child: LinearProgressIndicator(
               value: (_stepIndex + 1) / questions.length,
               minHeight: 8,
-              backgroundColor: _CitizenColors.skyBlue,
-              valueColor: const AlwaysStoppedAnimation<Color>(
-                _CitizenColors.primaryBlue,
-              ),
+              backgroundColor: CitizenDesignTokens.skyBlue,
+              color: CitizenDesignTokens.primaryBlue,
             ),
           ),
-          const SizedBox(height: 26),
+          const SizedBox(height: 22),
           _QuestionCard(
             stepNumber: _stepIndex + 1,
             question: question,
             selectedOptionIds: selected,
-            canContinue: _canContinue,
+            enabled: _canContinue && !_isSubmitting,
             isSubmitting: _isSubmitting,
             isLastStep: _stepIndex == questions.length - 1,
             onToggle: (optionId) => _toggleOption(question, optionId),
@@ -305,7 +290,7 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
               _errorMessage!,
               style: const TextStyle(
                 color: Color(0xFFB42318),
-                fontWeight: FontWeight.w600,
+                fontWeight: FontWeight.w700,
               ),
             ),
           ],
@@ -313,363 +298,54 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
       );
     }
 
-    return Scaffold(
-      backgroundColor: _CitizenColors.background,
-      body: _MobileFrame(
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
-              _CitizenHeader(
-                title: headerTitle,
-                trailing: IconButton(
-                  tooltip: 'Partager',
-                  onPressed: () => _shareConsultation(context),
-                  icon: const Icon(
-                    Icons.share_rounded,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  physics: const BouncingScrollPhysics(),
-                  padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                  child: body,
-                ),
-              ),
-              _CitizenBottomNav(
-                activeTab: CitizenNavTab.opinion,
-                onTabSelected: _onNav,
-              ),
-            ],
-          ),
-        ),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+        systemStatusBarContrastEnforced: false,
       ),
-    );
-  }
-
-  String _headerTitleFor(String title) {
-    final normalized = title
-        .replaceAll('Amenagement', 'Aménagement')
-        .replaceAll('espaces publics', 'espaces publics');
-    return normalized == 'Aménagement des espaces publics'
-        ? 'Aménagement des\nespaces publics'
-        : normalized;
-  }
-}
-
-class _MobileFrame extends StatelessWidget {
-  const _MobileFrame({required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 430),
-        child: child,
-      ),
-    );
-  }
-}
-
-class _StatusCard extends StatelessWidget {
-  const _StatusCard({
-    required this.icon,
-    required this.title,
-    required this.message,
-    this.actionLabel,
-    this.onPressed,
-  });
-
-  final IconData icon;
-  final String title;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(22),
-      decoration: BoxDecoration(
-        color: _CitizenColors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: _CitizenColors.cardBorder),
-        boxShadow: _CitizenColors.softShadow,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Container(
-            width: 74,
-            height: 74,
-            decoration: const BoxDecoration(
-              color: _CitizenColors.skyBlue,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icon, color: _CitizenColors.primaryBlue, size: 42),
-          ),
-          const SizedBox(height: 18),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: _CitizenColors.textDark,
-              fontSize: 20,
-              height: 1.2,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Text(
-            message,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: _CitizenColors.textMuted,
-              fontSize: 14,
-              height: 1.35,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (actionLabel != null && onPressed != null) ...[
-            const SizedBox(height: 18),
-            _YellowContinueButton(enabled: true, onPressed: onPressed!),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _CitizenQuestionStepBridgePage extends StatelessWidget {
-  const _CitizenQuestionStepBridgePage({required this.title});
-
-  final String title;
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _CitizenColors.background,
-      body: _MobileFrame(
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 24, 16, 24),
-            child: Column(
-              children: [
-                _CitizenHeader(
-                  title: 'Réponse\nenregistrée',
-                  trailing: IconButton(
-                    tooltip: 'Fermer',
-                    onPressed: () => Navigator.of(context).pop(),
-                    icon: const Icon(
-                      Icons.close_rounded,
-                      color: Colors.white,
-                      size: 24,
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: SafeArea(
+              bottom: false,
+              child: ColoredBox(
+                color: CitizenDesignTokens.background,
+                child: Column(
+                  children: [
+                    CitizenHeader(
+                      title: widget.title,
+                      trailing: IconButton(
+                        tooltip: 'Partager',
+                        onPressed: _shareConsultation,
+                        icon: const Icon(
+                          Icons.share_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(22),
-                    decoration: BoxDecoration(
-                      color: _CitizenColors.white,
-                      borderRadius: BorderRadius.circular(22),
-                      border: Border.all(color: _CitizenColors.cardBorder),
-                      boxShadow: _CitizenColors.softShadow,
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(16, 20, 16, 26),
+                        child: content,
+                      ),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 74,
-                          height: 74,
-                          decoration: const BoxDecoration(
-                            color: _CitizenColors.skyBlue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: const Icon(
-                            Icons.verified_rounded,
-                            color: _CitizenColors.primaryBlue,
-                            size: 42,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-                        const Text(
-                          'Votre réponse a bien été enregistrée.',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            color: _CitizenColors.textDark,
-                            fontSize: 20,
-                            height: 1.2,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        Text(
-                          'Merci d\'avoir participé à "$title". Votre vote est anonyme et définitif.',
-                          textAlign: TextAlign.center,
-                          style: const TextStyle(
-                            color: _CitizenColors.textMuted,
-                            fontSize: 14,
-                            height: 1.35,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const Spacer(),
-                        _YellowContinueButton(
-                          enabled: true,
-                          onPressed: () {
-                            Navigator.of(context).pushNamedAndRemoveUntil(
-                              '/citizen/consultations',
-                              (route) => route.isFirst,
-                            );
-                          },
-                        ),
-                        const SizedBox(height: 12),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context).pushNamedAndRemoveUntil(
-                              '/citizen/home',
-                              (route) => route.isFirst,
-                            );
-                          },
-                          child: const Text(
-                            'Retour à l’accueil citoyen',
-                            style: TextStyle(
-                              color: _CitizenColors.deepBlue,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                        ),
-                      ],
+                    CitizenBottomNav(
+                      activeTab: CitizenNavTab.opinion,
+                      onTabSelected: (tab) => CitizenNavigation.open(
+                        context,
+                        tab,
+                        session: session,
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-                const SizedBox(height: 16),
-                _CitizenBottomNav(
-                  activeTab: CitizenNavTab.opinion,
-                  onTabSelected: (tab) {
-                    if (tab == CitizenNavTab.opinion) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        '/citizen/consultations',
-                        (route) => route.isFirst,
-                      );
-                      return;
-                    }
-                    if (tab == CitizenNavTab.home) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        '/citizen/home',
-                        (route) => route.isFirst,
-                      );
-                      return;
-                    }
-                    if (tab == CitizenNavTab.news) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const PublicNewsPage()),
-                      );
-                      return;
-                    }
-                    if (tab == CitizenNavTab.results) {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const PublicResultsPage()),
-                      );
-                    }
-                  },
-                ),
-              ],
+              ),
             ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CitizenColors {
-  const _CitizenColors._();
-
-  static const Color primaryBlue = Color(0xFF0075C9);
-  static const Color deepBlue = Color(0xFF005CA8);
-  static const Color skyBlue = Color(0xFFEAF8FF);
-  static const Color lightBlue = Color(0xFFF2FAFF);
-  static const Color yellowStrong = Color(0xFFFFDA29);
-  static const Color textDark = Color(0xFF143B5A);
-  static const Color textMuted = Color(0xFF607A94);
-  static const Color white = Color(0xFFFFFFFF);
-  static const Color cardBorder = Color(0xFFE3EEF6);
-  static const Color background = Color(0xFFF6FCFF);
-
-  static const LinearGradient headerGradient = LinearGradient(
-    begin: Alignment.topLeft,
-    end: Alignment.bottomRight,
-    colors: [primaryBlue, deepBlue],
-  );
-
-  static List<BoxShadow> softShadow = const [
-    BoxShadow(
-      color: Color(0x1A0075C9),
-      blurRadius: 18,
-      offset: Offset(0, 8),
-    ),
-  ];
-}
-
-class _CitizenHeader extends StatelessWidget {
-  const _CitizenHeader({required this.title, this.trailing});
-
-  final String title;
-  final Widget? trailing;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 92,
-      width: double.infinity,
-      decoration: const BoxDecoration(gradient: _CitizenColors.headerGradient),
-      child: SafeArea(
-        bottom: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 12),
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              Align(
-                alignment: Alignment.centerLeft,
-                child: IconButton(
-                  tooltip: 'Retour',
-                  onPressed: () => Navigator.maybePop(context),
-                  icon: const Icon(
-                    Icons.arrow_back_ios_new_rounded,
-                    color: Colors.white,
-                    size: 22,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 54),
-                child: Text(
-                  title,
-                  textAlign: TextAlign.center,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 17.5,
-                    height: 1.15,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-              ),
-              if (trailing != null)
-                Align(alignment: Alignment.centerRight, child: trailing!),
-            ],
           ),
         ),
       ),
@@ -682,7 +358,7 @@ class _QuestionCard extends StatelessWidget {
     required this.stepNumber,
     required this.question,
     required this.selectedOptionIds,
-    required this.canContinue,
+    required this.enabled,
     required this.isSubmitting,
     required this.isLastStep,
     required this.onToggle,
@@ -692,7 +368,7 @@ class _QuestionCard extends StatelessWidget {
   final int stepNumber;
   final EligiblePollQuestion question;
   final Set<String> selectedOptionIds;
-  final bool canContinue;
+  final bool enabled;
   final bool isSubmitting;
   final bool isLastStep;
   final ValueChanged<String> onToggle;
@@ -702,37 +378,31 @@ class _QuestionCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final subtitle = question.subtitle.isNotEmpty
         ? question.subtitle
-        : (question.multiple
+        : question.multiple
             ? 'Vous pouvez choisir plusieurs réponses'
-            : 'Sélectionnez une réponse');
+            : 'Sélectionnez une réponse';
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        color: _CitizenColors.white,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _CitizenColors.cardBorder),
-        boxShadow: _CitizenColors.softShadow,
-      ),
+      decoration: CitizenDesignTokens.cardDecoration,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             '$stepNumber. ${question.title}',
             style: const TextStyle(
-              color: _CitizenColors.textDark,
-              fontSize: 17,
-              height: 1.18,
+              color: CitizenDesignTokens.textDark,
+              fontSize: 18,
+              height: 1.2,
               fontWeight: FontWeight.w900,
             ),
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
           Text(
             subtitle,
             style: const TextStyle(
-              color: _CitizenColors.textMuted,
-              fontSize: 13,
+              color: CitizenDesignTokens.textMuted,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -745,12 +415,15 @@ class _QuestionCard extends StatelessWidget {
               selected: selectedOptionIds.contains(option.id),
               onTap: () => onToggle(option.id),
             ),
-          const SizedBox(height: 18),
-          _YellowContinueButton(
-            enabled: canContinue && !isSubmitting,
+          const SizedBox(height: 8),
+          _PrimaryActionButton(
+            key: const ValueKey('citizenVoteContinueButton'),
+            enabled: enabled,
             label: isSubmitting
-                ? 'Enregistrement...'
-                : (isLastStep ? 'Confirmer' : 'Suivant'),
+                ? 'Enregistrement…'
+                : isLastStep
+                    ? 'Confirmer mon choix'
+                    : 'Question suivante',
             onPressed: onContinue,
           ),
         ],
@@ -776,69 +449,85 @@ class _QuestionOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Semantics(
-      button: true,
-      selected: selected,
-      label: label,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: onTap,
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 160),
-          margin: const EdgeInsets.only(bottom: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          decoration: BoxDecoration(
-            color: _CitizenColors.lightBlue,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: selected ? _CitizenColors.primaryBlue : _CitizenColors.cardBorder,
-              width: selected ? 1.3 : 1,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        label: label,
+        child: InkWell(
+          key: ValueKey('pollOption_$label'),
+          borderRadius: BorderRadius.circular(14),
+          onTap: onTap,
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 160),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+            decoration: BoxDecoration(
+              color: selected
+                  ? CitizenDesignTokens.skyBlue
+                  : CitizenDesignTokens.lightBlue,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: selected
+                    ? CitizenDesignTokens.primaryBlue
+                    : CitizenDesignTokens.cardBorder,
+                width: selected ? 1.5 : 1,
+              ),
             ),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: const BoxDecoration(
-                  color: _CitizenColors.skyBlue,
-                  shape: BoxShape.circle,
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  padding: const EdgeInsets.all(7),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: illustrationAsset != null
+                      ? SvgPicture.asset(illustrationAsset!)
+                      : Icon(
+                          icon,
+                          color: CitizenDesignTokens.primaryBlue,
+                          size: 24,
+                        ),
                 ),
-                child: illustrationAsset != null
-                    ? Padding(
-                        padding: const EdgeInsets.all(6),
-                        child: SvgPicture.asset(illustrationAsset!),
-                      )
-                    : Icon(icon, color: _CitizenColors.primaryBlue, size: 23),
-              ),
-              const SizedBox(width: 13),
-              Expanded(
-                child: Text(
-                  label,
-                  style: const TextStyle(
-                    color: _CitizenColors.textDark,
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+                const SizedBox(width: 13),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: const TextStyle(
+                      color: CitizenDesignTokens.textDark,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
                 ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 160),
-                width: 22,
-                height: 22,
-                decoration: BoxDecoration(
-                  color: selected ? _CitizenColors.primaryBlue : Colors.white,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: selected ? _CitizenColors.primaryBlue : const Color(0xFFB8CBDD),
-                    width: 1.5,
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  width: 24,
+                  height: 24,
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? CitizenDesignTokens.primaryBlue
+                        : Colors.white,
+                    borderRadius: BorderRadius.circular(7),
+                    border: Border.all(
+                      color: selected
+                          ? CitizenDesignTokens.primaryBlue
+                          : const Color(0xFFB8CBDD),
+                    ),
                   ),
+                  child: selected
+                      ? const Icon(
+                          Icons.check_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        )
+                      : null,
                 ),
-                child: selected
-                    ? const Icon(Icons.check_rounded, color: Colors.white, size: 17)
-                    : null,
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -846,154 +535,237 @@ class _QuestionOptionTile extends StatelessWidget {
   }
 }
 
-class _YellowContinueButton extends StatelessWidget {
-  const _YellowContinueButton({
+class _PrimaryActionButton extends StatelessWidget {
+  const _PrimaryActionButton({
+    super.key,
     required this.enabled,
+    required this.label,
     required this.onPressed,
-    this.label = 'Suivant',
   });
 
   final bool enabled;
-  final VoidCallback onPressed;
   final String label;
+  final VoidCallback onPressed;
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: enabled ? 1 : 0.55,
-      child: Semantics(
-        button: true,
-        enabled: enabled,
-        label: label,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(12),
-            onTap: enabled ? onPressed : null,
-            child: Ink(
-              height: 52,
-              decoration: BoxDecoration(
-                color: enabled ? _CitizenColors.yellowStrong : _CitizenColors.cardBorder,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: Row(
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: FilledButton.icon(
+        onPressed: enabled ? onPressed : null,
+        style: FilledButton.styleFrom(
+          backgroundColor: CitizenDesignTokens.yellowStrong,
+          disabledBackgroundColor: CitizenDesignTokens.cardBorder,
+          foregroundColor: CitizenDesignTokens.deepBlue,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        iconAlignment: IconAlignment.end,
+        icon: const Icon(Icons.arrow_forward_rounded),
+        label: Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.w900),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatusCard extends StatelessWidget {
+  const _StatusCard({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.actionLabel,
+    this.onPressed,
+  });
+
+  final IconData icon;
+  final String title;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(22),
+      decoration: CitizenDesignTokens.cardDecoration,
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 38,
+            backgroundColor: CitizenDesignTokens.skyBlue,
+            child: Icon(
+              icon,
+              color: CitizenDesignTokens.primaryBlue,
+              size: 42,
+            ),
+          ),
+          const SizedBox(height: 18),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: CitizenDesignTokens.textDark,
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            message,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              color: CitizenDesignTokens.textMuted,
+              height: 1.4,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (actionLabel != null && onPressed != null) ...[
+            const SizedBox(height: 20),
+            _PrimaryActionButton(
+              enabled: true,
+              label: actionLabel!,
+              onPressed: onPressed!,
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _VoteConfirmationPage extends StatelessWidget {
+  const _VoteConfirmationPage({required this.title});
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    final session = CitizenPublicAccessService.instance.currentSession;
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.white,
+        statusBarIconBrightness: Brightness.dark,
+        statusBarBrightness: Brightness.light,
+      ),
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 430),
+            child: SafeArea(
+              bottom: false,
+              child: ColoredBox(
+                color: CitizenDesignTokens.background,
+                child: Column(
                   children: [
-                    Expanded(
-                      child: Text(
-                        label,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          color: _CitizenColors.deepBlue,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
+                    CitizenHeader(
+                      title: 'Réponse enregistrée',
+                      showBack: false,
+                      trailing: IconButton(
+                        tooltip: 'Retour à l’accueil',
+                        onPressed: () => Navigator.of(context)
+                            .pushNamedAndRemoveUntil(
+                          '/citizen/home',
+                          (route) => false,
+                          arguments: {'session': session},
+                        ),
+                        icon: const Icon(
+                          Icons.close_rounded,
+                          color: Colors.white,
                         ),
                       ),
                     ),
-                    const Icon(
-                      Icons.arrow_forward_ios_rounded,
-                      size: 16,
-                      color: _CitizenColors.deepBlue,
+                    Expanded(
+                      child: Center(
+                        child: SingleChildScrollView(
+                          padding: const EdgeInsets.all(22),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(24),
+                            decoration: CitizenDesignTokens.cardDecoration,
+                            child: Column(
+                              children: [
+                                const CircleAvatar(
+                                  radius: 42,
+                                  backgroundColor: CitizenDesignTokens.skyBlue,
+                                  child: Icon(
+                                    Icons.verified_rounded,
+                                    color: CitizenDesignTokens.success,
+                                    size: 48,
+                                  ),
+                                ),
+                                const SizedBox(height: 20),
+                                const Text(
+                                  'Votre réponse a bien été enregistrée.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: CitizenDesignTokens.textDark,
+                                    fontSize: 21,
+                                    fontWeight: FontWeight.w900,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  'Merci d’avoir participé à « $title ». Votre vote est anonyme et définitif.',
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    color: CitizenDesignTokens.textMuted,
+                                    height: 1.4,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 24),
+                                _PrimaryActionButton(
+                                  key: const ValueKey(
+                                    'voteConfirmationConsultationsButton',
+                                  ),
+                                  enabled: true,
+                                  label: 'Retour aux consultations',
+                                  onPressed: () => Navigator.of(context)
+                                      .pushNamedAndRemoveUntil(
+                                    '/citizen/consultations',
+                                    (route) => false,
+                                    arguments: {'session': session},
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                TextButton(
+                                  key: const ValueKey(
+                                    'voteConfirmationHomeButton',
+                                  ),
+                                  onPressed: () => Navigator.of(context)
+                                      .pushNamedAndRemoveUntil(
+                                    '/citizen/home',
+                                    (route) => false,
+                                    arguments: {'session': session},
+                                  ),
+                                  child: const Text('Retour à l’accueil'),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    CitizenBottomNav(
+                      activeTab: CitizenNavTab.opinion,
+                      onTabSelected: (tab) => CitizenNavigation.open(
+                        context,
+                        tab,
+                        session: session,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
           ),
-        ),
-      ),
-    );
-  }
-}
-
-enum CitizenNavTab { home, news, opinion, results }
-
-class _CitizenBottomNav extends StatelessWidget {
-  const _CitizenBottomNav({required this.activeTab, required this.onTabSelected});
-
-  final CitizenNavTab activeTab;
-  final ValueChanged<CitizenNavTab> onTabSelected;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      height: 72,
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
-      decoration: const BoxDecoration(
-        color: _CitizenColors.white,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x1A0075C9),
-            blurRadius: 18,
-            offset: Offset(0, -6),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          _BottomNavItem(tab: CitizenNavTab.home, activeTab: activeTab, icon: Icons.home_rounded, label: 'Accueil', onTap: onTabSelected),
-          _BottomNavItem(tab: CitizenNavTab.news, activeTab: activeTab, icon: Icons.calendar_month_rounded, label: 'Actualités', onTap: onTabSelected),
-          _BottomNavItem(tab: CitizenNavTab.opinion, activeTab: activeTab, icon: Icons.how_to_vote_rounded, label: 'Donner mon avis', onTap: onTabSelected),
-          _BottomNavItem(tab: CitizenNavTab.results, activeTab: activeTab, icon: Icons.bar_chart_rounded, label: 'Résultats', onTap: onTabSelected),
-        ],
-      ),
-    );
-  }
-}
-
-class _BottomNavItem extends StatelessWidget {
-  const _BottomNavItem({
-    required this.tab,
-    required this.activeTab,
-    required this.icon,
-    required this.label,
-    required this.onTap,
-  });
-
-  final CitizenNavTab tab;
-  final CitizenNavTab activeTab;
-  final IconData icon;
-  final String label;
-  final ValueChanged<CitizenNavTab> onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final isActive = tab == activeTab;
-    return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: () => onTap(tab),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-              decoration: BoxDecoration(
-                color: isActive ? _CitizenColors.skyBlue : Colors.transparent,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Icon(
-                icon,
-                size: 22,
-                color: isActive ? _CitizenColors.primaryBlue : _CitizenColors.textMuted,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                color: isActive ? _CitizenColors.primaryBlue : _CitizenColors.textMuted,
-                fontSize: 10.5,
-                fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
-              ),
-            ),
-          ],
         ),
       ),
     );

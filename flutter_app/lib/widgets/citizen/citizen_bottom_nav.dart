@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../services/citizen_public_access_service.dart';
 import '../../theme/citizen_design_tokens.dart';
 
 enum CitizenNavTab {
@@ -7,6 +8,46 @@ enum CitizenNavTab {
   news,
   opinion,
   results,
+}
+
+/// Navigation commune à tout le parcours citoyen connecté.
+///
+/// Les quatre onglets racines utilisent systématiquement des routes nommées
+/// stables. L'écran de bienvenue n'est jamais utilisé comme destination d'un
+/// onglet : il reste uniquement disponible pour un éventuel onboarding.
+class CitizenNavigation {
+  const CitizenNavigation._();
+
+  static String routeFor(CitizenNavTab tab) {
+    switch (tab) {
+      case CitizenNavTab.home:
+        return '/citizen/home';
+      case CitizenNavTab.news:
+        return '/news';
+      case CitizenNavTab.opinion:
+        return '/citizen/consultations';
+      case CitizenNavTab.results:
+        return '/results';
+    }
+  }
+
+  static void open(
+    BuildContext context,
+    CitizenNavTab tab, {
+    CitizenPublicAccessSession? session,
+  }) {
+    final target = routeFor(tab);
+    final current = ModalRoute.of(context)?.settings.name;
+    if (current == target) return;
+
+    Navigator.of(context).pushReplacementNamed(
+      target,
+      arguments: {
+        'session': session ?? CitizenPublicAccessService.instance.currentSession,
+        'disableTransition': true,
+      },
+    );
+  }
 }
 
 class CitizenBottomNav extends StatelessWidget {
@@ -23,7 +64,7 @@ class CitizenBottomNav extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       height: CitizenDesignTokens.bottomNavHeight,
-      padding: const EdgeInsets.fromLTRB(14, 8, 14, 10),
+      padding: const EdgeInsets.fromLTRB(10, 7, 10, 9),
       decoration: const BoxDecoration(
         color: CitizenDesignTokens.white,
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
@@ -47,14 +88,14 @@ class CitizenBottomNav extends StatelessWidget {
           _NavItem(
             tab: CitizenNavTab.news,
             activeTab: activeTab,
-            icon: Icons.calendar_month_rounded,
+            icon: Icons.article_outlined,
             label: 'Actualités',
             onTap: onTabSelected,
           ),
           _NavItem(
             tab: CitizenNavTab.opinion,
             activeTab: activeTab,
-            icon: Icons.how_to_vote_rounded,
+            icon: Icons.edit_square,
             label: 'Donner mon avis',
             onTap: onTabSelected,
           ),
@@ -91,42 +132,51 @@ class _NavItem extends StatelessWidget {
     final isActive = tab == activeTab;
 
     return Expanded(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(22),
-        onTap: () => onTap(tab),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            AnimatedContainer(
-              duration: const Duration(milliseconds: 180),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
-              decoration: BoxDecoration(
-                color:
-                    isActive ? CitizenDesignTokens.skyBlue : Colors.transparent,
-                borderRadius: BorderRadius.circular(22),
+      child: Semantics(
+        button: true,
+        selected: isActive,
+        label: label,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(24),
+          onTap: () => onTap(tab),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isActive
+                      ? CitizenDesignTokens.skyBlue
+                      : Colors.transparent,
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                child: Icon(
+                  icon,
+                  size: isActive ? 25 : 23,
+                  color: isActive
+                      ? CitizenDesignTokens.deepBlue
+                      : CitizenDesignTokens.textDark.withValues(alpha: 0.72),
+                ),
               ),
-              child: Icon(
-                icon,
-                size: 24,
-                color: isActive
-                    ? CitizenDesignTokens.deepBlue
-                    : CitizenDesignTokens.textDark.withValues(alpha: 0.75),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 10.5,
+                  height: 1,
+                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
+                  color: isActive
+                      ? CitizenDesignTokens.deepBlue
+                      : CitizenDesignTokens.textDark.withValues(alpha: 0.72),
+                ),
               ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(
-                fontSize: 11,
-                fontWeight: isActive ? FontWeight.w800 : FontWeight.w500,
-                color: isActive
-                    ? CitizenDesignTokens.deepBlue
-                    : CitizenDesignTokens.textDark.withValues(alpha: 0.75),
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

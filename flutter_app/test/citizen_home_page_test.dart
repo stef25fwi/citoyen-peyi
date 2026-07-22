@@ -2,84 +2,82 @@ import 'package:citoyen_peyi_flutter/pages/citizen/citizen_home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-// _QuickActionCard has a pre-existing (unrelated) overflow under the test
-// harness's fallback font metrics; drain it so it doesn't fail these
-// button-wiring tests. Not something introduced by this change.
-void _drainOverflowExceptions(WidgetTester tester) {
-  Object? exception;
-  do {
-    exception = tester.takeException();
-  } while (exception != null);
-}
-
 void main() {
-  testWidgets('À propos opens the real legal information page',
+  testWidgets('À propos ouvre la vraie page d’informations légales',
       (tester) async {
-    tester.view.physicalSize = const Size(430, 1000);
+    tester.view.physicalSize = const Size(430, 932);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
     await tester.pumpAndSettle();
-    _drainOverflowExceptions(tester);
 
-    await tester.tap(find.text('À propos'));
+    final about = find.text('À propos de Citoyen Peyi');
+    await tester.ensureVisible(about);
+    await tester.tap(about);
     await tester.pumpAndSettle();
 
     expect(find.text('Informations légales'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
-  testWidgets('notifications bell opens the real consultations list',
+  testWidgets('la cloche ouvre la liste réelle des consultations',
       (tester) async {
-    tester.view.physicalSize = const Size(430, 1000);
+    tester.view.physicalSize = const Size(430, 932);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
     await tester.pumpAndSettle();
-    _drainOverflowExceptions(tester);
 
     await tester.tap(find.byTooltip('Nouvelles consultations'));
     await tester.pumpAndSettle();
 
     expect(find.text('Donner mon avis'), findsWidgets);
+    expect(find.text('Aucune consultation en cours'), findsOneWidget);
+    expect(tester.takeException(), isNull);
   });
 
-  testWidgets('profile icon opens the citizen profile page', (tester) async {
-    tester.view.physicalSize = const Size(430, 1000);
+  testWidgets('le bouton profil ouvre le profil citoyen', (tester) async {
+    tester.view.physicalSize = const Size(430, 932);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
 
     await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
     await tester.pumpAndSettle();
-    _drainOverflowExceptions(tester);
 
     await tester.tap(find.byTooltip('Mon profil'));
     await tester.pumpAndSettle();
-    _drainOverflowExceptions(tester);
 
     expect(find.text('Mon profil'), findsOneWidget);
-    expect(find.text('Votre code d\'accès'), findsOneWidget);
+    expect(find.text('Votre espace citoyen'), findsOneWidget);
     expect(find.text('Recevoir des notifications'), findsOneWidget);
-  });
-
-  testWidgets('welcome page hero does not overlap the grid below it',
-      (tester) async {
-    tester.view.physicalSize = const Size(430, 800);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.resetPhysicalSize);
-    addTearDown(tester.view.resetDevicePixelRatio);
-
-    await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
-    await tester.pumpAndSettle();
-    _drainOverflowExceptions(tester);
-
-    // Aucune erreur de layout (overflow/overlap) ne doit remonter, meme sur
-    // un ecran de hauteur reduite : la grille se redimensionne au lieu de
-    // deborder ou de defiler.
     expect(tester.takeException(), isNull);
   });
+
+  for (final size in const <Size>[
+    Size(360, 640),
+    Size(390, 844),
+    Size(430, 932),
+    Size(768, 1024),
+  ]) {
+    testWidgets('accueil connecté sans overflow en ${size.width}x${size.height}',
+        (tester) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Bonjour !'), findsOneWidget);
+      expect(find.text('Je participe'), findsOneWidget);
+      expect(find.text('Comment ça marche ?'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+  }
 }
