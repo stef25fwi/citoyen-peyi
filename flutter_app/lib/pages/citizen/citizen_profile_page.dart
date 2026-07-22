@@ -22,7 +22,8 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> {
   bool _isSavingCategory = false;
 
   CitizenPublicAccessSession? get _session =>
-      widget.initialSession ?? CitizenPublicAccessService.instance.currentSession;
+      widget.initialSession ??
+      CitizenPublicAccessService.instance.currentSession;
 
   @override
   void initState() {
@@ -43,7 +44,8 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> {
       _notificationCategory = category;
       _isSavingCategory = true;
     });
-    await CitizenPublicAccessService.instance.saveNotificationCategory(category);
+    await CitizenPublicAccessService.instance
+        .saveNotificationCategory(category);
 
     final session = _session;
     if (session != null) {
@@ -120,7 +122,7 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> {
         backgroundColor: Colors.white,
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
+            constraints: const BoxConstraints(maxWidth: 760),
             child: SafeArea(
               bottom: false,
               child: ColoredBox(
@@ -146,9 +148,10 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> {
                                   const SizedBox(height: 14),
                                   _InfoRow(
                                     label: 'Commune',
-                                    value: session?.communeName.isNotEmpty == true
-                                        ? session!.communeName
-                                        : 'Indisponible',
+                                    value:
+                                        session?.communeName.isNotEmpty == true
+                                            ? session!.communeName
+                                            : 'Indisponible',
                                   ),
                                   const SizedBox(height: 10),
                                   Container(
@@ -190,11 +193,13 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> {
                                                 ? 'Masquer le code'
                                                 : 'Afficher le code',
                                             onPressed: () => setState(
-                                              () => _codeVisible = !_codeVisible,
+                                              () =>
+                                                  _codeVisible = !_codeVisible,
                                             ),
                                             icon: Icon(
                                               _codeVisible
-                                                  ? Icons.visibility_off_outlined
+                                                  ? Icons
+                                                      .visibility_off_outlined
                                                   : Icons.visibility_outlined,
                                               color:
                                                   CitizenDesignTokens.deepBlue,

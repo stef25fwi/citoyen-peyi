@@ -53,7 +53,7 @@ class LegalPage extends StatelessWidget {
         backgroundColor: Colors.white,
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
+            constraints: const BoxConstraints(maxWidth: 860),
             child: ColoredBox(
               color: CitizenDesignTokens.background,
               child: Column(

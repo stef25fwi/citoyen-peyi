@@ -96,8 +96,7 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage =
-            'Validation du code impossible. Réessayez plus tard.';
+        _errorMessage = 'Validation du code impossible. Réessayez plus tard.';
       });
     }
   }
@@ -161,8 +160,9 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
 
     try {
       await _service.submitVote(
-        accessToken:
-            poll.accessToken.isNotEmpty ? poll.accessToken : validation.accessToken,
+        accessToken: poll.accessToken.isNotEmpty
+            ? poll.accessToken
+            : validation.accessToken,
         pollId: poll.pollId,
         answers: answers,
       );
@@ -309,7 +309,7 @@ class _CitizenPollQuestionPageState extends State<CitizenPollQuestionPage> {
         backgroundColor: Colors.white,
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
+            constraints: const BoxConstraints(maxWidth: 760),
             child: SafeArea(
               bottom: false,
               child: ColoredBox(
@@ -657,7 +657,7 @@ class _VoteConfirmationPage extends StatelessWidget {
         backgroundColor: Colors.white,
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
+            constraints: const BoxConstraints(maxWidth: 760),
             child: SafeArea(
               bottom: false,
               child: ColoredBox(
@@ -669,8 +669,8 @@ class _VoteConfirmationPage extends StatelessWidget {
                       showBack: false,
                       trailing: IconButton(
                         tooltip: 'Retour à l’accueil',
-                        onPressed: () => Navigator.of(context)
-                            .pushNamedAndRemoveUntil(
+                        onPressed: () =>
+                            Navigator.of(context).pushNamedAndRemoveUntil(
                           '/citizen/home',
                           (route) => false,
                           arguments: {'session': session},
