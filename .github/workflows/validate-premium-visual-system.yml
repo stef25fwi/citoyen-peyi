@@ -79,9 +79,26 @@ jobs:
           lib/pages/super_admin_login_page.dart
           test/premium_theme_test.dart
 
-      - name: Analyze Flutter application
+      - id: analyze
+        name: Analyze Flutter application
+        continue-on-error: true
         working-directory: flutter_app
-        run: flutter analyze
+        run: |
+          set -o pipefail
+          flutter analyze 2>&1 | tee ../premium-analyze.log
+
+      - name: Upload analyze diagnostic
+        if: steps.analyze.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-analyze-diagnostic
+          path: premium-analyze.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Stop after analyze failure
+        if: steps.analyze.outcome == 'failure'
+        run: exit 1
 
       - id: premium_tests
         name: Test premium design system
