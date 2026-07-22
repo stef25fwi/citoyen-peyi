@@ -1,7 +1,9 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../services/debug_log_service.dart';
 import '../services/super_admin_service.dart';
+import '../theme/citizen_design_tokens.dart';
 import '../widgets/debug_log_viewer.dart';
 
 class SuperAdminLoginPage extends StatefulWidget {
@@ -32,22 +34,28 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
       await SuperAdminService.instance.signIn(key);
       if (!mounted) return;
       Navigator.of(context).pushReplacementNamed('/super');
-    } on SuperAdminAuthException catch (e) {
-      DebugLogService.instance
-          .log('[SuperAdminLogin]', 'SuperAdminAuthException: ${e.message}');
+    } on SuperAdminAuthException catch (error) {
+      DebugLogService.instance.log(
+        '[SuperAdminLogin]',
+        'SuperAdminAuthException: ${error.message}',
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+          .showSnackBar(SnackBar(content: Text(error.message)));
     } catch (error, stackTrace) {
-      // Ne plus avaler l'erreur reelle : elle est capturee dans le journal de
-      // diagnostic (bouton Debug) pour identifier la cause exacte.
-      DebugLogService.instance.log('[SuperAdminLogin]',
-          'Erreur inattendue: $error\n$stackTrace');
+      DebugLogService.instance.log(
+        '[SuperAdminLogin]',
+        'Erreur inattendue: $error\n$stackTrace',
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Connexion super administrateur impossible. '
-                'Ouvrez « Debug » pour voir le detail.')),
+        SnackBar(
+          content: Text(
+            kDebugMode
+                ? 'Connexion impossible. Consultez le journal Debug.'
+                : 'Connexion super administrateur impossible.',
+          ),
+        ),
       );
     } finally {
       if (mounted) setState(() => _isSubmitting = false);
@@ -60,103 +68,112 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
     final canSubmit = _keyController.text.trim().isNotEmpty && !_isSubmitting;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: CitizenDesignTokens.background,
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_rounded),
           onPressed: () => Navigator.of(context).pushNamed('/'),
         ),
         titleSpacing: 0,
-        title: Row(
+        title: const Row(
           children: [
-            Icon(Icons.admin_panel_settings_rounded,
-                color: theme.colorScheme.primary),
-            const SizedBox(width: 10),
-            const Flexible(child: Text('Espace Super Administrateur')),
+            Icon(
+              Icons.admin_panel_settings_rounded,
+              color: CitizenDesignTokens.superAdminAccent,
+              size: 22,
+            ),
+            SizedBox(width: CitizenDesignTokens.space8),
+            Flexible(child: Text('Espace Super Administrateur')),
           ],
         ),
-        actions: const [DebugLogButton()],
+        actions: kDebugMode ? const [DebugLogButton()] : null,
       ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: CitizenDesignTokens.softBackgroundGradient,
+        ),
+        child: SafeArea(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 500),
+              child: Padding(
+                padding: const EdgeInsets.all(CitizenDesignTokens.space20),
+                child: Container(
+                  padding: const EdgeInsets.all(CitizenDesignTokens.space24),
+                  decoration: CitizenDesignTokens.elevatedCardDecoration,
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Container(
-                        width: 56,
-                        height: 56,
+                        width: 62,
+                        height: 62,
                         decoration: BoxDecoration(
-                          color:
-                              const Color(0xFF6B21A8).withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(18),
+                          color: CitizenDesignTokens.superAdminSoft,
+                          borderRadius: BorderRadius.circular(
+                            CitizenDesignTokens.radiusButton,
+                          ),
+                          border: Border.all(
+                            color: CitizenDesignTokens.superAdminAccent
+                                .withValues(alpha: 0.18),
+                          ),
                         ),
                         child: const Icon(
                           Icons.admin_panel_settings_rounded,
-                          size: 28,
-                          color: Color(0xFF6B21A8),
+                          size: 30,
+                          color: CitizenDesignTokens.superAdminAccent,
                         ),
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: CitizenDesignTokens.space16),
                       Text(
                         'Connexion Super Admin',
                         style: theme.textTheme.titleLarge?.copyWith(
-                            fontSize: 18, fontWeight: FontWeight.w700),
+                          fontSize: 19,
+                          fontWeight: FontWeight.w800,
+                        ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 6),
+                      const SizedBox(height: CitizenDesignTokens.space8),
                       Text(
-                        'Ce profil peut creer des comptes administrateurs rattaches a une commune et generer leurs cles de connexion.',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: const Color(0xFF5A6573)),
+                        'Pilotez les communes, les administrateurs, les sauvegardes et la supervision globale de la plateforme.',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: CitizenDesignTokens.textMuted,
+                        ),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 16),
+                      const SizedBox(height: CitizenDesignTokens.space24),
                       TextField(
                         controller: _keyController,
                         obscureText: _obscure,
                         enabled: !_isSubmitting,
                         autofocus: true,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        style: theme.textTheme.titleMedium?.copyWith(
                           letterSpacing: 1,
-                          fontWeight: FontWeight.w600,
                         ),
                         decoration: InputDecoration(
-                          hintText: 'Cle super administrateur',
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 14),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide:
-                                const BorderSide(color: Color(0xFFD7E0EA)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide:
-                                const BorderSide(color: Color(0xFFD7E0EA)),
+                          hintText: 'Clé super administrateur',
+                          prefixIcon: const Icon(
+                            Icons.key_rounded,
+                            color: CitizenDesignTokens.superAdminAccent,
                           ),
                           focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
+                            borderRadius: BorderRadius.circular(
+                              CitizenDesignTokens.radiusField,
+                            ),
                             borderSide: const BorderSide(
-                                color: Color(0xFF6B21A8), width: 1.6),
+                              color: CitizenDesignTokens.superAdminAccent,
+                              width: 1.8,
+                            ),
                           ),
                           suffixIcon: IconButton(
-                            icon: Icon(_obscure
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined),
+                            tooltip: _obscure
+                                ? 'Afficher la clé'
+                                : 'Masquer la clé',
+                            icon: Icon(
+                              _obscure
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                            ),
                             onPressed: () =>
                                 setState(() => _obscure = !_obscure),
                           ),
@@ -166,12 +183,13 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                           if (canSubmit) _handleSubmit();
                         },
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: CitizenDesignTokens.space16),
                       SizedBox(
                         width: double.infinity,
                         child: FilledButton.icon(
                           style: FilledButton.styleFrom(
-                            backgroundColor: const Color(0xFF6B21A8),
+                            backgroundColor:
+                                CitizenDesignTokens.superAdminAccent,
                           ),
                           onPressed: canSubmit ? _handleSubmit : null,
                           icon: _isSubmitting
@@ -179,19 +197,24 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                                   width: 18,
                                   height: 18,
                                   child: CircularProgressIndicator(
-                                      strokeWidth: 2, color: Colors.white),
+                                    strokeWidth: 2,
+                                    color: CitizenDesignTokens.white,
+                                  ),
                                 )
                               : const Icon(Icons.arrow_forward_rounded),
-                          label: Text(_isSubmitting
-                              ? 'Connexion...'
-                              : 'Acceder au panneau super admin'),
+                          label: Text(
+                            _isSubmitting
+                                ? 'Connexion en cours…'
+                                : 'Accéder au panneau Super Admin',
+                          ),
                         ),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: CitizenDesignTokens.space12),
                       Text(
-                        'La cle super administrateur est verifiee par le backend et n\'est jamais compilee dans Flutter.',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: const Color(0xFF7A8796)),
+                        'La clé est vérifiée par le serveur et n’est jamais intégrée au code de l’application.',
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: CitizenDesignTokens.textSubtle,
+                        ),
                         textAlign: TextAlign.center,
                       ),
                     ],
