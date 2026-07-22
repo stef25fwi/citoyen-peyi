@@ -69,11 +69,28 @@ jobs:
           test/app_responsive_viewport_test.dart
           test/citizen_home_page_test.dart
 
-      - name: Analyze Flutter application
+      - id: analyze
+        name: Analyze Flutter application
+        continue-on-error: true
         working-directory: flutter_app
         run: |
           set -o pipefail
           flutter analyze 2>&1 | tee ../responsive-analyze.log
+
+      - name: Publish analyze diagnostic
+        if: steps.analyze.outcome == 'failure'
+        run: |
+          mkdir -p .github/diagnostics
+          cp responsive-analyze.log .github/diagnostics/responsive-analyze.log
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add .github/diagnostics/responsive-analyze.log
+          git commit -m 'ci: publie le diagnostic responsive Flutter'
+          git push origin HEAD:feat/all-pages-full-responsive
+
+      - name: Stop after analyze failure
+        if: steps.analyze.outcome == 'failure'
+        run: exit 1
 
       - name: Test responsive framework
         working-directory: flutter_app
