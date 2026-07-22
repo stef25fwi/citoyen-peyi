@@ -4,6 +4,17 @@ on:
   push:
     branches:
       - feat/premium-visual-system
+  pull_request:
+    branches: [main]
+    paths:
+      - 'flutter_app/lib/theme/**'
+      - 'flutter_app/lib/widgets/**'
+      - 'flutter_app/lib/pages/admin_login_page.dart'
+      - 'flutter_app/lib/pages/controller_login_page.dart'
+      - 'flutter_app/lib/pages/super_admin_login_page.dart'
+      - 'flutter_app/test/premium_theme_test.dart'
+      - 'docs/design/audit-harmonisation-premium-2026-07.md'
+      - '.github/workflows/validate-premium-visual-system.yml'
   workflow_dispatch:
 
 permissions:
@@ -11,6 +22,7 @@ permissions:
 
 jobs:
   flutter:
+    if: github.event_name == 'push' || github.head_ref == 'feat/premium-visual-system' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -63,6 +75,7 @@ jobs:
           test/citizen_home_page_test.dart
 
       - name: Publish formatting changes
+        if: github.event_name == 'push'
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
