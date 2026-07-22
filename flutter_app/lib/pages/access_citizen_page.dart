@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../services/citizen_commune_store.dart';
@@ -448,7 +447,7 @@ class _AccessHeroHeader extends StatelessWidget {
         Text(
           'Accès citoyen',
           textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             color: const Color(0xFF082E69),
             fontSize: 32,
             fontWeight: FontWeight.w900,
@@ -460,7 +459,7 @@ class _AccessHeroHeader extends StatelessWidget {
         Text(
           'Entrez votre code pour participer anonymement.',
           textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             color: const Color(0xFF5E6E83),
             fontSize: 14.5,
             fontWeight: FontWeight.w500,
@@ -557,7 +556,7 @@ class _AccessFormCard extends StatelessWidget {
         children: [
           Text(
             'Code citoyen',
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: const Color(0xFF07356F),
               fontSize: 16,
               fontWeight: FontWeight.w900,
@@ -584,7 +583,7 @@ class _AccessFormCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               errorMessage!,
-              style: GoogleFonts.inter(
+              style: TextStyle(
                 color: const Color(0xFFB42318),
                 fontWeight: FontWeight.w700,
                 fontSize: 13,
@@ -644,7 +643,7 @@ class _CodeCitizenField extends StatelessWidget {
         autocorrect: false,
         enableSuggestions: false,
         textAlignVertical: TextAlignVertical.center,
-        style: GoogleFonts.inter(
+        style: TextStyle(
           color: const Color(0xFF0B2D5C),
           fontWeight: FontWeight.w800,
           fontSize: 17,
@@ -652,7 +651,7 @@ class _CodeCitizenField extends StatelessWidget {
         ),
         decoration: InputDecoration(
           hintText: 'Saisissez votre code citoyen',
-          hintStyle: GoogleFonts.inter(
+          hintStyle: TextStyle(
             color: const Color(0xFFA3AFC2),
             fontWeight: FontWeight.w700,
             fontSize: 16.5,
@@ -715,7 +714,7 @@ class _ConfidentialityBox extends StatelessWidget {
                   'Participation confidentielle',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: const Color(0xFF08356F),
                     fontWeight: FontWeight.w900,
                     fontSize: 15,
@@ -727,7 +726,7 @@ class _ConfidentialityBox extends StatelessWidget {
                   'Vos réponses restent anonymes.',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: const Color(0xFF63748A),
                     fontSize: 13.5,
                     fontWeight: FontWeight.w500,
@@ -807,7 +806,7 @@ class _LegalTermsConsentPanel extends StatelessWidget {
                         'CGU, confidentialité et anonymat',
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: const Color(0xFF08356F),
                           fontWeight: FontWeight.w900,
                           fontSize: 14.5,
@@ -829,7 +828,7 @@ class _LegalTermsConsentPanel extends StatelessWidget {
                               readLabel,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.inter(
+                              style: TextStyle(
                                 color: readColor,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13.5,
@@ -863,7 +862,7 @@ class _LegalTermsConsentPanel extends StatelessWidget {
               onPressed: () => _openLegalPage(context),
               child: Text(
                 'Lire les conditions',
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: cpBlueDark,
                   fontWeight: FontWeight.w700,
                   fontSize: 12.5,
@@ -947,7 +946,7 @@ class _TermsAcceptanceRow extends StatelessWidget {
                   'J’ai lu et j’accepte les conditions d’utilisation.',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: TextStyle(
                     color: const Color(0xFF0A2E5F),
                     fontWeight: FontWeight.w700,
                     fontSize: 13.6,
@@ -1037,7 +1036,7 @@ class _SubmitButton extends StatelessWidget {
                   child: Text(
                     'Valider mon code citoyen',
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       color: enabled ? cpBlueDark : const Color(0xFF94A3B8),
                       fontWeight: FontWeight.w900,
                       fontSize: 16,
@@ -1068,7 +1067,7 @@ class _FooterNote extends StatelessWidget {
           child: Text(
             'Plateforme de consultation citoyenne anonyme',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: cpBlueDark,
               fontWeight: FontWeight.w700,
               fontSize: 13,

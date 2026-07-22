@@ -36,7 +36,7 @@ Cette coexistence créait des différences visibles entre les pages publiques, c
 
 ### Typographie
 
-**Inter** devient la typographie unique de l’interface. Elle correspond au positionnement institutionnel souhaité et assure une meilleure cohérence entre les écrans publics et les espaces professionnels. Les titres utilisent des graisses 800–900 et les textes courants 400–600.
+Une **pile sans-serif native** devient la typographie unique de l’interface. Elle utilise les polices système optimisées de chaque plateforme, sans téléchargement distant susceptible de bloquer le texte. Les titres utilisent des graisses 800–900 et les textes courants 400–600.
 
 ### Formes et élévation
 

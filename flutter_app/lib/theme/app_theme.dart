@@ -1,6 +1,6 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'citizen_design_tokens.dart';
 
@@ -30,7 +30,9 @@ class AppTheme {
       onSurface: CitizenDesignTokens.textDark,
     );
 
-    final base = GoogleFonts.interTextTheme();
+    final base = Typography.material2021(
+      platform: defaultTargetPlatform,
+    ).black;
     final textTheme = base.copyWith(
       displayLarge: base.displayLarge?.copyWith(
         fontSize: 54,
