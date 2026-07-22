@@ -363,7 +363,6 @@ class _ParticipationHero extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         onTap: onPressed,
         child: Ink(
-          constraints: const BoxConstraints(minHeight: 226),
           padding: const EdgeInsets.fromLTRB(24, 24, 22, 22),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
