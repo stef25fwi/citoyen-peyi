@@ -2,7 +2,6 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../theme/citoyen_theme.dart';
 import '../widgets/primary_participate_button.dart';
@@ -333,7 +332,7 @@ class _MergedLogoStatementCard extends StatelessWidget {
                 Text.rich(
                   textAlign: TextAlign.center,
                   TextSpan(
-                    style: GoogleFonts.inter(
+                    style: TextStyle(
                       height: 1.08,
                       fontWeight: FontWeight.w800,
                       color: Colors.white,
@@ -344,7 +343,7 @@ class _MergedLogoStatementCard extends StatelessWidget {
                       const TextSpan(text: 'Votre collectivité place\n'),
                       TextSpan(
                         text: 'votre parole\n',
-                        style: GoogleFonts.inter(
+                        style: TextStyle(
                           color: cpYellow,
                           fontSize: highlightFont,
                           fontWeight: FontWeight.w900,
@@ -441,7 +440,7 @@ class _ParticipationCard extends StatelessWidget {
           Text(
             'EXPRIMEZ VOUS',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: cpBlueDark,
               fontSize: compact ? 18 : 25,
               fontWeight: FontWeight.w900,
@@ -453,7 +452,7 @@ class _ParticipationCard extends StatelessWidget {
           Text(
             'et CONTRIBUEZ.',
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: TextStyle(
               color: cpBlueDark,
               fontSize: compact ? 17 : 23,
               fontWeight: FontWeight.w900,
@@ -502,7 +501,7 @@ class _ConfidentialityLine extends StatelessWidget {
               child: Text(
                 'Plateforme de consultation citoyenne anonyme',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: cpBlueDark,
                   fontSize: compact ? 15 : 17,
                   fontWeight: FontWeight.w800,
@@ -515,7 +514,7 @@ class _ConfidentialityLine extends StatelessWidget {
         Text(
           'Partagez vos avis en toute confidentialité',
           textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
+          style: TextStyle(
             color: cpTextMuted,
             fontSize: compact ? 13 : 14,
             fontWeight: FontWeight.w500,
@@ -581,7 +580,7 @@ class _AdministrationAccess extends StatelessWidget {
               Text(
                 'Accès administration',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: cpWhite,
                   fontSize: compact ? 12 : 14,
                   fontWeight: FontWeight.w700,
@@ -591,7 +590,7 @@ class _AdministrationAccess extends StatelessWidget {
               Text(
                 'Espace réservé aux administrateurs',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: TextStyle(
                   color: Colors.white.withValues(alpha: 0.74),
                   fontSize: compact ? 10.5 : 12,
                   fontWeight: FontWeight.w500,
@@ -665,8 +664,7 @@ class _AdminChoice extends StatelessWidget {
       child: ListTile(
         minTileHeight: 54,
         leading: Icon(icon, color: cpBlueDark),
-        title:
-            Text(label, style: GoogleFonts.inter(fontWeight: FontWeight.w600)),
+        title: Text(label, style: TextStyle(fontWeight: FontWeight.w600)),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () {
           Navigator.of(context).pop();

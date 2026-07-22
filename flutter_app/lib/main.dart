@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import 'app.dart';
 import 'services/auth_session_store.dart';
@@ -26,16 +25,8 @@ Future<void> main() async {
       ),
     );
 
-    // google_fonts recupere ses polices (Plus Jakarta Sans, Inter) a
-    // l'execution depuis fonts.gstatic.com. Sur un reseau lent/instable ou
-    // bloque, Flutter Web/CanvasKit peut laisser le texte invisible
-    // indefiniment en attendant ce fichier (bug connu du renderer), alors que
-    // les formes/couleurs environnantes s'affichent normalement — d'ou des
-    // ecrans "bandeau colore sans aucun texte". On desactive le
-    // telechargement a l'execution : le theme retombe alors sur la police
-    // systeme (texte toujours visible, typographie legerement differente)
-    // au lieu de rester invisible en cas d'echec reseau.
-    GoogleFonts.config.allowRuntimeFetching = false;
+    // La typographie utilise la pile native de la plateforme : aucun
+    // téléchargement de police ne peut bloquer l'affichage.
 
     FlutterError.onError = (FlutterErrorDetails details) {
       FlutterError.presentError(details);
@@ -70,8 +61,7 @@ Future<void> main() async {
 
     runApp(const CitoyenPeyiApp());
   }, (error, stackTrace) {
-    DebugLogService.instance
-        .log('[UnhandledAsync]', '$error\n$stackTrace');
+    DebugLogService.instance.log('[UnhandledAsync]', '$error\n$stackTrace');
     debugPrint('[CitoyenPeyi] Unhandled async error: $error');
     debugPrintStack(stackTrace: stackTrace);
   });

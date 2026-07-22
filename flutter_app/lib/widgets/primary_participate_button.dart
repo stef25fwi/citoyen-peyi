@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../pages/access_citizen_page.dart';
 import '../theme/citoyen_theme.dart';
@@ -68,7 +67,7 @@ class PrimaryParticipateButton extends StatelessWidget {
                   Center(
                     child: Text(
                       'Je participe',
-                      style: GoogleFonts.inter(
+                      style: TextStyle(
                         color: cpBlueDark,
                         fontSize: textSize,
                         fontWeight: FontWeight.w900,

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../services/admin_auth_service.dart';
+import '../theme/citizen_design_tokens.dart';
 
 class AdminLoginPage extends StatefulWidget {
   const AdminLoginPage({
@@ -24,10 +25,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
     if (widget.blockedMessage != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
-
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(widget.blockedMessage!)),
         );
@@ -43,54 +41,38 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
 
   Future<void> _handleSubmit() async {
     final accessKey = _accessKeyController.text.trim();
-    if (accessKey.isEmpty || _isSubmitting) {
-      return;
-    }
+    if (accessKey.isEmpty || _isSubmitting) return;
 
-    setState(() {
-      _isSubmitting = true;
-    });
+    setState(() => _isSubmitting = true);
 
     try {
       await AdminAuthService.instance.signInWithAccessKey(accessKey);
-
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Connexion administrateur communal securisee etablie.'),
+          content: Text(
+            'Connexion administrateur communal sécurisée établie.',
+          ),
         ),
       );
-
       Navigator.of(context).pushReplacementNamed('/admin');
     } on AdminAuthException catch (error) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(error.message)),
       );
     } catch (error) {
-      if (!mounted) {
-        return;
-      }
-
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            'Connexion administrateur communal impossible: ${error.toString()}',
+            'Connexion administrateur communal impossible : ${error.toString()}',
           ),
         ),
       );
     } finally {
-      if (mounted) {
-        setState(() {
-          _isSubmitting = false;
-        });
-      }
+      if (mounted) setState(() => _isSubmitting = false);
     }
   }
 
@@ -101,146 +83,156 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
         _accessKeyController.text.trim().isNotEmpty && !_isSubmitting;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF6F8FB),
+      backgroundColor: CitizenDesignTokens.background,
       appBar: AppBar(
-        elevation: 0,
-        backgroundColor: Colors.white,
-        surfaceTintColor: Colors.white,
         leading: IconButton(
           onPressed: () => Navigator.of(context).pushNamed('/'),
           icon: const Icon(Icons.arrow_back_rounded),
         ),
         titleSpacing: 0,
-        title: Row(
+        title: const Row(
           children: [
-            Icon(Icons.settings_rounded, color: theme.colorScheme.primary),
-            const SizedBox(width: 10),
-            const Text('Espace administrateur communal'),
+            Icon(
+              Icons.settings_rounded,
+              color: CitizenDesignTokens.primaryBlue,
+              size: 22,
+            ),
+            SizedBox(width: CitizenDesignTokens.space8),
+            Flexible(child: Text('Espace administrateur communal')),
           ],
         ),
       ),
-      body: SafeArea(
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 460),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 12),
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color:
-                              theme.colorScheme.primary.withValues(alpha: 0.10),
-                          borderRadius: BorderRadius.circular(18),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: CitizenDesignTokens.softBackgroundGradient,
+        ),
+        child: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                padding: const EdgeInsets.all(CitizenDesignTokens.space20),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: constraints.maxHeight -
+                        (CitizenDesignTokens.space20 * 2),
+                  ),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: const BoxConstraints(maxWidth: 500),
+                      child: Container(
+                        padding:
+                            const EdgeInsets.all(CitizenDesignTokens.space24),
+                        decoration: CitizenDesignTokens.elevatedCardDecoration,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Container(
+                              width: 62,
+                              height: 62,
+                              decoration: BoxDecoration(
+                                color: CitizenDesignTokens.surfaceBlue,
+                                borderRadius: BorderRadius.circular(
+                                  CitizenDesignTokens.radiusButton,
+                                ),
+                                border: Border.all(
+                                  color: CitizenDesignTokens.cardBorder,
+                                ),
+                              ),
+                              child: const Icon(
+                                Icons.lock_rounded,
+                                size: 29,
+                                color: CitizenDesignTokens.primaryBlue,
+                              ),
+                            ),
+                            const SizedBox(height: CitizenDesignTokens.space16),
+                            Text(
+                              'Connexion administrateur communal',
+                              style: theme.textTheme.titleLarge?.copyWith(
+                                fontSize: 19,
+                                fontWeight: FontWeight.w800,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: CitizenDesignTokens.space8),
+                            Text(
+                              'Accédez à la gestion des consultations, des agents et des résultats de votre commune.',
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: CitizenDesignTokens.textMuted,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: CitizenDesignTokens.space24),
+                            TextField(
+                              controller: _accessKeyController,
+                              obscureText: true,
+                              enabled: !_isSubmitting,
+                              autofocus: true,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                letterSpacing: 1,
+                              ),
+                              decoration: const InputDecoration(
+                                hintText: 'Clé administrateur communal',
+                                prefixIcon: Icon(Icons.key_rounded),
+                              ),
+                              onChanged: (_) => setState(() {}),
+                              onSubmitted: (_) {
+                                if (canSubmit) _handleSubmit();
+                              },
+                            ),
+                            const SizedBox(height: CitizenDesignTokens.space16),
+                            SizedBox(
+                              width: double.infinity,
+                              child: FilledButton.icon(
+                                onPressed: canSubmit ? _handleSubmit : null,
+                                icon: _isSubmitting
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: CitizenDesignTokens.white,
+                                        ),
+                                      )
+                                    : const Icon(Icons.arrow_forward_rounded),
+                                label: Text(
+                                  _isSubmitting
+                                      ? 'Connexion en cours…'
+                                      : 'Accéder au tableau de bord',
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: CitizenDesignTokens.space12),
+                            Text(
+                              'Votre clé est vérifiée de manière sécurisée par le serveur.',
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                color: CitizenDesignTokens.textSubtle,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                            const SizedBox(height: CitizenDesignTokens.space4),
+                            TextButton.icon(
+                              onPressed: () => Navigator.of(context)
+                                  .pushNamed('/super/login'),
+                              icon: const Icon(
+                                Icons.admin_panel_settings_outlined,
+                                size: 18,
+                              ),
+                              style: TextButton.styleFrom(
+                                foregroundColor:
+                                    CitizenDesignTokens.superAdminAccent,
+                              ),
+                              label: const Text('Espace Super Administrateur'),
+                            ),
+                          ],
                         ),
-                        child: Icon(
-                          Icons.lock_rounded,
-                          size: 28,
-                          color: theme.colorScheme.primary,
-                        ),
                       ),
-                      const SizedBox(height: 12),
-                      Text(
-                        'Connexion administrateur communal',
-                        style: theme.textTheme.titleLarge?.copyWith(
-                            fontSize: 18, fontWeight: FontWeight.w700),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Entrez votre cle d\'acces administrateur communal pour recevoir un jeton de confiance emis par le backend.',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: const Color(0xFF5A6573)),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 16),
-                      TextField(
-                        controller: _accessKeyController,
-                        obscureText: true,
-                        enabled: !_isSubmitting,
-                        autofocus: true,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          letterSpacing: 1,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Cle administrateur communal',
-                          filled: true,
-                          fillColor: const Color(0xFFF8FAFC),
-                          contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 18, vertical: 14),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide:
-                                const BorderSide(color: Color(0xFFD7E0EA)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide:
-                                const BorderSide(color: Color(0xFFD7E0EA)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(14),
-                            borderSide: BorderSide(
-                                color: theme.colorScheme.primary, width: 1.6),
-                          ),
-                        ),
-                        onChanged: (_) {
-                          setState(() {});
-                        },
-                        onSubmitted: (_) {
-                          if (canSubmit) {
-                            _handleSubmit();
-                          }
-                        },
-                      ),
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: canSubmit ? _handleSubmit : null,
-                          icon: _isSubmitting
-                              ? const SizedBox(
-                                  width: 18,
-                                  height: 18,
-                                  child:
-                                      CircularProgressIndicator(strokeWidth: 2),
-                                )
-                              : const Icon(Icons.arrow_forward_rounded),
-                          label: Text(_isSubmitting
-                              ? 'Connexion en cours...'
-                              : 'Acceder au tableau de bord'),
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        'En mode configure, cette cle sera verifiee par le backend avant emission des claims admin communaux.',
-                        style: theme.textTheme.bodySmall
-                            ?.copyWith(color: const Color(0xFF7A8796)),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 4),
-                      TextButton(
-                        onPressed: () =>
-                            Navigator.of(context).pushNamed('/super/login'),
-                        child: const Text(
-                          'Espace Super Administrateur',
-                          style: TextStyle(color: Color(0xFF6B21A8)),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ),
-              ),
-            ),
+              );
+            },
           ),
         ),
       ),

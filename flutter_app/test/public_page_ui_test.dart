@@ -95,13 +95,10 @@ void main() {
       final headerWidth = tester.getSize(find.byType(CitizenHeader)).width;
       final introWidth = tester.getSize(find.byType(PublicPageIntro)).width;
 
-      if (size.width >= 1200) {
-        expect(headerWidth, lessThanOrEqualTo(1120.1));
-      } else if (size.width >= 800) {
-        expect(headerWidth, lessThanOrEqualTo(900.1));
-      } else {
-        expect(headerWidth, lessThanOrEqualTo(size.width));
-      }
+      // Le shell public ne crée plus son propre cadre centré. Il occupe la
+      // largeur que lui fournit AppResponsiveViewport, ce qui évite le double
+      // encadrement sur tablette et desktop.
+      expect(headerWidth, closeTo(size.width, 0.1));
       expect(introWidth, lessThanOrEqualTo(860.1));
     }
   });

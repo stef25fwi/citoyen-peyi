@@ -2,15 +2,17 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../theme/citizen_design_tokens.dart';
+
 /// Cadre responsive global appliqué au-dessus du Navigator.
 ///
 /// Toutes les routes, y compris celles ouvertes avec un MaterialPageRoute
-/// directement depuis une page, passent ainsi par les mêmes règles :
+/// directement depuis une page, passent par les mêmes règles visuelles :
 /// - plein écran sous 600 px ;
 /// - marges progressives sur tablette et desktop ;
-/// - largeur maximale de 1 200 px pour conserver une lecture confortable ;
-/// - MediaQuery recalculée à la largeur réellement disponible afin que les
-///   LayoutBuilder et breakpoints internes reçoivent les bonnes contraintes.
+/// - largeur maximale de 1 200 px ;
+/// - surface et ombre cohérentes avec le design system premium ;
+/// - MediaQuery recalculée à la largeur réellement disponible.
 class AppResponsiveViewport extends StatelessWidget {
   const AppResponsiveViewport({
     required this.child,
@@ -46,13 +48,17 @@ class AppResponsiveViewport extends StatelessWidget {
             )
             .toDouble();
         final frameWidth = math.min(availableWidth, maxWidth).toDouble();
-        final radius = isMobile ? 0.0 : 28.0;
+        final radius = isMobile ? 0.0 : CitizenDesignTokens.radiusLarge;
         final adjustedMedia = media.copyWith(
           size: Size(frameWidth, media.size.height),
         );
 
-        return ColoredBox(
-          color: isMobile ? Colors.white : const Color(0xFFEAF5FB),
+        return DecoratedBox(
+          decoration: BoxDecoration(
+            color: CitizenDesignTokens.background,
+            gradient:
+                isMobile ? null : CitizenDesignTokens.softBackgroundGradient,
+          ),
           child: Align(
             alignment: Alignment.topCenter,
             child: Padding(
@@ -62,17 +68,16 @@ class AppResponsiveViewport extends StatelessWidget {
                 height: viewportHeight,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: CitizenDesignTokens.surface,
                     borderRadius: BorderRadius.circular(radius),
-                    boxShadow: isMobile
+                    border: isMobile
                         ? null
-                        : const [
-                            BoxShadow(
-                              color: Color(0x1A0A3F6B),
-                              blurRadius: 26,
-                              offset: Offset(0, 10),
-                            ),
-                          ],
+                        : Border.all(
+                            color: CitizenDesignTokens.white,
+                            width: 1.2,
+                          ),
+                    boxShadow:
+                        isMobile ? null : CitizenDesignTokens.raisedShadow,
                   ),
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(radius),
