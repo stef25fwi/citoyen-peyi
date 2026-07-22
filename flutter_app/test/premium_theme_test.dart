@@ -19,6 +19,8 @@ void main() {
       theme.navigationBarTheme.indicatorColor,
       CitizenDesignTokens.skyBlue,
     );
+    expect(theme.textTheme.titleLarge?.fontWeight, FontWeight.w800);
+    expect(theme.textTheme.bodyMedium?.height, 1.48);
   });
 
   final loginPages = <String, Widget>{
