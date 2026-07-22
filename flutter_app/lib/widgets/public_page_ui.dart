@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -19,6 +20,13 @@ class PublicPageShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final width = MediaQuery.sizeOf(context).width;
+    final headerHeight = width < 360
+        ? 96.0
+        : width >= 800
+            ? 112.0
+            : 104.0;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
         statusBarColor: Colors.white,
@@ -29,61 +37,28 @@ class PublicPageShell extends StatelessWidget {
         systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
-        body: LayoutBuilder(
-          builder: (context, viewport) {
-            final viewportWidth = viewport.maxWidth;
-            final outerMargin = viewportWidth >= 600 ? 16.0 : 0.0;
-            final availableWidth = viewportWidth - (outerMargin * 2);
-            final frameLimit = viewportWidth >= 1200
-                ? 1120.0
-                : viewportWidth >= 800
-                    ? 900.0
-                    : availableWidth;
-            final frameWidth =
-                availableWidth < frameLimit ? availableWidth : frameLimit;
-            final wide = viewportWidth >= 600;
-            final headerHeight = viewportWidth < 360
-                ? 96.0
-                : viewportWidth >= 800
-                    ? 112.0
-                    : 104.0;
-
-            return ColoredBox(
-              color: wide ? const Color(0xFFEAF5FB) : Colors.white,
-              child: SafeArea(
-                bottom: false,
-                child: Align(
-                  alignment: Alignment.topCenter,
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(horizontal: outerMargin),
-                    child: SizedBox(
-                      width: frameWidth,
-                      height: viewport.maxHeight,
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(wide ? 28 : 0),
-                        child: ColoredBox(
-                          color: CitizenDesignTokens.background,
-                          child: Column(
-                            children: [
-                              CitizenHeader(
-                                title: title,
-                                showBack: false,
-                                height: headerHeight,
-                                trailing: const DebugLogButton(label: ''),
-                              ),
-                              Expanded(child: body),
-                              navigationBar,
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
+        backgroundColor: CitizenDesignTokens.background,
+        body: SafeArea(
+          bottom: false,
+          child: DecoratedBox(
+            decoration: const BoxDecoration(
+              gradient: CitizenDesignTokens.softBackgroundGradient,
+            ),
+            child: Column(
+              children: [
+                CitizenHeader(
+                  title: title,
+                  showBack: false,
+                  height: headerHeight,
+                  trailing: kDebugMode
+                      ? const DebugLogButton(label: '')
+                      : null,
                 ),
-              ),
-            );
-          },
+                Expanded(child: body),
+                navigationBar,
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -94,8 +69,8 @@ class PublicResponsiveList extends StatelessWidget {
   const PublicResponsiveList({
     required this.children,
     this.controller,
-    this.topPadding = 18,
-    this.bottomPadding = 26,
+    this.topPadding = CitizenDesignTokens.space20,
+    this.bottomPadding = CitizenDesignTokens.space32,
     super.key,
   });
 
@@ -110,12 +85,12 @@ class PublicResponsiveList extends StatelessWidget {
       builder: (context, constraints) {
         final width = constraints.maxWidth;
         final sidePadding = width < 340
-            ? 12.0
+            ? CitizenDesignTokens.space12
             : width < 600
-                ? 16.0
+                ? CitizenDesignTokens.space16
                 : width < 900
-                    ? 24.0
-                    : 32.0;
+                    ? CitizenDesignTokens.space24
+                    : CitizenDesignTokens.space32;
         final available = width - (sidePadding * 2);
         final contentLimit = width >= 1000
             ? 860.0
@@ -168,16 +143,22 @@ class PublicPageIntro extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 340;
-        final iconExtent = compact ? 42.0 : 46.0;
-        final iconSize = compact ? 24.0 : 26.0;
+        final iconExtent = compact ? 42.0 : 48.0;
+        final iconSize = compact ? 23.0 : 25.0;
 
         return Container(
           width: double.infinity,
-          padding: EdgeInsets.all(compact ? 16 : 18),
-          decoration: CitizenDesignTokens.cardDecoration,
+          padding: EdgeInsets.all(
+            compact
+                ? CitizenDesignTokens.space16
+                : CitizenDesignTokens.space20,
+          ),
+          decoration: CitizenDesignTokens.elevatedCardDecoration,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -187,9 +168,14 @@ class PublicPageIntro extends StatelessWidget {
                   Container(
                     width: iconExtent,
                     height: iconExtent,
-                    decoration: const BoxDecoration(
-                      color: CitizenDesignTokens.skyBlue,
-                      shape: BoxShape.circle,
+                    decoration: BoxDecoration(
+                      color: CitizenDesignTokens.surfaceBlue,
+                      borderRadius: BorderRadius.circular(
+                        CitizenDesignTokens.radiusSmall,
+                      ),
+                      border: Border.all(
+                        color: CitizenDesignTokens.cardBorder,
+                      ),
                     ),
                     child: Icon(
                       icon,
@@ -197,29 +183,29 @@ class PublicPageIntro extends StatelessWidget {
                       size: iconSize,
                     ),
                   ),
-                  SizedBox(width: compact ? 10 : 12),
+                  SizedBox(
+                    width: compact
+                        ? CitizenDesignTokens.space12
+                        : CitizenDesignTokens.space16,
+                  ),
                   Expanded(
                     child: Text(
                       title,
                       maxLines: 3,
                       overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        color: CitizenDesignTokens.textDark,
-                        fontSize: 20,
-                        height: 1.15,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontSize: compact ? 18 : 20,
                         fontWeight: FontWeight.w900,
                       ),
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: CitizenDesignTokens.space12),
               Text(
                 description,
-                style: const TextStyle(
+                style: theme.textTheme.bodyMedium?.copyWith(
                   color: CitizenDesignTokens.textMuted,
-                  fontSize: 14,
-                  height: 1.4,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -239,13 +225,9 @@ class PublicLoadingState extends StatelessWidget {
     return Container(
       width: double.infinity,
       constraints: const BoxConstraints(minHeight: 120),
-      padding: const EdgeInsets.all(30),
+      padding: const EdgeInsets.all(CitizenDesignTokens.space32),
       decoration: CitizenDesignTokens.cardDecoration,
-      child: const Center(
-        child: CircularProgressIndicator(
-          color: CitizenDesignTokens.primaryBlue,
-        ),
-      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 }
@@ -264,41 +246,51 @@ class PublicEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 340;
         return Container(
           width: double.infinity,
-          padding: EdgeInsets.all(compact ? 20 : 24),
+          padding: EdgeInsets.all(
+            compact
+                ? CitizenDesignTokens.space20
+                : CitizenDesignTokens.space24,
+          ),
           decoration: CitizenDesignTokens.cardDecoration,
           child: Column(
             children: [
-              Icon(
-                icon,
-                size: compact ? 38 : 42,
-                color: CitizenDesignTokens.textMuted,
+              Container(
+                width: compact ? 58 : 64,
+                height: compact ? 58 : 64,
+                decoration: const BoxDecoration(
+                  color: CitizenDesignTokens.surfaceBlue,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  icon,
+                  size: compact ? 30 : 34,
+                  color: CitizenDesignTokens.primaryBlue,
+                ),
               ),
-              const SizedBox(height: 12),
+              const SizedBox(height: CitizenDesignTokens.space16),
               Text(
                 title,
                 maxLines: 3,
                 overflow: TextOverflow.ellipsis,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: CitizenDesignTokens.textDark,
-                  fontSize: 18,
-                  height: 1.2,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontSize: compact ? 17 : 18,
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: CitizenDesignTokens.space8),
               Text(
                 message,
                 textAlign: TextAlign.center,
-                style: const TextStyle(
+                style: theme.textTheme.bodyMedium?.copyWith(
                   color: CitizenDesignTokens.textMuted,
-                  fontSize: 14,
-                  height: 1.4,
                   fontWeight: FontWeight.w600,
                 ),
               ),
