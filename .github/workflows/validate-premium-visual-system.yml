@@ -62,17 +62,51 @@ jobs:
         working-directory: flutter_app
         run: flutter analyze
 
-      - name: Test premium design system
+      - id: premium_tests
+        name: Test premium design system
+        continue-on-error: true
         working-directory: flutter_app
-        run: flutter test test/premium_theme_test.dart
+        run: |
+          set -o pipefail
+          flutter test test/premium_theme_test.dart 2>&1 | tee ../premium-theme-test.log
 
-      - name: Test shared responsive pages
+      - name: Upload premium test diagnostic
+        if: steps.premium_tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-theme-test-diagnostic
+          path: premium-theme-test.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Stop after premium test failure
+        if: steps.premium_tests.outcome == 'failure'
+        run: exit 1
+
+      - id: responsive_tests
+        name: Test shared responsive pages
+        continue-on-error: true
         working-directory: flutter_app
-        run: >-
-          flutter test
-          test/app_responsive_viewport_test.dart
-          test/public_page_ui_test.dart
-          test/citizen_home_page_test.dart
+        run: |
+          set -o pipefail
+          flutter test \
+            test/app_responsive_viewport_test.dart \
+            test/public_page_ui_test.dart \
+            test/citizen_home_page_test.dart \
+            2>&1 | tee ../premium-responsive-test.log
+
+      - name: Upload responsive test diagnostic
+        if: steps.responsive_tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: premium-responsive-test-diagnostic
+          path: premium-responsive-test.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Stop after responsive test failure
+        if: steps.responsive_tests.outcome == 'failure'
+        run: exit 1
 
       - name: Publish formatting changes
         if: github.event_name == 'push'
