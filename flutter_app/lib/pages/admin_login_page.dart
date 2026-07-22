@@ -123,8 +123,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                       child: Container(
                         padding:
                             const EdgeInsets.all(CitizenDesignTokens.space24),
-                        decoration:
-                            CitizenDesignTokens.elevatedCardDecoration,
+                        decoration: CitizenDesignTokens.elevatedCardDecoration,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -146,8 +145,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                 color: CitizenDesignTokens.primaryBlue,
                               ),
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space16),
+                            const SizedBox(height: CitizenDesignTokens.space16),
                             Text(
                               'Connexion administrateur communal',
                               style: theme.textTheme.titleLarge?.copyWith(
@@ -156,8 +154,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space8),
+                            const SizedBox(height: CitizenDesignTokens.space8),
                             Text(
                               'Accédez à la gestion des consultations, des agents et des résultats de votre commune.',
                               style: theme.textTheme.bodyMedium?.copyWith(
@@ -165,8 +162,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space24),
+                            const SizedBox(height: CitizenDesignTokens.space24),
                             TextField(
                               controller: _accessKeyController,
                               obscureText: true,
@@ -185,8 +181,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                 if (canSubmit) _handleSubmit();
                               },
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space16),
+                            const SizedBox(height: CitizenDesignTokens.space16),
                             SizedBox(
                               width: double.infinity,
                               child: FilledButton.icon(
@@ -208,8 +203,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                 ),
                               ),
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space12),
+                            const SizedBox(height: CitizenDesignTokens.space12),
                             Text(
                               'Votre clé est vérifiée de manière sécurisée par le serveur.',
                               style: theme.textTheme.bodySmall?.copyWith(
@@ -217,8 +211,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space4),
+                            const SizedBox(height: CitizenDesignTokens.space4),
                             TextButton.icon(
                               onPressed: () => Navigator.of(context)
                                   .pushNamed('/super/login'),
@@ -230,8 +223,7 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
                                 foregroundColor:
                                     CitizenDesignTokens.superAdminAccent,
                               ),
-                              label:
-                                  const Text('Espace Super Administrateur'),
+                              label: const Text('Espace Super Administrateur'),
                             ),
                           ],
                         ),

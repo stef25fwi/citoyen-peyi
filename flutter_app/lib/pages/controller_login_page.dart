@@ -50,8 +50,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canSubmit =
-        !_isSubmitting && _codeController.text.trim().isNotEmpty;
+    final canSubmit = !_isSubmitting && _codeController.text.trim().isNotEmpty;
 
     return Scaffold(
       backgroundColor: CitizenDesignTokens.background,
@@ -100,8 +99,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                       child: Container(
                         padding:
                             const EdgeInsets.all(CitizenDesignTokens.space24),
-                        decoration:
-                            CitizenDesignTokens.elevatedCardDecoration,
+                        decoration: CitizenDesignTokens.elevatedCardDecoration,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -123,8 +121,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                                 color: CitizenDesignTokens.primaryBlue,
                               ),
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space16),
+                            const SizedBox(height: CitizenDesignTokens.space16),
                             Text(
                               'Connexion agent',
                               style: theme.textTheme.titleLarge?.copyWith(
@@ -133,8 +130,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space8),
+                            const SizedBox(height: CitizenDesignTokens.space8),
                             Text(
                               'Saisissez le code remis par votre administrateur pour accéder aux outils de mobilisation citoyenne.',
                               style: theme.textTheme.bodyMedium?.copyWith(
@@ -142,8 +138,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space24),
+                            const SizedBox(height: CitizenDesignTokens.space24),
                             TextField(
                               controller: _codeController,
                               enabled: !_isSubmitting,
@@ -180,8 +175,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                                 if (canSubmit) _submit();
                               },
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space16),
+                            const SizedBox(height: CitizenDesignTokens.space16),
                             SizedBox(
                               width: double.infinity,
                               child: FilledButton.icon(
@@ -203,8 +197,7 @@ class _ControllerLoginPageState extends State<ControllerLoginPage> {
                                 ),
                               ),
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space12),
+                            const SizedBox(height: CitizenDesignTokens.space12),
                             Text(
                               'L’accès est limité au périmètre de votre commune.',
                               style: theme.textTheme.bodySmall?.copyWith(

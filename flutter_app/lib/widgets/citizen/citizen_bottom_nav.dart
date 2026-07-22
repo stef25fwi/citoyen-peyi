@@ -140,9 +140,8 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final isActive = tab == activeTab;
-    final color = isActive
-        ? CitizenDesignTokens.deepBlue
-        : CitizenDesignTokens.textMuted;
+    final color =
+        isActive ? CitizenDesignTokens.deepBlue : CitizenDesignTokens.textMuted;
 
     return Expanded(
       child: Semantics(
@@ -150,8 +149,7 @@ class _NavItem extends StatelessWidget {
         selected: isActive,
         label: label,
         child: InkWell(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusButton),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusButton),
           onTap: () => onTap(tab),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,

@@ -159,12 +159,10 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final iconColor = selected
-        ? CitizenDesignTokens.deepBlue
-        : CitizenDesignTokens.textMuted;
-    final iconSize = veryCompact
-        ? (selected ? 23.0 : 21.0)
-        : (selected ? 26.0 : 23.0);
+    final iconColor =
+        selected ? CitizenDesignTokens.deepBlue : CitizenDesignTokens.textMuted;
+    final iconSize =
+        veryCompact ? (selected ? 23.0 : 21.0) : (selected ? 26.0 : 23.0);
     final labelStyle = theme.textTheme.labelSmall?.copyWith(
       fontSize: veryCompact ? 9.5 : (compact ? 10.5 : 11),
       fontWeight: selected ? FontWeight.w800 : FontWeight.w600,

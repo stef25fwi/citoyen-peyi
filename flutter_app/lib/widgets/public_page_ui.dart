@@ -50,9 +50,7 @@ class PublicPageShell extends StatelessWidget {
                   title: title,
                   showBack: false,
                   height: headerHeight,
-                  trailing: kDebugMode
-                      ? const DebugLogButton(label: '')
-                      : null,
+                  trailing: kDebugMode ? const DebugLogButton(label: '') : null,
                 ),
                 Expanded(child: body),
                 navigationBar,
@@ -154,9 +152,7 @@ class PublicPageIntro extends StatelessWidget {
         return Container(
           width: double.infinity,
           padding: EdgeInsets.all(
-            compact
-                ? CitizenDesignTokens.space16
-                : CitizenDesignTokens.space20,
+            compact ? CitizenDesignTokens.space16 : CitizenDesignTokens.space20,
           ),
           decoration: CitizenDesignTokens.elevatedCardDecoration,
           child: Column(
@@ -254,9 +250,7 @@ class PublicEmptyState extends StatelessWidget {
         return Container(
           width: double.infinity,
           padding: EdgeInsets.all(
-            compact
-                ? CitizenDesignTokens.space20
-                : CitizenDesignTokens.space24,
+            compact ? CitizenDesignTokens.space20 : CitizenDesignTokens.space24,
           ),
           decoration: CitizenDesignTokens.cardDecoration,
           child: Column(

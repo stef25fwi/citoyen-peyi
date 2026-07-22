@@ -87,8 +87,7 @@ class CitizenHeader extends StatelessWidget {
               SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding:
-                      EdgeInsets.symmetric(horizontal: horizontalPadding),
+                  padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
                   child: Stack(
                     alignment: Alignment.center,
                     children: [

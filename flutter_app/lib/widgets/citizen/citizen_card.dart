@@ -20,8 +20,7 @@ class CitizenCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final borderRadius =
-        BorderRadius.circular(CitizenDesignTokens.radiusCard);
+    final borderRadius = BorderRadius.circular(CitizenDesignTokens.radiusCard);
     final surfaceColor = color ?? CitizenDesignTokens.surface;
 
     return Container(

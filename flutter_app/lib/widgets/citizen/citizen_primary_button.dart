@@ -33,8 +33,7 @@ class CitizenPrimaryButton extends StatelessWidget {
           child: Ink(
             height: 56,
             decoration: BoxDecoration(
-              gradient:
-                  isEnabled ? CitizenDesignTokens.actionGradient : null,
+              gradient: isEnabled ? CitizenDesignTokens.actionGradient : null,
               color: isEnabled ? null : CitizenDesignTokens.backgroundStrong,
               borderRadius: borderRadius,
               border: Border.all(
@@ -42,8 +41,7 @@ class CitizenPrimaryButton extends StatelessWidget {
                     ? CitizenDesignTokens.yellowStrong
                     : CitizenDesignTokens.cardBorder,
               ),
-              boxShadow:
-                  isEnabled ? CitizenDesignTokens.softShadow : const [],
+              boxShadow: isEnabled ? CitizenDesignTokens.softShadow : const [],
             ),
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 22),

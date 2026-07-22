@@ -166,8 +166,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         shadowColor: const Color(0x16004D7A),
         shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusCard),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusCard),
           side: const BorderSide(color: CitizenDesignTokens.cardBorder),
         ),
         margin: EdgeInsets.zero,
@@ -178,8 +177,7 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         shadowColor: const Color(0x28002F4A),
         shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusLarge),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusLarge),
         ),
         titleTextStyle: textTheme.titleLarge,
         contentTextStyle: textTheme.bodyMedium,
@@ -211,42 +209,37 @@ class AppTheme {
           fontWeight: FontWeight.w600,
         ),
         border: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusField),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusField),
           borderSide: const BorderSide(color: CitizenDesignTokens.cardBorder),
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusField),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusField),
           borderSide: const BorderSide(color: CitizenDesignTokens.cardBorder),
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusField),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusField),
           borderSide: const BorderSide(
             color: CitizenDesignTokens.primaryBlue,
             width: 1.8,
           ),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusField),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusField),
           borderSide: const BorderSide(color: CitizenDesignTokens.error),
         ),
         focusedErrorBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusField),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusField),
           borderSide: const BorderSide(
             color: CitizenDesignTokens.error,
             width: 1.8,
           ),
         ),
         disabledBorder: OutlineInputBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusField),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusField),
           borderSide: const BorderSide(color: CitizenDesignTokens.divider),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         helperStyle: textTheme.bodySmall,
       ),
       chipTheme: ChipThemeData(
@@ -255,8 +248,7 @@ class AppTheme {
         disabledColor: CitizenDesignTokens.backgroundStrong,
         side: const BorderSide(color: CitizenDesignTokens.cardBorder),
         shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusPill),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusPill),
         ),
         labelStyle: textTheme.labelMedium,
         secondaryLabelStyle: textTheme.labelMedium?.copyWith(
@@ -409,8 +401,7 @@ class AppTheme {
         subtitleTextStyle: textTheme.bodySmall,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusSmall),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusSmall),
         ),
       ),
       snackBarTheme: SnackBarThemeData(
@@ -423,8 +414,7 @@ class AppTheme {
         ),
         actionTextColor: CitizenDesignTokens.yellow,
         shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusSmall),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusSmall),
         ),
         insetPadding: const EdgeInsets.all(16),
       ),
@@ -434,16 +424,14 @@ class AppTheme {
         surfaceTintColor: Colors.transparent,
         textStyle: textTheme.bodyMedium,
         shape: RoundedRectangleBorder(
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusButton),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusButton),
           side: const BorderSide(color: CitizenDesignTokens.cardBorder),
         ),
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
           color: CitizenDesignTokens.navy,
-          borderRadius:
-              BorderRadius.circular(CitizenDesignTokens.radiusSmall),
+          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusSmall),
         ),
         textStyle: textTheme.bodySmall?.copyWith(
           color: CitizenDesignTokens.white,

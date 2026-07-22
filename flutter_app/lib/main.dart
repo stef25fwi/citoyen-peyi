@@ -61,8 +61,7 @@ Future<void> main() async {
 
     runApp(const CitoyenPeyiApp());
   }, (error, stackTrace) {
-    DebugLogService.instance
-        .log('[UnhandledAsync]', '$error\n$stackTrace');
+    DebugLogService.instance.log('[UnhandledAsync]', '$error\n$stackTrace');
     debugPrint('[CitoyenPeyi] Unhandled async error: $error');
     debugPrintStack(stackTrace: stackTrace);
   });

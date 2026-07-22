@@ -109,8 +109,7 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                       child: Container(
                         padding:
                             const EdgeInsets.all(CitizenDesignTokens.space24),
-                        decoration:
-                            CitizenDesignTokens.elevatedCardDecoration,
+                        decoration: CitizenDesignTokens.elevatedCardDecoration,
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -133,8 +132,7 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                                 color: CitizenDesignTokens.superAdminAccent,
                               ),
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space16),
+                            const SizedBox(height: CitizenDesignTokens.space16),
                             Text(
                               'Connexion Super Admin',
                               style: theme.textTheme.titleLarge?.copyWith(
@@ -143,8 +141,7 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space8),
+                            const SizedBox(height: CitizenDesignTokens.space8),
                             Text(
                               'Pilotez les communes, les administrateurs, les sauvegardes et la supervision globale de la plateforme.',
                               style: theme.textTheme.bodyMedium?.copyWith(
@@ -152,8 +149,7 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                               ),
                               textAlign: TextAlign.center,
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space24),
+                            const SizedBox(height: CitizenDesignTokens.space24),
                             TextField(
                               controller: _keyController,
                               obscureText: _obscure,
@@ -174,8 +170,7 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                                     CitizenDesignTokens.radiusField,
                                   ),
                                   borderSide: const BorderSide(
-                                    color:
-                                        CitizenDesignTokens.superAdminAccent,
+                                    color: CitizenDesignTokens.superAdminAccent,
                                     width: 1.8,
                                   ),
                                 ),
@@ -197,8 +192,7 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                                 if (canSubmit) _handleSubmit();
                               },
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space16),
+                            const SizedBox(height: CitizenDesignTokens.space16),
                             SizedBox(
                               width: double.infinity,
                               child: FilledButton.icon(
@@ -224,8 +218,7 @@ class _SuperAdminLoginPageState extends State<SuperAdminLoginPage> {
                                 ),
                               ),
                             ),
-                            const SizedBox(
-                                height: CitizenDesignTokens.space12),
+                            const SizedBox(height: CitizenDesignTokens.space12),
                             Text(
                               'La clé est vérifiée par le serveur et n’est jamais intégrée au code de l’application.',
                               style: theme.textTheme.bodySmall?.copyWith(

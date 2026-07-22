@@ -664,8 +664,7 @@ class _AdminChoice extends StatelessWidget {
       child: ListTile(
         minTileHeight: 54,
         leading: Icon(icon, color: cpBlueDark),
-        title:
-            Text(label, style: TextStyle(fontWeight: FontWeight.w600)),
+        title: Text(label, style: TextStyle(fontWeight: FontWeight.w600)),
         trailing: const Icon(Icons.chevron_right_rounded),
         onTap: () {
           Navigator.of(context).pop();
