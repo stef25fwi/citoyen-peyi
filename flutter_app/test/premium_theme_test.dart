@@ -5,8 +5,15 @@ import 'package:citoyen_peyi_flutter/theme/app_theme.dart';
 import 'package:citoyen_peyi_flutter/theme/citizen_design_tokens.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() {
+  setUpAll(() {
+    // Reproduit le comportement de production défini dans main.dart : aucune
+    // police distante ne doit bloquer l'affichage ou les tests hors réseau.
+    GoogleFonts.config.allowRuntimeFetching = false;
+  });
+
   test('le thème global utilise la palette premium unique', () {
     final theme = AppTheme.light();
 
@@ -15,8 +22,10 @@ void main() {
     expect(theme.scaffoldBackgroundColor, CitizenDesignTokens.background);
     expect(theme.cardTheme.color, CitizenDesignTokens.surface);
     expect(theme.snackBarTheme.backgroundColor, CitizenDesignTokens.navy);
-    expect(theme.navigationBarTheme.indicatorColor,
-        CitizenDesignTokens.skyBlue);
+    expect(
+      theme.navigationBarTheme.indicatorColor,
+      CitizenDesignTokens.skyBlue,
+    );
   });
 
   final loginPages = <String, Widget>{
