@@ -1,3 +1,4 @@
+import 'package:citoyen_peyi_flutter/widgets/citizen/citizen_header.dart';
 import 'package:citoyen_peyi_flutter/widgets/public_page_ui.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -40,5 +41,68 @@ void main() {
     expect(introDescription.style?.fontSize, 14);
     expect(emptyTitle.style?.fontSize, 18);
     expect(emptyMessage.style?.fontSize, 14);
+  });
+
+  testWidgets('public page shell is responsive from small mobile to desktop',
+      (tester) async {
+    const sizes = <Size>[
+      Size(320, 568),
+      Size(360, 640),
+      Size(390, 844),
+      Size(768, 1024),
+      Size(1024, 768),
+      Size(1440, 900),
+    ];
+
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    for (final size in sizes) {
+      tester.view.devicePixelRatio = 1;
+      tester.view.physicalSize = size;
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: PublicPageShell(
+            title: 'Page publique responsive',
+            navigationBar: SizedBox(height: 76),
+            body: PublicResponsiveList(
+              children: [
+                PublicPageIntro(
+                  icon: Icons.article_rounded,
+                  title: 'Un titre public suffisamment long pour se replier',
+                  description:
+                      'Une description qui reste lisible sur mobile, tablette et ordinateur sans provoquer de débordement.',
+                ),
+                SizedBox(height: 14),
+                PublicEmptyState(
+                  icon: Icons.inbox_rounded,
+                  title: 'Aucun contenu disponible',
+                  message:
+                      'Ce message doit conserver les mêmes proportions sur toutes les tailles d’écran.',
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull, reason: 'taille testée : $size');
+
+      final headerWidth = tester.getSize(find.byType(CitizenHeader)).width;
+      final introWidth = tester.getSize(find.byType(PublicPageIntro)).width;
+
+      if (size.width >= 1200) {
+        expect(headerWidth, lessThanOrEqualTo(1120.1));
+      } else if (size.width >= 800) {
+        expect(headerWidth, lessThanOrEqualTo(900.1));
+      } else {
+        expect(headerWidth, lessThanOrEqualTo(size.width));
+      }
+      expect(introWidth, lessThanOrEqualTo(860.1));
+    }
   });
 }
