@@ -20,27 +20,32 @@ class CitizenCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final decoration = CitizenDesignTokens.cardDecoration.copyWith(
-      color: color ?? CitizenDesignTokens.white,
-    );
+    final borderRadius =
+        BorderRadius.circular(CitizenDesignTokens.radiusCard);
+    final surfaceColor = color ?? CitizenDesignTokens.surface;
 
-    final card = Container(
+    return Container(
       margin: margin,
-      padding: padding,
-      decoration: decoration,
-      child: child,
-    );
-
-    if (onTap == null) {
-      return card;
-    }
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusCard),
-        onTap: onTap,
-        child: card,
+      decoration: BoxDecoration(
+        borderRadius: borderRadius,
+        boxShadow: CitizenDesignTokens.softShadow,
+      ),
+      child: Material(
+        color: surfaceColor,
+        surfaceTintColor: Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: borderRadius,
+          side: const BorderSide(color: CitizenDesignTokens.cardBorder),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: borderRadius,
+          child: Padding(
+            padding: padding,
+            child: child,
+          ),
+        ),
       ),
     );
   }
