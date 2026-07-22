@@ -67,9 +67,26 @@ jobs:
         if: steps.regression.outcome == 'failure'
         run: exit 1
 
-      - name: Run citizen flow tests
+      - id: citizen_flows
+        name: Run citizen flow tests
+        continue-on-error: true
         working-directory: flutter_app
-        run: flutter test test/citizen_full_flow_test.dart test/widget_test.dart
+        run: |
+          set -o pipefail
+          flutter test test/citizen_full_flow_test.dart test/widget_test.dart 2>&1 | tee ../citizen-flow-tests.log
+
+      - name: Upload citizen flow diagnostic
+        if: steps.citizen_flows.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: citizen-flow-tests-diagnostic
+          path: citizen-flow-tests.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Stop after citizen flow failure
+        if: steps.citizen_flows.outcome == 'failure'
+        run: exit 1
 
       - name: Publish validated fix
         run: |
