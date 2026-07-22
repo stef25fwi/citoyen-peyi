@@ -197,7 +197,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
             const _AccessBackground(),
             Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 430),
+                constraints: const BoxConstraints(maxWidth: 560),
                 child: Column(
                   children: [
                     Expanded(

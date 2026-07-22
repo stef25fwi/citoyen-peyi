@@ -120,7 +120,7 @@ class _CitizenProfilePageState extends State<CitizenProfilePage> {
         backgroundColor: Colors.white,
         body: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 430),
+            constraints: const BoxConstraints(maxWidth: 760),
             child: SafeArea(
               bottom: false,
               child: ColoredBox(
