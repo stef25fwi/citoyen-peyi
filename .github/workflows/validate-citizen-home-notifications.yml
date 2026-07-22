@@ -4,6 +4,15 @@ on:
   push:
     branches:
       - feat/citizen-home-notifications-agent-activity
+  pull_request:
+    branches: [main]
+    paths:
+      - 'flutter_app/lib/services/new_poll_badge_service.dart'
+      - 'flutter_app/lib/pages/citizen/citizen_home_page.dart'
+      - 'flutter_app/lib/pages/controller_profile_page.dart'
+      - 'flutter_app/lib/pages/controller_dashboard_page.dart'
+      - 'flutter_app/test/citizen_home_page_test.dart'
+      - '.github/workflows/validate-citizen-home-notifications.yml'
   workflow_dispatch:
 
 permissions:
@@ -63,6 +72,7 @@ jobs:
         run: flutter test test/citizen_home_page_test.dart
 
       - name: Publish validated formatting
+        if: github.event_name == 'push'
         run: |
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
