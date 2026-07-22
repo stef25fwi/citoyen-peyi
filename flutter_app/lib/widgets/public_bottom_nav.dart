@@ -35,11 +35,16 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
   }
 
   void _handleTap(BuildContext context, int index) {
-    final voteRoute =
-        CitizenPublicAccessService.instance.currentSession != null
-            ? '/access-citizen'
-            : '/donner-mon-avis';
-    final routes = <String>['/', '/news', voteRoute, '/results'];
+    final session = CitizenPublicAccessService.instance.currentSession;
+    final connected = session != null;
+    final routes = connected
+        ? <String>[
+            '/citizen/home',
+            '/news',
+            '/citizen/consultations',
+            '/results',
+          ]
+        : <String>['/', '/news', '/donner-mon-avis', '/results'];
     final targetRoute = routes[index];
     final currentRoute = ModalRoute.of(context)?.settings.name;
 
@@ -47,7 +52,10 @@ class _PublicBottomNavState extends State<PublicBottomNav> {
 
     Navigator.of(context).pushReplacementNamed(
       targetRoute,
-      arguments: const {'disableTransition': true},
+      arguments: {
+        'session': session,
+        'disableTransition': true,
+      },
     );
   }
 
