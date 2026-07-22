@@ -9,7 +9,11 @@ on:
       - 'flutter_app/lib/pages/public_results_page.dart'
       - 'flutter_app/lib/widgets/public_page_ui.dart'
       - 'flutter_app/test/public_page_ui_test.dart'
+      - '.github/workflows/validate-public-pages.yml'
   workflow_dispatch:
+
+permissions:
+  contents: write
 
 jobs:
   flutter:
@@ -19,14 +23,27 @@ jobs:
       - uses: actions/checkout@v4
         with:
           ref: fix/uniformise-public-pages
+          fetch-depth: 0
       - uses: subosito/flutter-action@v2
         with:
           channel: stable
           cache: true
       - working-directory: flutter_app
         run: flutter pub get
-      - working-directory: flutter_app
-        run: dart format --output=none --set-exit-if-changed lib/pages/public_news_page.dart lib/pages/public_vote_page.dart lib/pages/public_results_page.dart lib/widgets/public_page_ui.dart test/public_page_ui_test.dart
+      - name: Format public pages
+        working-directory: flutter_app
+        run: dart format lib/pages/public_news_page.dart lib/pages/public_vote_page.dart lib/pages/public_results_page.dart lib/widgets/public_page_ui.dart test/public_page_ui_test.dart
+      - name: Publish formatting changes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add flutter_app/lib/pages/public_news_page.dart flutter_app/lib/pages/public_vote_page.dart flutter_app/lib/pages/public_results_page.dart flutter_app/lib/widgets/public_page_ui.dart flutter_app/test/public_page_ui_test.dart
+          if git diff --cached --quiet; then
+            echo 'No formatting changes.'
+          else
+            git commit -m 'style: formate les pages publiques harmonisées'
+            git push origin HEAD:fix/uniformise-public-pages
+          fi
       - working-directory: flutter_app
         run: flutter analyze
       - working-directory: flutter_app
