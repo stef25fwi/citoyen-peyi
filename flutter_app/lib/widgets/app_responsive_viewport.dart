@@ -39,11 +39,13 @@ class AppResponsiveViewport extends StatelessWidget {
             : viewportWidth < 1024
                 ? 16.0
                 : 24.0;
-        final availableWidth = math.max(
-          0.0,
-          viewportWidth - (horizontalGutter * 2),
-        );
-        final frameWidth = math.min(availableWidth, maxWidth);
+        final availableWidth = math
+            .max(
+              0.0,
+              viewportWidth - (horizontalGutter * 2),
+            )
+            .toDouble();
+        final frameWidth = math.min(availableWidth, maxWidth).toDouble();
         final radius = isMobile ? 0.0 : 28.0;
         final adjustedMedia = media.copyWith(
           size: Size(frameWidth, media.size.height),
@@ -115,10 +117,12 @@ class ResponsiveContent extends StatelessWidget {
                 : width < 900
                     ? 24.0
                     : 32.0;
-        final contentWidth = math.min(
-          math.max(0.0, width - (sidePadding * 2)),
-          maxContentWidth,
-        );
+        final contentWidth = math
+            .min(
+              math.max(0.0, width - (sidePadding * 2)),
+              maxContentWidth,
+            )
+            .toDouble();
 
         return Align(
           alignment: alignment,
