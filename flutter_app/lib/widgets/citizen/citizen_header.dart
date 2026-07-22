@@ -6,18 +6,26 @@ class CitizenHeader extends StatelessWidget {
   const CitizenHeader({
     super.key,
     required this.title,
-    this.showBack = false,
+    this.showBack,
     this.trailing,
     this.height = 104,
   });
 
   final String title;
-  final bool showBack;
+  final bool? showBack;
   final Widget? trailing;
   final double height;
 
+  bool get _isRootTabTitle {
+    return title == 'Actualités / Projets' ||
+        title == 'Résultats des consultations' ||
+        title == 'Donner mon avis';
+  }
+
   @override
   Widget build(BuildContext context) {
+    final displayBack = showBack ?? !_isRootTabTitle;
+
     return Container(
       width: double.infinity,
       height: height,
@@ -34,7 +42,7 @@ class CitizenHeader extends StatelessWidget {
           child: Stack(
             alignment: Alignment.center,
             children: [
-              if (showBack)
+              if (displayBack)
                 Align(
                   alignment: Alignment.centerLeft,
                   child: IconButton(
