@@ -9,6 +9,11 @@ void main() {
   testWidgets(
     'une panne de persistance après validation ne produit pas un faux message d’erreur',
     (tester) async {
+      tester.view.physicalSize = const Size(430, 980);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
       SharedPreferences.setMockInitialValues({
         AccessCitizenPage.legalTermsAcceptedKey: true,
       });
@@ -35,13 +40,18 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Valider mon code citoyen'));
+      final validateButton = find.text('Valider mon code citoyen');
+      await tester.ensureVisible(validateButton);
+      await tester.tap(validateButton);
       await tester.pump();
       await tester.pumpAndSettle();
 
       expect(find.text('ESPACE CITOYEN OUVERT'), findsOneWidget);
       expect(find.textContaining('Validation indisponible'), findsNothing);
-      expect(find.textContaining('Validation sécurisée indisponible'), findsNothing);
+      expect(
+        find.textContaining('Validation sécurisée indisponible'),
+        findsNothing,
+      );
       expect(persistenceAttempted, isTrue);
       expect(CitizenPublicAccessService.instance.currentSession, isNotNull);
       expect(
