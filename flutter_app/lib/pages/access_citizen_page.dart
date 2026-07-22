@@ -15,10 +15,21 @@ import '../widgets/public_bottom_nav.dart';
 import 'legal_page.dart';
 
 class AccessCitizenPage extends StatefulWidget {
-  const AccessCitizenPage({super.key, this.initialCode});
+  const AccessCitizenPage({
+    super.key,
+    this.initialCode,
+    this.voteAccessService,
+    this.persistSession,
+  });
 
   /// Code citoyen prerempli (issu d'un QR scanne : `/#/access?code=...`).
   final String? initialCode;
+
+  /// Dépendances injectables pour tester séparément la validation et les
+  /// opérations secondaires exécutées après une connexion réussie.
+  final VoteAccessService? voteAccessService;
+  final Future<void> Function(CitizenPublicAccessSession session)?
+      persistSession;
 
   static const routeName = '/access-citizen';
   static const legalTermsAcceptedKey = 'citoyen_peyi_legal_terms_accepted_v1';
@@ -113,52 +124,112 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
       _errorMessage = null;
     });
 
+    late final VoteAccessValidationResult validation;
     try {
-      final validation = await VoteAccessService.instance.validateCode(rawCode);
-      if (!mounted) return;
-
-      final sessionFromFirestore =
-          await CitizenPublicAccessService.instance.openAccess(rawCode);
-      final session = sessionFromFirestore ??
-          CitizenPublicAccessService.instance.sessionFromValidation(
-            rawCode: rawCode,
-            validation: validation,
-          );
-      if (!mounted) return;
-
-      await CitizenPublicAccessService.instance.saveSession(session);
-      await CitizenCommuneStore.instance.save(
-        communeId: session.communeId,
-        communeName: session.communeName,
-      );
-      await NewPollBadgeService.instance.startListening();
-      await NewPollBadgeService.instance.markAllSeen();
-      if (!mounted) return;
-
-      unawaited(PushNotificationService.instance.registerForCitizenCommune(
-        rawCode: rawCode,
-        communeId: session.communeId,
-        communeName: session.communeName,
-      ));
-
-      setState(() => _isSubmitting = false);
-
-      Navigator.of(context).pushNamed(
-        '/citizen/welcome',
-        arguments: {'session': session},
-      );
+      validation =
+          await (widget.voteAccessService ?? VoteAccessService.instance)
+              .validateCode(rawCode);
     } on VoteAccessException catch (error) {
       if (!mounted) return;
       setState(() {
         _errorMessage = error.message;
         _isSubmitting = false;
       });
-    } catch (_) {
+      return;
+    } catch (error, stackTrace) {
+      debugPrint('[CitizenAccess] code validation failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
       if (!mounted) return;
       setState(() {
         _errorMessage = 'Validation indisponible. Réessayez plus tard.';
         _isSubmitting = false;
       });
+      return;
+    }
+
+    if (!mounted) return;
+
+    late final CitizenPublicAccessSession session;
+    try {
+      final sessionFromFirestore =
+          await CitizenPublicAccessService.instance.openAccess(rawCode);
+      session = sessionFromFirestore ??
+          CitizenPublicAccessService.instance.sessionFromValidation(
+            rawCode: rawCode,
+            validation: validation,
+          );
+    } catch (error, stackTrace) {
+      debugPrint('[CitizenAccess] session creation failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
+      if (!mounted) return;
+      setState(() {
+        _errorMessage =
+            'Code validé, mais l’espace citoyen n’a pas pu être ouvert.';
+        _isSubmitting = false;
+      });
+      return;
+    }
+
+    if (!mounted) return;
+    setState(() => _isSubmitting = false);
+
+    Navigator.of(context).pushNamed(
+      '/citizen/welcome',
+      arguments: {'session': session},
+    );
+
+    // La validation est déjà réussie et la session est active en mémoire.
+    // Les écritures locales et l’abonnement aux notifications ne doivent
+    // jamais transformer cette réussite en faux message d’erreur.
+    unawaited(_completeCitizenLogin(rawCode: rawCode, session: session));
+  }
+
+  Future<void> _completeCitizenLogin({
+    required String rawCode,
+    required CitizenPublicAccessSession session,
+  }) async {
+    await _runPostLoginStep('save session', () async {
+      final persistSession = widget.persistSession;
+      if (persistSession != null) {
+        await persistSession(session);
+      } else {
+        await CitizenPublicAccessService.instance.saveSession(session);
+      }
+    });
+    await _runPostLoginStep(
+      'save commune',
+      () => CitizenCommuneStore.instance.save(
+        communeId: session.communeId,
+        communeName: session.communeName,
+      ),
+    );
+    await _runPostLoginStep(
+      'start notification badge',
+      NewPollBadgeService.instance.startListening,
+    );
+    await _runPostLoginStep(
+      'mark notifications seen',
+      NewPollBadgeService.instance.markAllSeen,
+    );
+    await _runPostLoginStep(
+      'register push notifications',
+      () => PushNotificationService.instance.registerForCitizenCommune(
+        rawCode: rawCode,
+        communeId: session.communeId,
+        communeName: session.communeName,
+      ),
+    );
+  }
+
+  Future<void> _runPostLoginStep(
+    String label,
+    Future<void> Function() action,
+  ) async {
+    try {
+      await action();
+    } catch (error, stackTrace) {
+      debugPrint('[CitizenAccess] post-login $label failed: $error');
+      debugPrintStack(stackTrace: stackTrace);
     }
   }
 
