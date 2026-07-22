@@ -1,0 +1,75 @@
+name: Validate premium visual system
+
+on:
+  push:
+    branches:
+      - feat/premium-visual-system
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/premium-visual-system
+          fetch-depth: 0
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Format premium files
+        working-directory: flutter_app
+        run: >-
+          dart format
+          lib/theme/app_theme.dart
+          lib/theme/citizen_design_tokens.dart
+          lib/theme/citoyen_theme.dart
+          lib/widgets/app_responsive_viewport.dart
+          lib/widgets/public_page_ui.dart
+          lib/widgets/public_bottom_nav.dart
+          lib/widgets/citizen/citizen_header.dart
+          lib/widgets/citizen/citizen_bottom_nav.dart
+          lib/widgets/citizen/citizen_card.dart
+          lib/widgets/citizen/citizen_primary_button.dart
+          lib/pages/admin_login_page.dart
+          lib/pages/controller_login_page.dart
+          lib/pages/super_admin_login_page.dart
+          test/premium_theme_test.dart
+
+      - name: Analyze Flutter application
+        working-directory: flutter_app
+        run: flutter analyze
+
+      - name: Test premium design system
+        working-directory: flutter_app
+        run: flutter test test/premium_theme_test.dart
+
+      - name: Test shared responsive pages
+        working-directory: flutter_app
+        run: >-
+          flutter test
+          test/app_responsive_viewport_test.dart
+          test/public_page_ui_test.dart
+          test/citizen_home_page_test.dart
+
+      - name: Publish formatting changes
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add flutter_app docs/design/audit-harmonisation-premium-2026-07.md
+          if git diff --cached --quiet; then
+            echo 'No formatting changes to publish.'
+          else
+            git commit -m 'style: formate le design system premium'
+            git push origin HEAD:feat/premium-visual-system
+          fi
