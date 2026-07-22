@@ -1,0 +1,83 @@
+name: Validate all pages responsive
+
+on:
+  push:
+    branches:
+      - feat/all-pages-full-responsive
+  pull_request:
+    branches: [main]
+    paths:
+      - 'flutter_app/lib/**'
+      - 'flutter_app/test/app_responsive_viewport_test.dart'
+      - 'flutter_app/test/citizen_home_page_test.dart'
+      - 'tool/apply_all_pages_responsive.py'
+      - '.github/workflows/validate-all-pages-responsive.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  flutter:
+    if: github.event_name == 'push' || github.head_ref == 'feat/all-pages-full-responsive'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/all-pages-full-responsive
+          fetch-depth: 0
+
+      - name: Apply responsive migration
+        run: python3 tool/apply_all_pages_responsive.py
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Install dependencies
+        working-directory: flutter_app
+        run: flutter pub get
+
+      - name: Format responsive files
+        working-directory: flutter_app
+        run: >-
+          dart format
+          lib/app.dart
+          lib/widgets/app_responsive_viewport.dart
+          lib/widgets/citizen/citizen_header.dart
+          lib/widgets/citizen/citizen_bottom_nav.dart
+          lib/pages/home_page.dart
+          lib/pages/access_citizen_page.dart
+          lib/pages/legal_page.dart
+          lib/pages/citizen/citizen_home_page.dart
+          lib/pages/citizen/citizen_consultations_page.dart
+          lib/pages/citizen/citizen_poll_question_page.dart
+          lib/pages/citizen/citizen_profile_page.dart
+          test/app_responsive_viewport_test.dart
+          test/citizen_home_page_test.dart
+
+      - name: Analyze Flutter application
+        working-directory: flutter_app
+        run: flutter analyze
+
+      - name: Test responsive framework
+        working-directory: flutter_app
+        run: flutter test test/app_responsive_viewport_test.dart
+
+      - name: Test citizen responsive screens
+        working-directory: flutter_app
+        run: flutter test test/citizen_home_page_test.dart test/public_page_ui_test.dart
+
+      - name: Publish migration changes
+        if: github.event_name == 'push'
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add flutter_app tool/apply_all_pages_responsive.py
+          if git diff --cached --quiet; then
+            echo 'No responsive migration changes to publish.'
+          else
+            git commit -m 'fix: applique les adaptations responsive à toutes les pages'
+            git push origin HEAD:feat/all-pages-full-responsive
+          fi
