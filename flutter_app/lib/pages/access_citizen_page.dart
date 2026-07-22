@@ -11,8 +11,6 @@ import '../services/new_poll_badge_service.dart';
 import '../services/push_notification_service.dart';
 import '../services/vote_access_service.dart';
 import '../theme/citoyen_theme.dart';
-import '../widgets/citizen/citizen_header.dart';
-import '../widgets/debug_log_viewer.dart';
 import '../widgets/public_bottom_nav.dart';
 import 'legal_page.dart';
 
@@ -37,10 +35,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
   bool _isSubmitting = false;
   String? _errorMessage;
 
-  bool get _canValidate =>
-      hasAcceptedLegalTerms &&
-      _codeController.text.trim().isNotEmpty &&
-      !_isSubmitting;
+  bool get _canValidate => hasAcceptedLegalTerms && !_isSubmitting;
 
   @override
   void initState() {
@@ -73,6 +68,9 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
 
   Future<void> _setAcceptedLegalTerms(bool accepted) async {
     setState(() {
+      if (accepted) {
+        hasReadLegalTerms = true;
+      }
       hasAcceptedLegalTerms = accepted;
       _errorMessage = null;
     });
@@ -180,15 +178,20 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
 
   @override
   Widget build(BuildContext context) {
+    final topPadding = MediaQuery.of(context).padding.top;
+
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: const SystemUiOverlayStyle(
-        statusBarColor: Colors.white,
+        statusBarColor: Colors.transparent,
         statusBarIconBrightness: Brightness.dark,
         statusBarBrightness: Brightness.light,
         systemStatusBarContrastEnforced: false,
+        systemNavigationBarColor: Colors.white,
+        systemNavigationBarIconBrightness: Brightness.dark,
       ),
       child: Scaffold(
-        backgroundColor: Colors.white,
+        backgroundColor: Colors.transparent,
+        resizeToAvoidBottomInset: true,
         body: Stack(
           children: [
             const _AccessBackground(),
@@ -197,20 +200,20 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                 constraints: const BoxConstraints(maxWidth: 430),
                 child: Column(
                   children: [
-                    const CitizenHeader(
-                      title: 'Accès citoyen',
-                      showBack: false,
-                      trailing: DebugLogButton(label: ''),
-                    ),
                     Expanded(
                       child: SingleChildScrollView(
                         physics: const BouncingScrollPhysics(),
-                        padding: const EdgeInsets.fromLTRB(12, 18, 12, 18),
+                        padding: EdgeInsets.fromLTRB(
+                          24,
+                          topPadding + 26,
+                          24,
+                          18,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
-                            const _AccessLogoHeader(),
-                            const SizedBox(height: 18),
+                            const _AccessHeroHeader(),
+                            const SizedBox(height: 24),
                             _AccessFormCard(
                               codeController: _codeController,
                               errorMessage: _errorMessage,
@@ -225,7 +228,7 @@ class _AccessCitizenPageState extends State<AccessCitizenPage> {
                                   setState(() => _errorMessage = null),
                               onSubmit: _validateCitizenCode,
                             ),
-                            const SizedBox(height: 16),
+                            const SizedBox(height: 14),
                             const _FooterNote(),
                           ],
                         ),
@@ -254,35 +257,66 @@ class _AccessBackground extends StatelessWidget {
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
           colors: [
-            Color(0xFFEAF8FF),
-            Color(0xFFF3FBFF),
+            Color(0xFFE5F8FF),
+            Color(0xFFF4FCFF),
             Colors.white,
           ],
-          stops: [0.0, 0.35, 1.0],
+          stops: [0.0, 0.38, 1.0],
         ),
       ),
       child: Stack(
         children: [
           Positioned(
-            left: -140,
-            bottom: -60,
+            left: -44,
+            top: 76,
             child: Container(
-              width: 320,
-              height: 320,
+              width: 142,
+              height: 68,
               decoration: BoxDecoration(
-                color: cpBlue.withValues(alpha: 0.08),
-                borderRadius: BorderRadius.circular(180),
+                color: Colors.white.withValues(alpha: 0.52),
+                borderRadius: BorderRadius.circular(90),
               ),
             ),
           ),
           Positioned(
-            right: -80,
-            top: 40,
+            right: -52,
+            top: 46,
+            child: Container(
+              width: 160,
+              height: 160,
+              decoration: BoxDecoration(
+                color: cpBlue.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            right: -18,
+            top: 78,
             child: Opacity(
-              opacity: 0.5,
+              opacity: 0.34,
               child: CustomPaint(
-                size: const Size(180, 180),
+                size: const Size(100, 132),
                 painter: _DotGridPainter(),
+              ),
+            ),
+          ),
+          Positioned(
+            right: 22,
+            top: 112,
+            child: IgnorePointer(
+              child: _ShieldWatermark(),
+            ),
+          ),
+          Positioned(
+            left: -120,
+            bottom: 88,
+            child: Container(
+              width: 260,
+              height: 260,
+              decoration: BoxDecoration(
+                color: cpBlue.withValues(alpha: 0.06),
+                shape: BoxShape.circle,
               ),
             ),
           ),
@@ -292,14 +326,37 @@ class _AccessBackground extends StatelessWidget {
   }
 }
 
+class _ShieldWatermark extends StatelessWidget {
+  const _ShieldWatermark();
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Icon(
+          Icons.shield_outlined,
+          size: 58,
+          color: cpBlueDark.withValues(alpha: 0.96),
+        ),
+        Icon(
+          Icons.lock_rounded,
+          size: 17,
+          color: cpBlueDark.withValues(alpha: 0.38),
+        ),
+      ],
+    );
+  }
+}
+
 class _DotGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = cpBlue.withValues(alpha: 0.28);
-    const spacing = 16.0;
+    final paint = Paint()..color = cpBlue.withValues(alpha: 0.36);
+    const spacing = 10.0;
     for (double y = 0; y < size.height; y += spacing) {
       for (double x = 0; x < size.width; x += spacing) {
-        canvas.drawCircle(Offset(x, y), 1.6, paint);
+        canvas.drawCircle(Offset(x, y), 1.25, paint);
       }
     }
   }
@@ -308,35 +365,75 @@ class _DotGridPainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
+class _AccessHeroHeader extends StatelessWidget {
+  const _AccessHeroHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        const _AccessLogoHeader(),
+        const SizedBox(height: 30),
+        Text(
+          'Accès citoyen',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: const Color(0xFF082E69),
+            fontSize: 32,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.7,
+            height: 1.0,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          'Entrez votre code pour participer anonymement.',
+          textAlign: TextAlign.center,
+          style: GoogleFonts.inter(
+            color: const Color(0xFF5E6E83),
+            fontSize: 14.5,
+            fontWeight: FontWeight.w500,
+            letterSpacing: -0.1,
+            height: 1.18,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _AccessLogoHeader extends StatelessWidget {
   const _AccessLogoHeader();
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      height: 116,
+    return Align(
       alignment: Alignment.center,
-      padding: const EdgeInsets.symmetric(horizontal: 10),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(28),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 26,
-            offset: const Offset(0, 14),
+      child: Container(
+        width: 248,
+        height: 70,
+        alignment: Alignment.center,
+        padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.96),
+          borderRadius: BorderRadius.circular(22),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.85)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0F5B9D).withValues(alpha: 0.10),
+              blurRadius: 20,
+              offset: const Offset(0, 10),
+            ),
+          ],
+        ),
+        child: Semantics(
+          label: 'Citoyen Peyi',
+          image: true,
+          child: Image.asset(
+            cpLogoPath,
+            height: 54,
+            fit: BoxFit.contain,
           ),
-        ],
-      ),
-      child: Semantics(
-        label: 'Citoyen Peyi',
-        image: true,
-        child: Image.asset(
-          cpLogoPath,
-          height: 82,
-          width: double.infinity,
-          fit: BoxFit.contain,
         ),
       ),
     );
@@ -371,75 +468,41 @@ class _AccessFormCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 18),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(26),
+        color: Colors.white.withValues(alpha: 0.98),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: const Color(0xFFE6EEF7)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.07),
-            blurRadius: 32,
-            offset: const Offset(0, 18),
+            color: const Color(0xFF0F2D55).withValues(alpha: 0.10),
+            blurRadius: 30,
+            offset: const Offset(0, 16),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: Text(
-              'Code citoyen',
-              style: GoogleFonts.inter(
-                color: cpTextDark,
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-              ),
+          Text(
+            'Code citoyen',
+            style: GoogleFonts.inter(
+              color: const Color(0xFF07356F),
+              fontSize: 16,
+              fontWeight: FontWeight.w900,
+              letterSpacing: -0.15,
             ),
           ),
           const SizedBox(height: 10),
-          TextField(
+          _CodeCitizenField(
             controller: codeController,
             enabled: !isSubmitting,
-            textCapitalization: TextCapitalization.characters,
-            textInputAction: TextInputAction.done,
-            autocorrect: false,
-            enableSuggestions: false,
-            style: GoogleFonts.inter(
-              color: cpTextDark,
-              fontWeight: FontWeight.w600,
-              fontSize: 16,
-            ),
-            decoration: InputDecoration(
-              hintText: 'Saisissez votre code citoyen',
-              hintStyle: GoogleFonts.inter(
-                color: const Color(0xFF9AA6B8),
-                fontWeight: FontWeight.w500,
-              ),
-              prefixIcon: const Icon(Icons.key_rounded, color: cpBlueDark),
-              filled: true,
-              fillColor: Colors.white,
-              contentPadding:
-                  const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(color: cpBlue, width: 1.6),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(color: cpBlue, width: 1.6),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(30),
-                borderSide: const BorderSide(color: cpBlueDark, width: 2),
-              ),
-            ),
-            onChanged: (_) => onCodeChanged(),
-            onSubmitted: (_) => onSubmit(),
+            onChanged: onCodeChanged,
+            onSubmit: onSubmit,
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 13),
           const _ConfidentialityBox(),
-          const SizedBox(height: 12),
+          const SizedBox(height: 14),
           _LegalTermsConsentPanel(
             hasReadLegalTerms: hasReadLegalTerms,
             hasAcceptedLegalTerms: hasAcceptedLegalTerms,
@@ -450,14 +513,15 @@ class _AccessFormCard extends StatelessWidget {
             const SizedBox(height: 12),
             Text(
               errorMessage!,
-              style: const TextStyle(
-                color: Color(0xFFB42318),
-                fontWeight: FontWeight.w600,
+              style: GoogleFonts.inter(
+                color: const Color(0xFFB42318),
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
               ),
               textAlign: TextAlign.center,
             ),
           ],
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
           _SubmitButton(
             isSubmitting: isSubmitting,
             canValidate: canValidate,
@@ -469,49 +533,133 @@ class _AccessFormCard extends StatelessWidget {
   }
 }
 
+class _CodeCitizenField extends StatelessWidget {
+  const _CodeCitizenField({
+    required this.controller,
+    required this.enabled,
+    required this.onChanged,
+    required this.onSubmit,
+  });
+
+  final TextEditingController controller;
+  final bool enabled;
+  final VoidCallback onChanged;
+  final VoidCallback onSubmit;
+
+  @override
+  Widget build(BuildContext context) {
+    final fieldBorder = OutlineInputBorder(
+      borderRadius: BorderRadius.circular(28),
+      borderSide: const BorderSide(color: cpBlueDark, width: 2.2),
+    );
+
+    return Container(
+      height: 62,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(
+            color: cpBlueDark.withValues(alpha: 0.14),
+            blurRadius: 13,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: TextField(
+        controller: controller,
+        enabled: enabled,
+        textCapitalization: TextCapitalization.characters,
+        textInputAction: TextInputAction.done,
+        autocorrect: false,
+        enableSuggestions: false,
+        textAlignVertical: TextAlignVertical.center,
+        style: GoogleFonts.inter(
+          color: const Color(0xFF0B2D5C),
+          fontWeight: FontWeight.w800,
+          fontSize: 17,
+          letterSpacing: 0.4,
+        ),
+        decoration: InputDecoration(
+          hintText: 'Saisissez votre code citoyen',
+          hintStyle: GoogleFonts.inter(
+            color: const Color(0xFFA3AFC2),
+            fontWeight: FontWeight.w700,
+            fontSize: 16.5,
+          ),
+          prefixIcon: const Icon(Icons.key_rounded, color: cpBlueDark, size: 31),
+          prefixIconConstraints: const BoxConstraints(minWidth: 62),
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+          border: fieldBorder,
+          enabledBorder: fieldBorder,
+          focusedBorder: fieldBorder.copyWith(
+            borderSide: const BorderSide(color: cpBlueDark, width: 2.6),
+          ),
+          disabledBorder: fieldBorder.copyWith(
+            borderSide: const BorderSide(color: Color(0xFFB7D9F9), width: 2),
+          ),
+        ),
+        onChanged: (_) => onChanged(),
+        onSubmitted: (_) => onSubmit(),
+      ),
+    );
+  }
+}
+
 class _ConfidentialityBox extends StatelessWidget {
   const _ConfidentialityBox();
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      minHeight: 70,
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: BoxDecoration(
-        color: cpBlueSoft,
+        color: const Color(0xFFEAF6FF),
         borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFD3E9FA)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Container(
-            width: 40,
-            height: 40,
-            decoration: const BoxDecoration(
-              color: Colors.white,
+            width: 50,
+            height: 50,
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.94),
               shape: BoxShape.circle,
             ),
-            child: const Icon(Icons.lock_rounded, color: cpBlueDark, size: 20),
+            child: const Icon(Icons.lock_rounded, color: cpBlueDark, size: 25),
           ),
-          const SizedBox(width: 10),
+          const SizedBox(width: 14),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   'Participation confidentielle',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    color: cpTextDark,
-                    fontWeight: FontWeight.w800,
+                    color: const Color(0xFF08356F),
+                    fontWeight: FontWeight.w900,
                     fontSize: 15,
+                    letterSpacing: -0.2,
                   ),
                 ),
-                const SizedBox(height: 2),
+                const SizedBox(height: 5),
                 Text(
                   'Vos réponses restent anonymes.',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.inter(
-                    color: cpTextMuted,
-                    fontSize: 13,
+                    color: const Color(0xFF63748A),
+                    fontSize: 13.5,
                     fontWeight: FontWeight.w500,
+                    letterSpacing: -0.1,
                   ),
                 ),
               ],
@@ -523,7 +671,7 @@ class _ConfidentialityBox extends StatelessWidget {
   }
 }
 
-class _LegalTermsConsentPanel extends StatefulWidget {
+class _LegalTermsConsentPanel extends StatelessWidget {
   const _LegalTermsConsentPanel({
     required this.hasReadLegalTerms,
     required this.hasAcceptedLegalTerms,
@@ -536,208 +684,133 @@ class _LegalTermsConsentPanel extends StatefulWidget {
   final VoidCallback onReadToEnd;
   final ValueChanged<bool> onAcceptedChanged;
 
-  @override
-  State<_LegalTermsConsentPanel> createState() =>
-      _LegalTermsConsentPanelState();
-}
-
-class _LegalTermsConsentPanelState extends State<_LegalTermsConsentPanel> {
-  final _scrollController = ScrollController();
-  late bool _expanded = !widget.hasReadLegalTerms;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_handleScroll);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _handleScroll());
+  void _openLegalPage(BuildContext context) {
+    onReadToEnd();
+    Navigator.of(context).pushNamed(LegalPage.routeName);
   }
-
-  @override
-  void didUpdateWidget(covariant _LegalTermsConsentPanel oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (!oldWidget.hasReadLegalTerms && widget.hasReadLegalTerms) {
-      setState(() => _expanded = false);
-    }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.removeListener(_handleScroll);
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _handleScroll() {
-    if (widget.hasReadLegalTerms || !_scrollController.hasClients) return;
-    _checkScrollMetrics(_scrollController.position);
-  }
-
-  bool _handleScrollNotification(ScrollNotification notification) {
-    if (!widget.hasReadLegalTerms) {
-      _checkScrollMetrics(notification.metrics);
-    }
-    return false;
-  }
-
-  void _checkScrollMetrics(ScrollMetrics metrics) {
-    if (metrics.maxScrollExtent <= 0 ||
-        metrics.pixels >= metrics.maxScrollExtent - 8) {
-      widget.onReadToEnd();
-    }
-  }
-
-  void _toggleExpanded() => setState(() => _expanded = !_expanded);
 
   @override
   Widget build(BuildContext context) {
-    final hasRead = widget.hasReadLegalTerms;
+    final readLabel = hasReadLegalTerms
+        ? 'Lecture effectuée'
+        : 'Lire les conditions pour accepter';
+    final readColor = hasReadLegalTerms ? const Color(0xFF15A06F) : cpTextMuted;
 
     return Container(
       key: const ValueKey('accessCitizenLegalPill'),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF3F4F6),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFE5E7EB)),
+        color: const Color(0xFFF1F8F6),
+        borderRadius: BorderRadius.circular(19),
+        border: Border.all(color: const Color(0xFFDDEBE7)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           InkWell(
-            borderRadius: BorderRadius.circular(14),
-            onTap: _toggleExpanded,
+            borderRadius: BorderRadius.circular(15),
+            onTap: () => _openLegalPage(context),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 Container(
-                  width: 40,
-                  height: 40,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
+                  width: 50,
+                  height: 50,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.96),
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
                     Icons.balance_rounded,
                     color: cpBlueDark,
-                    size: 20,
+                    size: 30,
                   ),
                 ),
-                const SizedBox(width: 10),
+                const SizedBox(width: 14),
                 Expanded(
-                  child: Text(
-                    'CGU, confidentialité et anonymat',
-                    style: GoogleFonts.inter(
-                      color: cpTextDark,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CGU, confidentialité et anonymat',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: GoogleFonts.inter(
+                          color: const Color(0xFF08356F),
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14.5,
+                          letterSpacing: -0.25,
+                          height: 1.15,
+                        ),
+                      ),
+                      const SizedBox(height: 9),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.check_circle_rounded,
+                            color: readColor,
+                            size: 17,
+                          ),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              readLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.inter(
+                                color: readColor,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13.5,
+                                letterSpacing: -0.1,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-                AnimatedRotation(
-                  turns: _expanded ? 0.25 : 0,
-                  duration: const Duration(milliseconds: 180),
-                  child: const Icon(Icons.chevron_right_rounded,
-                      color: cpTextMuted),
+                const SizedBox(width: 8),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: Color(0xFF08356F),
+                  size: 31,
                 ),
               ],
             ),
           ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              if (hasRead) ...[
-                const Icon(Icons.check_circle_rounded,
-                    color: Color(0xFF16A34A), size: 16),
-                const SizedBox(width: 6),
-                Flexible(
-                  child: Text(
-                    'Lecture effectuée',
-                    overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
-                      color: const Color(0xFF16A34A),
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              ] else
-                Expanded(
-                  child: Text(
-                    'Faites défiler le texte jusqu’à la fin pour accepter',
-                    style: GoogleFonts.inter(
-                      color: cpTextMuted,
-                      fontSize: 13,
-                    ),
-                  ),
-                ),
-              const SizedBox(width: 8),
-              const Spacer(),
-              GestureDetector(
-                onTap: _toggleExpanded,
-                child: Text(
-                  'Lire les conditions',
-                  style: GoogleFonts.inter(
-                    color: cpBlueDark,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                    decoration: TextDecoration.underline,
-                  ),
-                ),
+          Align(
+            alignment: Alignment.centerRight,
+            child: TextButton(
+              style: TextButton.styleFrom(
+                padding: EdgeInsets.zero,
+                minimumSize: const Size(0, 28),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                foregroundColor: cpBlueDark,
               ),
-            ],
-          ),
-          if (_expanded) ...[
-            const SizedBox(height: 12),
-            Divider(color: const Color(0xFFE5E7EB).withValues(alpha: 0.9)),
-            const SizedBox(height: 8),
-            Container(
-              height: 176,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFE5E7EB)),
-              ),
-              child: NotificationListener<ScrollNotification>(
-                onNotification: _handleScrollNotification,
-                child: Scrollbar(
-                  controller: _scrollController,
-                  thumbVisibility: true,
-                  child: SingleChildScrollView(
-                    key: const ValueKey('accessCitizenLegalTermsScroll'),
-                    controller: _scrollController,
-                    padding: const EdgeInsets.fromLTRB(12, 12, 20, 12),
-                    child: Text(
-                      buildFullLegalDocumentText(),
-                      style: GoogleFonts.inter(
-                        color: const Color(0xFF334155),
-                        fontSize: 13,
-                        height: 1.45,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-            if (!hasRead) ...[
-              const SizedBox(height: 8),
-              Text(
-                'La case d’acceptation apparaîtra à la fin du texte.',
+              onPressed: () => _openLegalPage(context),
+              child: Text(
+                'Lire les conditions',
                 style: GoogleFonts.inter(
-                  color: cpTextMuted,
-                  fontSize: 12,
+                  color: cpBlueDark,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 12.5,
+                  letterSpacing: -0.1,
                 ),
-                textAlign: TextAlign.center,
               ),
-            ],
-          ],
-          if (hasRead) ...[
-            const SizedBox(height: 10),
-            Divider(color: const Color(0xFFE5E7EB).withValues(alpha: 0.9)),
-            const SizedBox(height: 6),
-            _TermsAcceptanceRow(
-              hasAcceptedLegalTerms: widget.hasAcceptedLegalTerms,
-              onChanged: widget.onAcceptedChanged,
             ),
-          ],
+          ),
+          Divider(
+            height: 16,
+            color: const Color(0xFFD1DDD9).withValues(alpha: 0.9),
+          ),
+          _TermsAcceptanceRow(
+            hasAcceptedLegalTerms: hasAcceptedLegalTerms,
+            onChanged: (accepted) {
+              if (accepted) onReadToEnd();
+              onAcceptedChanged(accepted);
+            },
+          ),
         ],
       ),
     );
@@ -763,30 +836,56 @@ class _TermsAcceptanceRow extends StatelessWidget {
         key: const ValueKey('accessCitizenTermsAcceptance'),
         borderRadius: BorderRadius.circular(14),
         onTap: () => onChanged(!hasAcceptedLegalTerms),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            Checkbox(
-              value: hasAcceptedLegalTerms,
-              onChanged: (value) => onChanged(value ?? false),
-              activeColor: cpBlueDark,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(6),
+        child: Padding(
+          padding: const EdgeInsets.only(top: 5, bottom: 3),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
+                width: 32,
+                height: 32,
+                decoration: BoxDecoration(
+                  color: hasAcceptedLegalTerms ? cpBlueDark : Colors.white,
+                  borderRadius: BorderRadius.circular(7),
+                  border: Border.all(
+                    color: hasAcceptedLegalTerms
+                        ? cpBlueDark
+                        : const Color(0xFFBFD2E4),
+                    width: 1.4,
+                  ),
+                  boxShadow: hasAcceptedLegalTerms
+                      ? [
+                          BoxShadow(
+                            color: cpBlueDark.withValues(alpha: 0.18),
+                            blurRadius: 8,
+                            offset: const Offset(0, 4),
+                          ),
+                        ]
+                      : null,
+                ),
+                child: hasAcceptedLegalTerms
+                    ? const Icon(Icons.check_rounded,
+                        color: Colors.white, size: 25)
+                    : null,
               ),
-            ),
-            const SizedBox(width: 2),
-            Expanded(
-              child: Text(
-                'J’ai lu et j’accepte les conditions d’utilisation.',
-                style: GoogleFonts.inter(
-                  color: cpTextDark,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 14,
-                  height: 1.3,
+              const SizedBox(width: 18),
+              Expanded(
+                child: Text(
+                  'J’ai lu et j’accepte les conditions d’utilisation.',
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: GoogleFonts.inter(
+                    color: const Color(0xFF0A2E5F),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.6,
+                    height: 1.25,
+                    letterSpacing: -0.2,
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -809,7 +908,7 @@ class _SubmitButton extends StatelessWidget {
     final enabled = canValidate;
 
     return Container(
-      height: 58,
+      height: 55,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(30),
         gradient: enabled
@@ -817,7 +916,7 @@ class _SubmitButton extends StatelessWidget {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFFFFE875),
+                  Color(0xFFFFE565),
                   cpYellow,
                   cpYellowStrong,
                 ],
@@ -828,8 +927,13 @@ class _SubmitButton extends StatelessWidget {
             ? [
                 BoxShadow(
                   color: cpYellowStrong.withValues(alpha: 0.38),
-                  blurRadius: 20,
+                  blurRadius: 22,
                   offset: const Offset(0, 10),
+                ),
+                BoxShadow(
+                  color: Colors.white.withValues(alpha: 0.85),
+                  blurRadius: 1,
+                  offset: const Offset(0, 1),
                 ),
               ]
             : null,
@@ -853,17 +957,19 @@ class _SubmitButton extends StatelessWidget {
                     ),
                   )
                 else
-                  Icon(Icons.lock_rounded,
+                  Icon(Icons.lock_outline_rounded,
+                      size: 25,
                       color: enabled ? cpBlueDark : const Color(0xFF94A3B8)),
-                const SizedBox(width: 10),
+                const SizedBox(width: 13),
                 Flexible(
                   child: Text(
                     'Valider mon code citoyen',
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.inter(
                       color: enabled ? cpBlueDark : const Color(0xFF94A3B8),
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w900,
                       fontSize: 16,
+                      letterSpacing: -0.25,
                     ),
                   ),
                 ),
@@ -894,6 +1000,7 @@ class _FooterNote extends StatelessWidget {
               color: cpBlueDark,
               fontWeight: FontWeight.w700,
               fontSize: 13,
+              letterSpacing: -0.1,
             ),
           ),
         ),
