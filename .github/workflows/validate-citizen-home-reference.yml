@@ -11,7 +11,6 @@ on:
       - 'flutter_app/lib/widgets/citizen/citizen_bottom_nav.dart'
       - 'flutter_app/assets/citoyen_peyi/cp_home_*.svg'
       - 'flutter_app/test/citizen_home_page_test.dart'
-      - 'tool/refine_citizen_home_reference_layout.py'
       - '.github/workflows/validate-citizen-home-reference.yml'
   workflow_dispatch:
 
@@ -26,22 +25,6 @@ jobs:
         with:
           ref: feat/citizen-home-reference-pixel-perfect
           fetch-depth: 0
-
-      - name: Refine reference layout constraints
-        run: python3 tool/refine_citizen_home_reference_layout.py
-
-      - name: Publish refined layout
-        if: github.event_name == 'push'
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add flutter_app/lib/pages/citizen/citizen_home_page.dart
-          if git diff --cached --quiet; then
-            echo 'Reference layout already refined.'
-          else
-            git commit -m 'fix: affine les contraintes de l’accueil citoyen'
-            git push origin HEAD:feat/citizen-home-reference-pixel-perfect
-          fi
 
       - uses: subosito/flutter-action@v2
         with:
@@ -64,26 +47,9 @@ jobs:
         working-directory: flutter_app
         run: flutter analyze
 
-      - id: home_tests
-        name: Test citizen home reference
-        continue-on-error: true
+      - name: Test citizen home reference
         working-directory: flutter_app
-        run: |
-          set -o pipefail
-          flutter test test/citizen_home_page_test.dart 2>&1 | tee ../citizen-home-test.log
-
-      - name: Upload citizen home test diagnostic
-        if: steps.home_tests.outcome == 'failure'
-        uses: actions/upload-artifact@v4
-        with:
-          name: citizen-home-test-diagnostic
-          path: citizen-home-test.log
-          if-no-files-found: error
-          retention-days: 7
-
-      - name: Stop after citizen home test failure
-        if: steps.home_tests.outcome == 'failure'
-        run: exit 1
+        run: flutter test test/citizen_home_page_test.dart
 
       - name: Test connected citizen pages
         working-directory: flutter_app
