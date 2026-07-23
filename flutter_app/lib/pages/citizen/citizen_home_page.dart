@@ -384,7 +384,7 @@ class _WelcomeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final height = compact ? (narrow ? 154.0 : 166.0) : 190.0;
+    final height = compact ? (narrow ? 178.0 : 190.0) : 270.0;
     final illustrationWidth = compact ? (narrow ? 162.0 : 202.0) : 270.0;
 
     return SizedBox(
@@ -407,7 +407,7 @@ class _WelcomeSection extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: compact ? (narrow ? 190 : 248) : 360,
+                  maxWidth: compact ? (narrow ? 200 : 258) : 410,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -612,17 +612,21 @@ class _ParticipateButton extends StatelessWidget {
           ),
           child: Row(
             children: [
-              const Spacer(),
-              const Text(
-                'Je participe',
-                style: TextStyle(
-                  color: CitizenDesignTokens.deepBlue,
-                  fontSize: 21,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: -0.4,
+              const SizedBox(width: 42),
+              const Expanded(
+                child: Text(
+                  'Je participe',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: CitizenDesignTokens.deepBlue,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: -0.4,
+                  ),
                 ),
               ),
-              const Spacer(),
               Container(
                 width: 42,
                 height: 42,
