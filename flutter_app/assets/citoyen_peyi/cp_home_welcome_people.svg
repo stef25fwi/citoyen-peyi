@@ -1,0 +1,18 @@
+<svg width="320" height="190" viewBox="0 0 320 190" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Citoyens qui échangent leur avis">
+  <ellipse cx="178" cy="106" rx="137" ry="82" fill="#E4F5FF"/>
+  <path d="M36 66C36 54.9543 44.9543 46 56 46H101C112.046 46 121 54.9543 121 66V70C121 81.0457 112.046 90 101 90H78L63 102V90H56C44.9543 90 36 81.0457 36 70V66Z" fill="#48AEEF"/>
+  <circle cx="63" cy="68" r="4.5" fill="white"/>
+  <circle cx="78" cy="68" r="4.5" fill="white"/>
+  <circle cx="93" cy="68" r="4.5" fill="white"/>
+  <path d="M144 50C144 32.3269 158.327 18 176 18H207C224.673 18 239 32.3269 239 50V64C239 81.6731 224.673 96 207 96H200L220 116L182 96H176C158.327 96 144 81.6731 144 64V50Z" fill="#FFC91A"/>
+  <path d="M171 56L187 72L214 43" stroke="white" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="70" cy="117" r="22" fill="#69BDF2"/>
+  <path d="M35 179C36.8 146 48 130 70 130C92 130 103.2 146 105 179H35Z" fill="#69BDF2"/>
+  <circle cx="111" cy="137" r="17" fill="#83CBF5"/>
+  <path d="M84 179C86 153 94 143 111 143C128 143 136 153 138 179H84Z" fill="#83CBF5"/>
+  <circle cx="169" cy="121" r="24" fill="#0A65B5"/>
+  <path d="M130 179C132 143 145 128 169 128C193 128 206 143 208 179H130Z" fill="#1B9FE8"/>
+  <path d="M148 112C155 98 175 93 190 104C181 107 177 116 177 126C166 119 156 119 148 112Z" fill="#063F82"/>
+  <circle cx="251" cy="124" r="22" fill="#69BDF2"/>
+  <path d="M216 179C218 146 229 133 251 133C273 133 284 146 286 179H216Z" fill="#69BDF2"/>
+</svg>

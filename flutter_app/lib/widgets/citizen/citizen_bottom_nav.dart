@@ -62,56 +62,72 @@ class CitizenBottomNav extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 360;
-        return Container(
-          height: compact ? 70 : CitizenDesignTokens.bottomNavHeight,
-          padding: EdgeInsets.fromLTRB(
-            compact ? 3 : 8,
-            compact ? 4 : 6,
-            compact ? 3 : 8,
-            compact ? 6 : 8,
-          ),
-          decoration: const BoxDecoration(
-            color: CitizenDesignTokens.surface,
-            border: Border(
-              top: BorderSide(color: CitizenDesignTokens.divider),
+        return SafeArea(
+          top: false,
+          child: SizedBox(
+            height: compact ? 82 : 90,
+            child: Padding(
+              padding: EdgeInsets.fromLTRB(
+                compact ? 10 : 16,
+                4,
+                compact ? 10 : 16,
+                8,
+              ),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(color: const Color(0xFFF0F4F7)),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color(0x18002F4A),
+                      blurRadius: 22,
+                      offset: Offset(0, 8),
+                    ),
+                  ],
+                ),
+                padding: EdgeInsets.symmetric(
+                  horizontal: compact ? 2 : 8,
+                  vertical: 5,
+                ),
+                child: Row(
+                  children: [
+                    _NavItem(
+                      tab: CitizenNavTab.home,
+                      activeTab: activeTab,
+                      icon: Icons.home_rounded,
+                      label: 'Accueil',
+                      compact: compact,
+                      onTap: onTabSelected,
+                    ),
+                    _NavItem(
+                      tab: CitizenNavTab.news,
+                      activeTab: activeTab,
+                      icon: Icons.article_outlined,
+                      label: 'Actualités',
+                      compact: compact,
+                      onTap: onTabSelected,
+                    ),
+                    _NavItem(
+                      tab: CitizenNavTab.opinion,
+                      activeTab: activeTab,
+                      icon: Icons.edit_outlined,
+                      label: 'Donner mon avis',
+                      compact: compact,
+                      onTap: onTabSelected,
+                    ),
+                    _NavItem(
+                      tab: CitizenNavTab.results,
+                      activeTab: activeTab,
+                      icon: Icons.bar_chart_rounded,
+                      label: 'Résultats',
+                      compact: compact,
+                      onTap: onTabSelected,
+                    ),
+                  ],
+                ),
+              ),
             ),
-            boxShadow: CitizenDesignTokens.navigationShadow,
-          ),
-          child: Row(
-            children: [
-              _NavItem(
-                tab: CitizenNavTab.home,
-                activeTab: activeTab,
-                icon: Icons.home_rounded,
-                label: 'Accueil',
-                compact: compact,
-                onTap: onTabSelected,
-              ),
-              _NavItem(
-                tab: CitizenNavTab.news,
-                activeTab: activeTab,
-                icon: Icons.article_outlined,
-                label: 'Actualités',
-                compact: compact,
-                onTap: onTabSelected,
-              ),
-              _NavItem(
-                tab: CitizenNavTab.opinion,
-                activeTab: activeTab,
-                icon: Icons.edit_square,
-                label: compact ? 'Mon avis' : 'Donner mon avis',
-                compact: compact,
-                onTap: onTabSelected,
-              ),
-              _NavItem(
-                tab: CitizenNavTab.results,
-                activeTab: activeTab,
-                icon: Icons.bar_chart_rounded,
-                label: 'Résultats',
-                compact: compact,
-                onTap: onTabSelected,
-              ),
-            ],
           ),
         );
       },
@@ -138,10 +154,9 @@ class _NavItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final isActive = tab == activeTab;
     final color =
-        isActive ? CitizenDesignTokens.deepBlue : CitizenDesignTokens.textMuted;
+        isActive ? CitizenDesignTokens.primaryBlue : const Color(0xFF53657A);
 
     return Expanded(
       child: Semantics(
@@ -149,51 +164,44 @@ class _NavItem extends StatelessWidget {
         selected: isActive,
         label: label,
         child: InkWell(
-          borderRadius: BorderRadius.circular(CitizenDesignTokens.radiusButton),
+          borderRadius: BorderRadius.circular(16),
           onTap: () => onTap(tab),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedContainer(
-                duration: CitizenDesignTokens.motionFast,
-                curve: Curves.easeOutCubic,
-                padding: EdgeInsets.symmetric(
-                  horizontal: compact ? 8 : 15,
-                  vertical: compact ? 4 : 5,
-                ),
-                decoration: BoxDecoration(
-                  color: isActive
-                      ? CitizenDesignTokens.skyBlue
-                      : Colors.transparent,
-                  borderRadius:
-                      BorderRadius.circular(CitizenDesignTokens.radiusButton),
-                  border: isActive
-                      ? Border.all(
-                          color: CitizenDesignTokens.cardBorder,
-                          width: 0.8,
-                        )
-                      : null,
-                ),
-                child: Icon(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 1),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
                   icon,
-                  size: compact ? (isActive ? 23 : 21) : (isActive ? 25 : 23),
+                  size: compact ? 24 : 27,
                   color: color,
                 ),
-              ),
-              SizedBox(height: compact ? 2 : 3),
-              Text(
-                label,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: theme.textTheme.labelSmall?.copyWith(
-                  fontSize: compact ? 9.5 : 10.5,
-                  height: 1,
-                  fontWeight: isActive ? FontWeight.w800 : FontWeight.w600,
-                  color: color,
+                const SizedBox(height: 3),
+                Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: color,
+                    fontSize: compact ? 9.1 : 10.5,
+                    height: 1,
+                    fontWeight: isActive ? FontWeight.w900 : FontWeight.w600,
+                    letterSpacing: -0.2,
+                  ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                AnimatedContainer(
+                  duration: CitizenDesignTokens.motionFast,
+                  width: isActive ? (compact ? 30 : 36) : 0,
+                  height: 3,
+                  decoration: BoxDecoration(
+                    color: CitizenDesignTokens.primaryBlue,
+                    borderRadius: BorderRadius.circular(999),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
