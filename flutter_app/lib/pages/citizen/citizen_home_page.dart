@@ -384,7 +384,7 @@ class _WelcomeSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final height = compact ? (narrow ? 132.0 : 148.0) : 190.0;
+    final height = compact ? (narrow ? 154.0 : 166.0) : 190.0;
     final illustrationWidth = compact ? (narrow ? 162.0 : 202.0) : 270.0;
 
     return SizedBox(
@@ -407,7 +407,7 @@ class _WelcomeSection extends StatelessWidget {
               alignment: Alignment.centerLeft,
               child: ConstrainedBox(
                 constraints: BoxConstraints(
-                  maxWidth: compact ? (narrow ? 190 : 220) : 360,
+                  maxWidth: compact ? (narrow ? 190 : 248) : 360,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
@@ -417,7 +417,7 @@ class _WelcomeSection extends StatelessWidget {
                       'Bienvenue !',
                       style: TextStyle(
                         color: CitizenDesignTokens.deepBlue,
-                        fontSize: compact ? (narrow ? 27 : 31) : 42,
+                        fontSize: compact ? (narrow ? 26 : 30) : 42,
                         height: 1,
                         fontWeight: FontWeight.w900,
                         letterSpacing: -0.8,
@@ -428,7 +428,7 @@ class _WelcomeSection extends StatelessWidget {
                       'Votre voix compte, participez\nà l’action publique',
                       style: TextStyle(
                         color: CitizenDesignTokens.textMuted,
-                        fontSize: compact ? (narrow ? 14.5 : 16.5) : 21,
+                        fontSize: compact ? (narrow ? 13.5 : 15) : 21,
                         height: 1.35,
                         fontWeight: FontWeight.w500,
                       ),
@@ -470,7 +470,7 @@ class _ParticipationHero extends StatelessWidget {
         borderRadius: BorderRadius.circular(compact ? 28 : 34),
         onTap: onPressed,
         child: Ink(
-          height: compact ? 148 : 210,
+          height: compact ? 158 : 210,
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
@@ -504,9 +504,9 @@ class _ParticipationHero extends StatelessWidget {
               Padding(
                 padding: EdgeInsets.fromLTRB(
                   compact ? 20 : 30,
-                  compact ? 18 : 26,
+                  compact ? 15 : 26,
                   compact ? 18 : 28,
-                  compact ? 16 : 24,
+                  compact ? 14 : 24,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -514,7 +514,7 @@ class _ParticipationHero extends StatelessWidget {
                     Container(
                       padding: EdgeInsets.symmetric(
                         horizontal: compact ? 12 : 16,
-                        vertical: compact ? 6 : 8,
+                        vertical: compact ? 5 : 8,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.white.withValues(alpha: 0.78),
@@ -529,13 +529,13 @@ class _ParticipationHero extends StatelessWidget {
                         ),
                       ),
                     ),
-                    SizedBox(height: compact ? 10 : 15),
+                    SizedBox(height: compact ? 8 : 15),
                     Text(
                       'Participez aux\nconsultations citoyennes',
                       maxLines: 2,
                       style: TextStyle(
                         color: Colors.white,
-                        fontSize: compact ? 24 : 34,
+                        fontSize: compact ? 23 : 34,
                         height: 1.05,
                         fontWeight: FontWeight.w800,
                         letterSpacing: -0.55,
@@ -696,7 +696,7 @@ class _CurrentConsultations extends StatelessWidget {
             borderRadius: BorderRadius.circular(22),
             onTap: onPressed,
             child: Container(
-              height: 76,
+              height: 84,
               padding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(22),
@@ -712,8 +712,8 @@ class _CurrentConsultations extends StatelessWidget {
               child: Row(
                 children: [
                   Container(
-                    width: 54,
-                    height: 54,
+                    width: 56,
+                    height: 56,
                     decoration: const BoxDecoration(
                       color: CitizenDesignTokens.skyBlue,
                       shape: BoxShape.circle,
@@ -757,8 +757,8 @@ class _CurrentConsultations extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Container(
-                    width: 62,
-                    height: 58,
+                    width: 64,
+                    height: 64,
                     decoration: BoxDecoration(
                       color: const Color(0xFFEAF8EC),
                       borderRadius: BorderRadius.circular(14),
