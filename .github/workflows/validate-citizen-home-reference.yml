@@ -47,9 +47,26 @@ jobs:
         working-directory: flutter_app
         run: flutter analyze
 
-      - name: Test citizen home reference
+      - id: home_tests
+        name: Test citizen home reference
+        continue-on-error: true
         working-directory: flutter_app
-        run: flutter test test/citizen_home_page_test.dart
+        run: |
+          set -o pipefail
+          flutter test test/citizen_home_page_test.dart 2>&1 | tee ../citizen-home-test.log
+
+      - name: Upload citizen home test diagnostic
+        if: steps.home_tests.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: citizen-home-test-diagnostic
+          path: citizen-home-test.log
+          if-no-files-found: error
+          retention-days: 7
+
+      - name: Stop after citizen home test failure
+        if: steps.home_tests.outcome == 'failure'
+        run: exit 1
 
       - name: Test connected citizen pages
         working-directory: flutter_app
