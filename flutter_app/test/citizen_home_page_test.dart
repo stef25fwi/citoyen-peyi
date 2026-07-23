@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {
-  testWidgets('À propos ouvre la vraie page d’informations légales',
+  testWidgets('la page reprend toutes les sections de la référence',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
@@ -13,10 +13,20 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('À propos de Citoyen Peyi'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('Informations légales'), findsOneWidget);
+    expect(find.text('Bienvenue !'), findsOneWidget);
+    expect(find.text('Votre voix compte, participez\nà l’action publique'),
+        findsOneWidget);
+    expect(find.text('À VOUS LA PAROLE'), findsOneWidget);
+    expect(find.text('Participez aux\nconsultations citoyennes'),
+        findsOneWidget);
+    expect(find.text('Je participe'), findsOneWidget);
+    expect(find.text('En ce moment'), findsOneWidget);
+    expect(find.text('Voir toutes'), findsOneWidget);
+    expect(find.text('Consultation en cours'), findsOneWidget);
+    expect(find.text('Comment ça marche ?'), findsOneWidget);
+    expect(find.text('1. Je participe'), findsOneWidget);
+    expect(find.text('2. C’est anonyme'), findsOneWidget);
+    expect(find.text('3. Je vois les résultats'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 
@@ -39,7 +49,8 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('le bouton profil ouvre le profil citoyen', (tester) async {
+  testWidgets('le logo conserve l’accès discret au profil citoyen',
+      (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
@@ -48,7 +59,7 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byTooltip('Mon profil'));
+    await tester.tap(find.bySemanticsLabel('Mon profil'));
     await tester.pumpAndSettle();
 
     expect(find.text('Mon profil'), findsOneWidget);
@@ -65,7 +76,7 @@ void main() {
     Size(768, 1024),
   ]) {
     testWidgets(
-        'accueil connecté sans overflow en ${size.width}x${size.height}',
+        'accueil connecté de référence sans overflow en ${size.width}x${size.height}',
         (tester) async {
       tester.view.physicalSize = size;
       tester.view.devicePixelRatio = 1;
@@ -75,16 +86,17 @@ void main() {
       await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
       await tester.pumpAndSettle();
 
-      expect(find.text('Bonjour !'), findsOneWidget);
+      expect(find.text('Bienvenue !'), findsOneWidget);
       expect(find.text('Je participe'), findsOneWidget);
       expect(find.text('Comment ça marche ?'), findsOneWidget);
+      expect(find.byKey(const ValueKey('citizenHomeScroll')), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
   }
 
-  testWidgets('l accueil smartphone tient sans zone de défilement',
+  testWidgets('la navigation basse utilise le soulignement actif de la référence',
       (tester) async {
-    tester.view.physicalSize = const Size(360, 640);
+    tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
@@ -92,8 +104,10 @@ void main() {
     await tester.pumpWidget(const MaterialApp(home: CitizenHomePage()));
     await tester.pumpAndSettle();
 
-    expect(find.byType(SingleChildScrollView), findsNothing);
-    expect(find.text('Je participe'), findsOneWidget);
+    expect(find.text('Accueil'), findsOneWidget);
+    expect(find.text('Actualités'), findsOneWidget);
+    expect(find.text('Donner mon avis'), findsOneWidget);
+    expect(find.text('Résultats'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }
