@@ -17,8 +17,8 @@ void main() {
     expect(find.text('Votre voix compte, participez\nà l’action publique'),
         findsOneWidget);
     expect(find.text('À VOUS LA PAROLE'), findsOneWidget);
-    expect(find.text('Participez aux\nconsultations citoyennes'),
-        findsOneWidget);
+    expect(
+        find.text('Participez aux\nconsultations citoyennes'), findsOneWidget);
     expect(find.text('Je participe'), findsOneWidget);
     expect(find.text('En ce moment'), findsOneWidget);
     expect(find.text('Voir toutes'), findsOneWidget);
@@ -94,7 +94,8 @@ void main() {
     });
   }
 
-  testWidgets('la navigation basse utilise le soulignement actif de la référence',
+  testWidgets(
+      'la navigation basse utilise le soulignement actif de la référence',
       (tester) async {
     tester.view.physicalSize = const Size(390, 844);
     tester.view.devicePixelRatio = 1;

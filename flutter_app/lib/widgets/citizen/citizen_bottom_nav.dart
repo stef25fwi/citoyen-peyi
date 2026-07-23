@@ -155,9 +155,8 @@ class _NavItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isActive = tab == activeTab;
-    final color = isActive
-        ? CitizenDesignTokens.primaryBlue
-        : const Color(0xFF53657A);
+    final color =
+        isActive ? CitizenDesignTokens.primaryBlue : const Color(0xFF53657A);
 
     return Expanded(
       child: Semantics(

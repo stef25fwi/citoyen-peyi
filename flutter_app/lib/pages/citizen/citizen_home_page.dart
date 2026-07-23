@@ -122,7 +122,11 @@ class _CitizenHomeContent extends StatelessWidget {
       builder: (context, constraints) {
         final compact = constraints.maxWidth < 600;
         final narrow = constraints.maxWidth < 350;
-        final horizontal = narrow ? 12.0 : compact ? 16.0 : 28.0;
+        final horizontal = narrow
+            ? 12.0
+            : compact
+                ? 16.0
+                : 28.0;
         final maxContentWidth = compact ? 430.0 : 700.0;
 
         return SingleChildScrollView(
@@ -357,7 +361,8 @@ class _NotificationActionState extends State<_NotificationAction> {
                 right: 2,
                 top: 0,
                 child: Semantics(
-                  label: '$count nouvelle${count > 1 ? 's' : ''} notification${count > 1 ? 's' : ''}',
+                  label:
+                      '$count nouvelle${count > 1 ? 's' : ''} notification${count > 1 ? 's' : ''}',
                   child: Container(
                     width: widget.compact ? 15 : 17,
                     height: widget.compact ? 15 : 17,
