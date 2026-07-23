@@ -11,7 +11,6 @@ on:
       - 'flutter_app/lib/widgets/citizen/citizen_bottom_nav.dart'
       - 'flutter_app/assets/citoyen_peyi/cp_home_*.svg'
       - 'flutter_app/test/citizen_home_page_test.dart'
-      - 'tool/fix_citizen_home_reference_layout.py'
       - '.github/workflows/validate-citizen-home-reference.yml'
   workflow_dispatch:
 
@@ -26,22 +25,6 @@ jobs:
         with:
           ref: feat/citizen-home-reference-pixel-perfect
           fetch-depth: 0
-
-      - name: Apply reference layout corrections
-        run: python3 tool/fix_citizen_home_reference_layout.py
-
-      - name: Publish layout corrections
-        if: github.event_name == 'push'
-        run: |
-          git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add flutter_app/lib/pages/citizen/citizen_home_page.dart
-          if git diff --cached --quiet; then
-            echo 'No layout corrections to publish.'
-          else
-            git commit -m 'fix: supprime les débordements de l’accueil citoyen'
-            git push origin HEAD:feat/citizen-home-reference-pixel-perfect
-          fi
 
       - uses: subosito/flutter-action@v2
         with:
